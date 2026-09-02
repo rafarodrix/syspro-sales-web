@@ -175,29 +175,19 @@ export function ConfiguracaoClient({ configuracao, empresas }: Props) {
                   <th className="p-2 font-medium">Razão social</th>
                   <th className="p-2 font-medium">Código API</th>
                   <th className="p-2 font-medium">Situação</th>
+                  <th className="p-2 font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {empresas.length === 0 && (
                   <tr>
-                    <td className="p-2 text-muted-foreground" colSpan={4}>
+                    <td className="p-2 text-muted-foreground" colSpan={5}>
                       Nenhuma empresa cadastrada.
                     </td>
                   </tr>
                 )}
                 {empresas.map((e) => (
-                  <tr key={e.id} className="border-b last:border-0">
-                    <td className="p-2">{e.cnpj}</td>
-                    <td className="p-2">{e.razaoSocial}</td>
-                    <td className="p-2">{e.empresaCodigo}</td>
-                    <td className="p-2">
-                      {e.ativa ? (
-                        <span className="text-green-600">Ativa</span>
-                      ) : (
-                        <span className="text-muted-foreground">Inativa</span>
-                      )}
-                    </td>
-                  </tr>
+                  <EmpresaRow key={e.id} empresa={e} onChanged={() => router.refresh()} />
                 ))}
               </tbody>
             </table>
@@ -205,5 +195,111 @@ export function ConfiguracaoClient({ configuracao, empresas }: Props) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+interface EmpresaRowProps {
+  empresa: EmpresaRow;
+  onChanged: () => void;
+}
+
+function EmpresaRow({ empresa, onChanged }: EmpresaRowProps) {
+  const [editando, setEditando] = useState(false);
+  const [cnpj, setCnpj] = useState(empresa.cnpj);
+  const [razao, setRazao] = useState(empresa.razaoSocial);
+  const [codigo, setCodigo] = useState(empresa.empresaCodigo);
+  const [saving, setSaving] = useState(false);
+
+  async function salvar() {
+    if (!cnpj || !razao || !codigo) {
+      toast.error("Preencha CNPJ, razão social e código");
+      return;
+    }
+    setSaving(true);
+    const res = await fetch("/api/empresas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: empresa.id,
+        cnpj: cnpj.replace(/\D/g, ""),
+        razaoSocial: razao,
+        empresaCodigo: codigo,
+      }),
+    });
+    setSaving(false);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast.error(json.error ?? "Erro ao salvar empresa");
+      return;
+    }
+    toast.success("Empresa atualizada");
+    setEditando(false);
+    onChanged();
+  }
+
+  async function excluir() {
+    if (!window.confirm("Excluir esta empresa? Os acessos vinculados também serão removidos.")) return;
+    const res = await fetch(`/api/empresas?id=${empresa.id}`, {
+      method: "DELETE",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast.error(json.error ?? "Erro ao excluir empresa");
+      return;
+    }
+    toast.success("Empresa excluída");
+    onChanged();
+  }
+
+  if (editando) {
+    return (
+      <tr className="border-b last:border-0 bg-muted/30">
+        <td className="p-2">
+          <Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} />
+        </td>
+        <td className="p-2">
+          <Input value={razao} onChange={(e) => setRazao(e.target.value)} />
+        </td>
+        <td className="p-2">
+          <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+        </td>
+        <td className="p-2">{empresa.ativa ? "Ativa" : "Inativa"}</td>
+        <td className="p-2">
+          <div className="flex gap-1">
+            <Button size="sm" onClick={salvar} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditando(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr className="border-b last:border-0">
+      <td className="p-2">{empresa.cnpj}</td>
+      <td className="p-2">{empresa.razaoSocial}</td>
+      <td className="p-2">{empresa.empresaCodigo}</td>
+      <td className="p-2">
+        {empresa.ativa ? (
+          <span className="text-green-600">Ativa</span>
+        ) : (
+          <span className="text-muted-foreground">Inativa</span>
+        )}
+      </td>
+      <td className="p-2">
+        <div className="flex gap-1">
+          <Button size="sm" variant="outline" onClick={() => setEditando(true)}>
+            Editar
+          </Button>
+          <Button size="sm" variant="ghost" className="text-destructive" onClick={excluir}>
+            Excluir
+          </Button>
+        </div>
+      </td>
+    </tr>
   );
 }
