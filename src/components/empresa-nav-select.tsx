@@ -41,13 +41,13 @@ export function EmpresaNavSelect({
         router.push(`${pathname}?${params.toString()}`);
       }}
     >
-      <SelectTrigger className="min-w-52 max-w-72">
-        <Building2Icon data-icon="inline-start" />
-        <SelectValue />
+      <SelectTrigger className="h-8 max-w-64 gap-1.5 rounded-lg border bg-background px-2.5 text-xs font-semibold text-foreground shadow-xs hover:bg-muted/30">
+        <Building2Icon className="size-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+        <SelectValue className="truncate" />
       </SelectTrigger>
       <SelectContent>
         {empresas.map((empresa) => (
-          <SelectItem key={empresa.id} value={empresa.id}>
+          <SelectItem key={empresa.id} value={empresa.id} className="text-xs">
             {empresa.razaoSocial} ({empresa.cnpj})
           </SelectItem>
         ))}

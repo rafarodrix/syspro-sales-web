@@ -62,7 +62,6 @@ export default async function DashboardPage({
     <div>
       <NavApp empresaSelecionada={empresa?.id} />
       <main className="mx-auto max-w-7xl space-y-6 p-6">
-        <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
         <VendasClient
           empresas={empresas.map((item) => ({
             id: item.id,

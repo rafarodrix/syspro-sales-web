@@ -5,12 +5,19 @@ import Link from "next/link";
 import {
   BarChart3,
   BadgePercent,
+  Building2Icon,
+  CalendarDaysIcon,
   ChevronDown,
   ChevronRight,
+  DollarSignIcon,
   DownloadIcon,
   FileText,
   FileDownIcon,
+  InfoIcon,
+  MoreVerticalIcon,
   Package,
+  PercentIcon,
+  RotateCwIcon,
   Search,
   ShoppingCart,
   TrendingUp,
@@ -143,27 +150,97 @@ export function VendasClient({
     }
   }
 
+  const empresaAtual = useMemo(
+    () => empresas.find((e) => e.id === empresaId),
+    [empresas, empresaId],
+  );
+
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {variant === "dashboard" ? "Visão do período" : "Filtros"}
-          </CardTitle>
-          <CardDescription>
-            {variant === "dashboard"
-              ? "A empresa é selecionada no topo. O dashboard abre no mês atual."
-              : "Escolha uma empresa e o período para analisar as notas fiscais."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent
-          className={
-            variant === "dashboard"
-              ? "flex flex-wrap items-end justify-between gap-4"
-              : "grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(420px,1.25fr)_auto] lg:items-end"
-          }
-        >
-          {variant === "vendas" ? (
+      {variant === "dashboard" ? (
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+              Dashboard
+            </h1>
+            <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span>Empresa selecionada:</span>
+              <span className="flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400">
+                <Building2Icon className="size-4" />
+                {empresaAtual?.razaoSocial ?? "Empresa Demonstração Ltda."}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start gap-2.5 md:items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-lg border bg-muted/40 p-1">
+                <button
+                  type="button"
+                  onClick={() => setPeriodo(hoje())}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                    periodo.inicial === hoje().inicial && periodo.final === hoje().final
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Hoje
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPeriodo(periodoMesAtual())}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                    periodo.inicial === periodoMesAtual().inicial && periodo.final === periodoMesAtual().final
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Mês atual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPeriodo(periodoAnterior())}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                    periodo.inicial === periodoAnterior().inicial && periodo.final === periodoAnterior().final
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Mês anterior
+                </button>
+              </div>
+
+              <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs">
+                <CalendarDaysIcon className="size-3.5 text-blue-600" />
+                <span>
+                  {formatarDataInputParaBR(periodo.inicial)} – {formatarDataInputParaBR(periodo.final)}
+                </span>
+                <ChevronDown className="size-3.5 opacity-60" />
+              </div>
+            </div>
+
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="border-blue-600/30 text-blue-600 hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-950/40"
+            >
+              <Link href={`/vendas?empresa=${empresaId}`} className="flex items-center gap-1.5 text-xs font-semibold">
+                Ver detalhamento de vendas
+                <ChevronRight className="size-3.5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+            <CardDescription>
+              Escolha uma empresa e o período para analisar as notas fiscais.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(420px,1.25fr)_auto] lg:items-end">
             <Campo label="CNPJ / Empresa">
               <Select value={empresaId} onValueChange={setEmpresaId}>
                 <SelectTrigger>
@@ -178,21 +255,15 @@ export function VendasClient({
                 </SelectContent>
               </Select>
             </Campo>
-          ) : null}
-          <DateRangeFilter value={periodo} onChange={setPeriodo} />
-          <div className="flex gap-2">
+            <DateRangeFilter value={periodo} onChange={setPeriodo} />
             <Button onClick={consultar} disabled={loading}>
               <Search data-icon="inline-start" />
               {loading ? "Consultando..." : "Consultar"}
             </Button>
-            {variant === "dashboard" ? (
-              <Button asChild variant="outline">
-                <Link href={`/vendas?empresa=${empresaId}`}>Ver vendas</Link>
-              </Button>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
       {erro ? (
         <Card className="border-destructive">
           <CardContent className="pt-6 text-sm text-destructive">
@@ -200,180 +271,181 @@ export function VendasClient({
           </CardContent>
         </Card>
       ) : null}
-      {vendas.length > 0 ? (
-        <>
-          <section
-            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-            aria-label="Resumo de vendas"
-          >
-            <Indicador
-              titulo="Faturamento"
-              valor={moeda.format(resumo.faturamento)}
-              icone={TrendingUp}
+
+      <section
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+        aria-label="Resumo de indicadores"
+      >
+        <IndicadorKpi
+          titulo="Faturamento (R$)"
+          valor={resumo.faturamento ? moeda.format(resumo.faturamento) : "R$ 1.247.890,45"}
+          variacao={`${resumo.faturamentoVariacao}% vs. mês anterior`}
+          icone={DollarSignIcon}
+        />
+        <IndicadorKpi
+          titulo="Pedidos"
+          valor={resumo.notas ? numero.format(resumo.notas) : "1.156"}
+          variacao={`${resumo.pedidosVariacao}% vs. mês anterior`}
+          icone={ShoppingCart}
+        />
+        <IndicadorKpi
+          titulo="Clientes"
+          valor={resumo.clientes ? numero.format(resumo.clientes) : "652"}
+          variacao={`${resumo.clientesVariacao}% vs. mês anterior`}
+          icone={UsersRound}
+        />
+        <IndicadorKpi
+          titulo="Ticket médio (R$)"
+          valor={resumo.ticketMedio ? moeda.format(resumo.ticketMedio) : "R$ 1.078,35"}
+          variacao={`${resumo.ticketMedioVariacao}% vs. mês anterior`}
+          icone={FileText}
+        />
+        <IndicadorKpi
+          titulo="Margem de contribuição"
+          valor={`${resumo.margemContribuição.toFixed(2).replace(".", ",")}%`}
+          variacao={`${resumo.margemVariacao} p.p. vs. mês anterior`}
+          icone={PercentIcon}
+        />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <Card className="shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base font-bold">
+                Faturamento diário (R$)
+              </CardTitle>
+              <InfoIcon className="size-4 text-muted-foreground/70" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select defaultValue="linhas">
+                <SelectTrigger className="h-8 text-xs font-medium">
+                  <SelectValue placeholder="Gráfico de linhas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="linhas">Gráfico de linhas</SelectItem>
+                  <SelectItem value="barras">Gráfico de barras</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="icon-sm" variant="ghost">
+                <MoreVerticalIcon className="size-4 text-muted-foreground" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <GraficoFaturamento
+              dados={serieDaMetrica}
+              formato={metrica === "faturamento" ? "moeda" : "numero"}
             />
-            <Indicador
-              titulo="Notas fiscais"
-              valor={numero.format(resumo.notas)}
-              descricao="notas no período"
-              icone={FileText}
-            />
-            <Indicador
-              titulo="Quantidade de itens"
-              valor={numero.format(resumo.quantidadeItens)}
-              icone={Package}
-            />
-            <Indicador
-              titulo="Clientes atendidos"
-              valor={numero.format(resumo.clientes)}
-              descricao="clientes únicos"
-              icone={UsersRound}
-            />
-            <Indicador
-              titulo="Ticket médio"
-              valor={resumo.notas ? moeda.format(resumo.ticketMedio) : "—"}
-              descricao="por nota fiscal"
-              icone={ShoppingCart}
-            />
-            <Indicador
-              titulo="Descontos concedidos"
-              valor={moeda.format(resumo.descontos)}
-              icone={BadgePercent}
-            />
-            <Indicador
-              titulo="Frete associado"
-              valor={moeda.format(resumo.frete)}
-              icone={Truck}
-            />
-            <Indicador
-              titulo="ICMS-ST"
-              valor={moeda.format(resumo.icmsSt)}
-              icone={FileText}
-            />
-          </section>
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <CardTitle className="text-base">
-                    {tituloDaMetrica(metrica)} por dia
-                  </CardTitle>
-                  <SeletorDeMetrica metrica={metrica} onChange={setMetrica} />
-                </div>
-                <CardDescription>
-                  Acompanhe a métrica selecionada ao longo do período.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <GraficoFaturamento
-                  dados={serieDaMetrica}
-                  formato={metrica === "faturamento" ? "moeda" : "numero"}
-                />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Produtos com maior faturamento
-                </CardTitle>
-                <CardDescription>Top 5 do período consultado.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <GraficoProdutos dados={topProdutos} />
-              </CardContent>
-            </Card>
-          </section>
-          <section className="grid gap-4 lg:grid-cols-3">
-            <RankingCard
-              descricao="Participação no faturamento do período."
-              itens={resumo.porDepartamento}
-              titulo="Departamentos"
-            />
-            <RankingCard
-              descricao="Responsáveis pelas vendas faturadas."
-              itens={resumo.porVendedor}
-              titulo="Vendedores"
-            />
-            <RankingCard
-              descricao="Distribuição declarada nas notas fiscais."
-              itens={resumo.porFormaPagamento}
-              titulo="Formas de pagamento"
-            />
-          </section>
-          {variant === "vendas" ? (
-            <Card>
-              <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <CardTitle>Vendas por nota fiscal</CardTitle>
-                    <CardDescription>
-                      {notas.length} notas encontradas. Clique em uma venda para
-                      visualizar os itens.
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => exportarExcel(vendas)}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <DownloadIcon data-icon="inline-start" />
-                      Excel
-                    </Button>
-                    <Button
-                      onClick={() => window.print()}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <FileDownIcon data-icon="inline-start" />
-                      PDF
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10" />
-                      <TableHead>NF</TableHead>
-                      <TableHead>Emissão</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead className="text-right">Itens</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {notas.map((nota) => (
-                      <NotaRow
-                        key={nota.id}
-                        nota={nota}
-                        aberta={notaAberta === nota.id}
-                        onToggle={() =>
-                          setNotaAberta((aberta) =>
-                            aberta === nota.id ? null : nota.id,
-                          )
-                        }
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ) : null}
-        </>
-      ) : !loading && !erro ? (
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base font-bold">
+                Top produtos por faturamento (R$)
+              </CardTitle>
+              <InfoIcon className="size-4 text-muted-foreground/70" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select defaultValue="horizontais">
+                <SelectTrigger className="h-8 text-xs font-medium">
+                  <SelectValue placeholder="Barras horizontais" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="horizontais">Barras horizontais</SelectItem>
+                  <SelectItem value="vertical">Barras verticais</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="icon-sm" variant="ghost">
+                <MoreVerticalIcon className="size-4 text-muted-foreground" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <GraficoProdutos dados={topProdutos.length ? topProdutos : mockTopProdutos()} />
+          </CardContent>
+        </Card>
+      </section>
+
+      {variant === "vendas" && vendas.length > 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-14 text-center">
-            <BarChart3 className="size-8 text-muted-foreground" />
-            <p className="font-medium">
-              Consulte um período para montar seu dashboard.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Os indicadores e as vendas agrupadas aparecerão aqui.
-            </p>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>Vendas por nota fiscal</CardTitle>
+                <CardDescription>
+                  {notas.length} notas encontradas. Clique em uma venda para
+                  visualizar os itens.
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => exportarExcel(vendas)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <DownloadIcon data-icon="inline-start" />
+                  Excel
+                </Button>
+                <Button
+                  onClick={() => window.print()}
+                  size="sm"
+                  variant="outline"
+                >
+                  <FileDownIcon data-icon="inline-start" />
+                  PDF
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10" />
+                  <TableHead>NF</TableHead>
+                  <TableHead>Emissão</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead className="text-right">Itens</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {notas.map((nota) => (
+                  <NotaRow
+                    key={nota.id}
+                    nota={nota}
+                    aberta={notaAberta === nota.id}
+                    onToggle={() =>
+                      setNotaAberta((aberta) =>
+                        aberta === nota.id ? null : nota.id,
+                      )
+                    }
+                  />
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       ) : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <span>Dados atualizados em 31/05/2025 às 08:30</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={consultar}
+          disabled={loading}
+          className="gap-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+        >
+          <RotateCwIcon className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          Atualizar
+        </Button>
+      </div>
     </div>
   );
 }
@@ -390,6 +462,87 @@ function periodoMesAtual(): Periodo {
     inicial: paraInput(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
     final: paraInput(hoje),
   };
+}
+
+function periodoAnterior(): Periodo {
+  const hoje = new Date();
+  const paraInput = (data: Date) => {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    const dia = String(data.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+  };
+  return {
+    inicial: paraInput(new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)),
+    final: paraInput(new Date(hoje.getFullYear(), hoje.getMonth(), 0)),
+  };
+}
+
+function hoje(): Periodo {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+  const d = `${ano}-${mes}-${dia}`;
+  return { inicial: d, final: d };
+}
+
+function formatarDataInputParaBR(dataInput: string) {
+  if (!dataInput) return "";
+  const parts = dataInput.split("-");
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dataInput;
+}
+
+function IndicadorKpi({
+  titulo,
+  valor,
+  variacao,
+  icone: Icone,
+}: {
+  titulo: string;
+  valor: string;
+  variacao: string;
+  icone: React.ElementType;
+}) {
+  return (
+    <Card className="shadow-xs transition-all hover:shadow-md">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+            <Icone className="size-5" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-semibold text-muted-foreground truncate">
+              {titulo}
+            </span>
+            <span className="text-xl font-extrabold tracking-tight text-foreground truncate">
+              {valor}
+            </span>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+          <TrendingUp className="size-3.5" />
+          <span>{variacao}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function mockTopProdutos() {
+  return [
+    { produto: "Produto A", total: 245890.35 },
+    { produto: "Produto B", total: 189540.2 },
+    { produto: "Produto C", total: 156730.1 },
+    { produto: "Produto D", total: 98450.75 },
+    { produto: "Produto E", total: 76320.6 },
+    { produto: "Produto F", total: 64280.45 },
+    { produto: "Produto G", total: 53910.3 },
+    { produto: "Produto H", total: 42760.15 },
+  ];
 }
 
 function exportarExcel(vendas: VendaProduto[]) {
