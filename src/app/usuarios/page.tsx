@@ -8,7 +8,7 @@ import { UsuariosClient } from "@/components/usuarios-client";
 export default async function UsuariosPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
-  if (session.user.role !== "admin") redirect("/");
+  if (session.user.role !== "admin") redirect("/dashboard");
 
   const [usuarios, empresas] = await Promise.all([
     prisma.user.findMany({

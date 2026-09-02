@@ -155,118 +155,227 @@ export function VendasClient({
     [empresas, empresaId],
   );
 
-  return (
-    <div className="flex flex-col gap-6">
-      {variant === "dashboard" ? (
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-              Dashboard
-            </h1>
-            <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <span>Empresa selecionada:</span>
-              <span className="flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400">
-                <Building2Icon className="size-4" />
-                {empresaAtual?.razaoSocial ?? "Empresa Demonstração Ltda."}
-              </span>
-            </div>
-          </div>
+  const [buscaVenda, setBuscaVenda] = useState("");
 
-          <div className="flex flex-col items-start gap-2.5 md:items-end">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex rounded-lg border bg-muted/40 p-1">
-                <button
-                  type="button"
-                  onClick={() => setPeriodo(hoje())}
-                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                    periodo.inicial === hoje().inicial && periodo.final === hoje().final
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Hoje
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPeriodo(periodoMesAtual())}
-                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                    periodo.inicial === periodoMesAtual().inicial && periodo.final === periodoMesAtual().final
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Mês atual
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPeriodo(periodoAnterior())}
-                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                    periodo.inicial === periodoAnterior().inicial && periodo.final === periodoAnterior().final
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Mês anterior
-                </button>
+  const notasFiltradas = useMemo(() => {
+    if (!buscaVenda.trim()) return notas;
+    const termo = buscaVenda.toLowerCase().trim();
+    return notas.filter(
+      (n) =>
+        n.numero.toLowerCase().includes(termo) ||
+        n.cliente.toLowerCase().includes(termo) ||
+        n.cidade?.toLowerCase().includes(termo),
+    );
+  }, [notas, buscaVenda]);
+
+  if (variant === "vendas") {
+    return (
+      <div className="flex flex-col gap-6">
+        <Card className="border-border/60 shadow-sm backdrop-blur-md">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold tracking-tight">
+                  Consulta de Vendas
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Selecione o período desejado para consultar o histórico completo de notas fiscais faturadas.
+                </CardDescription>
               </div>
-
-              <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs">
-                <CalendarDaysIcon className="size-3.5 text-blue-600" />
-                <span>
-                  {formatarDataInputParaBR(periodo.inicial)} – {formatarDataInputParaBR(periodo.final)}
-                </span>
-                <ChevronDown className="size-3.5 opacity-60" />
+              <div className="flex items-center gap-2 pt-2 sm:pt-0">
+                <Button
+                  onClick={consultar}
+                  disabled={loading}
+                  className="bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
+                >
+                  <Search className="size-4" />
+                  {loading ? "Buscando..." : "Consultar Vendas"}
+                </Button>
               </div>
             </div>
-
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="border-blue-600/30 text-blue-600 hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-950/40"
-            >
-              <Link href={`/vendas?empresa=${empresaId}`} className="flex items-center gap-1.5 text-xs font-semibold">
-                Ver detalhamento de vendas
-                <ChevronRight className="size-3.5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-            <CardDescription>
-              Escolha uma empresa e o período para analisar as notas fiscais.
-            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(420px,1.25fr)_auto] lg:items-end">
-            <Campo label="CNPJ / Empresa">
-              <Select value={empresaId} onValueChange={setEmpresaId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empresas.map((empresa) => (
-                    <SelectItem key={empresa.id} value={empresa.id}>
-                      {empresa.razaoSocial} ({empresa.cnpj})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Campo>
+          <CardContent className="border-t pt-4">
             <DateRangeFilter value={periodo} onChange={setPeriodo} />
-            <Button onClick={consultar} disabled={loading}>
-              <Search data-icon="inline-start" />
-              {loading ? "Consultando..." : "Consultar"}
-            </Button>
           </CardContent>
         </Card>
-      )}
+
+        {erro ? (
+          <Card className="border-destructive/50 bg-destructive/5 shadow-xs">
+            <CardContent className="pt-6 text-sm font-medium text-destructive">
+              {erro}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-base font-bold">
+                  Notas Fiscais Emitidas
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {notasFiltradas.length} notas encontradas. Clique no ícone de expansão para visualizar os itens da nota.
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[200px] sm:w-64">
+                  <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Buscar NF ou cliente..."
+                    value={buscaVenda}
+                    onChange={(e) => setBuscaVenda(e.target.value)}
+                    className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </div>
+                <Button
+                  onClick={() => exportarExcel(vendas)}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs font-semibold"
+                >
+                  <DownloadIcon className="size-3.5" />
+                  Excel
+                </Button>
+                <Button
+                  onClick={() => window.print()}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs font-semibold"
+                >
+                  <FileDownIcon className="size-3.5" />
+                  PDF
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {vendas.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 text-xs font-bold">
+                    <TableHead className="w-10" />
+                    <TableHead>NF</TableHead>
+                    <TableHead>Emissão</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="text-right">Itens</TableHead>
+                    <TableHead className="text-right">Total (R$)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {notasFiltradas.map((nota) => (
+                    <NotaRow
+                      key={nota.id}
+                      nota={nota}
+                      aberta={notaAberta === nota.id}
+                      onToggle={() =>
+                        setNotaAberta((aberta) =>
+                          aberta === nota.id ? null : nota.id,
+                        )
+                      }
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            ) : !loading && !erro ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
+                <BarChart3 className="size-8 text-muted-foreground/60" />
+                <p className="font-semibold text-foreground">
+                  Nenhuma venda carregada para o período.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Selecione um período acima e clique em &quot;Consultar Vendas&quot;.
+                </p>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Dashboard Variant View
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            Dashboard
+          </h1>
+          <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>Empresa selecionada:</span>
+            <span className="flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400">
+              <Building2Icon className="size-4" />
+              {empresaAtual?.razaoSocial ?? "Empresa Demonstração Ltda."}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start gap-2.5 md:items-end">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border bg-muted/40 p-1">
+              <button
+                type="button"
+                onClick={() => setPeriodo(hoje())}
+                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                  periodo.inicial === hoje().inicial && periodo.final === hoje().final
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Hoje
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodo(periodoMesAtual())}
+                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                  periodo.inicial === periodoMesAtual().inicial && periodo.final === periodoMesAtual().final
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Mês atual
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodo(periodoAnterior())}
+                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                  periodo.inicial === periodoAnterior().inicial && periodo.final === periodoAnterior().final
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Mês anterior
+              </button>
+            </div>
+
+            <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs">
+              <CalendarDaysIcon className="size-3.5 text-blue-600" />
+              <span>
+                {formatarDataInputParaBR(periodo.inicial)} – {formatarDataInputParaBR(periodo.final)}
+              </span>
+              <ChevronDown className="size-3.5 opacity-60" />
+            </div>
+          </div>
+
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-blue-600/30 text-blue-600 hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-950/40"
+          >
+            <Link href={`/vendas?empresa=${empresaId}`} className="flex items-center gap-1.5 text-xs font-semibold">
+              Ver detalhamento de vendas
+              <ChevronRight className="size-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
 
       {erro ? (
-        <Card className="border-destructive">
-          <CardContent className="pt-6 text-sm text-destructive">
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-6 text-sm font-medium text-destructive">
             {erro}
           </CardContent>
         </Card>
@@ -309,7 +418,7 @@ export function VendasClient({
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <Card className="shadow-xs">
+        <Card className="shadow-xs border-border/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base font-bold">
@@ -340,7 +449,7 @@ export function VendasClient({
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs">
+        <Card className="shadow-xs border-border/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base font-bold">
@@ -369,67 +478,23 @@ export function VendasClient({
         </Card>
       </section>
 
-      {variant === "vendas" && vendas.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <CardTitle>Vendas por nota fiscal</CardTitle>
-                <CardDescription>
-                  {notas.length} notas encontradas. Clique em uma venda para
-                  visualizar os itens.
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => exportarExcel(vendas)}
-                  size="sm"
-                  variant="outline"
-                >
-                  <DownloadIcon data-icon="inline-start" />
-                  Excel
-                </Button>
-                <Button
-                  onClick={() => window.print()}
-                  size="sm"
-                  variant="outline"
-                >
-                  <FileDownIcon data-icon="inline-start" />
-                  PDF
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10" />
-                  <TableHead>NF</TableHead>
-                  <TableHead>Emissão</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead className="text-right">Itens</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {notas.map((nota) => (
-                  <NotaRow
-                    key={nota.id}
-                    nota={nota}
-                    aberta={notaAberta === nota.id}
-                    onToggle={() =>
-                      setNotaAberta((aberta) =>
-                        aberta === nota.id ? null : nota.id,
-                      )
-                    }
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      ) : null}
+      <section className="grid gap-4 lg:grid-cols-3">
+        <RankingCard
+          descricao="Participação no faturamento do período."
+          itens={resumo.porDepartamento}
+          titulo="Departamentos"
+        />
+        <RankingCard
+          descricao="Responsáveis pelas vendas faturadas."
+          itens={resumo.porVendedor}
+          titulo="Vendedores"
+        />
+        <RankingCard
+          descricao="Distribuição declarada nas notas fiscais."
+          itens={resumo.porFormaPagamento}
+          titulo="Formas de pagamento"
+        />
+      </section>
 
       <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">

@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { LogOutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { EmpresaNavSelect } from "@/components/empresa-nav-select";
+import { NavLinks } from "@/components/nav-links";
 import { ChevronDownIcon, HelpCircleIcon, UserIcon, LayersIcon } from "lucide-react";
 import { prisma } from "@/lib/database";
 
@@ -48,58 +49,7 @@ export async function NavApp({
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-1 sm:flex text-sm font-medium">
-            <Link
-              href="/dashboard"
-              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 text-blue-600 dark:text-blue-400 font-semibold"
-            >
-              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
-              Dashboard
-              <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-blue-600 dark:bg-blue-500" />
-            </Link>
-
-            <Link
-              href="/vendas"
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 3v18h18" />
-                <path d="m19 9-5 5-4-4-3 3" />
-              </svg>
-              Vendas
-              <ChevronDownIcon className="size-3.5 opacity-60" />
-            </Link>
-
-            <Link
-              href="https://ajuda.trilinksoftware.com.br/"
-              target="_blank"
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <HelpCircleIcon className="size-4" />
-              Ajuda
-              <ChevronDownIcon className="size-3.5 opacity-60" />
-            </Link>
-
-            {isAdmin && (
-              <>
-                <Link
-                  href="/usuarios"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Usuários
-                </Link>
-                <Link
-                  href="/configuracoes"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Configurações
-                </Link>
-              </>
-            )}
-          </nav>
+          <NavLinks isAdmin={isAdmin} />
         </div>
 
         <div className="flex items-center gap-3">

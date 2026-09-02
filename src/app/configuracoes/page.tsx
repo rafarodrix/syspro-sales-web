@@ -8,7 +8,7 @@ import { ConfiguracaoClient } from "@/components/configuracao-client";
 export default async function ConfiguracoesPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
-  if (session.user.role !== "admin") redirect("/");
+  if (session.user.role !== "admin") redirect("/dashboard");
 
   const [configuracao, empresas] = await Promise.all([
     prisma.configuracao.findFirst(),
