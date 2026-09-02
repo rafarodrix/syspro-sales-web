@@ -5,6 +5,18 @@ import { prisma } from "@/lib/database";
 import { consultarVendas, SysproApiError } from "@/lib/syspro-api";
 
 export async function POST(request: NextRequest) {
+  try {
+    return await handleVendas(request);
+  } catch (e) {
+    console.error("[api/vendas] ERRO NAO TRATADO:", e);
+    return NextResponse.json(
+      { error: "Erro interno ao consultar vendas" },
+      { status: 500 },
+    );
+  }
+}
+
+async function handleVendas(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });

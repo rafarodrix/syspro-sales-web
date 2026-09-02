@@ -78,8 +78,9 @@ export function VendasClient({ empresas }: Props) {
     setLoading(true);
     setErro(null);
     try {
-      const [d, m, a] = dtInicial.split("-");
-      const [d2, m2, a2] = dtFinal.split("-");
+      // input type=date entrega AAAA-MM-DD -> converte para DD/MM/AAAA
+      const [a, m, d] = dtInicial.split("-");
+      const [a2, m2, d2] = dtFinal.split("-");
       const res = await fetch("/api/vendas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
