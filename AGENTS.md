@@ -7,3 +7,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# syspro-sales-web — regras do projeto
+
+Aplicação web **local** de consulta de vendas do Syspro ERP (Next.js 16 + Prisma 7 + Better Auth + SQLite). Repo: `github.com/rafarodrix/syspro-sales-web`.
+
+## Skills do projeto (carregar ANTES de tarefas relacionadas)
+Este repo versiona skills próprias em `.skills/` (formato SKILL.md). Consulte-as conforme o tema:
+
+- **`.skills/syspro-sales-web/SKILL.md`** — arquitetura, estrutura, comandos e **armadilhas** do app. Leia antes de QUALQUER mudança de código.
+- **`.skills/syspro-api-exporta/SKILL.md`** — API de exportação do Syspro: URLs (com/sem IIS), datas DD/MM/AAAA, rotas, campos. Consulte ao mexer em consultas.
+- **`.skills/web-code-quality/SKILL.md`** — fluxo de dev em 4 etapas (questionar → arquitetar → implementar → revisar) e checklists.
+
+## Regras rápidas
+- **Navegador nunca chama a API do Syspro** — sempre via backend (`app/api/*`), que filtra por `empresa_codigo`.
+- **Multi-empresa por usuário**: cada usuário vê só os CNPJs em `UserEmpresa`; admin vê tudo.
+- Datas para a API do Syspro: **DD/MM/AAAA** (nunca ISO/AAAA-MM-DD) — input date converte com split `[a,m,d]`.
+- Valide com `npx tsc --noEmit` e `npm run build` antes de declarar pronto; teste o fluxo real (login + consulta).
+- Ignore o ruído de tipo de node_modules que aparece quando o lint roda por arquivo isolado; o check do projeto é o que vale.
