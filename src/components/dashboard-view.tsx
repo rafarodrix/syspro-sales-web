@@ -4,8 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Building2Icon,
-  CalendarDaysIcon,
-  ChevronDown,
   ChevronRight,
   DollarSignIcon,
   FileText,
@@ -24,7 +22,11 @@ import {
   resumoVendas,
 } from "@/lib/vendas";
 import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
-import { type Periodo } from "@/components/date-range-filter";
+import {
+  DateRangeFilter,
+  periodoMesAtual,
+  type Periodo,
+} from "@/components/date-range-filter";
 import { KpiCard } from "@/components/kpi-card";
 import { RankingCard } from "@/components/ranking-card";
 import { toast } from "sonner";
@@ -142,67 +144,12 @@ export function DashboardView({
         </div>
 
         <div className="flex flex-col items-start gap-2.5 md:items-end">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-lg border bg-muted/40 p-1">
-              <button
-                type="button"
-                onClick={() => {
-                  const proximoPeriodo = hoje();
-                  setPeriodo(proximoPeriodo);
-                  consultar(proximoPeriodo);
-                }}
-                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                  periodo.inicial === hoje().inicial &&
-                  periodo.final === hoje().final
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Hoje
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const proximoPeriodo = periodoMesAtual();
-                  setPeriodo(proximoPeriodo);
-                  consultar(proximoPeriodo);
-                }}
-                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                  periodo.inicial === periodoMesAtual().inicial &&
-                  periodo.final === periodoMesAtual().final
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Mês atual
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const proximoPeriodo = periodoAnterior();
-                  setPeriodo(proximoPeriodo);
-                  consultar(proximoPeriodo);
-                }}
-                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                  periodo.inicial === periodoAnterior().inicial &&
-                  periodo.final === periodoAnterior().final
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Mês anterior
-              </button>
-            </div>
-
-            <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs">
-              <CalendarDaysIcon className="size-3.5 text-blue-600" />
-              <span>
-                {formatarDataInputParaBR(periodo.inicial)} –{" "}
-                {formatarDataInputParaBR(periodo.final)}
-              </span>
-              <ChevronDown className="size-3.5 opacity-60" />
-            </div>
-          </div>
+          <DateRangeFilter
+            value={periodo}
+            onChange={setPeriodo}
+            onConsultar={consultar}
+            loading={loading}
+          />
 
           <Button
             asChild
@@ -367,50 +314,4 @@ export function DashboardView({
       </div>
     </div>
   );
-}
-
-function periodoMesAtual(): Periodo {
-  const hoje = new Date();
-  const paraInput = (data: Date) => {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, "0");
-    const dia = String(data.getDate()).padStart(2, "0");
-    return `${ano}-${mes}-${dia}`;
-  };
-  return {
-    inicial: paraInput(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
-    final: paraInput(hoje),
-  };
-}
-
-function periodoAnterior(): Periodo {
-  const hoje = new Date();
-  const paraInput = (data: Date) => {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, "0");
-    const dia = String(data.getDate()).padStart(2, "0");
-    return `${ano}-${mes}-${dia}`;
-  };
-  return {
-    inicial: paraInput(new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)),
-    final: paraInput(new Date(hoje.getFullYear(), hoje.getMonth(), 0)),
-  };
-}
-
-function hoje(): Periodo {
-  const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-  const dia = String(hoje.getDate()).padStart(2, "0");
-  const d = `${ano}-${mes}-${dia}`;
-  return { inicial: d, final: d };
-}
-
-function formatarDataInputParaBR(dataInput: string) {
-  if (!dataInput) return "";
-  const parts = dataInput.split("-");
-  if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  }
-  return dataInput;
 }

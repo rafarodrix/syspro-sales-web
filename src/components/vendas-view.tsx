@@ -157,7 +157,10 @@ export function VendasView({
           Relatório de Vendas — Syspro ERP
         </h1>
         <p className="text-xs text-slate-700">
-          Empresa: {empresaAtual?.razaoSocial ?? "Empresa"} | CNPJ: {empresaAtual?.cnpj} | Período: {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
+          Empresa: {empresaAtual?.razaoSocial ?? "Empresa"} | CNPJ:{" "}
+          {empresaAtual?.cnpj} | Período:{" "}
+          {formatarDataInputParaBR(periodo.inicial)} a{" "}
+          {formatarDataInputParaBR(periodo.final)}
         </p>
       </div>
 
@@ -288,33 +291,33 @@ export function VendasView({
                   </span>
                 </div>
               </div>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 text-xs font-bold">
-                  <TableHead className="w-10" />
-                  <TableHead>NF</TableHead>
-                  <TableHead>Emissão</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead className="text-right">Itens</TableHead>
-                  <TableHead className="text-right">Total (R$)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {notasFiltradas.map((nota) => (
-                  <NotaRow
-                    key={nota.id}
-                    nota={nota}
-                    aberta={notaAberta === nota.id}
-                    onToggle={() =>
-                      setNotaAberta((aberta) =>
-                        aberta === nota.id ? null : nota.id,
-                      )
-                    }
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 text-xs font-bold">
+                    <TableHead className="w-10" />
+                    <TableHead>NF</TableHead>
+                    <TableHead>Emissão</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="text-right">Itens</TableHead>
+                    <TableHead className="text-right">Total (R$)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {notasFiltradas.map((nota) => (
+                    <NotaRow
+                      key={nota.id}
+                      nota={nota}
+                      aberta={notaAberta === nota.id}
+                      onToggle={() =>
+                        setNotaAberta((aberta) =>
+                          aberta === nota.id ? null : nota.id,
+                        )
+                      }
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           ) : !loading && !erro ? (
             <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
               <BarChart3 className="size-8 text-muted-foreground/60" />
