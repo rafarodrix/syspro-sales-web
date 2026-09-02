@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================================
+// Better Auth (núcleo)
+// ============================================================
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  emailVerified Boolean  @default(false)
+  image        String?
+  password     String? // hash (Better Auth)
+  role         String    @default("user") // "admin" | "user"
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+  empresas UserEmpresa[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                     String    @id @default(cuid())
+  accountId              String
+  providerId             String
+  userId                 String
+  accessToken            String?
+  refreshToken           String?
+  idToken                String?
+  accessTokenExpiresAt   DateTime?
+  refreshTokenExpiresAt  DateTime?
+  scope                  String?
+  password               String?
+  issuer                 String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([providerId, accountId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ============================================================
+// Domínio Trilink/Syspro
+// ============================================================
+
+// Empresas cadastradas no banco (relação CNPJ <-> empresa_codigo)
+model Empresa {
+  id            String   @id @default(cuid())
+  cnpj          String   @unique // CNPJ do cliente/empresa (somente dígitos)
+  razaoSocial   String
+  empresaCodigo String // empresa_codigo na API do Syspro
+  ativa         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  usuarios UserEmpresa[]
+}
+
+// CNPJs permitidos por usuário
+model UserEmpresa {
+  id        String  @id @default(cuid())
+  userId    String
+  empresaId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, empresaId])
+}
+
+// Configurações da aplicação (URL/porta da API Syspro, com/sem IIS)
+model Configuracao {
+  id             String  @id @default("default")
+  sysproBaseUrl  String  @default("http://localhost:8080")
+  sysproUseIis   String  @default("false") // "true" | "false"
+  updatedAt      DateTime @updatedAt
+}
