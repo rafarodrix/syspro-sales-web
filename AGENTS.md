@@ -18,6 +18,7 @@ Este repo versiona skills próprias em `.skills/` (formato SKILL.md). Consulte-a
 - **`.skills/syspro-sales-web/SKILL.md`** — arquitetura, estrutura, comandos e **armadilhas** do app. Leia antes de QUALQUER mudança de código.
 - **`.skills/syspro-api-exporta/SKILL.md`** — API de exportação do Syspro: URLs (com/sem IIS), datas DD/MM/AAAA, rotas, campos. Consulte ao mexer em consultas.
 - **`.skills/web-code-quality/SKILL.md`** — fluxo de dev em 4 etapas (questionar → arquitetar → implementar → revisar) e checklists.
+- **`.skills/syspro-sales-web-deploy/SKILL.md`** — instalar/atualizar o app no servidor do cliente (PM2 + standalone + .env de produção).
 
 ## Regras rápidas
 - **Navegador nunca chama a API do Syspro** — sempre via backend (`app/api/*`), que filtra por `empresa_codigo`.
