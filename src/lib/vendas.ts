@@ -119,9 +119,8 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
 
   const notas = agruparVendasPorNota(vendas).length;
   const ticketMedio = notas ? faturamento / notas : 0;
-  // Margem de contribuição estimada: (Faturamento - Descontos - ICMS-ST - Frete) / Faturamento * 100
   const receitaLiquida = faturamento - descontos - icmsSt - frete;
-  const margemContribuição = faturamento > 0 ? (receitaLiquida / faturamento) * 100 : 28.62;
+  const margemContribuição = faturamento > 0 ? (receitaLiquida / faturamento) * 100 : 0;
 
   return {
     faturamento,
@@ -133,11 +132,11 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
     clientes: clientes.size,
     ticketMedio,
     margemContribuição,
-    faturamentoVariacao: 12.45,
-    pedidosVariacao: 8.21,
-    clientesVariacao: 8.76,
-    ticketMedioVariacao: 3.14,
-    margemVariacao: 2.11,
+    faturamentoVariacao: 0,
+    pedidosVariacao: 0,
+    clientesVariacao: 0,
+    ticketMedioVariacao: 0,
+    margemVariacao: 0,
     porDepartamento: rankear(departamentos, faturamento),
     porVendedor: rankear(vendedores, faturamento),
     porFormaPagamento: rankear(formasPagamento, faturamento),

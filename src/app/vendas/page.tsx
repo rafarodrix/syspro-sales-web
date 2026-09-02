@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { NavApp } from "@/components/nav-app";
-import { VendasClient } from "@/components/vendas-client";
+import { VendasView } from "@/components/vendas-view";
 
 export default async function VendasPage({
   searchParams,
@@ -30,8 +30,7 @@ export default async function VendasPage({
     <div>
       <NavApp empresaSelecionada={empresa} />
       <main className="mx-auto max-w-6xl space-y-6 p-6">
-        <h1 className="text-2xl font-semibold">Consulta de Vendas</h1>
-        <VendasClient
+        <VendasView
           empresas={empresas.map((e) => ({
             id: e.id,
             cnpj: e.cnpj,

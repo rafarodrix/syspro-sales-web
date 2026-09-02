@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { NavApp } from "@/components/nav-app";
-import { VendasClient } from "@/components/vendas-client";
+import { DashboardView } from "@/components/dashboard-view";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { consultarVendas, type VendaProduto } from "@/lib/syspro-api";
@@ -62,7 +62,7 @@ export default async function DashboardPage({
     <div>
       <NavApp empresaSelecionada={empresa?.id} />
       <main className="mx-auto max-w-7xl space-y-6 p-6">
-        <VendasClient
+        <DashboardView
           empresas={empresas.map((item) => ({
             id: item.id,
             cnpj: item.cnpj,
@@ -72,7 +72,6 @@ export default async function DashboardPage({
           initialPeriod={periodo}
           initialVendas={vendas}
           initialError={erroInicial}
-          variant="dashboard"
         />
       </main>
     </div>
