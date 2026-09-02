@@ -13,6 +13,7 @@ export const auth = betterAuth({
     "http://localhost:3000",
     "http://192.168.1.2:3000",
     "http://100.110.105.63:3000",
+    "http://26.68.175.115:3000", // Radmin VPN (acesso ao cliente)
   ],
   session: {
     cookieCache: {
