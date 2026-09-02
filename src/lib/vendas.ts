@@ -230,3 +230,13 @@ function dataParaOrdem(data: string): number {
   if (!dia || !mes || !ano) return 0;
   return Date.UTC(ano, mes - 1, dia);
 }
+
+export function formatarDataInputParaBR(dataInput: string): string {
+  if (!dataInput) return "";
+  const parts = dataInput.split("-");
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dataInput;
+}
+

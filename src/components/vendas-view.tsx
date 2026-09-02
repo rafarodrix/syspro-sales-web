@@ -13,6 +13,7 @@ import type { VendaProduto } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
   dataInputParaSyspro,
+  formatarDataInputParaBR,
   paraNumero,
 } from "@/lib/vendas";
 import {
@@ -37,6 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface EmpresaOption {
   id: string;
@@ -79,6 +82,11 @@ export function VendasView({
   const [notaAberta, setNotaAberta] = useState<string | null>(null);
   const [buscaVenda, setBuscaVenda] = useState("");
 
+  const empresaAtual = useMemo(
+    () => empresas.find((e) => e.id === empresaId),
+    [empresas, empresaId],
+  );
+
   const notas = useMemo(() => agruparVendasPorNota(vendas), [vendas]);
 
   const notasFiltradas = useMemo(() => {
@@ -91,6 +99,18 @@ export function VendasView({
         n.cidade?.toLowerCase().includes(termo),
     );
   }, [notas, buscaVenda]);
+
+  const resumoBusca = useMemo(() => {
+    let faturamento = 0;
+    const clientes = new Set<string>();
+    for (const n of notasFiltradas) {
+      faturamento += n.total;
+      if (n.cliente) clientes.add(n.cliente);
+    }
+    const totalNotas = notasFiltradas.length;
+    const ticketMedio = totalNotas ? faturamento / totalNotas : 0;
+    return { faturamento, totalNotas, clientes: clientes.size, ticketMedio };
+  }, [notasFiltradas]);
 
   async function consultar(periodoDaConsulta = periodo) {
     if (!empresaId || !periodoDaConsulta.inicial || !periodoDaConsulta.final) {
@@ -131,8 +151,18 @@ export function VendasView({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Print-Only Header */}
+      <div className="print-only mb-4 border-b pb-3">
+        <h1 className="text-xl font-bold uppercase tracking-wide text-black">
+          Relatório de Vendas — Syspro ERP
+        </h1>
+        <p className="text-xs text-slate-700">
+          Empresa: {empresaAtual?.razaoSocial ?? "Empresa"} | CNPJ: {empresaAtual?.cnpj} | Período: {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
+        </p>
+      </div>
+
       {/* Search & Filter Controls */}
-      <Card className="border-border/60 shadow-sm backdrop-blur-md">
+      <Card className="no-print border-border/60 shadow-sm backdrop-blur-md">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -177,7 +207,7 @@ export function VendasView({
                 expansão para visualizar os itens da nota.
               </CardDescription>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="no-print flex flex-wrap items-center gap-2">
               <div className="relative flex-1 min-w-[200px] sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
                 <input
@@ -210,7 +240,54 @@ export function VendasView({
           </div>
         </CardHeader>
         <CardContent>
-          {vendas.length > 0 ? (
+          {loading ? (
+            <div className="flex flex-col gap-3 py-4">
+              <div className="grid grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 rounded-lg" />
+                ))}
+              </div>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full rounded-md" />
+              ))}
+            </div>
+          ) : vendas.length > 0 ? (
+            <>
+              {/* Summary Bar */}
+              <div className="no-print mb-4 grid grid-cols-2 gap-3 rounded-lg border bg-muted/20 p-3.5 sm:grid-cols-4">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-semibold text-muted-foreground">
+                    Total Faturado
+                  </span>
+                  <span className="text-base font-extrabold text-foreground">
+                    {moeda.format(resumoBusca.faturamento)}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-semibold text-muted-foreground">
+                    Notas Fiscais
+                  </span>
+                  <span className="text-base font-extrabold text-foreground">
+                    {numero.format(resumoBusca.totalNotas)}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-semibold text-muted-foreground">
+                    Clientes Atendidos
+                  </span>
+                  <span className="text-base font-extrabold text-foreground">
+                    {numero.format(resumoBusca.clientes)}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-semibold text-muted-foreground">
+                    Ticket Médio
+                  </span>
+                  <span className="text-base font-extrabold text-foreground">
+                    {moeda.format(resumoBusca.ticketMedio)}
+                  </span>
+                </div>
+              </div>
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 text-xs font-bold">
@@ -237,6 +314,7 @@ export function VendasView({
                 ))}
               </TableBody>
             </Table>
+          </>
           ) : !loading && !erro ? (
             <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
               <BarChart3 className="size-8 text-muted-foreground/60" />

@@ -30,6 +30,7 @@ import { RankingCard } from "@/components/ranking-card";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -233,31 +234,47 @@ export function DashboardView({
         className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
         aria-label="Resumo de indicadores"
       >
-        <KpiCard
-          titulo="Faturamento (R$)"
-          valor={moeda.format(resumo.faturamento)}
-          icone={DollarSignIcon}
-        />
-        <KpiCard
-          titulo="Pedidos"
-          valor={numero.format(resumo.notas)}
-          icone={ShoppingCart}
-        />
-        <KpiCard
-          titulo="Clientes"
-          valor={numero.format(resumo.clientes)}
-          icone={UsersRound}
-        />
-        <KpiCard
-          titulo="Ticket médio (R$)"
-          valor={moeda.format(resumo.ticketMedio)}
-          icone={FileText}
-        />
-        <KpiCard
-          titulo="Descontos concedidos (R$)"
-          valor={moeda.format(resumo.descontos)}
-          icone={BadgePercentIcon}
-        />
+        {loading ? (
+          Array.from({ length: 5 }).map((_, index) => (
+            <Card key={index} className="border-border/60 p-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="size-11 rounded-xl" />
+                <div className="flex flex-col gap-2 flex-1">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-6 w-28" />
+                </div>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <>
+            <KpiCard
+              titulo="Faturamento (R$)"
+              valor={moeda.format(resumo.faturamento)}
+              icone={DollarSignIcon}
+            />
+            <KpiCard
+              titulo="Pedidos"
+              valor={numero.format(resumo.notas)}
+              icone={ShoppingCart}
+            />
+            <KpiCard
+              titulo="Clientes"
+              valor={numero.format(resumo.clientes)}
+              icone={UsersRound}
+            />
+            <KpiCard
+              titulo="Ticket médio (R$)"
+              valor={moeda.format(resumo.ticketMedio)}
+              icone={FileText}
+            />
+            <KpiCard
+              titulo="Descontos concedidos (R$)"
+              valor={moeda.format(resumo.descontos)}
+              icone={BadgePercentIcon}
+            />
+          </>
+        )}
       </section>
 
       {/* Main Charts Row */}
