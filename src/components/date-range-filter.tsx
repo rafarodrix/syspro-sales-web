@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDaysIcon } from "lucide-react";
+import { CalendarDaysIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,21 +16,21 @@ function paraInput(data: Date) {
   const dia = String(data.getDate()).padStart(2, "0");
   return `${ano}-${mes}-${dia}`;
 }
-function periodoAtual(): Periodo {
+export function periodoMesAtual(): Periodo {
   const hoje = new Date();
   return {
     inicial: paraInput(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
     final: paraInput(hoje),
   };
 }
-function periodoAnterior(): Periodo {
+export function periodoMesAnterior(): Periodo {
   const hoje = new Date();
   return {
     inicial: paraInput(new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)),
     final: paraInput(new Date(hoje.getFullYear(), hoje.getMonth(), 0)),
   };
 }
-function hoje(): Periodo {
+export function periodoHoje(): Periodo {
   const data = paraInput(new Date());
   return { inicial: data, final: data };
 }
@@ -38,14 +38,18 @@ function hoje(): Periodo {
 export function DateRangeFilter({
   value,
   onChange,
+  onConsultar,
+  loading = false,
 }: {
   value: Periodo;
   onChange: (periodo: Periodo) => void;
+  onConsultar?: (periodo: Periodo) => void;
+  loading?: boolean;
 }) {
   const presets: { label: string; value: Periodo }[] = [
-    { label: "Hoje", value: hoje() },
-    { label: "Mês atual", value: periodoAtual() },
-    { label: "Mês anterior", value: periodoAnterior() },
+    { label: "Hoje", value: periodoHoje() },
+    { label: "Mês atual", value: periodoMesAtual() },
+    { label: "Mês anterior", value: periodoMesAnterior() },
   ];
   return (
     <div className="flex flex-col gap-3">
@@ -53,7 +57,10 @@ export function DateRangeFilter({
         {presets.map((preset) => (
           <Button
             key={preset.label}
-            onClick={() => onChange(preset.value)}
+            onClick={() => {
+              onChange(preset.value);
+              onConsultar?.(preset.value);
+            }}
             size="sm"
             type="button"
             variant={
@@ -91,10 +98,18 @@ export function DateRangeFilter({
           />
         </div>
       </div>
-      <p className="flex items-center gap-1 text-xs text-muted-foreground">
-        <CalendarDaysIcon /> Período personalizado disponível a qualquer
-        momento.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <CalendarDaysIcon /> Período personalizado disponível a qualquer
+          momento.
+        </p>
+        {onConsultar ? (
+          <Button onClick={() => onConsultar(value)} disabled={loading}>
+            <SearchIcon data-icon="inline-start" />
+            {loading ? "Consultando..." : "Consultar"}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

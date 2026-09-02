@@ -15,10 +15,20 @@ import {
   dataInputParaSyspro,
   paraNumero,
 } from "@/lib/vendas";
-import { DateRangeFilter, type Periodo } from "@/components/date-range-filter";
+import {
+  DateRangeFilter,
+  periodoMesAtual,
+  type Periodo,
+} from "@/components/date-range-filter";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -82,12 +92,12 @@ export function VendasView({
     );
   }, [notas, buscaVenda]);
 
-  async function consultar() {
-    if (!empresaId || !periodo.inicial || !periodo.final) {
+  async function consultar(periodoDaConsulta = periodo) {
+    if (!empresaId || !periodoDaConsulta.inicial || !periodoDaConsulta.final) {
       toast.error("Preencha o período de consulta");
       return;
     }
-    if (periodo.inicial > periodo.final) {
+    if (periodoDaConsulta.inicial > periodoDaConsulta.final) {
       toast.error("A data inicial deve ser anterior à data final");
       return;
     }
@@ -100,8 +110,8 @@ export function VendasView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           empresaId,
-          dtInicial: dataInputParaSyspro(periodo.inicial),
-          dtFinal: dataInputParaSyspro(periodo.final),
+          dtInicial: dataInputParaSyspro(periodoDaConsulta.inicial),
+          dtFinal: dataInputParaSyspro(periodoDaConsulta.final),
         }),
       });
       const json = await resposta.json().catch(() => ({}));
@@ -130,23 +140,19 @@ export function VendasView({
                 Consulta de Vendas
               </CardTitle>
               <CardDescription className="text-xs">
-                Selecione o período desejado para consultar o histórico completo de notas fiscais faturadas.
+                Selecione o período desejado para consultar o histórico completo
+                de notas fiscais faturadas.
               </CardDescription>
-            </div>
-            <div className="flex items-center gap-2 pt-2 sm:pt-0">
-              <Button
-                onClick={consultar}
-                disabled={loading}
-                className="bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
-              >
-                <Search className="size-4" />
-                {loading ? "Buscando..." : "Consultar Vendas"}
-              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="border-t pt-4">
-          <DateRangeFilter value={periodo} onChange={setPeriodo} />
+          <DateRangeFilter
+            value={periodo}
+            onChange={setPeriodo}
+            onConsultar={consultar}
+            loading={loading}
+          />
         </CardContent>
       </Card>
 
@@ -167,7 +173,8 @@ export function VendasView({
                 Notas Fiscais Emitidas
               </CardTitle>
               <CardDescription className="text-xs">
-                {notasFiltradas.length} notas encontradas. Clique no ícone de expansão para visualizar os itens da nota.
+                {notasFiltradas.length} notas encontradas. Clique no ícone de
+                expansão para visualizar os itens da nota.
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -237,7 +244,8 @@ export function VendasView({
                 Nenhuma venda carregada para o período.
               </p>
               <p className="text-xs text-muted-foreground">
-                Selecione um período acima e clique em &quot;Consultar Vendas&quot;.
+                Selecione um período acima e clique em &quot;Consultar
+                Vendas&quot;.
               </p>
             </div>
           ) : null}
@@ -245,20 +253,6 @@ export function VendasView({
       </Card>
     </div>
   );
-}
-
-function periodoMesAtual(): Periodo {
-  const hoje = new Date();
-  const paraInput = (data: Date) => {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, "0");
-    const dia = String(data.getDate()).padStart(2, "0");
-    return `${ano}-${mes}-${dia}`;
-  };
-  return {
-    inicial: paraInput(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
-    final: paraInput(hoje),
-  };
 }
 
 function exportarExcel(vendas: VendaProduto[]) {

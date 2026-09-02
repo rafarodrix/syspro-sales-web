@@ -85,8 +85,8 @@ export function DashboardView({
   );
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas), [vendas]);
 
-  async function consultar() {
-    if (!empresaId || !periodo.inicial || !periodo.final) {
+  async function consultar(periodoDaConsulta = periodo) {
+    if (!empresaId || !periodoDaConsulta.inicial || !periodoDaConsulta.final) {
       toast.error("Preencha o período para atualizar");
       return;
     }
@@ -98,8 +98,8 @@ export function DashboardView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           empresaId,
-          dtInicial: dataInputParaSyspro(periodo.inicial),
-          dtFinal: dataInputParaSyspro(periodo.final),
+          dtInicial: dataInputParaSyspro(periodoDaConsulta.inicial),
+          dtFinal: dataInputParaSyspro(periodoDaConsulta.final),
         }),
       });
       const json = await resposta.json().catch(() => ({}));
@@ -145,7 +145,11 @@ export function DashboardView({
             <div className="inline-flex rounded-lg border bg-muted/40 p-1">
               <button
                 type="button"
-                onClick={() => setPeriodo(hoje())}
+                onClick={() => {
+                  const proximoPeriodo = hoje();
+                  setPeriodo(proximoPeriodo);
+                  consultar(proximoPeriodo);
+                }}
                 className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
                   periodo.inicial === hoje().inicial &&
                   periodo.final === hoje().final
@@ -157,7 +161,11 @@ export function DashboardView({
               </button>
               <button
                 type="button"
-                onClick={() => setPeriodo(periodoMesAtual())}
+                onClick={() => {
+                  const proximoPeriodo = periodoMesAtual();
+                  setPeriodo(proximoPeriodo);
+                  consultar(proximoPeriodo);
+                }}
                 className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
                   periodo.inicial === periodoMesAtual().inicial &&
                   periodo.final === periodoMesAtual().final
@@ -169,7 +177,11 @@ export function DashboardView({
               </button>
               <button
                 type="button"
-                onClick={() => setPeriodo(periodoAnterior())}
+                onClick={() => {
+                  const proximoPeriodo = periodoAnterior();
+                  setPeriodo(proximoPeriodo);
+                  consultar(proximoPeriodo);
+                }}
                 className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
                   periodo.inicial === periodoAnterior().inicial &&
                   periodo.final === periodoAnterior().final
@@ -326,7 +338,7 @@ export function DashboardView({
         <Button
           variant="ghost"
           size="sm"
-          onClick={consultar}
+          onClick={() => consultar()}
           disabled={loading}
           className="gap-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
         >
