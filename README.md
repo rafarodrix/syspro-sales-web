@@ -52,7 +52,16 @@ lib/
   database.ts     PrismaClient (adapter SQLite)
   syspro-api.ts   cliente da API Syspro (rotas do manual)
 prisma/schema.prisma  User/Session/Account/Empresa/UserEmpresa/Configuracao
+.skills/              Skills de projeto (ver abaixo)
 ```
+
+## Skills do projeto (.skills/)
+
+Skills versionadas no repo (formato SKILL.md), referenciadas pelo `AGENTS.md`:
+
+- `syspro-sales-web` — arquitetura, estrutura, comandos e armadilhas do app
+- `syspro-api-exporta` — API de exportação do Syspro (URLs com/sem IIS, datas, campos)
+- `web-code-quality` — fluxo de desenvolvimento (questionar → arquitetar → implementar → revisar)
 
 ## Fluxo de segurança
 
