@@ -6,7 +6,7 @@ import { LogOutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { EmpresaNavSelect } from "@/components/empresa-nav-select";
 import { NavLinks } from "@/components/nav-links";
-import { ChevronDownIcon, HelpCircleIcon, UserIcon, LayersIcon } from "lucide-react";
+import { UserIcon } from "lucide-react";
 import { prisma } from "@/lib/database";
 
 export async function NavApp({
@@ -25,6 +25,7 @@ export async function NavApp({
     orderBy: { razaoSocial: "asc" },
     select: { id: true, razaoSocial: true, cnpj: true },
   });
+  const exibeSeletorEmpresa = empresas.length > 1;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-md">
@@ -35,7 +36,12 @@ export async function NavApp({
             className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
           >
             <div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 font-extrabold text-white shadow-sm shadow-blue-500/20">
-              <svg viewBox="0 0 24 24" className="size-5 fill-current" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                viewBox="0 0 24 24"
+                className="size-5 fill-current"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
             </div>
@@ -53,12 +59,15 @@ export async function NavApp({
         </div>
 
         <div className="flex items-center gap-3">
-          <EmpresaNavSelect
-            empresas={empresas}
-            empresaSelecionada={empresaSelecionada}
-          />
-
-          <div className="h-4 w-px bg-border/60 hidden md:block" />
+          {exibeSeletorEmpresa ? (
+            <>
+              <EmpresaNavSelect
+                empresas={empresas}
+                empresaSelecionada={empresaSelecionada}
+              />
+              <div className="hidden h-4 w-px bg-border/60 md:block" />
+            </>
+          ) : null}
 
           <div className="flex items-center gap-2 text-sm">
             <ThemeToggle variant="switch" />
@@ -69,14 +78,6 @@ export async function NavApp({
             </div>
 
             <LogOutButton />
-
-            <button
-              aria-label="Abrir painel lateral"
-              className="hidden rounded-lg border p-1.5 text-muted-foreground transition-colors hover:bg-muted md:block"
-              type="button"
-            >
-              <LayersIcon className="size-4" />
-            </button>
           </div>
         </div>
       </div>

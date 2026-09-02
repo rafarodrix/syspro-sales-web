@@ -10,15 +10,13 @@ import {
   DollarSignIcon,
   FileText,
   InfoIcon,
-  MoreVerticalIcon,
-  PercentIcon,
+  BadgePercentIcon,
   RotateCwIcon,
   ShoppingCart,
   UsersRound,
 } from "lucide-react";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
-  agruparVendasPorNota,
   dataInputParaSyspro,
   dadosPorMetrica,
   type MetricaDeVendas,
@@ -78,7 +76,7 @@ export function DashboardView({
   const [loading, setLoading] = useState(false);
   const [vendas, setVendas] = useState<VendaProduto[]>(initialVendas);
   const [erro, setErro] = useState<string | null>(initialError ?? null);
-  const [metrica] = useState<MetricaDeVendas>("faturamento");
+  const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
 
   const resumo = useMemo(() => resumoVendas(vendas), [vendas]);
   const serieDaMetrica = useMemo(
@@ -86,10 +84,6 @@ export function DashboardView({
     [metrica, vendas],
   );
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas), [vendas]);
-
-  const [dataAtualizacao, setDataAtualizacao] = useState(() =>
-    new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-  );
 
   async function consultar() {
     if (!empresaId || !periodo.inicial || !periodo.final) {
@@ -112,9 +106,6 @@ export function DashboardView({
       if (!resposta.ok)
         throw new Error(json.error ?? "Erro ao consultar o dashboard.");
       setVendas(json.vendas as VendaProduto[]);
-      setDataAtualizacao(
-        new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      );
     } catch (causa) {
       const mensagem =
         causa instanceof Error ? causa.message : "Erro ao atualizar dados.";
@@ -142,7 +133,9 @@ export function DashboardView({
             <span>Empresa selecionada:</span>
             <span className="flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400">
               <Building2Icon className="size-4" />
-              {empresaAtual ? `${empresaAtual.razaoSocial} (${empresaAtual.cnpj})` : "Nenhuma empresa selecionada"}
+              {empresaAtual
+                ? `${empresaAtual.razaoSocial} (${empresaAtual.cnpj})`
+                : "Nenhuma empresa selecionada"}
             </span>
           </div>
         </div>
@@ -154,7 +147,8 @@ export function DashboardView({
                 type="button"
                 onClick={() => setPeriodo(hoje())}
                 className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                  periodo.inicial === hoje().inicial && periodo.final === hoje().final
+                  periodo.inicial === hoje().inicial &&
+                  periodo.final === hoje().final
                     ? "bg-blue-600 text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -165,7 +159,8 @@ export function DashboardView({
                 type="button"
                 onClick={() => setPeriodo(periodoMesAtual())}
                 className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                  periodo.inicial === periodoMesAtual().inicial && periodo.final === periodoMesAtual().final
+                  periodo.inicial === periodoMesAtual().inicial &&
+                  periodo.final === periodoMesAtual().final
                     ? "bg-blue-600 text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -176,7 +171,8 @@ export function DashboardView({
                 type="button"
                 onClick={() => setPeriodo(periodoAnterior())}
                 className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                  periodo.inicial === periodoAnterior().inicial && periodo.final === periodoAnterior().final
+                  periodo.inicial === periodoAnterior().inicial &&
+                  periodo.final === periodoAnterior().final
                     ? "bg-blue-600 text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -188,7 +184,8 @@ export function DashboardView({
             <div className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs">
               <CalendarDaysIcon className="size-3.5 text-blue-600" />
               <span>
-                {formatarDataInputParaBR(periodo.inicial)} – {formatarDataInputParaBR(periodo.final)}
+                {formatarDataInputParaBR(periodo.inicial)} –{" "}
+                {formatarDataInputParaBR(periodo.final)}
               </span>
               <ChevronDown className="size-3.5 opacity-60" />
             </div>
@@ -200,7 +197,10 @@ export function DashboardView({
             size="sm"
             className="border-blue-600/30 text-blue-600 hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-950/40"
           >
-            <Link href={`/vendas?empresa=${empresaId}`} className="flex items-center gap-1.5 text-xs font-semibold">
+            <Link
+              href={`/vendas?empresa=${empresaId}`}
+              className="flex items-center gap-1.5 text-xs font-semibold"
+            >
               Ver detalhamento de vendas
               <ChevronRight className="size-3.5" />
             </Link>
@@ -242,9 +242,9 @@ export function DashboardView({
           icone={FileText}
         />
         <KpiCard
-          titulo="Margem de contribuição"
-          valor={`${resumo.margemContribuição.toFixed(2).replace(".", ",")}%`}
-          icone={PercentIcon}
+          titulo="Descontos concedidos (R$)"
+          valor={moeda.format(resumo.descontos)}
+          icone={BadgePercentIcon}
         />
       </section>
 
@@ -259,18 +259,19 @@ export function DashboardView({
               <InfoIcon className="size-4 text-muted-foreground/70" />
             </div>
             <div className="flex items-center gap-2">
-              <Select defaultValue="linhas">
+              <Select
+                value={metrica}
+                onValueChange={(valor) => setMetrica(valor as MetricaDeVendas)}
+              >
                 <SelectTrigger className="h-8 text-xs font-medium">
-                  <SelectValue placeholder="Gráfico de linhas" />
+                  <SelectValue placeholder="Métrica" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="linhas">Gráfico de linhas</SelectItem>
-                  <SelectItem value="barras">Gráfico de barras</SelectItem>
+                  <SelectItem value="faturamento">Faturamento</SelectItem>
+                  <SelectItem value="itens">Itens vendidos</SelectItem>
+                  <SelectItem value="notas">Notas fiscais</SelectItem>
                 </SelectContent>
               </Select>
-              <Button size="icon-sm" variant="ghost">
-                <MoreVerticalIcon className="size-4 text-muted-foreground" />
-              </Button>
             </div>
           </CardHeader>
           <CardContent className="pt-4">
@@ -288,20 +289,6 @@ export function DashboardView({
                 Top produtos por faturamento (R$)
               </CardTitle>
               <InfoIcon className="size-4 text-muted-foreground/70" />
-            </div>
-            <div className="flex items-center gap-2">
-              <Select defaultValue="horizontais">
-                <SelectTrigger className="h-8 text-xs font-medium">
-                  <SelectValue placeholder="Barras horizontais" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="horizontais">Barras horizontais</SelectItem>
-                  <SelectItem value="vertical">Barras verticais</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button size="icon-sm" variant="ghost">
-                <MoreVerticalIcon className="size-4 text-muted-foreground" />
-              </Button>
             </div>
           </CardHeader>
           <CardContent className="pt-4">
@@ -332,7 +319,9 @@ export function DashboardView({
       {/* Footer Refresh Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <span>Dados atualizados às {dataAtualizacao}</span>
+          <span>
+            Dados retornados pela API Syspro para o período selecionado.
+          </span>
         </div>
         <Button
           variant="ghost"
@@ -341,7 +330,9 @@ export function DashboardView({
           disabled={loading}
           className="gap-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
         >
-          <RotateCwIcon className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          <RotateCwIcon
+            className={`size-3.5 ${loading ? "animate-spin" : ""}`}
+          />
           Atualizar
         </Button>
       </div>

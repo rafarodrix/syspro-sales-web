@@ -35,18 +35,23 @@ export function GraficoFaturamento({
     return { pontosArray, yLabels: labels };
   }, [dados]);
 
-  if (!dados.length) return <EstadoVazio />;
-
   const pontosString = pontosArray.map((p) => `${p.x},${p.y}`).join(" ");
 
   const dateTicks = useMemo(() => {
     if (dados.length <= 8) return dados;
     const step = Math.ceil(dados.length / 8);
-    return dados.filter((_, index) => index % step === 0 || index === dados.length - 1);
+    return dados.filter(
+      (_, index) => index % step === 0 || index === dados.length - 1,
+    );
   }, [dados]);
 
+  if (!dados.length) return <EstadoVazio />;
+
   return (
-    <div className="flex flex-col gap-3" aria-label="Gráfico de faturamento diário">
+    <div
+      className="flex flex-col gap-3"
+      aria-label="Gráfico de faturamento diário"
+    >
       <div className="relative flex h-64 w-full">
         {/* Y Axis Labels */}
         <div className="flex flex-col-reverse justify-between pr-2 text-[11px] font-medium text-muted-foreground">
@@ -87,7 +92,10 @@ export function GraficoFaturamento({
             ))}
 
             {/* Gradient Fill */}
-            <polygon points={`0,88 ${pontosString} 100,88`} fill={`url(#area-${id})`} />
+            <polygon
+              points={`0,88 ${pontosString} 100,88`}
+              fill={`url(#area-${id})`}
+            />
 
             {/* Main Polyline */}
             <polyline
@@ -146,7 +154,10 @@ export function GraficoProdutos({ dados }: { dados: ProdutoRankeado[] }) {
         {dados.map((item) => (
           <div key={item.produto} className="flex flex-col gap-1">
             <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="truncate max-w-[200px] text-foreground" title={item.produto}>
+              <span
+                className="truncate max-w-[200px] text-foreground"
+                title={item.produto}
+              >
                 {item.produto}
               </span>
               <span className="font-mono text-muted-foreground">
@@ -156,7 +167,9 @@ export function GraficoProdutos({ dados }: { dados: ProdutoRankeado[] }) {
             <div className="h-3.5 w-full overflow-hidden rounded-full bg-muted/60">
               <div
                 className="h-full rounded-full bg-blue-600 transition-all duration-500 hover:bg-blue-500"
-                style={{ width: `${Math.min((item.total / maior) * 100, 100)}%` }}
+                style={{
+                  width: `${Math.min((item.total / maior) * 100, 100)}%`,
+                }}
               />
             </div>
           </div>

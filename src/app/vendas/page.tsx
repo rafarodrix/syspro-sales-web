@@ -31,6 +31,7 @@ export default async function VendasPage({
       <NavApp empresaSelecionada={empresa} />
       <main className="mx-auto max-w-6xl space-y-6 p-6">
         <VendasView
+          key={empresa ?? "sem-empresa"}
           empresas={empresas.map((e) => ({
             id: e.id,
             cnpj: e.cnpj,

@@ -26,7 +26,7 @@ export function EmpresaNavSelect({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  if (!empresas.length) return null;
+  if (empresas.length <= 1) return null;
   const value =
     empresaSelecionada &&
     empresas.some((empresa) => empresa.id === empresaSelecionada)

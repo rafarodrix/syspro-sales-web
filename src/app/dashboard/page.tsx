@@ -63,6 +63,7 @@ export default async function DashboardPage({
       <NavApp empresaSelecionada={empresa?.id} />
       <main className="mx-auto max-w-7xl space-y-6 p-6">
         <DashboardView
+          key={empresa?.id ?? "sem-empresa"}
           empresas={empresas.map((item) => ({
             id: item.id,
             cnpj: item.cnpj,

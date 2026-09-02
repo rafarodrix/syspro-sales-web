@@ -37,12 +37,6 @@ export interface ResumoVendas {
   notas: number;
   clientes: number;
   ticketMedio: number;
-  margemContribuição: number;
-  faturamentoVariacao: number;
-  pedidosVariacao: number;
-  clientesVariacao: number;
-  ticketMedioVariacao: number;
-  margemVariacao: number;
   porDepartamento: ItemRankeado[];
   porVendedor: ItemRankeado[];
   porFormaPagamento: ItemRankeado[];
@@ -119,8 +113,6 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
 
   const notas = agruparVendasPorNota(vendas).length;
   const ticketMedio = notas ? faturamento / notas : 0;
-  const receitaLiquida = faturamento - descontos - icmsSt - frete;
-  const margemContribuição = faturamento > 0 ? (receitaLiquida / faturamento) * 100 : 0;
 
   return {
     faturamento,
@@ -131,12 +123,6 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
     notas,
     clientes: clientes.size,
     ticketMedio,
-    margemContribuição,
-    faturamentoVariacao: 0,
-    pedidosVariacao: 0,
-    clientesVariacao: 0,
-    ticketMedioVariacao: 0,
-    margemVariacao: 0,
     porDepartamento: rankear(departamentos, faturamento),
     porVendedor: rankear(vendedores, faturamento),
     porFormaPagamento: rankear(formasPagamento, faturamento),

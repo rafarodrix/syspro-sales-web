@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -194,9 +193,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                       {empresas
                         .filter(
                           (e) =>
-                            !u.empresas.some(
-                              (ue) => ue.empresaId === e.id,
-                            ),
+                            !u.empresas.some((ue) => ue.empresaId === e.id),
                         )
                         .map((e) => (
                           <SelectItem key={e.id} value={e.id}>

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ChevronDownIcon,
   HelpCircleIcon,
   LayoutDashboardIcon,
   ShoppingCartIcon,
@@ -46,7 +45,6 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
       >
         <ShoppingCartIcon className="size-4" />
         Vendas
-        <ChevronDownIcon className="size-3.5 opacity-60" />
         {isVendas && (
           <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-blue-600 dark:bg-blue-500" />
         )}
@@ -59,7 +57,6 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
       >
         <HelpCircleIcon className="size-4" />
         Ajuda
-        <ChevronDownIcon className="size-3.5 opacity-60" />
       </Link>
 
       {isAdmin && (
