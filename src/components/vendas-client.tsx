@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   BarChart3,
   ChevronDown,
   ChevronRight,
+  DownloadIcon,
   FileText,
+  FileDownIcon,
   Package,
   Search,
   ShoppingCart,
@@ -21,6 +24,7 @@ import {
   produtosMaisVendidos,
 } from "@/lib/vendas";
 import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
+import { DateRangeFilter, type Periodo } from "@/components/date-range-filter";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +34,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -55,6 +58,11 @@ interface EmpresaOption {
 }
 interface Props {
   empresas: EmpresaOption[];
+  empresaInicial?: string;
+  initialPeriod?: Periodo;
+  initialVendas?: VendaProduto[];
+  initialError?: string;
+  variant?: "dashboard" | "vendas";
 }
 
 const moeda = new Intl.NumberFormat("pt-BR", {
@@ -63,15 +71,25 @@ const moeda = new Intl.NumberFormat("pt-BR", {
 });
 const numero = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
-export function VendasClient({ empresas }: Props) {
+export function VendasClient({
+  empresas,
+  empresaInicial,
+  initialPeriod,
+  initialVendas = [],
+  initialError,
+  variant = "vendas",
+}: Props) {
   const [empresaId, setEmpresaId] = useState(
-    empresas.length === 1 ? empresas[0].id : "",
+    empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial)
+      ? empresaInicial
+      : (empresas[0]?.id ?? ""),
   );
-  const [dtInicial, setDtInicial] = useState("");
-  const [dtFinal, setDtFinal] = useState("");
+  const [periodo, setPeriodo] = useState<Periodo>(
+    initialPeriod ?? periodoMesAtual(),
+  );
   const [loading, setLoading] = useState(false);
-  const [vendas, setVendas] = useState<VendaProduto[]>([]);
-  const [erro, setErro] = useState<string | null>(null);
+  const [vendas, setVendas] = useState<VendaProduto[]>(initialVendas);
+  const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [notaAberta, setNotaAberta] = useState<string | null>(null);
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
 
@@ -99,11 +117,11 @@ export function VendasClient({ empresas }: Props) {
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas), [vendas]);
 
   async function consultar() {
-    if (!empresaId || !dtInicial || !dtFinal) {
+    if (!empresaId || !periodo.inicial || !periodo.final) {
       toast.error("Preencha empresa e período");
       return;
     }
-    if (dtInicial > dtFinal) {
+    if (periodo.inicial > periodo.final) {
       toast.error("A data inicial deve ser anterior à data final");
       return;
     }
@@ -116,8 +134,8 @@ export function VendasClient({ empresas }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           empresaId,
-          dtInicial: dataInputParaSyspro(dtInicial),
-          dtFinal: dataInputParaSyspro(dtFinal),
+          dtInicial: dataInputParaSyspro(periodo.inicial),
+          dtFinal: dataInputParaSyspro(periodo.final),
         }),
       });
       const json = await resposta.json().catch(() => ({}));
@@ -139,46 +157,50 @@ export function VendasClient({ empresas }: Props) {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle>
+            {variant === "dashboard" ? "Visão do período" : "Filtros"}
+          </CardTitle>
           <CardDescription>
-            Escolha uma empresa e o período para analisar as notas fiscais.
+            {variant === "dashboard"
+              ? "A empresa é selecionada no topo. O dashboard abre no mês atual."
+              : "Escolha uma empresa e o período para analisar as notas fiscais."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
-          <Campo label="CNPJ / Empresa">
-            <Select value={empresaId} onValueChange={setEmpresaId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a empresa" />
-              </SelectTrigger>
-              <SelectContent>
-                {empresas.map((empresa) => (
-                  <SelectItem key={empresa.id} value={empresa.id}>
-                    {empresa.razaoSocial} ({empresa.cnpj})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Campo>
-          <Campo label="Data inicial" htmlFor="dt-inicial">
-            <Input
-              id="dt-inicial"
-              type="date"
-              value={dtInicial}
-              onChange={(evento) => setDtInicial(evento.target.value)}
-            />
-          </Campo>
-          <Campo label="Data final" htmlFor="dt-final">
-            <Input
-              id="dt-final"
-              type="date"
-              value={dtFinal}
-              onChange={(evento) => setDtFinal(evento.target.value)}
-            />
-          </Campo>
-          <Button onClick={consultar} disabled={loading}>
-            <Search data-icon="inline-start" />
-            {loading ? "Consultando..." : "Consultar"}
-          </Button>
+        <CardContent
+          className={
+            variant === "dashboard"
+              ? "flex flex-wrap items-end justify-between gap-4"
+              : "grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(420px,1.25fr)_auto] lg:items-end"
+          }
+        >
+          {variant === "vendas" ? (
+            <Campo label="CNPJ / Empresa">
+              <Select value={empresaId} onValueChange={setEmpresaId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empresas.map((empresa) => (
+                    <SelectItem key={empresa.id} value={empresa.id}>
+                      {empresa.razaoSocial} ({empresa.cnpj})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Campo>
+          ) : null}
+          <DateRangeFilter value={periodo} onChange={setPeriodo} />
+          <div className="flex gap-2">
+            <Button onClick={consultar} disabled={loading}>
+              <Search data-icon="inline-start" />
+              {loading ? "Consultando..." : "Consultar"}
+            </Button>
+            {variant === "dashboard" ? (
+              <Button asChild variant="outline">
+                <Link href={`/vendas?empresa=${empresaId}`}>Ver vendas</Link>
+              </Button>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
       {erro ? (
@@ -251,43 +273,67 @@ export function VendasClient({ empresas }: Props) {
               </CardContent>
             </Card>
           </section>
-          <Card>
-            <CardHeader>
-              <CardTitle>Vendas por nota fiscal</CardTitle>
-              <CardDescription>
-                {notas.length} notas encontradas. Clique em uma venda para
-                visualizar os itens.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10" />
-                    <TableHead>NF</TableHead>
-                    <TableHead>Emissão</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead className="text-right">Itens</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {notas.map((nota) => (
-                    <NotaRow
-                      key={nota.id}
-                      nota={nota}
-                      aberta={notaAberta === nota.id}
-                      onToggle={() =>
-                        setNotaAberta((aberta) =>
-                          aberta === nota.id ? null : nota.id,
-                        )
-                      }
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          {variant === "vendas" ? (
+            <Card>
+              <CardHeader>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle>Vendas por nota fiscal</CardTitle>
+                    <CardDescription>
+                      {notas.length} notas encontradas. Clique em uma venda para
+                      visualizar os itens.
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => exportarExcel(vendas)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <DownloadIcon data-icon="inline-start" />
+                      Excel
+                    </Button>
+                    <Button
+                      onClick={() => window.print()}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <FileDownIcon data-icon="inline-start" />
+                      PDF
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10" />
+                      <TableHead>NF</TableHead>
+                      <TableHead>Emissão</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead className="text-right">Itens</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {notas.map((nota) => (
+                      <NotaRow
+                        key={nota.id}
+                        nota={nota}
+                        aberta={notaAberta === nota.id}
+                        onToggle={() =>
+                          setNotaAberta((aberta) =>
+                            aberta === nota.id ? null : nota.id,
+                          )
+                        }
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ) : null}
         </>
       ) : !loading && !erro ? (
         <Card>
@@ -304,6 +350,55 @@ export function VendasClient({ empresas }: Props) {
       ) : null}
     </div>
   );
+}
+
+function periodoMesAtual(): Periodo {
+  const hoje = new Date();
+  const paraInput = (data: Date) => {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    const dia = String(data.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+  };
+  return {
+    inicial: paraInput(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
+    final: paraInput(hoje),
+  };
+}
+
+function exportarExcel(vendas: VendaProduto[]) {
+  const cabecalho = [
+    "NF",
+    "Emissão",
+    "Cliente",
+    "Produto",
+    "Quantidade",
+    "Valor unitário",
+    "Total",
+  ];
+  const linhas = vendas.map((venda) => [
+    venda.nf_numero,
+    venda.nf_dt_emissao,
+    venda.cliente_nome,
+    venda.produto_descricao,
+    paraNumero(venda.produto_qtde),
+    paraNumero(venda.produto_vlr_item),
+    paraNumero(venda.produto_vlr_total_item),
+  ]);
+  const csv = [cabecalho, ...linhas]
+    .map((linha) =>
+      linha
+        .map((valor) => `"${String(valor).replaceAll('"', '""')}"`)
+        .join(";"),
+    )
+    .join("\n");
+  const arquivo = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(arquivo);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "vendas-syspro.csv";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function Campo({

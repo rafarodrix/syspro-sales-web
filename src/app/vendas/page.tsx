@@ -5,7 +5,11 @@ import { prisma } from "@/lib/database";
 import { NavApp } from "@/components/nav-app";
 import { VendasClient } from "@/components/vendas-client";
 
-export default async function VendasPage() {
+export default async function VendasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ empresa?: string }>;
+}) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
 
@@ -21,9 +25,10 @@ export default async function VendasPage() {
     orderBy: { razaoSocial: "asc" },
   });
 
+  const { empresa } = await searchParams;
   return (
     <div>
-      <NavApp />
+      <NavApp empresaSelecionada={empresa} />
       <main className="mx-auto max-w-6xl space-y-6 p-6">
         <h1 className="text-2xl font-semibold">Consulta de Vendas</h1>
         <VendasClient
@@ -33,6 +38,7 @@ export default async function VendasPage() {
             razaoSocial: e.razaoSocial,
             empresaCodigo: e.empresaCodigo,
           }))}
+          empresaInicial={empresa}
         />
       </main>
     </div>
