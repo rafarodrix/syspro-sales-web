@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { consultarVendas, SysproApiError } from "@/lib/syspro-api";
+import { resumoVendas } from "@/lib/vendas";
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,7 +79,10 @@ async function handleVendas(request: NextRequest) {
     const filtradas = data.filter(
       (v) => v.empresa_codigo === empresa.empresaCodigo,
     );
-    return NextResponse.json({ vendas: filtradas });
+    return NextResponse.json({
+      vendas: filtradas,
+      resumo: resumoVendas(filtradas),
+    });
   } catch (e) {
     if (e instanceof SysproApiError) {
       return NextResponse.json(
@@ -109,8 +113,8 @@ function periodoValido(inicial: string, final: string) {
   const fim = paraData(final);
   return Boolean(
     inicio &&
-      fim &&
-      inicio <= fim &&
-      fim.getTime() - inicio.getTime() <= 366 * 86_400_000,
+    fim &&
+    inicio <= fim &&
+    fim.getTime() - inicio.getTime() <= 366 * 86_400_000,
   );
 }

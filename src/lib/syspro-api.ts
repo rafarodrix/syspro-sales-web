@@ -176,7 +176,49 @@ export async function consultarVendas(
   range: SysproDateRange,
   signal?: AbortSignal,
 ): Promise<VendaProduto[]> {
-  return request<VendaProduto>(config, "produto/venda", range, signal);
+  const vendas = await request<unknown>(config, "produto/venda", range, signal);
+  return vendas.map(normalizarVenda);
+}
+
+function normalizarVenda(item: unknown, indice: number): VendaProduto {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    throw new SysproApiError(
+      `Resposta de vendas inválida no item ${indice + 1}.`,
+    );
+  }
+  const venda = item as Record<string, unknown>;
+  const texto = (campo: string) => String(venda[campo] ?? "").trim();
+  const numero = (campo: string) => {
+    const valor = venda[campo];
+    return typeof valor === "number" || typeof valor === "string" ? valor : 0;
+  };
+  const camposObrigatorios = ["empresa_codigo", "nf_numero", "nf_dt_emissao"];
+  if (camposObrigatorios.some((campo) => !texto(campo))) {
+    throw new SysproApiError(
+      `Resposta de vendas inválida no item ${indice + 1}: faltam campos obrigatórios.`,
+    );
+  }
+  return {
+    empresa_codigo: texto("empresa_codigo"),
+    nf_numero: texto("nf_numero"),
+    cliente_nome: texto("cliente_nome"),
+    cliente_cidade: texto("cliente_cidade"),
+    cliente_uf: texto("cliente_uf"),
+    produto_id: texto("produto_id"),
+    produto_descricao: texto("produto_descricao"),
+    produto_departamento: texto("produto_departamento"),
+    produto_un: texto("produto_un"),
+    produto_qtde: numero("produto_qtde"),
+    produto_vlr_item: numero("produto_vlr_item"),
+    produto_vlr_icms_stb: numero("produto_vlr_icms_stb"),
+    produto_vlr_desconto: numero("produto_vlr_desconto"),
+    produto_vlr_frete: numero("produto_vlr_frete"),
+    produto_vlr_total_item: numero("produto_vlr_total_item"),
+    vendedor_nome: texto("vendedor_nome"),
+    nf_dt_emissao: texto("nf_dt_emissao"),
+    nf_modelo: texto("nf_modelo"),
+    nf_forma_pagto: texto("nf_forma_pagto"),
+  };
 }
 
 // ------------------------------------------------------------------

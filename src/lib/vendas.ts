@@ -22,6 +22,27 @@ export interface ProdutoRankeado {
   total: number;
 }
 
+export interface ItemRankeado {
+  nome: string;
+  total: number;
+  percentual: number;
+}
+
+export interface ResumoVendas {
+  faturamento: number;
+  descontos: number;
+  frete: number;
+  icmsSt: number;
+  quantidadeItens: number;
+  notas: number;
+  clientes: number;
+  ticketMedio: number;
+  porDepartamento: ItemRankeado[];
+  porVendedor: ItemRankeado[];
+  porFormaPagamento: ItemRankeado[];
+  porModeloDocumento: ItemRankeado[];
+}
+
 export type MetricaDeVendas = "faturamento" | "itens" | "notas";
 
 export function paraNumero(valor: number | string | null | undefined): number {
@@ -39,7 +60,7 @@ export function agruparVendasPorNota(vendas: VendaProduto[]): VendaAgrupada[] {
   const notas = new Map<string, VendaAgrupada>();
   for (const venda of vendas) {
     const numero = venda.nf_numero?.trim() || "Sem número";
-    const chave = [numero, venda.nf_dt_emissao, venda.cliente_nome].join("|");
+    const chave = chaveDaNota(venda);
     const atual = notas.get(chave);
     if (atual) {
       atual.itens.push(venda);
@@ -64,6 +85,49 @@ export function agruparVendasPorNota(vendas: VendaProduto[]): VendaAgrupada[] {
   );
 }
 
+export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
+  const clientes = new Set<string>();
+  const departamentos = new Map<string, number>();
+  const vendedores = new Map<string, number>();
+  const formasPagamento = new Map<string, number>();
+  const modelosDocumento = new Map<string, number>();
+  let faturamento = 0;
+  let descontos = 0;
+  let frete = 0;
+  let icmsSt = 0;
+  let quantidadeItens = 0;
+
+  for (const venda of vendas) {
+    const total = paraNumero(venda.produto_vlr_total_item);
+    faturamento += total;
+    descontos += paraNumero(venda.produto_vlr_desconto);
+    frete += paraNumero(venda.produto_vlr_frete);
+    icmsSt += paraNumero(venda.produto_vlr_icms_stb);
+    quantidadeItens += paraNumero(venda.produto_qtde);
+    if (venda.cliente_nome?.trim()) clientes.add(venda.cliente_nome.trim());
+    somar(departamentos, venda.produto_departamento, total, "Sem departamento");
+    somar(vendedores, venda.vendedor_nome, total, "Sem vendedor");
+    somar(formasPagamento, venda.nf_forma_pagto, total, "Não informado");
+    somar(modelosDocumento, venda.nf_modelo, total, "Não informado");
+  }
+
+  const notas = agruparVendasPorNota(vendas).length;
+  return {
+    faturamento,
+    descontos,
+    frete,
+    icmsSt,
+    quantidadeItens,
+    notas,
+    clientes: clientes.size,
+    ticketMedio: notas ? faturamento / notas : 0,
+    porDepartamento: rankear(departamentos, faturamento),
+    porVendedor: rankear(vendedores, faturamento),
+    porFormaPagamento: rankear(formasPagamento, faturamento),
+    porModeloDocumento: rankear(modelosDocumento, faturamento),
+  };
+}
+
 export function faturamentoPorDia(vendas: VendaProduto[]): PontoFaturamento[] {
   return agruparPorDia(vendas, "faturamento");
 }
@@ -85,7 +149,7 @@ function agruparPorDia(
     const data = venda.nf_dt_emissao || "Sem data";
     if (metrica === "notas") {
       const notasDoDia = notas.get(data) ?? new Set<string>();
-      notasDoDia.add(venda.nf_numero);
+      notasDoDia.add(chaveDaNota(venda));
       notas.set(data, notasDoDia);
       continue;
     }
@@ -103,6 +167,37 @@ function agruparPorDia(
   return [...totais.entries()]
     .map(([data, total]) => ({ data, total, rotulo: data }))
     .sort((a, b) => dataParaOrdem(a.data) - dataParaOrdem(b.data));
+}
+
+function chaveDaNota(venda: VendaProduto) {
+  return [
+    venda.empresa_codigo?.trim(),
+    venda.nf_modelo?.trim(),
+    venda.nf_numero?.trim() || "Sem número",
+  ].join("|");
+}
+
+function somar(
+  totais: Map<string, number>,
+  chave: string | null | undefined,
+  valor: number,
+  fallback: string,
+) {
+  const nome = chave?.trim() || fallback;
+  totais.set(nome, (totais.get(nome) ?? 0) + valor);
+}
+
+function rankear(
+  totais: Map<string, number>,
+  faturamento: number,
+): ItemRankeado[] {
+  return [...totais.entries()]
+    .map(([nome, total]) => ({
+      nome,
+      total,
+      percentual: faturamento ? (total / faturamento) * 100 : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
 }
 
 export function produtosMaisVendidos(

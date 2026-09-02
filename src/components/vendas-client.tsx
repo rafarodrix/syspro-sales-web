@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
+  BadgePercent,
   ChevronDown,
   ChevronRight,
   DownloadIcon,
@@ -13,15 +14,19 @@ import {
   Search,
   ShoppingCart,
   TrendingUp,
+  Truck,
+  UsersRound,
 } from "lucide-react";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
   dataInputParaSyspro,
   dadosPorMetrica,
+  type ItemRankeado,
   type MetricaDeVendas,
   paraNumero,
   produtosMaisVendidos,
+  resumoVendas,
 } from "@/lib/vendas";
 import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
 import { DateRangeFilter, type Periodo } from "@/components/date-range-filter";
@@ -94,22 +99,7 @@ export function VendasClient({
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
 
   const notas = useMemo(() => agruparVendasPorNota(vendas), [vendas]);
-  const totalVendido = useMemo(
-    () =>
-      vendas.reduce(
-        (total, venda) => total + paraNumero(venda.produto_vlr_total_item),
-        0,
-      ),
-    [vendas],
-  );
-  const quantidadeItens = useMemo(
-    () =>
-      vendas.reduce(
-        (total, venda) => total + paraNumero(venda.produto_qtde),
-        0,
-      ),
-    [vendas],
-  );
+  const resumo = useMemo(() => resumoVendas(vendas), [vendas]);
   const serieDaMetrica = useMemo(
     () => dadosPorMetrica(vendas, metrica),
     [metrica, vendas],
@@ -217,28 +207,47 @@ export function VendasClient({
             aria-label="Resumo de vendas"
           >
             <Indicador
-              titulo="Total vendido"
-              valor={moeda.format(totalVendido)}
+              titulo="Faturamento"
+              valor={moeda.format(resumo.faturamento)}
               icone={TrendingUp}
             />
             <Indicador
               titulo="Notas fiscais"
-              valor={numero.format(notas.length)}
+              valor={numero.format(resumo.notas)}
               descricao="notas no período"
               icone={FileText}
             />
             <Indicador
               titulo="Quantidade de itens"
-              valor={numero.format(quantidadeItens)}
+              valor={numero.format(resumo.quantidadeItens)}
               icone={Package}
             />
             <Indicador
+              titulo="Clientes atendidos"
+              valor={numero.format(resumo.clientes)}
+              descricao="clientes únicos"
+              icone={UsersRound}
+            />
+            <Indicador
               titulo="Ticket médio"
-              valor={
-                notas.length ? moeda.format(totalVendido / notas.length) : "—"
-              }
+              valor={resumo.notas ? moeda.format(resumo.ticketMedio) : "—"}
               descricao="por nota fiscal"
               icone={ShoppingCart}
+            />
+            <Indicador
+              titulo="Descontos concedidos"
+              valor={moeda.format(resumo.descontos)}
+              icone={BadgePercent}
+            />
+            <Indicador
+              titulo="Frete associado"
+              valor={moeda.format(resumo.frete)}
+              icone={Truck}
+            />
+            <Indicador
+              titulo="ICMS-ST"
+              valor={moeda.format(resumo.icmsSt)}
+              icone={FileText}
             />
           </section>
           <section className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
@@ -272,6 +281,23 @@ export function VendasClient({
                 <GraficoProdutos dados={topProdutos} />
               </CardContent>
             </Card>
+          </section>
+          <section className="grid gap-4 lg:grid-cols-3">
+            <RankingCard
+              descricao="Participação no faturamento do período."
+              itens={resumo.porDepartamento}
+              titulo="Departamentos"
+            />
+            <RankingCard
+              descricao="Responsáveis pelas vendas faturadas."
+              itens={resumo.porVendedor}
+              titulo="Vendedores"
+            />
+            <RankingCard
+              descricao="Distribuição declarada nas notas fiscais."
+              itens={resumo.porFormaPagamento}
+              titulo="Formas de pagamento"
+            />
           </section>
           {variant === "vendas" ? (
             <Card>
@@ -371,18 +397,38 @@ function exportarExcel(vendas: VendaProduto[]) {
     "NF",
     "Emissão",
     "Cliente",
+    "Cidade",
+    "UF",
+    "Vendedor",
+    "Modelo",
+    "Forma de pagamento",
     "Produto",
+    "Departamento",
+    "Unidade",
     "Quantidade",
     "Valor unitário",
+    "Desconto",
+    "Frete",
+    "ICMS-ST",
     "Total",
   ];
   const linhas = vendas.map((venda) => [
     venda.nf_numero,
     venda.nf_dt_emissao,
     venda.cliente_nome,
+    venda.cliente_cidade,
+    venda.cliente_uf,
+    venda.vendedor_nome,
+    venda.nf_modelo,
+    venda.nf_forma_pagto,
     venda.produto_descricao,
+    venda.produto_departamento,
+    venda.produto_un,
     paraNumero(venda.produto_qtde),
     paraNumero(venda.produto_vlr_item),
+    paraNumero(venda.produto_vlr_desconto),
+    paraNumero(venda.produto_vlr_frete),
+    paraNumero(venda.produto_vlr_icms_stb),
     paraNumero(venda.produto_vlr_total_item),
   ]);
   const csv = [cabecalho, ...linhas]
@@ -441,6 +487,54 @@ function Indicador({
             <p className="text-xs text-muted-foreground">{descricao}</p>
           ) : null}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RankingCard({
+  titulo,
+  descricao,
+  itens,
+}: {
+  titulo: string;
+  descricao: string;
+  itens: ItemRankeado[];
+}) {
+  const principais = itens.slice(0, 5);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{titulo}</CardTitle>
+        <CardDescription>{descricao}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {principais.length ? (
+          <ol className="flex flex-col gap-4">
+            {principais.map((item) => (
+              <li key={item.nome} className="flex flex-col gap-1.5">
+                <div className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="truncate font-medium" title={item.nome}>
+                    {item.nome}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {moeda.format(item.total)}
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-500"
+                    style={{ width: `${Math.min(item.percentual, 100)}%` }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Sem dados para o período.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -547,8 +641,12 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
         <thead className="border-b bg-muted/40 text-left text-muted-foreground">
           <tr>
             <th className="p-2 font-medium">Produto</th>
+            <th className="p-2 font-medium">Departamento</th>
+            <th className="p-2 font-medium">Un.</th>
             <th className="p-2 font-medium">Código</th>
             <th className="p-2 text-right font-medium">Qtd.</th>
+            <th className="p-2 text-right font-medium">Desconto</th>
+            <th className="p-2 text-right font-medium">Frete</th>
             <th className="p-2 text-right font-medium">Unitário</th>
             <th className="p-2 text-right font-medium">Total</th>
           </tr>
@@ -560,9 +658,21 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
               className="border-b last:border-0"
             >
               <td className="p-2">{item.produto_descricao}</td>
+              <td className="p-2 text-muted-foreground">
+                {item.produto_departamento || "—"}
+              </td>
+              <td className="p-2 text-muted-foreground">
+                {item.produto_un || "—"}
+              </td>
               <td className="p-2 text-muted-foreground">{item.produto_id}</td>
               <td className="p-2 text-right">
                 {numero.format(paraNumero(item.produto_qtde))}
+              </td>
+              <td className="p-2 text-right">
+                {moeda.format(paraNumero(item.produto_vlr_desconto))}
+              </td>
+              <td className="p-2 text-right">
+                {moeda.format(paraNumero(item.produto_vlr_frete))}
               </td>
               <td className="p-2 text-right">
                 {moeda.format(paraNumero(item.produto_vlr_item))}
