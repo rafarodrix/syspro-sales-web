@@ -13,11 +13,11 @@ export default async function VendasPage() {
 
   const empresas = await prisma.empresa.findMany({
     where: isAdmin
-      ? undefined
+      ? { ativa: true }
       : {
+          ativa: true,
           usuarios: { some: { userId: session.user.id } },
         },
-    include: { usuarios: true },
     orderBy: { razaoSocial: "asc" },
   });
 

@@ -9,6 +9,42 @@ async function authorize() {
   return session;
 }
 
+export async function POST(request: NextRequest) {
+  const session = await authorize();
+  if (!session)
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+  let body: { cnpj?: string; razaoSocial?: string; empresaCodigo?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+  const cnpj = (body.cnpj ?? "").replace(/\D/g, "");
+  const razaoSocial = (body.razaoSocial ?? "").trim();
+  const empresaCodigo = (body.empresaCodigo ?? "").trim();
+  if (cnpj.length !== 14 || !razaoSocial || !empresaCodigo) {
+    return NextResponse.json(
+      { error: "CNPJ válido, razão social e código são obrigatórios" },
+      { status: 400 },
+    );
+  }
+  try {
+    const empresa = await prisma.empresa.create({
+      data: { cnpj, razaoSocial, empresaCodigo },
+    });
+    return NextResponse.json({ empresa }, { status: 201 });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unique constraint")) {
+      return NextResponse.json(
+        { error: "Já existe empresa com este CNPJ" },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   const session = await authorize();
   if (!session) {
@@ -41,7 +77,8 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const cnpj = body.cnpj !== undefined ? body.cnpj.replace(/\D/g, "") : undefined;
+  const cnpj =
+    body.cnpj !== undefined ? body.cnpj.replace(/\D/g, "") : undefined;
   if (cnpj !== undefined && cnpj.length !== 14) {
     return NextResponse.json({ error: "CNPJ inválido" }, { status: 400 });
   }

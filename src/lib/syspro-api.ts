@@ -140,7 +140,7 @@ async function request<T>(
   const url = `${config.baseUrl}${buildPath(config, rota)}?${params.toString()}`;
 
   const res = await fetch(url, {
-    signal,
+    signal: signal ?? AbortSignal.timeout(30_000),
     headers: { Accept: "application/json" },
     // API local do Syspro: não validar TLS do cliente
     cache: "no-store",

@@ -38,11 +38,18 @@ async function handleVendas(request: NextRequest) {
       { status: 400 },
     );
   }
+  if (!periodoValido(dtInicial, dtFinal)) {
+    return NextResponse.json(
+      { error: "Informe um período válido de até 366 dias." },
+      { status: 400 },
+    );
+  }
 
   // Empresa deve existir E estar liberada para o usuário (ou ser admin)
   const empresa = await prisma.empresa.findFirst({
     where: {
       id: empresaId,
+      ativa: true,
       ...(isAdmin ? {} : { usuarios: { some: { userId: session.user.id } } }),
     },
   });
@@ -84,4 +91,26 @@ async function handleVendas(request: NextRequest) {
       { status: 502 },
     );
   }
+}
+
+function periodoValido(inicial: string, final: string) {
+  const padrao = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+  if (!padrao.test(inicial) || !padrao.test(final)) return false;
+  const paraData = (valor: string) => {
+    const [dia, mes, ano] = valor.split("/").map(Number);
+    const data = new Date(Date.UTC(ano, mes - 1, dia));
+    return data.getUTCFullYear() === ano &&
+      data.getUTCMonth() === mes - 1 &&
+      data.getUTCDate() === dia
+      ? data
+      : null;
+  };
+  const inicio = paraData(inicial);
+  const fim = paraData(final);
+  return Boolean(
+    inicio &&
+      fim &&
+      inicio <= fim &&
+      fim.getTime() - inicio.getTime() <= 366 * 86_400_000,
+  );
 }
