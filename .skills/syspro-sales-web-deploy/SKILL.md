@@ -1,0 +1,64 @@
+---
+name: syspro-sales-web-deploy
+description: Use to install/update syspro-sales-web on a client server.
+---
+
+# Deploy no servidor do cliente (Windows)
+
+Como instalar e atualizar o `syspro-sales-web` **no servidor do cliente** — a mesma máquina que roda o Syspro (IIS porta 1234 ou SysproServer.exe). O app roda como **serviço PM2** (sobe com o Windows, reinicia sozinho). Usa o build **standalone** do Next.
+
+## Pré-requisitos no servidor do cliente
+- **Node.js LTS** instalado (https://nodejs.org) — necessário p/ rodar o app.
+- Pasta de instalação com permissão de escrita (ex.: `C:\Syspro\SalesWeb`).
+- A API do Syspro acessível do app (mesma máquina: `http://localhost:1234`).
+
+## Instalação (primeira vez)
+1. Copiar o projeto (via git clone OU zip) para a pasta de instalação.
+2. Criar `.env` a partir de `.env.production.example` e ajustar:
+   - `BETTER_AUTH_URL` — URL/porta que os usuários digitam no navegador.
+   - `BETTER_AUTH_SECRET` — gerar: `openssl rand -base64 32`.
+   - `SYSPRO_API_URL` / `SYSPRO_USE_IIS` — endereço da API de exporta do cliente.
+3. Rodar **como Administrador**: `scripts\instalar-servico.bat`
+   (instala deps, build, copia assets p/ standalone, migrations, seed admin, registra PM2).
+4. `pm2 startup` (uma vez) para subir junto com o Windows.
+
+## Atualização (versões novas)
+```bat
+git pull
+call npm install --omit=dev
+call npm run build
+xcopy /E /I /Y ".next\static" ".next\standalone\.next\static" >nul
+pm2 restart syspro-sales-web
+```
+(ou rodar o `instalar-servico.bat` de novo — é idempotente).
+
+## Acesso interno E externo — o ponto crítico
+O app atende **dois públicos** com origens diferentes (ex.: IP local `192.168.x` + externo via Radmin/Tailscale). Isso cria um desafio no Better Auth:
+
+- **`BETTER_AUTH_URL`** define a origem "canônica" (cookie/sessão). Escolha a **mais usada** (ex.: IP local do servidor).
+- **`trustedOrigins`** (em `src/lib/auth.ts`) precisa listar **TODOS** os hosts/IPs usados, com porta: `http://192.168.x.x:3000`, `http://IP-externo:3000`, etc.
+  - ⚠️ IPs de VPN (Radmin/Tailscale) **mudam** entre conexões. Se o login falhar com "Invalid origin: http://IP:3000" no log, adicione o IP atual ao `trustedOrigins` e rebuild/deploy.
+  - Alternativa estável p/ externo: usar **Tailscale** com IP fixo do servidor, ou um domínio/DDNS.
+
+## Porta e firewall
+- App escuta em `0.0.0.0:3000` (config do ecosystem). Para mudar: `PORT=XXXX` no `.env`.
+- Liberar no firewall do Windows a porta escolhida para a rede local (e para a interface da VPN se for acesso externo).
+
+## Banco de dados
+- SQLite em `./dev.db` (raiz de instalação). **Backup regular** desse arquivo.
+- Migrations: `npx prisma migrate deploy` (o instalador já roda).
+
+## Operação (PM2)
+```bat
+pm2 status                REM estado
+pm2 logs syspro-sales-web REM logs (erros ficam em logs/err.log)
+pm2 restart syspro-sales-web
+pm2 stop syspro-sales-web
+```
+Para **remover** o serviço: `pm2 delete syspro-sales-web`.
+
+## Diagnóstico rápido
+1. `pm2 status` → online?
+2. `pm2 logs` → "Ready" na porta? erro "Invalid origin"? 
+3. `curl http://localhost:3000/login` → 200?
+4. Login direto na API: `curl -X POST http://localhost:3000/api/auth/sign-in/email -H "Content-Type: application/json" -d '{"email":"...","password":"..."}'` → 200 com `user`?
