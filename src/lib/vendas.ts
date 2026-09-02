@@ -22,6 +22,8 @@ export interface ProdutoRankeado {
   total: number;
 }
 
+export type MetricaDeVendas = "faturamento" | "itens" | "notas";
+
 export function paraNumero(valor: number | string | null | undefined): number {
   if (valor == null || valor === "") return 0;
   if (typeof valor === "number") return Number.isFinite(valor) ? valor : 0;
@@ -63,13 +65,40 @@ export function agruparVendasPorNota(vendas: VendaProduto[]): VendaAgrupada[] {
 }
 
 export function faturamentoPorDia(vendas: VendaProduto[]): PontoFaturamento[] {
+  return agruparPorDia(vendas, "faturamento");
+}
+
+export function dadosPorMetrica(
+  vendas: VendaProduto[],
+  metrica: MetricaDeVendas,
+): PontoFaturamento[] {
+  return agruparPorDia(vendas, metrica);
+}
+
+function agruparPorDia(
+  vendas: VendaProduto[],
+  metrica: MetricaDeVendas,
+): PontoFaturamento[] {
   const totais = new Map<string, number>();
+  const notas = new Map<string, Set<string>>();
   for (const venda of vendas) {
     const data = venda.nf_dt_emissao || "Sem data";
+    if (metrica === "notas") {
+      const notasDoDia = notas.get(data) ?? new Set<string>();
+      notasDoDia.add(venda.nf_numero);
+      notas.set(data, notasDoDia);
+      continue;
+    }
     totais.set(
       data,
-      (totais.get(data) ?? 0) + paraNumero(venda.produto_vlr_total_item),
+      (totais.get(data) ?? 0) +
+        (metrica === "faturamento"
+          ? paraNumero(venda.produto_vlr_total_item)
+          : paraNumero(venda.produto_qtde)),
     );
+  }
+  if (metrica === "notas") {
+    for (const [data, notasDoDia] of notas) totais.set(data, notasDoDia.size);
   }
   return [...totais.entries()]
     .map(([data, total]) => ({ data, total, rotulo: data }))

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { LogOutButton } from "@/components/logout-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function NavApp() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -12,7 +13,7 @@ export async function NavApp() {
   const isAdmin = session.user.role === "admin";
 
   return (
-    <header className="border-b">
+    <header className="border-b bg-card">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
         <Link href="/" className="font-semibold">
           Syspro Sales Web
@@ -34,6 +35,7 @@ export async function NavApp() {
         </nav>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>{session.user.name}</span>
+          <ThemeToggle />
           <LogOutButton />
         </div>
       </div>

@@ -15,7 +15,8 @@ import type { VendaProduto } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
   dataInputParaSyspro,
-  faturamentoPorDia,
+  dadosPorMetrica,
+  type MetricaDeVendas,
   paraNumero,
   produtosMaisVendidos,
 } from "@/lib/vendas";
@@ -72,6 +73,7 @@ export function VendasClient({ empresas }: Props) {
   const [vendas, setVendas] = useState<VendaProduto[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [notaAberta, setNotaAberta] = useState<string | null>(null);
+  const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
 
   const notas = useMemo(() => agruparVendasPorNota(vendas), [vendas]);
   const totalVendido = useMemo(
@@ -90,7 +92,10 @@ export function VendasClient({ empresas }: Props) {
       ),
     [vendas],
   );
-  const faturamentoDiario = useMemo(() => faturamentoPorDia(vendas), [vendas]);
+  const serieDaMetrica = useMemo(
+    () => dadosPorMetrica(vendas, metrica),
+    [metrica, vendas],
+  );
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas), [vendas]);
 
   async function consultar() {
@@ -217,13 +222,21 @@ export function VendasClient({ empresas }: Props) {
           <section className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Faturamento diário</CardTitle>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <CardTitle className="text-base">
+                    {tituloDaMetrica(metrica)} por dia
+                  </CardTitle>
+                  <SeletorDeMetrica metrica={metrica} onChange={setMetrica} />
+                </div>
                 <CardDescription>
-                  Valor total de itens emitidos por dia.
+                  Acompanhe a métrica selecionada ao longo do período.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <GraficoFaturamento dados={faturamentoDiario} />
+                <GraficoFaturamento
+                  dados={serieDaMetrica}
+                  formato={metrica === "faturamento" ? "moeda" : "numero"}
+                />
               </CardContent>
             </Card>
             <Card>
@@ -337,6 +350,51 @@ function Indicador({
     </Card>
   );
 }
+
+function SeletorDeMetrica({
+  metrica,
+  onChange,
+}: {
+  metrica: MetricaDeVendas;
+  onChange: (metrica: MetricaDeVendas) => void;
+}) {
+  const opcoes: { valor: MetricaDeVendas; rotulo: string }[] = [
+    { valor: "faturamento", rotulo: "Faturamento" },
+    { valor: "itens", rotulo: "Itens" },
+    { valor: "notas", rotulo: "Notas" },
+  ];
+
+  return (
+    <div
+      aria-label="Métrica exibida no gráfico"
+      className="inline-flex rounded-lg border bg-muted p-1"
+      role="group"
+    >
+      {opcoes.map((opcao) => (
+        <Button
+          aria-pressed={metrica === opcao.valor}
+          className="h-7 px-2.5 text-xs"
+          key={opcao.valor}
+          onClick={() => onChange(opcao.valor)}
+          size="sm"
+          type="button"
+          variant={metrica === opcao.valor ? "secondary" : "ghost"}
+        >
+          {opcao.rotulo}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function tituloDaMetrica(metrica: MetricaDeVendas) {
+  return {
+    faturamento: "Faturamento",
+    itens: "Itens vendidos",
+    notas: "Notas fiscais",
+  }[metrica];
+}
+
 function NotaRow({
   nota,
   aberta,

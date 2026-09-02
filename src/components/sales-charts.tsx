@@ -3,6 +3,8 @@
 import { useId, useMemo } from "react";
 import type { PontoFaturamento, ProdutoRankeado } from "@/lib/vendas";
 
+type FormatoDoGrafico = "moeda" | "numero";
+
 const moedaCompacta = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -10,7 +12,13 @@ const moedaCompacta = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 1,
 });
 
-export function GraficoFaturamento({ dados }: { dados: PontoFaturamento[] }) {
+export function GraficoFaturamento({
+  dados,
+  formato = "moeda",
+}: {
+  dados: PontoFaturamento[];
+  formato?: FormatoDoGrafico;
+}) {
   const id = useId().replace(/:/g, "");
   const pontos = useMemo(() => {
     if (!dados.length) return "";
@@ -60,12 +68,18 @@ export function GraficoFaturamento({ dados }: { dados: PontoFaturamento[] }) {
       <div className="mt-2 flex justify-between gap-2 text-xs text-muted-foreground">
         <span>{dados[0]?.rotulo}</span>
         <span>
-          {moedaCompacta.format(Math.max(...dados.map((item) => item.total)))}
+          {formatarValor(Math.max(...dados.map((item) => item.total)), formato)}
         </span>
         <span>{dados.at(-1)?.rotulo}</span>
       </div>
     </div>
   );
+}
+
+function formatarValor(valor: number, formato: FormatoDoGrafico) {
+  return formato === "moeda"
+    ? moedaCompacta.format(valor)
+    : new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(valor);
 }
 
 export function GraficoProdutos({ dados }: { dados: ProdutoRankeado[] }) {
