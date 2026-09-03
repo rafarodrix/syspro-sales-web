@@ -75,13 +75,15 @@ model Verification {
 // Domínio Trilink/Syspro
 // ============================================================
 
-// Empresas cadastradas no banco (relação CNPJ <-> empresa_codigo)
+// Empresas cadastradas no banco (relação CNPJ <-> empresa_codigo com sua própria conexão Syspro)
 model Empresa {
   id            String   @id @default(cuid())
   cnpj          String   @unique // CNPJ do cliente/empresa (somente dígitos)
   razaoSocial   String
   empresaCodigo String // empresa_codigo na API do Syspro
   ativa         Boolean  @default(true)
+  sysproBaseUrl String   @default("http://localhost:8080")
+  sysproUseIis  String   @default("false") // "true" | "false"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

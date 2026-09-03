@@ -23,26 +23,23 @@ export default async function VendasPage({
   let vendas: VendaProduto[] = [];
   let erroInicial: string | undefined;
 
-  if (empresa) {
-    const configuracao = await prisma.configuracao.findFirst();
-    if (configuracao?.sysproBaseUrl) {
-      try {
-        const configApi = {
-          baseUrl: configuracao.sysproBaseUrl,
-          useIis: configuracao.sysproUseIis === "true",
-        };
+  if (empresa && empresa.sysproBaseUrl) {
+    try {
+      const configApi = {
+        baseUrl: empresa.sysproBaseUrl,
+        useIis: empresa.sysproUseIis === "true",
+      };
 
-        const dados = await consultarVendas(configApi, {
-          dtInicial: dataInputParaSyspro(periodo.inicial),
-          dtFinal: dataInputParaSyspro(periodo.final),
-        });
+      const dados = await consultarVendas(configApi, {
+        dtInicial: dataInputParaSyspro(periodo.inicial),
+        dtFinal: dataInputParaSyspro(periodo.final),
+      });
 
-        vendas = dados.filter(
-          (venda) => venda.empresa_codigo === empresa.empresaCodigo,
-        );
-      } catch {
-        erroInicial = "Não foi possível carregar as vendas iniciais.";
-      }
+      vendas = dados.filter(
+        (venda) => venda.empresa_codigo === empresa.empresaCodigo,
+      );
+    } catch {
+      erroInicial = "Não foi possível carregar as vendas iniciais.";
     }
   }
 

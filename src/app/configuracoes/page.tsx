@@ -6,13 +6,9 @@ import { requireAuth } from "@/lib/server-auth";
 export default async function ConfiguracoesPage() {
   await requireAuth("admin");
 
-  const [configuracao, empresas] = await Promise.all([
-    prisma.configuracao.findFirst(),
-    prisma.empresa.findMany({
-      include: { usuarios: { include: { user: true } } },
-      orderBy: { razaoSocial: "asc" },
-    }),
-  ]);
+  const empresas = await prisma.empresa.findMany({
+    orderBy: { razaoSocial: "asc" },
+  });
 
   return (
     <NavApp>
@@ -21,16 +17,14 @@ export default async function ConfiguracoesPage() {
           Configurações do Sistema
         </h1>
         <ConfiguracaoClient
-          configuracao={{
-            sysproBaseUrl: configuracao?.sysproBaseUrl ?? "",
-            sysproUseIis: configuracao?.sysproUseIis ?? "false",
-          }}
           empresas={empresas.map((e) => ({
             id: e.id,
             cnpj: e.cnpj,
             razaoSocial: e.razaoSocial,
             empresaCodigo: e.empresaCodigo,
             ativa: e.ativa,
+            sysproBaseUrl: e.sysproBaseUrl || "http://localhost:8080",
+            sysproUseIis: e.sysproUseIis ?? "false",
           }))}
         />
       </div>

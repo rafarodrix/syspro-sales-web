@@ -23,26 +23,23 @@ export default async function RelatoriosPage({
   let vendas: VendaProduto[] = [];
   let erroInicial: string | undefined;
 
-  if (empresa) {
-    const configuracao = await prisma.configuracao.findFirst();
-    if (configuracao?.sysproBaseUrl) {
-      try {
-        vendas = await consultarVendas(
-          {
-            baseUrl: configuracao.sysproBaseUrl,
-            useIis: configuracao.sysproUseIis === "true",
-          },
-          {
-            dtInicial: dataInputParaSyspro(periodo.inicial),
-            dtFinal: dataInputParaSyspro(periodo.final),
-          },
-        );
-        vendas = vendas.filter(
-          (venda) => venda.empresa_codigo === empresa.empresaCodigo,
-        );
-      } catch {
-        erroInicial = "Não foi possível carregar os dados dos relatórios.";
-      }
+  if (empresa && empresa.sysproBaseUrl) {
+    try {
+      vendas = await consultarVendas(
+        {
+          baseUrl: empresa.sysproBaseUrl,
+          useIis: empresa.sysproUseIis === "true",
+        },
+        {
+          dtInicial: dataInputParaSyspro(periodo.inicial),
+          dtFinal: dataInputParaSyspro(periodo.final),
+        },
+      );
+      vendas = vendas.filter(
+        (venda) => venda.empresa_codigo === empresa.empresaCodigo,
+      );
+    } catch {
+      erroInicial = "Não foi possível carregar os dados dos relatórios.";
     }
   }
 

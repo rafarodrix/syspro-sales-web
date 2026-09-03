@@ -69,14 +69,13 @@ async function handleVendas(request: NextRequest) {
     );
   }
 
-  const configuracao = await prisma.configuracao.findFirst();
   const cfg = {
-    baseUrl: configuracao?.sysproBaseUrl ?? "",
-    useIis: configuracao?.sysproUseIis === "true",
+    baseUrl: empresa.sysproBaseUrl || "http://localhost:8080",
+    useIis: empresa.sysproUseIis === "true",
   };
   if (!cfg.baseUrl) {
     return NextResponse.json(
-      { error: "Configure a URL da API do Syspro em Configurações" },
+      { error: `Configure a URL da API do Syspro para a empresa "${empresa.razaoSocial}" em Configurações.` },
       { status: 400 },
     );
   }

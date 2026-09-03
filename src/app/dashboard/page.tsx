@@ -25,35 +25,32 @@ export default async function DashboardPage({
   let vendasAnteriores: VendaProduto[] = [];
   let erroInicial: string | undefined;
 
-  if (empresa) {
-    const configuracao = await prisma.configuracao.findFirst();
-    if (configuracao?.sysproBaseUrl) {
-      try {
-        const configApi = {
-          baseUrl: configuracao.sysproBaseUrl,
-          useIis: configuracao.sysproUseIis === "true",
-        };
+  if (empresa && empresa.sysproBaseUrl) {
+    try {
+      const configApi = {
+        baseUrl: empresa.sysproBaseUrl,
+        useIis: empresa.sysproUseIis === "true",
+      };
 
-        const [resultadoAtual, resultadoAnterior] = await Promise.all([
-          consultarVendas(configApi, {
-            dtInicial: dataInputParaSyspro(periodo.inicial),
-            dtFinal: dataInputParaSyspro(periodo.final),
-          }),
-          consultarVendas(configApi, {
-            dtInicial: dataInputParaSyspro(periodoAnterior.inicial),
-            dtFinal: dataInputParaSyspro(periodoAnterior.final),
-          }).catch(() => []),
-        ]);
+      const [resultadoAtual, resultadoAnterior] = await Promise.all([
+        consultarVendas(configApi, {
+          dtInicial: dataInputParaSyspro(periodo.inicial),
+          dtFinal: dataInputParaSyspro(periodo.final),
+        }),
+        consultarVendas(configApi, {
+          dtInicial: dataInputParaSyspro(periodoAnterior.inicial),
+          dtFinal: dataInputParaSyspro(periodoAnterior.final),
+        }).catch(() => []),
+      ]);
 
-        vendas = resultadoAtual.filter(
-          (venda) => venda.empresa_codigo === empresa.empresaCodigo,
-        );
-        vendasAnteriores = resultadoAnterior.filter(
-          (venda) => venda.empresa_codigo === empresa.empresaCodigo,
-        );
-      } catch {
-        erroInicial = "Não foi possível carregar os dados do dashboard.";
-      }
+      vendas = resultadoAtual.filter(
+        (venda) => venda.empresa_codigo === empresa.empresaCodigo,
+      );
+      vendasAnteriores = resultadoAnterior.filter(
+        (venda) => venda.empresa_codigo === empresa.empresaCodigo,
+      );
+    } catch {
+      erroInicial = "Não foi possível carregar os dados do dashboard.";
     }
   }
 
