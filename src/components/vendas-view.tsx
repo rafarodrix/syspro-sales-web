@@ -358,7 +358,7 @@ export function VendasView({
     }
   }
 
-  function handleExportarPdf() {
+  function handleExportarPdf(modo: "download" | "imprimir" = "download") {
     if (notasFiltradas.length === 0) {
       toast.error("Não há notas fiscais para exportar no período filtrado.");
       return;
@@ -370,8 +370,13 @@ export function VendasView({
         periodo,
       },
       notas: notasFiltradas,
+      modo,
     });
-    toast.success("Relatório de Vendas em PDF gerado com sucesso!");
+    if (modo === "download") {
+      toast.success("Relatório de Vendas em PDF gerado com sucesso!");
+    } else {
+      toast.success("Preparando documento para impressão...");
+    }
   }
 
   const temFiltrosAtivos =
@@ -384,21 +389,6 @@ export function VendasView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Cabeçalho de Impressão (@media print) */}
-      <div className="print-only mb-4 border-b pb-3">
-        <h1 className="text-xl font-bold uppercase tracking-wide text-black">
-          Relatório Executivo de Vendas — Syspro ERP
-        </h1>
-        <p className="text-xs text-slate-700">
-          Empresa: {empresaAtual?.razaoSocial ?? "Empresa"} | CNPJ: {empresaAtual?.cnpj} |
-          Período: {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
-        </p>
-        <p className="text-xs text-slate-700 mt-1">
-          Total Faturado: {formatarMoeda(resumoBusca.faturamento)} | Notas: {formatarNumero(resumoBusca.totalNotas, 0)} |
-          Clientes: {formatarNumero(resumoBusca.clientes, 0)} | Ticket Médio: {formatarMoeda(resumoBusca.ticketMedio)}
-        </p>
-      </div>
-
       {/* Painel de Consulta & Filtros */}
       <Card className="no-print border-border/60 shadow-sm backdrop-blur-md">
         <CardHeader className="pb-4">
@@ -469,9 +459,9 @@ export function VendasView({
                 </Button>
 
                 <ExportDropdown
-                  onExportarPdf={handleExportarPdf}
+                  onExportarPdf={() => handleExportarPdf("download")}
                   onExportarCsv={() => exportarCsv(vendas)}
-                  onImprimir={() => window.print()}
+                  onImprimir={() => handleExportarPdf("imprimir")}
                   disabled={loading || vendas.length === 0}
                   label="Exportar"
                 />

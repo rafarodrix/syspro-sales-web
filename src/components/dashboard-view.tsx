@@ -260,7 +260,7 @@ export function DashboardView({
     }
   }
 
-  function handleExportarPdf() {
+  function handleExportarPdf(modo: "download" | "imprimir" = "download") {
     if (vendas.length === 0) {
       toast.error("Não há dados para exportar no período selecionado.");
       return;
@@ -273,8 +273,13 @@ export function DashboardView({
       },
       resumo,
       topProdutos,
+      modo,
     });
-    toast.success("Relatório PDF do Dashboard gerado com sucesso!");
+    if (modo === "download") {
+      toast.success("Relatório PDF do Dashboard gerado com sucesso!");
+    } else {
+      toast.success("Preparando documento para impressão...");
+    }
   }
 
   const empresaAtual = empresas.find((e) => e.id === empresaId);
@@ -340,8 +345,8 @@ export function DashboardView({
             </div>
 
             <ExportDropdown
-              onExportarPdf={handleExportarPdf}
-              onImprimir={() => window.print()}
+              onExportarPdf={() => handleExportarPdf("download")}
+              onImprimir={() => handleExportarPdf("imprimir")}
               disabled={loading || vendas.length === 0}
               label="Exportar"
             />

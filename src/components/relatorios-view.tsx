@@ -511,7 +511,7 @@ export function RelatoriosView({
     toast.success("Arquivo CSV gerado com sucesso!");
   }
 
-  function handleExportarPdf() {
+  function handleExportarPdf(modo: "download" | "imprimir" = "download") {
     if (vendas.length === 0) {
       toast.error("Não há dados para exportar no período selecionado.");
       return;
@@ -604,23 +604,17 @@ export function RelatoriosView({
       contexto,
       colunas,
       linhas,
+      modo,
     });
-    toast.success(`Relatório em PDF de ${titulo} gerado com sucesso!`);
+    if (modo === "download") {
+      toast.success(`Relatório em PDF de ${titulo} gerado com sucesso!`);
+    } else {
+      toast.success(`Preparando impressão de ${titulo}...`);
+    }
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header de Impressão */}
-      <div className="print-only mb-4 border-b pb-3">
-        <h1 className="text-xl font-bold uppercase tracking-wide text-black">
-          Relatórios Analíticos de Vendas — Syspro ERP
-        </h1>
-        <p className="text-xs text-slate-700">
-          Empresa: {empresaAtual?.razaoSocial ?? "Empresa"} | CNPJ: {empresaAtual?.cnpj} | Período:{" "}
-          {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
-        </p>
-      </div>
-
       {/* Painel Superior de Período & Filtros */}
       <Card className="no-print border-border/60 shadow-sm backdrop-blur-md">
         <CardHeader className="pb-4">
@@ -745,9 +739,9 @@ export function RelatoriosView({
               )}
 
               <ExportDropdown
-                onExportarPdf={handleExportarPdf}
+                onExportarPdf={() => handleExportarPdf("download")}
                 onExportarCsv={exportarCsvRelatorio}
-                onImprimir={() => window.print()}
+                onImprimir={() => handleExportarPdf("imprimir")}
                 disabled={loading || vendas.length === 0}
                 label="Exportar"
               />

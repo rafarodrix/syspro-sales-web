@@ -108,6 +108,38 @@ function adicionarRodape(doc: jsPDF) {
   }
 }
 
+function despacharPdf(
+  doc: jsPDF,
+  nomeArquivo: string,
+  modo: "download" | "imprimir" = "download",
+) {
+  adicionarRodape(doc);
+  if (modo === "imprimir") {
+    doc.autoPrint();
+    const blob = doc.output("blob");
+    const blobUrl = URL.createObjectURL(blob);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch {
+        window.open(blobUrl, "_blank");
+      }
+    }, 400);
+  } else {
+    doc.save(nomeArquivo);
+  }
+}
+
 /**
  * Exporta o Dashboard Executivo com KPIs e Principais Motores de Venda
  */
@@ -115,10 +147,12 @@ export function exportarPdfDashboard({
   contexto,
   resumo,
   topProdutos,
+  modo = "download",
 }: {
   contexto: ContextoRelatorio;
   resumo: ResumoVendas;
   topProdutos: ProdutoRankeado[];
+  modo?: "download" | "imprimir";
 }) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   adicionarCabecalho(doc, "Dashboard Executivo de Vendas", contexto);
@@ -237,8 +271,11 @@ export function exportarPdfDashboard({
     });
   }
 
-  adicionarRodape(doc);
-  doc.save(`dashboard-executivo-${contexto.periodo.inicial}-a-${contexto.periodo.final}.pdf`);
+  despacharPdf(
+    doc,
+    `dashboard-executivo-${contexto.periodo.inicial}-a-${contexto.periodo.final}.pdf`,
+    modo,
+  );
 }
 
 /**
@@ -247,9 +284,11 @@ export function exportarPdfDashboard({
 export function exportarPdfVendas({
   contexto,
   notas,
+  modo = "download",
 }: {
   contexto: ContextoRelatorio;
   notas: VendaAgrupada[];
+  modo?: "download" | "imprimir";
 }) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   adicionarCabecalho(doc, "Relatório de Notas Fiscais Emitidas", contexto);
@@ -314,8 +353,11 @@ export function exportarPdfVendas({
     margin: { left: 14, right: 14 },
   });
 
-  adicionarRodape(doc);
-  doc.save(`vendas-syspro-${contexto.periodo.inicial}-a-${contexto.periodo.final}.pdf`);
+  despacharPdf(
+    doc,
+    `vendas-syspro-${contexto.periodo.inicial}-a-${contexto.periodo.final}.pdf`,
+    modo,
+  );
 }
 
 /**
@@ -327,12 +369,14 @@ export function exportarPdfAnalitico({
   colunas,
   linhas,
   kpis,
+  modo = "download",
 }: {
   titulo: string;
   contexto: ContextoRelatorio;
   colunas: string[];
   linhas: (string | number)[][];
   kpis?: { label: string; valor: string }[];
+  modo?: "download" | "imprimir";
 }) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   adicionarCabecalho(doc, titulo, contexto);
@@ -378,7 +422,10 @@ export function exportarPdfAnalitico({
     margin: { left: 14, right: 14 },
   });
 
-  adicionarRodape(doc);
   const nomeArquivo = titulo.toLowerCase().replace(/[^a-z0-9]/g, "-");
-  doc.save(`${nomeArquivo}-${contexto.periodo.inicial}-a-${contexto.periodo.final}.pdf`);
+  despacharPdf(
+    doc,
+    `${nomeArquivo}-${contexto.periodo.inicial}-a-${contexto.periodo.final}.pdf`,
+    modo,
+  );
 }

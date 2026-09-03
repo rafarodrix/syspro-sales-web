@@ -139,11 +139,6 @@
   }
 }
 
-/* Utilitários de Impressão */
-.print-only {
-  display: none;
-}
-
 @media print {
   header,
   nav,
@@ -159,10 +154,6 @@
     font-size: 10.5px !important;
     padding: 0 !important;
     margin: 0 !important;
-  }
-
-  .print-only {
-    display: block !important;
   }
 
   .shadow-xs,

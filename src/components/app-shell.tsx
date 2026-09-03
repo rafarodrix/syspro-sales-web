@@ -134,12 +134,12 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       {/* ========================================================= */}
-      {/* 1. SIDEBAR DESKTOP RETRÁTIL */}
+      {/* 1. SIDEBAR DESKTOP RETRÁTIL (Fixa na Viewport com Scroll Interno) */}
       {/* ========================================================= */}
       <aside
-        className={`hidden lg:flex flex-col border-r border-border/70 bg-card transition-all duration-300 ease-in-out select-none shrink-0 ${
+        className={`hidden lg:flex flex-col h-full border-r border-border/70 bg-card transition-all duration-300 ease-in-out select-none shrink-0 ${
           collapsed ? "w-[70px]" : "w-64"
         }`}
       >
@@ -471,9 +471,9 @@ export function AppShell({
       {/* ========================================================= */}
       {/* 3. CONTEÚDO PRINCIPAL + TOPBAR EXECUTIVA ANTI-SOBREPOSIÇÃO */}
       {/* ========================================================= */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+      <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
         {/* Topbar Executiva com Layout Flex Protegido contra Colisões */}
-        <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-2 sm:gap-4 border-b border-border/60 bg-background/95 px-3 sm:px-6 backdrop-blur-md">
+        <header className="shrink-0 flex h-16 items-center justify-between gap-2 sm:gap-4 border-b border-border/60 bg-background/95 px-3 sm:px-6 backdrop-blur-md z-40">
           {/* Lado Esquerdo: Mobile Trigger + Breadcrumb + Status API */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 overflow-hidden">
             <Button
