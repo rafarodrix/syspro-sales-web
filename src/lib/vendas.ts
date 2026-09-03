@@ -233,8 +233,8 @@ export function paraNumero(valor: number | string | null | undefined): number {
 }
 
 export function valorItem(venda: VendaProduto): number {
-  const tot = paraNumero(venda.produto_vlr_total_item);
-  if (tot > 0) return tot;
+  // Valor FINAL do item (bruto - desconto + frete + outros + seguro).
+  // produto_vlr_total_item é o BRUTO (não abate desconto) — sempre usar o líquido.
   return paraNumero(venda.produto_vlr_total_liquido);
 }
 
