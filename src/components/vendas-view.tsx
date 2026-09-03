@@ -22,7 +22,7 @@ import {
   Minimize2,
   FileText,
 } from "lucide-react";
-import type { VendaProduto } from "@/lib/syspro-api";
+import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
   dataInputParaSyspro,
@@ -76,7 +76,7 @@ interface Props {
   empresas: EmpresaOption[];
   empresaInicial?: string;
   initialPeriod?: Periodo;
-  initialVendas?: VendaProduto[];
+  initialVendas?: (VendaProduto | VendaComEmpresa)[];
   initialError?: string;
 }
 
@@ -91,17 +91,24 @@ export function VendasView({
   initialError,
 }: Props) {
   const searchParams = useSearchParams();
-  const [empresaId] = useState(
+  const [empresaId, setEmpresaId] = useState(
     empresaInicial === "todas" ||
     (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
       : (empresas[0]?.id ?? ""),
   );
+
+  useEffect(() => {
+    if (empresaInicial) {
+      setEmpresaId(empresaInicial);
+    }
+  }, [empresaInicial]);
+
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
   const [loading, setLoading] = useState(false);
-  const [vendas, setVendas] = useState<VendaProduto[]>(initialVendas);
+  const [vendas, setVendas] = useState<(VendaProduto | VendaComEmpresa)[]>(initialVendas);
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [notasAbertas, setNotasAbertas] = useState<Set<string>>(new Set());
 
@@ -152,8 +159,9 @@ export function VendasView({
     const modelos = new Set<string>();
 
     for (const v of vendas) {
-      if ((v as any).empresa_id && (v as any).empresa_nome) {
-        empresasMap.set((v as any).empresa_id, (v as any).empresa_nome);
+      const vEmp = v as VendaComEmpresa;
+      if (vEmp.empresa_id && vEmp.empresa_nome) {
+        empresasMap.set(vEmp.empresa_id, vEmp.empresa_nome);
       }
       if (v.vendedor_nome?.trim()) vendedores.add(v.vendedor_nome.trim());
       if (v.produto_departamento?.trim()) departamentos.add(v.produto_departamento.trim());
@@ -899,7 +907,7 @@ function exportarCsv(vendas: VendaProduto[]) {
     "Total",
   ];
   const linhas = vendas.map((venda) => [
-    (venda as any).empresa_nome || "Empresa Principal",
+    (venda as VendaComEmpresa).empresa_nome || "Empresa Principal",
     venda.nf_numero,
     venda.nf_dt_emissao,
     venda.cliente_nome,

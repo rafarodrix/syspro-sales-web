@@ -17,7 +17,7 @@ import {
   Calendar,
   Layers,
 } from "lucide-react";
-import type { VendaProduto } from "@/lib/syspro-api";
+import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
   dataInputParaSyspro,
   dadosPorMetricaComparativa,
@@ -64,8 +64,8 @@ interface Props {
   empresas: EmpresaOption[];
   empresaInicial?: string;
   initialPeriod?: Periodo;
-  initialVendas?: VendaProduto[];
-  initialVendasAnteriores?: VendaProduto[];
+  initialVendas?: (VendaProduto | VendaComEmpresa)[];
+  initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialError?: string;
 }
 
@@ -83,18 +83,25 @@ export function DashboardView({
   initialVendasAnteriores = [],
   initialError,
 }: Props) {
-  const [empresaId] = useState(
+  const [empresaId, setEmpresaId] = useState(
     empresaInicial === "todas" ||
     (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
       : (empresas[0]?.id ?? ""),
   );
+
+  useEffect(() => {
+    if (empresaInicial) {
+      setEmpresaId(empresaInicial);
+    }
+  }, [empresaInicial]);
+
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
   const [loading, setLoading] = useState(false);
-  const [vendas, setVendas] = useState<VendaProduto[]>(initialVendas);
-  const [vendasAnteriores, setVendasAnteriores] = useState<VendaProduto[]>(
+  const [vendas, setVendas] = useState<(VendaProduto | VendaComEmpresa)[]>(initialVendas);
+  const [vendasAnteriores, setVendasAnteriores] = useState<(VendaProduto | VendaComEmpresa)[]>(
     initialVendasAnteriores,
   );
   const [erro, setErro] = useState<string | null>(initialError ?? null);
@@ -169,8 +176,9 @@ export function DashboardView({
   const rankingPorEmpresa = useMemo(() => {
     const mapa = new Map<string, { id: string; nome: string; faturamento: number; pedidos: number }>();
     for (const v of vendas) {
-      const id = (v as any).empresa_id || "default";
-      const nome = (v as any).empresa_nome || "Empresa Principal";
+      const vEmp = v as VendaComEmpresa;
+      const id = vEmp.empresa_id || "default";
+      const nome = vEmp.empresa_nome || "Empresa Principal";
       const atual = mapa.get(id) ?? { id, nome, faturamento: 0, pedidos: 0 };
       atual.faturamento += paraNumero(v.produto_vlr_total_liquido);
       atual.pedidos += 1;

@@ -1,4 +1,4 @@
-import type { VendaProduto } from "@/lib/syspro-api";
+import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 
 export interface VendaAgrupada {
   id: string;
@@ -241,17 +241,19 @@ export function valorItem(venda: VendaProduto): number {
   return paraNumero(venda.produto_vlr_total_liquido);
 }
 
-export function chaveDaNota(venda: VendaProduto): string {
+export function chaveDaNota(venda: VendaProduto | VendaComEmpresa): string {
+  const empresaId = (venda as VendaComEmpresa).empresa_id || venda.empresa_codigo?.trim() || "1";
   return [
-    (venda as any).empresa_id || venda.empresa_codigo?.trim() || "1",
+    empresaId,
     venda.nf_modelo?.trim() || "55",
     venda.nf_numero?.trim() || "Sem número",
   ].join("|");
 }
 
-export function agruparVendasPorNota(vendas: VendaProduto[]): VendaAgrupada[] {
+export function agruparVendasPorNota(vendas: (VendaProduto | VendaComEmpresa)[]): VendaAgrupada[] {
   const notas = new Map<string, VendaAgrupada>();
   for (const venda of vendas) {
+    const vEmp = venda as VendaComEmpresa;
     const numero = venda.nf_numero?.trim() || "Sem número";
     const chave = chaveDaNota(venda);
     const atual = notas.get(chave);
@@ -278,9 +280,9 @@ export function agruparVendasPorNota(vendas: VendaProduto[]): VendaAgrupada[] {
       itens: [venda],
       quantidadeItens: qtdItem,
       total: totalItem,
-      empresaId: (venda as any).empresa_id,
-      empresaNome: (venda as any).empresa_nome,
-      empresaCnpj: (venda as any).empresa_cnpj,
+      empresaId: vEmp.empresa_id,
+      empresaNome: vEmp.empresa_nome,
+      empresaCnpj: vEmp.empresa_cnpj,
     });
   }
   return [...notas.values()].sort(
@@ -922,8 +924,8 @@ export function extrairDataInfo(
       }
 
       if (!isNaN(dia) && !isNaN(mes) && !isNaN(ano) && ano > 1900) {
-        const d = new Date(ano, mes - 1, dia);
-        return { dia, mes, ano, dayOfWeek: d.getDay() };
+        const d = new Date(Date.UTC(ano, mes - 1, dia, 12, 0, 0));
+        return { dia, mes, ano, dayOfWeek: d.getUTCDay() };
       }
     }
   }
@@ -949,8 +951,8 @@ export function extrairDataInfo(
       }
 
       if (!isNaN(dia) && !isNaN(mes) && !isNaN(ano) && ano > 1900) {
-        const d = new Date(ano, mes - 1, dia);
-        return { dia, mes, ano, dayOfWeek: d.getDay() };
+        const d = new Date(Date.UTC(ano, mes - 1, dia, 12, 0, 0));
+        return { dia, mes, ano, dayOfWeek: d.getUTCDay() };
       }
     }
   }
@@ -958,10 +960,10 @@ export function extrairDataInfo(
   const d = new Date(texto);
   if (!isNaN(d.getTime())) {
     return {
-      dia: d.getDate(),
-      mes: d.getMonth() + 1,
-      ano: d.getFullYear(),
-      dayOfWeek: d.getDay(),
+      dia: d.getUTCDate(),
+      mes: d.getUTCMonth() + 1,
+      ano: d.getUTCFullYear(),
+      dayOfWeek: d.getUTCDay(),
     };
   }
 

@@ -2,16 +2,9 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
-import { consultarVendas, SysproApiError, type VendaProduto } from "@/lib/syspro-api";
+import { SysproApiError } from "@/lib/syspro-api";
 import { resumoVendas } from "@/lib/vendas";
-
-interface CacheEntry {
-  timestamp: number;
-  data: (VendaProduto & { empresa_id?: string; empresa_nome?: string; empresa_cnpj?: string })[];
-}
-
-const vendasCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 45 * 1000; // 45 segundos
+import { obterVendas } from "@/lib/sales-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,111 +63,31 @@ async function handleVendas(request: NextRequest) {
     );
   }
 
-  // MODO CONSOLIDADO (Todas as Empresas)
-  if (empresaId === "todas") {
-    try {
-      const agora = Date.now();
-      const promessas = empresasLiberadas.map(async (emp) => {
-        const cfg = {
-          baseUrl: emp.sysproBaseUrl || "http://localhost:8080",
-          useIis: emp.sysproUseIis === "true",
-        };
-        const cacheKey = `${emp.id}_${dtInicial}_${dtFinal}`;
-        const emCache = vendasCache.get(cacheKey);
-
-        if (!forcarAtualizacao && emCache && agora - emCache.timestamp < CACHE_TTL_MS) {
-          return emCache.data;
-        }
-
-        try {
-          const data = await consultarVendas(cfg, { dtInicial, dtFinal });
-          const filtradas = data
-            .filter((v) => v.empresa_codigo === emp.empresaCodigo)
-            .map((v) => ({
-              ...v,
-              empresa_id: emp.id,
-              empresa_nome: emp.razaoSocial,
-              empresa_cnpj: emp.cnpj,
-            }));
-
-          vendasCache.set(cacheKey, { timestamp: agora, data: filtradas });
-          return filtradas;
-        } catch (err) {
-          console.error(`[api/vendas] Falha ao consultar empresa ${emp.razaoSocial}:`, err);
-          return [];
-        }
-      });
-
-      const resultados = await Promise.all(promessas);
-      const consolidadas = resultados.flat();
-
-      return NextResponse.json({
-        vendas: consolidadas,
-        resumo: resumoVendas(consolidadas),
-        isConsolidado: true,
-        totalEmpresas: empresasLiberadas.length,
-      });
-    } catch (e) {
+  // Se for empresa única, validar se o usuário tem acesso
+  if (empresaId !== "todas") {
+    const empresa = empresasLiberadas.find((e) => e.id === empresaId);
+    if (!empresa) {
       return NextResponse.json(
-        { error: "Erro ao consolidar vendas das empresas." },
-        { status: 502 },
+        { error: "Empresa não encontrada ou não liberada para o usuário" },
+        { status: 403 },
       );
     }
   }
 
-  // MODO INDIVIDUAL (Empresa Única)
-  const empresa = empresasLiberadas.find((e) => e.id === empresaId);
-  if (!empresa) {
-    return NextResponse.json(
-      { error: "Empresa não encontrada ou não liberada para o usuário" },
-      { status: 403 },
-    );
-  }
-
-  const cfg = {
-    baseUrl: empresa.sysproBaseUrl || "http://localhost:8080",
-    useIis: empresa.sysproUseIis === "true",
-  };
-  if (!cfg.baseUrl) {
-    return NextResponse.json(
-      { error: `Configure a URL da API do Syspro para a empresa "${empresa.razaoSocial}" em Configurações.` },
-      { status: 400 },
-    );
-  }
-
   try {
-    const cacheKey = `${empresa.id}_${dtInicial}_${dtFinal}`;
-    const agora = Date.now();
-    const emCache = vendasCache.get(cacheKey);
-
-    let filtradas: (VendaProduto & { empresa_id?: string; empresa_nome?: string; empresa_cnpj?: string })[];
-    if (!forcarAtualizacao && emCache && agora - emCache.timestamp < CACHE_TTL_MS) {
-      filtradas = emCache.data;
-    } else {
-      const data = await consultarVendas(cfg, { dtInicial, dtFinal });
-      filtradas = data
-        .filter((v) => v.empresa_codigo === empresa.empresaCodigo)
-        .map((v) => ({
-          ...v,
-          empresa_id: empresa.id,
-          empresa_nome: empresa.razaoSocial,
-          empresa_cnpj: empresa.cnpj,
-        }));
-      vendasCache.set(cacheKey, { timestamp: agora, data: filtradas });
-
-      // Limpeza preventiva de cache antigo se crescer muito
-      if (vendasCache.size > 50) {
-        for (const [k, v] of vendasCache.entries()) {
-          if (agora - v.timestamp > CACHE_TTL_MS) vendasCache.delete(k);
-        }
-      }
-    }
+    const vendas = await obterVendas({
+      empresasLiberadas,
+      empresaSelecionadaId: empresaId,
+      dtInicial,
+      dtFinal,
+      forcarAtualizacao: Boolean(forcarAtualizacao),
+    });
 
     return NextResponse.json({
-      vendas: filtradas,
-      resumo: resumoVendas(filtradas),
-      cached: Boolean(emCache && !forcarAtualizacao && agora - emCache.timestamp < CACHE_TTL_MS),
-      isConsolidado: false,
+      vendas,
+      resumo: resumoVendas(vendas),
+      isConsolidado: empresaId === "todas",
+      totalEmpresas: empresasLiberadas.length,
     });
   } catch (e) {
     if (e instanceof SysproApiError) {
@@ -191,22 +104,30 @@ async function handleVendas(request: NextRequest) {
 }
 
 function periodoValido(inicial: string, final: string) {
-  const padrao = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-  if (!padrao.test(inicial) || !padrao.test(final)) return false;
+  // Aceita DD/MM/AAAA ou AAAA-MM-DD
+  const padraoBR = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+  const padraoISO = /^(\d{4})-(\d{2})-(\d{2})$/;
+
   const paraData = (valor: string) => {
-    const [dia, mes, ano] = valor.split("/").map(Number);
-    const data = new Date(Date.UTC(ano, mes - 1, dia));
-    return data.getUTCFullYear() === ano &&
-      data.getUTCMonth() === mes - 1 &&
-      data.getUTCDate() === dia
-      ? data
-      : null;
+    if (padraoBR.test(valor)) {
+      const [dia, mes, ano] = valor.split("/").map(Number);
+      return new Date(Date.UTC(ano, mes - 1, dia));
+    }
+    if (padraoISO.test(valor)) {
+      const [ano, mes, dia] = valor.split("-").map(Number);
+      return new Date(Date.UTC(ano, mes - 1, dia));
+    }
+    return null;
   };
+
   const inicio = paraData(inicial);
   const fim = paraData(final);
+
   return Boolean(
     inicio &&
     fim &&
+    !isNaN(inicio.getTime()) &&
+    !isNaN(fim.getTime()) &&
     inicio <= fim &&
     fim.getTime() - inicio.getTime() <= 366 * 86_400_000,
   );

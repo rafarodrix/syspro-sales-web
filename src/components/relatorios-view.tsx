@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   BarChart3,
   DownloadIcon,
@@ -23,7 +23,7 @@ import {
   Building2,
   FileText,
 } from "lucide-react";
-import type { VendaProduto } from "@/lib/syspro-api";
+import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
   calcularCurvaABC,
   analiseDepartamentos,
@@ -80,7 +80,7 @@ interface Props {
   empresaInicial?: string;
   abaInicial?: string;
   initialPeriod?: Periodo;
-  initialVendas?: VendaProduto[];
+  initialVendas?: (VendaProduto | VendaComEmpresa)[];
   initialError?: string;
 }
 
@@ -103,17 +103,24 @@ export function RelatoriosView({
   initialVendas = [],
   initialError,
 }: Props) {
-  const [empresaId] = useState(
+  const [empresaId, setEmpresaId] = useState(
     empresaInicial === "todas" ||
     (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
       : (empresas[0]?.id ?? ""),
   );
+
+  useEffect(() => {
+    if (empresaInicial) {
+      setEmpresaId(empresaInicial);
+    }
+  }, [empresaInicial]);
+
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
   const [loading, setLoading] = useState(false);
-  const [vendas, setVendas] = useState<VendaProduto[]>(initialVendas);
+  const [vendas, setVendas] = useState<(VendaProduto | VendaComEmpresa)[]>(initialVendas);
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [abaAtiva, setAbaAtiva] = useState(abaInicial || "curva-abc");
 
@@ -128,15 +135,85 @@ export function RelatoriosView({
     [empresas, empresaId],
   );
 
-  // Cálculos analíticos completos
-  const relatorioABC = useMemo(() => calcularCurvaABC(vendas), [vendas]);
-  const relatorioDeptos = useMemo(() => analiseDepartamentos(vendas), [vendas]);
-  const relatorioVendedores = useMemo(() => analiseVendedores(vendas), [vendas]);
-  const relatorioClientes = useMemo(() => analiseClientes(vendas), [vendas]);
-  const relatorioDescontos = useMemo(() => analiseDescontos(vendas), [vendas]);
-  const relatorioSazonalidade = useMemo(() => analiseSazonalidade(vendas), [vendas]);
-  const relatorioGeografico = useMemo(() => analiseGeografica(vendas), [vendas]);
-  const relatorioFinanceiro = useMemo(() => analiseFinanceira(vendas), [vendas]);
+  // Cálculos analíticos otimizados com Lazy Memoization por aba ativa
+  const relatorioABC = useMemo(() => {
+    if (abaAtiva !== "curva-abc") {
+      return {
+        itens: [],
+        faturamentoTotal: 0,
+        totalItens: 0,
+        resumoA: { faturamento: 0, itens: 0, percentualFaturamento: 0, percentualItens: 0 },
+        resumoB: { faturamento: 0, itens: 0, percentualFaturamento: 0, percentualItens: 0 },
+        resumoC: { faturamento: 0, itens: 0, percentualFaturamento: 0, percentualItens: 0 },
+      };
+    }
+    return calcularCurvaABC(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioDeptos = useMemo(() => {
+    if (abaAtiva !== "departamentos") return [];
+    return analiseDepartamentos(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioVendedores = useMemo(() => {
+    if (abaAtiva !== "vendedores") return [];
+    return analiseVendedores(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioClientes = useMemo(() => {
+    if (abaAtiva !== "clientes") {
+      return {
+        itens: [],
+        totalClientes: 0,
+        clientesRecorrentes: 0,
+        clientesPontuais: 0,
+        taxaRecorrencia: 0,
+        concentracaoTop5: 0,
+        concentracaoTop10: 0,
+        ticketMedioPorCliente: 0,
+      };
+    }
+    return analiseClientes(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioDescontos = useMemo(() => {
+    if (abaAtiva !== "descontos") {
+      return {
+        descontoTotal: 0,
+        faturamentoBruto: 0,
+        faturamentoLiquido: 0,
+        taxaDescontoGlobal: 0,
+        porVendedor: [],
+        porDepartamento: [],
+        porCliente: [],
+      };
+    }
+    return analiseDescontos(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioSazonalidade = useMemo(() => {
+    if (abaAtiva !== "sazonalidade") {
+      return { porDiaSemana: [], porQuinzena: [] };
+    }
+    return analiseSazonalidade(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioGeografico = useMemo(() => {
+    if (abaAtiva !== "geografico") return [];
+    return analiseGeografica(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioFinanceiro = useMemo(() => {
+    if (abaAtiva !== "financeiro") {
+      return {
+        formasPagamento: [],
+        modelosDocumento: [],
+        totaisFrete: 0,
+        totaisIcmsSt: 0,
+      };
+    }
+    return analiseFinanceira(vendas);
+  }, [vendas, abaAtiva]);
 
   // Itens ABC filtrados
   const itensAbcFiltrados = useMemo(() => {

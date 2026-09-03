@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
+import { hashPassword } from "better-auth/crypto";
 
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -101,14 +102,11 @@ export async function PATCH(request: NextRequest) {
 
     // Se informou nova senha, atualiza o hash da conta
     if (password && typeof password === "string" && password.trim().length >= 6) {
-      // Better Auth password hashing
-      const hashedPassword = await (auth as any).context?.password?.hash(password.trim());
-      if (hashedPassword) {
-        await prisma.account.updateMany({
-          where: { userId: id, providerId: "credential" },
-          data: { password: hashedPassword },
-        });
-      }
+      const hashedPassword = await hashPassword(password.trim());
+      await prisma.account.updateMany({
+        where: { userId: id, providerId: "credential" },
+        data: { password: hashedPassword },
+      });
     }
 
     return NextResponse.json({ ok: true, user: updated });

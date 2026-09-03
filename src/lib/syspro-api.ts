@@ -45,6 +45,12 @@ export interface VendaProduto {
   nf_forma_pagto: string;
 }
 
+export interface VendaComEmpresa extends VendaProduto {
+  empresa_id?: string;
+  empresa_nome?: string;
+  empresa_cnpj?: string;
+}
+
 export interface MovimentacaoEstoque {
   codigo_auxiliar: string;
   produto_descricao: string;
