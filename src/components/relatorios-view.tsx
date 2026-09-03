@@ -55,10 +55,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -76,6 +78,17 @@ interface Props {
   initialVendas?: VendaProduto[];
   initialError?: string;
 }
+
+const relatoriosOpcoes = [
+  { id: "curva-abc", label: "Curva ABC (Produtos)", icone: Sparkles, cor: "text-amber-500", desc: "Pareto 80/15/5 de faturamento e volume de itens" },
+  { id: "clientes", label: "Clientes & Concentração", icone: UserCheck, cor: "text-emerald-500", desc: "Concentração Top 5/10, recorrência e Pareto de clientes" },
+  { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500", desc: "Taxa de desconto por vendedor e por departamento" },
+  { id: "sazonalidade", label: "Sazonalidade & Dias", icone: CalendarDays, cor: "text-indigo-500", desc: "Vendas por dia da semana e comparativo quinzenal" },
+  { id: "departamentos", label: "Departamentos & Mix", icone: Layers, cor: "text-blue-500", desc: "Faturamento por categoria com itens detalhados" },
+  { id: "vendedores", label: "Equipe de Vendedores", icone: Users, cor: "text-violet-500", desc: "Ranking de consultores, ticket médio e descontos" },
+  { id: "geografico", label: "Cidades & Praças", icone: MapPin, cor: "text-teal-500", desc: "Geolocalização, clientes atendidos e frete rateado" },
+  { id: "financeiro", label: "Financeiro & Fiscal", icone: CreditCard, cor: "text-orange-500", desc: "Formas de pagamento, NF-e vs NFC-e e ICMS-ST" },
+];
 
 export function RelatoriosView({
   empresas,
@@ -449,110 +462,91 @@ export function RelatoriosView({
         </Card>
       ) : null}
 
-      {/* Estrutura de Abas dos Relatórios */}
+      {/* Card Principal do Relatório Executivo */}
       <Card className="border-border/60 shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <Tabs
-                value={abaAtiva}
-                onValueChange={(v) => {
-                  setAbaAtiva(v);
-                  setBusca("");
-                  setFiltroClasseAbc("todas");
-                  setFiltroClasseCli("todas");
-                }}
-                className="w-full sm:w-auto"
+        <CardHeader className="pb-3 border-b border-border/60">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {/* Seletor Dinâmico do Relatório Ativo */}
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/80 ${
+                  relatoriosOpcoes.find((r) => r.id === abaAtiva)?.cor ?? "text-primary"
+                }`}
               >
-                <TabsList className="grid grid-cols-2 sm:flex sm:flex-wrap h-auto p-1 gap-1">
-                  <TabsTrigger value="curva-abc" className="text-xs font-bold gap-1.5 py-1.5">
-                    <Sparkles className="size-3.5 text-amber-500" />
-                    Curva ABC (Produtos)
-                  </TabsTrigger>
-                  <TabsTrigger value="clientes" className="text-xs font-bold gap-1.5 py-1.5">
-                    <UserCheck className="size-3.5 text-emerald-500" />
-                    Clientes & Concentração
-                  </TabsTrigger>
-                  <TabsTrigger value="descontos" className="text-xs font-bold gap-1.5 py-1.5">
-                    <Percent className="size-3.5 text-rose-500" />
-                    Descontos & Margem
-                  </TabsTrigger>
-                  <TabsTrigger value="sazonalidade" className="text-xs font-bold gap-1.5 py-1.5">
-                    <CalendarDays className="size-3.5 text-indigo-500" />
-                    Sazonalidade & Dias
-                  </TabsTrigger>
-                  <TabsTrigger value="departamentos" className="text-xs font-bold gap-1.5 py-1.5">
-                    <Layers className="size-3.5" />
-                    Departamentos
-                  </TabsTrigger>
-                  <TabsTrigger value="vendedores" className="text-xs font-bold gap-1.5 py-1.5">
-                    <Users className="size-3.5" />
-                    Vendedores
-                  </TabsTrigger>
-                  <TabsTrigger value="geografico" className="text-xs font-bold gap-1.5 py-1.5">
-                    <MapPin className="size-3.5" />
-                    Cidades / Praças
-                  </TabsTrigger>
-                  <TabsTrigger value="financeiro" className="text-xs font-bold gap-1.5 py-1.5">
-                    <CreditCard className="size-3.5" />
-                    Financeiro & Fiscal
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              <div className="no-print flex items-center gap-2">
-                <Button
-                  onClick={exportarCsvRelatorio}
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1.5 text-xs font-semibold"
-                >
-                  <DownloadIcon className="size-3.5" />
-                  Exportar CSV
-                </Button>
-                <Button
-                  onClick={() => window.print()}
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1.5 text-xs font-semibold"
-                >
-                  <PrinterIcon className="size-3.5" />
-                  Imprimir
-                </Button>
+                {(() => {
+                  const IconeOp =
+                    relatoriosOpcoes.find((r) => r.id === abaAtiva)?.icone ?? Sparkles;
+                  return <IconeOp className="size-4" />;
+                })()}
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={abaAtiva}
+                    onValueChange={(v) => {
+                      setAbaAtiva(v);
+                      setBusca("");
+                      setFiltroClasseAbc("todas");
+                      setFiltroClasseCli("todas");
+                      const url = new URL(window.location.href);
+                      url.searchParams.set("aba", v);
+                      window.history.replaceState({}, "", url.toString());
+                    }}
+                  >
+                    <SelectTrigger className="h-7 border-none bg-transparent p-0 text-sm font-extrabold text-foreground shadow-none hover:bg-muted/40 px-1.5 rounded-md cursor-pointer">
+                      <SelectValue placeholder="Selecione o relatório" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {relatoriosOpcoes.map((op) => {
+                        const IconeOp = op.icone;
+                        return (
+                          <SelectItem key={op.id} value={op.id} className="text-xs font-semibold">
+                            <div className="flex items-center gap-2">
+                              <IconeOp className={`size-3.5 ${op.cor}`} />
+                              <span>{op.label}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <span className="text-[11px] text-muted-foreground">
+                  {relatoriosOpcoes.find((r) => r.id === abaAtiva)?.desc}
+                </span>
               </div>
             </div>
 
-            {/* Barra de Busca e Filtros de Linha */}
-            <div className="no-print flex flex-wrap items-center gap-2.5 rounded-lg border bg-muted/20 p-2.5">
-              <div className="relative flex-1 min-w-[200px] sm:min-w-[260px]">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            {/* Ações da Direita: Busca + Filtros de Classe + Exportação */}
+            <div className="no-print flex flex-wrap items-center gap-2">
+              <div className="relative min-w-[170px] sm:min-w-[210px]">
+                <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Pesquisar registros neste relatório..."
+                  placeholder="Pesquisar registros..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="h-8 w-full rounded-md border bg-background pl-8 pr-8 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
+                  className="h-8 w-full rounded-md border bg-background pl-8 pr-7 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
                 {busca && (
                   <button
                     onClick={() => setBusca("")}
-                    className="absolute right-2.5 top-2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
                   >
-                    <X className="size-4" />
+                    <X className="size-3.5" />
                   </button>
                 )}
               </div>
 
               {abaAtiva === "curva-abc" && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-semibold text-muted-foreground">Classe:</span>
+                <div className="flex items-center gap-1">
                   {(["todas", "A", "B", "C"] as const).map((cls) => (
                     <Button
                       key={cls}
                       size="sm"
                       variant={filtroClasseAbc === cls ? "default" : "outline"}
                       onClick={() => setFiltroClasseAbc(cls)}
-                      className="h-7 px-2.5 text-xs font-bold"
+                      className="h-8 px-2 text-xs font-bold"
                     >
                       {cls === "todas" ? "Todas" : `Classe ${cls}`}
                     </Button>
@@ -561,21 +555,39 @@ export function RelatoriosView({
               )}
 
               {abaAtiva === "clientes" && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-semibold text-muted-foreground">Classe:</span>
+                <div className="flex items-center gap-1">
                   {(["todas", "A", "B", "C"] as const).map((cls) => (
                     <Button
                       key={cls}
                       size="sm"
                       variant={filtroClasseCli === cls ? "default" : "outline"}
                       onClick={() => setFiltroClasseCli(cls)}
-                      className="h-7 px-2.5 text-xs font-bold"
+                      className="h-8 px-2 text-xs font-bold"
                     >
                       {cls === "todas" ? "Todas" : `Classe ${cls}`}
                     </Button>
                   ))}
                 </div>
               )}
+
+              <Button
+                onClick={exportarCsvRelatorio}
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-xs font-semibold"
+              >
+                <DownloadIcon className="size-3.5" />
+                Exportar CSV
+              </Button>
+              <Button
+                onClick={() => window.print()}
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-xs font-semibold"
+              >
+                <PrinterIcon className="size-3.5" />
+                Imprimir
+              </Button>
             </div>
           </div>
         </CardHeader>

@@ -37,6 +37,7 @@ import {
 } from "@/components/date-range-filter";
 import { KpiCard } from "@/components/kpi-card";
 import { RankingCard } from "@/components/ranking-card";
+import { PieChartCard } from "@/components/pie-chart-card";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -239,57 +240,63 @@ export function DashboardView({
   return (
     <div className="flex flex-col gap-6">
       {/* Header Executivo de BI */}
-      <div className="flex flex-col gap-4 rounded-xl border border-border/60 bg-card p-4 sm:p-6 shadow-xs md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Visão Geral de Vendas
-            </h1>
-            <Badge variant="outline" className="text-xs font-mono">
-              BI Executivo
-            </Badge>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1 font-semibold text-foreground">
-              <Building2Icon className="size-3.5 text-primary" />
-              {empresaAtual ? empresaAtual.razaoSocial : "Empresa Selecionada"}
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Calendar className="size-3.5" />
-              {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
-            </span>
-            {ultimaAtualizacao && (
-              <>
-                <span>•</span>
-                <span>Atualizado às {ultimaAtualizacao}</span>
-              </>
-            )}
-          </div>
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            Visão Geral de Vendas
+          </h1>
+          <Badge variant="outline" className="text-xs font-mono">
+            BI Executivo
+          </Badge>
         </div>
-
-        <div className="flex flex-col items-start gap-3 md:items-end">
-          <DateRangeFilter
-            value={periodo}
-            onChange={setPeriodo}
-            onConsultar={consultar}
-            loading={loading}
-            compact
-          />
-
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={compararPeriodoAnterior}
-                onChange={(e) => setCompararPeriodoAnterior(e.target.checked)}
-                className="rounded border-border text-primary focus:ring-primary size-3.5"
-              />
-              <span>Comparar com período anterior</span>
-            </label>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-0.5">
+          <span className="flex items-center gap-1 font-semibold text-foreground">
+            <Building2Icon className="size-3.5 text-primary" />
+            {empresaAtual ? empresaAtual.razaoSocial : "Empresa Selecionada"}
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <Calendar className="size-3.5" />
+            {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
+          </span>
+          {ultimaAtualizacao && (
+            <>
+              <span>•</span>
+              <span>Atualizado às {ultimaAtualizacao}</span>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Barra de Filtro de Período em Linha Única */}
+      <Card className="no-print border-border/60 shadow-xs">
+        <CardContent className="p-3 sm:p-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex-1 min-w-[280px]">
+              <DateRangeFilter
+                value={periodo}
+                onChange={setPeriodo}
+                onConsultar={consultar}
+                loading={loading}
+              />
+            </div>
+
+            <div className="hidden h-5 w-px bg-border/80 lg:block" />
+
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={compararPeriodoAnterior}
+                  onChange={(e) => setCompararPeriodoAnterior(e.target.checked)}
+                  className="rounded border-border text-primary focus:ring-primary size-3.5 cursor-pointer"
+                />
+                <span>Comparar com período anterior</span>
+              </label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {erro ? (
         <Card className="border-destructive/50 bg-destructive/5">
@@ -615,9 +622,9 @@ export function DashboardView({
           />
         </div>
 
-        {/* Formas de Pagamento */}
+        {/* Formas de Pagamento (Pie / Donut Chart Bklit Style) */}
         <div className="lg:col-span-6">
-          <RankingCard
+          <PieChartCard
             descricao="Distribuição dos recebimentos declarados nas notas."
             itens={resumo.porFormaPagamento}
             titulo="Formas de Pagamento"
