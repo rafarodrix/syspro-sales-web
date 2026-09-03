@@ -603,6 +603,7 @@ export function VendasView({
 
               {/* Tabela com Ordenação */}
               <div className="overflow-x-auto rounded-md border">
+                <div className="min-w-[820px]">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40 text-xs font-bold">
@@ -694,6 +695,7 @@ export function VendasView({
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
 
               {/* Barra de Paginação */}
@@ -914,7 +916,7 @@ function NotaRow({
 function TabelaItens({ itens }: { itens: VendaProduto[] }) {
   return (
     <div className="overflow-x-auto rounded-md border bg-background shadow-xs">
-      <table className="w-full text-xs">
+      <table className="w-full min-w-[760px] text-xs">
         <thead className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
           <tr>
             <th className="p-2.5 font-semibold">Código</th>

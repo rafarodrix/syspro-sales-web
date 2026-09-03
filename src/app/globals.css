@@ -4,6 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Scroll horizontal suave em tabelas no celular (iOS/Android) */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

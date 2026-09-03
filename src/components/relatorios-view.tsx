@@ -652,7 +652,7 @@ export function RelatoriosView({
 
                   {/* Tabela Curva ABC */}
                   <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full text-xs">
+                    <table className="w-full min-w-[640px] text-xs">
                       <thead>
                         <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
                           <th className="p-3 w-16 text-center">Classe</th>
@@ -771,7 +771,7 @@ export function RelatoriosView({
 
                   {/* Tabela de Clientes */}
                   <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full text-xs">
+                    <table className="w-full min-w-[640px] text-xs">
                       <thead>
                         <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
                           <th className="p-3 w-16 text-center">Classe</th>
@@ -874,7 +874,8 @@ export function RelatoriosView({
                         <CardDescription className="text-xs">Avaliação de concessão e taxa de desconto por consultor.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <table className="w-full text-xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[640px] text-xs">
                           <thead>
                             <tr className="border-b text-left font-semibold text-muted-foreground">
                               <th className="p-2.5">Vendedor</th>
@@ -894,6 +895,7 @@ export function RelatoriosView({
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </CardContent>
                     </Card>
 
@@ -904,7 +906,8 @@ export function RelatoriosView({
                         <CardDescription className="text-xs">Categorias com maior pressão de desconto comercial.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <table className="w-full text-xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[640px] text-xs">
                           <thead>
                             <tr className="border-b text-left font-semibold text-muted-foreground">
                               <th className="p-2.5">Departamento</th>
@@ -924,6 +927,7 @@ export function RelatoriosView({
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
@@ -943,7 +947,8 @@ export function RelatoriosView({
                         <CardDescription className="text-xs">Distribuição de receita e pedidos de Segunda a Domingo.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <table className="w-full text-xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[640px] text-xs">
                           <thead>
                             <tr className="border-b text-left font-semibold text-muted-foreground">
                               <th className="p-2.5">Dia da Semana</th>
@@ -965,6 +970,7 @@ export function RelatoriosView({
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </CardContent>
                     </Card>
 
@@ -975,7 +981,8 @@ export function RelatoriosView({
                         <CardDescription className="text-xs">Início de mês (1 a 15) vs. Segunda quinzena (16+).</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <table className="w-full text-xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[640px] text-xs">
                           <thead>
                             <tr className="border-b text-left font-semibold text-muted-foreground">
                               <th className="p-2.5">Quinzena</th>
@@ -997,6 +1004,7 @@ export function RelatoriosView({
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
@@ -1009,7 +1017,7 @@ export function RelatoriosView({
               {abaAtiva === "departamentos" && (
                 <div className="space-y-4">
                   <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full text-xs">
+                    <table className="w-full min-w-[640px] text-xs">
                       <thead>
                         <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
                           <th className="p-3 w-10" />
@@ -1068,7 +1076,7 @@ export function RelatoriosView({
                                       <div className="bg-muted/40 p-2.5 font-bold text-xs text-foreground border-b">
                                         Produtos no Departamento: {dep.nome} ({dep.produtos.length} itens)
                                       </div>
-                                      <table className="w-full text-xs">
+                                      <table className="w-full min-w-[640px] text-xs">
                                         <thead>
                                           <tr className="border-b text-left text-muted-foreground font-semibold">
                                             <th className="p-2.5">Código</th>
@@ -1110,7 +1118,7 @@ export function RelatoriosView({
               {/* ========================================================= */}
               {abaAtiva === "vendedores" && (
                 <div className="overflow-x-auto rounded-md border">
-                  <table className="w-full text-xs">
+                  <table className="w-full min-w-[640px] text-xs">
                     <thead>
                       <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
                         <th className="p-3">Vendedor</th>
@@ -1164,7 +1172,7 @@ export function RelatoriosView({
               {/* ========================================================= */}
               {abaAtiva === "geografico" && (
                 <div className="overflow-x-auto rounded-md border">
-                  <table className="w-full text-xs">
+                  <table className="w-full min-w-[640px] text-xs">
                     <thead>
                       <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
                         <th className="p-3">Cidade</th>
@@ -1236,7 +1244,8 @@ export function RelatoriosView({
                         <CardDescription className="text-xs">Distribuição do faturamento por meio de recebimento.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <table className="w-full text-xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[640px] text-xs">
                           <thead>
                             <tr className="border-b text-left font-semibold text-muted-foreground">
                               <th className="p-2.5">Forma</th>
@@ -1258,6 +1267,7 @@ export function RelatoriosView({
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </CardContent>
                     </Card>
 
@@ -1267,7 +1277,8 @@ export function RelatoriosView({
                         <CardDescription className="text-xs">Divisão entre NF-e (Modelo 55) e NFC-e (Modelo 65).</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <table className="w-full text-xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[640px] text-xs">
                           <thead>
                             <tr className="border-b text-left font-semibold text-muted-foreground">
                               <th className="p-2.5">Modelo</th>
@@ -1289,6 +1300,7 @@ export function RelatoriosView({
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </CardContent>
                     </Card>
                   </div>

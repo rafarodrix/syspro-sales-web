@@ -363,8 +363,8 @@ export function ConfiguracaoClient({ configuracao, empresas }: Props) {
             </Button>
           </div>
 
-          <div className="overflow-hidden rounded-md border">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full min-w-[560px] text-xs">
               <thead>
                 <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
                   <th className="p-3">CNPJ</th>
