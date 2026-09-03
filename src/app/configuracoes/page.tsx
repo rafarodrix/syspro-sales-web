@@ -21,8 +21,10 @@ export default async function ConfiguracoesPage() {
   return (
     <div>
       <NavApp />
-      <main className="mx-auto max-w-4xl space-y-6 p-6">
-        <h1 className="text-2xl font-semibold">Configurações</h1>
+      <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          Configurações do Sistema
+        </h1>
         <ConfiguracaoClient
           configuracao={{
             sysproBaseUrl: configuracao?.sysproBaseUrl ?? "",

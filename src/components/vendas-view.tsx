@@ -1,13 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   BarChart3,
   ChevronDown,
   ChevronRight,
   DownloadIcon,
-  FileDownIcon,
+  PrinterIcon,
   Search,
+  X,
+  ChevronsUpDown,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
@@ -15,6 +27,7 @@ import {
   dataInputParaSyspro,
   formatarDataInputParaBR,
   paraNumero,
+  type VendaAgrupada,
 } from "@/lib/vendas";
 import {
   DateRangeFilter,
@@ -38,7 +51,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface EmpresaOption {
@@ -55,6 +75,9 @@ interface Props {
   initialError?: string;
 }
 
+type CampoOrdenacao = "emissao" | "numero" | "cliente" | "quantidadeItens" | "total";
+type DirecaoOrdenacao = "asc" | "desc";
+
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -68,6 +91,7 @@ export function VendasView({
   initialVendas = [],
   initialError,
 }: Props) {
+  const searchParams = useSearchParams();
   const [empresaId] = useState(
     empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial)
       ? empresaInicial
@@ -79,8 +103,35 @@ export function VendasView({
   const [loading, setLoading] = useState(false);
   const [vendas, setVendas] = useState<VendaProduto[]>(initialVendas);
   const [erro, setErro] = useState<string | null>(initialError ?? null);
-  const [notaAberta, setNotaAberta] = useState<string | null>(null);
+  const [notasAbertas, setNotasAbertas] = useState<Set<string>>(new Set());
+
+  // Filtros
   const [buscaVenda, setBuscaVenda] = useState("");
+  const [filtroVendedor, setFiltroVendedor] = useState<string>("todos");
+  const [filtroDepartamento, setFiltroDepartamento] = useState<string>("todos");
+  const [filtroFormaPagto, setFiltroFormaPagto] = useState<string>("todos");
+  const [filtroModelo, setFiltroModelo] = useState<string>("todos");
+
+  // Ordenação
+  const [campoOrdenacao, setCampoOrdenacao] = useState<CampoOrdenacao>("emissao");
+  const [direcaoOrdenacao, setDirecaoOrdenacao] = useState<DirecaoOrdenacao>("desc");
+
+  // Paginação
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(25);
+
+  // Inicializar filtros a partir dos parâmetros de busca da URL (Drill-down)
+  useEffect(() => {
+    const paramVendedor = searchParams.get("vendedor");
+    const paramDepartamento = searchParams.get("departamento");
+    const paramFormaPagto = searchParams.get("formaPagamento");
+    const paramBusca = searchParams.get("busca");
+
+    if (paramVendedor) setFiltroVendedor(paramVendedor);
+    if (paramDepartamento) setFiltroDepartamento(paramDepartamento);
+    if (paramFormaPagto) setFiltroFormaPagto(paramFormaPagto);
+    if (paramBusca) setBuscaVenda(paramBusca);
+  }, [searchParams]);
 
   const empresaAtual = useMemo(
     () => empresas.find((e) => e.id === empresaId),
@@ -89,28 +140,161 @@ export function VendasView({
 
   const notas = useMemo(() => agruparVendasPorNota(vendas), [vendas]);
 
-  const notasFiltradas = useMemo(() => {
-    if (!buscaVenda.trim()) return notas;
-    const termo = buscaVenda.toLowerCase().trim();
-    return notas.filter(
-      (n) =>
-        n.numero.toLowerCase().includes(termo) ||
-        n.cliente.toLowerCase().includes(termo) ||
-        n.cidade?.toLowerCase().includes(termo),
-    );
-  }, [notas, buscaVenda]);
+  // Opções para os selects de filtro
+  const opcoesFiltro = useMemo(() => {
+    const vendedores = new Set<string>();
+    const departamentos = new Set<string>();
+    const formasPagto = new Set<string>();
+    const modelos = new Set<string>();
 
+    for (const v of vendas) {
+      if (v.vendedor_nome?.trim()) vendedores.add(v.vendedor_nome.trim());
+      if (v.produto_departamento?.trim()) departamentos.add(v.produto_departamento.trim());
+      if (v.nf_forma_pagto?.trim()) formasPagto.add(v.nf_forma_pagto.trim());
+      if (v.nf_modelo?.trim()) modelos.add(v.nf_modelo.trim());
+    }
+
+    return {
+      vendedores: Array.from(vendedores).sort(),
+      departamentos: Array.from(departamentos).sort(),
+      formasPagto: Array.from(formasPagto).sort(),
+      modelos: Array.from(modelos).sort(),
+    };
+  }, [vendas]);
+
+  // Filtragem
+  const notasFiltradas = useMemo(() => {
+    return notas.filter((n) => {
+      // Busca textual
+      if (buscaVenda.trim()) {
+        const termo = buscaVenda.toLowerCase().trim();
+        const bateu =
+          n.numero.toLowerCase().includes(termo) ||
+          n.cliente.toLowerCase().includes(termo) ||
+          n.cidade?.toLowerCase().includes(termo) ||
+          n.itens.some((item) =>
+            item.produto_descricao?.toLowerCase().includes(termo) ||
+            item.produto_id?.toLowerCase().includes(termo)
+          );
+        if (!bateu) return false;
+      }
+
+      // Filtro Vendedor
+      if (filtroVendedor !== "todos" && n.vendedor !== filtroVendedor) {
+        return false;
+      }
+
+      // Filtro Departamento
+      if (
+        filtroDepartamento !== "todos" &&
+        !n.itens.some((i) => i.produto_departamento?.trim() === filtroDepartamento)
+      ) {
+        return false;
+      }
+
+      // Filtro Forma Pagamento
+      if (filtroFormaPagto !== "todos" && n.formaPagamento !== filtroFormaPagto) {
+        return false;
+      }
+
+      // Filtro Modelo
+      if (filtroModelo !== "todos" && n.modelo !== filtroModelo) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [
+    notas,
+    buscaVenda,
+    filtroVendedor,
+    filtroDepartamento,
+    filtroFormaPagto,
+    filtroModelo,
+  ]);
+
+  // Ordenação
+  const notasOrdenadas = useMemo(() => {
+    return [...notasFiltradas].sort((a, b) => {
+      let valA: string | number = a[campoOrdenacao];
+      let valB: string | number = b[campoOrdenacao];
+
+      if (campoOrdenacao === "emissao") {
+        const parseData = (d: string) => {
+          const [dia, mes, ano] = d.split("/").map(Number);
+          return Date.UTC(ano || 0, (mes || 1) - 1, dia || 1);
+        };
+        valA = parseData(a.emissao);
+        valB = parseData(b.emissao);
+      } else if (typeof valA === "string") {
+        valA = valA.toLowerCase();
+        valB = String(valB).toLowerCase();
+      }
+
+      if (valA < valB) return direcaoOrdenacao === "asc" ? -1 : 1;
+      if (valA > valB) return direcaoOrdenacao === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [notasFiltradas, campoOrdenacao, direcaoOrdenacao]);
+
+  // Paginação
+  const totalPaginas = Math.ceil(notasOrdenadas.length / itensPorPagina) || 1;
+  const notasPaginadas = useMemo(() => {
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    return notasOrdenadas.slice(inicio, inicio + itensPorPagina);
+  }, [notasOrdenadas, paginaAtual, itensPorPagina]);
+
+  // Resumo dos filtros aplicados
   const resumoBusca = useMemo(() => {
     let faturamento = 0;
+    let itensTotal = 0;
     const clientes = new Set<string>();
+
     for (const n of notasFiltradas) {
       faturamento += n.total;
-      if (n.cliente) clientes.add(n.cliente);
+      itensTotal += n.quantidadeItens;
+      if (n.cliente) clientes.add(n.cliente.toUpperCase());
     }
     const totalNotas = notasFiltradas.length;
     const ticketMedio = totalNotas ? faturamento / totalNotas : 0;
-    return { faturamento, totalNotas, clientes: clientes.size, ticketMedio };
+    return { faturamento, totalNotas, clientes: clientes.size, ticketMedio, itensTotal };
   }, [notasFiltradas]);
+
+  function alternarOrdenacao(campo: CampoOrdenacao) {
+    if (campoOrdenacao === campo) {
+      setDirecaoOrdenacao((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setCampoOrdenacao(campo);
+      setDirecaoOrdenacao("desc");
+    }
+    setPaginaAtual(1);
+  }
+
+  function alternarNota(id: string) {
+    setNotasAbertas((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(id)) novo.delete(id);
+      else novo.add(id);
+      return novo;
+    });
+  }
+
+  function expandirTodas() {
+    setNotasAbertas(new Set(notasPaginadas.map((n) => n.id)));
+  }
+
+  function recolherTodas() {
+    setNotasAbertas(new Set());
+  }
+
+  function limparTodosFiltros() {
+    setBuscaVenda("");
+    setFiltroVendedor("todos");
+    setFiltroDepartamento("todos");
+    setFiltroFormaPagto("todos");
+    setFiltroModelo("todos");
+    setPaginaAtual(1);
+  }
 
   async function consultar(periodoDaConsulta = periodo) {
     if (!empresaId || !periodoDaConsulta.inicial || !periodoDaConsulta.final) {
@@ -123,7 +307,7 @@ export function VendasView({
     }
     setLoading(true);
     setErro(null);
-    setNotaAberta(null);
+    setNotasAbertas(new Set());
     try {
       const resposta = await fetch("/api/vendas", {
         method: "POST",
@@ -135,9 +319,12 @@ export function VendasView({
         }),
       });
       const json = await resposta.json().catch(() => ({}));
-      if (!resposta.ok)
+      if (!resposta.ok) {
         throw new Error(json.error ?? "Erro ao consultar as vendas.");
+      }
       setVendas(json.vendas as VendaProduto[]);
+      setPaginaAtual(1);
+      toast.success("Vendas consultadas com sucesso!");
     } catch (causa) {
       const mensagem =
         causa instanceof Error ? causa.message : "Erro ao consultar as vendas.";
@@ -149,37 +336,45 @@ export function VendasView({
     }
   }
 
+  const temFiltrosAtivos =
+    Boolean(buscaVenda.trim()) ||
+    filtroVendedor !== "todos" ||
+    filtroDepartamento !== "todos" ||
+    filtroFormaPagto !== "todos" ||
+    filtroModelo !== "todos";
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Print-Only Header */}
+      {/* Cabeçalho de Impressão (@media print) */}
       <div className="print-only mb-4 border-b pb-3">
         <h1 className="text-xl font-bold uppercase tracking-wide text-black">
-          Relatório de Vendas — Syspro ERP
+          Relatório Executivo de Vendas — Syspro ERP
         </h1>
         <p className="text-xs text-slate-700">
-          Empresa: {empresaAtual?.razaoSocial ?? "Empresa"} | CNPJ:{" "}
-          {empresaAtual?.cnpj} | Período:{" "}
-          {formatarDataInputParaBR(periodo.inicial)} a{" "}
-          {formatarDataInputParaBR(periodo.final)}
+          Empresa: {empresaAtual?.razaoSocial ?? "Empresa"} | CNPJ: {empresaAtual?.cnpj} |
+          Período: {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
+        </p>
+        <p className="text-xs text-slate-700 mt-1">
+          Total Faturado: {moeda.format(resumoBusca.faturamento)} | Notas: {numero.format(resumoBusca.totalNotas)} |
+          Clientes: {numero.format(resumoBusca.clientes)} | Ticket Médio: {moeda.format(resumoBusca.ticketMedio)}
         </p>
       </div>
 
-      {/* Search & Filter Controls */}
+      {/* Painel de Consulta & Filtros */}
       <Card className="no-print border-border/60 shadow-sm backdrop-blur-md">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="text-xl font-bold tracking-tight">
+              <CardTitle className="text-xl font-bold tracking-tight text-foreground">
                 Consulta de Vendas
               </CardTitle>
               <CardDescription className="text-xs">
-                Selecione o período desejado para consultar o histórico completo
-                de notas fiscais faturadas.
+                Selecione o período e aplique filtros para analisar notas fiscais e itens detalhados.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="border-t pt-4">
+        <CardContent className="border-t border-border/60 pt-4">
           <DateRangeFilter
             value={periodo}
             onChange={setPeriodo}
@@ -197,48 +392,177 @@ export function VendasView({
         </Card>
       ) : null}
 
-      {/* Main Sales Table Card */}
+      {/* Tabela Principal de Vendas */}
       <Card className="border-border/60 shadow-sm">
         <CardHeader className="pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-base font-bold">
-                Notas Fiscais Emitidas
-              </CardTitle>
-              <CardDescription className="text-xs">
-                {notasFiltradas.length} notas encontradas. Clique no ícone de
-                expansão para visualizar os itens da nota.
-              </CardDescription>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-foreground">
+                  Notas Fiscais Emitidas
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {notasFiltradas.length} nota(s) encontrada(s) no período filtrado.
+                </CardDescription>
+              </div>
+
+              {/* Botões de Ação e Exportação */}
+              <div className="no-print flex flex-wrap items-center gap-2">
+                <Button
+                  onClick={expandirTodas}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-xs font-semibold"
+                  title="Expandir todas as notas da página"
+                >
+                  <Maximize2 className="size-3.5" />
+                  Expandir todas
+                </Button>
+                <Button
+                  onClick={recolherTodas}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-xs font-semibold"
+                  title="Recolher todas as notas"
+                >
+                  <Minimize2 className="size-3.5" />
+                  Recolher todas
+                </Button>
+                <Button
+                  onClick={() => exportarCsv(vendas)}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-xs font-semibold"
+                >
+                  <DownloadIcon className="size-3.5" />
+                  Exportar CSV
+                </Button>
+                <Button
+                  onClick={() => window.print()}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-xs font-semibold"
+                >
+                  <PrinterIcon className="size-3.5" />
+                  Imprimir
+                </Button>
+              </div>
             </div>
-            <div className="no-print flex flex-wrap items-center gap-2">
-              <div className="relative flex-1 min-w-[200px] sm:w-64">
+
+            {/* Barra de Busca e Filtros Combinados */}
+            <div className="no-print flex flex-wrap items-center gap-2.5 rounded-lg border bg-muted/20 p-3">
+              {/* Campo de Busca com Botão Limpar */}
+              <div className="relative flex-1 min-w-[200px] sm:min-w-[240px]">
                 <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Buscar NF ou cliente..."
+                  placeholder="Buscar por NF, cliente, cidade ou produto..."
                   value={buscaVenda}
-                  onChange={(e) => setBuscaVenda(e.target.value)}
-                  className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500/50"
+                  onChange={(e) => {
+                    setBuscaVenda(e.target.value);
+                    setPaginaAtual(1);
+                  }}
+                  className="h-9 w-full rounded-md border bg-background pl-8 pr-8 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
+                {buscaVenda && (
+                  <button
+                    onClick={() => {
+                      setBuscaVenda("");
+                      setPaginaAtual(1);
+                    }}
+                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                    title="Limpar busca"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
               </div>
-              <Button
-                onClick={() => exportarExcel(vendas)}
-                size="sm"
-                variant="outline"
-                className="gap-1.5 text-xs font-semibold"
-              >
-                <DownloadIcon className="size-3.5" />
-                Excel
-              </Button>
-              <Button
-                onClick={() => window.print()}
-                size="sm"
-                variant="outline"
-                className="gap-1.5 text-xs font-semibold"
-              >
-                <FileDownIcon className="size-3.5" />
-                PDF
-              </Button>
+
+              {/* Filtro Vendedor */}
+              {opcoesFiltro.vendedores.length > 0 && (
+                <div className="w-40 sm:w-44">
+                  <Select
+                    value={filtroVendedor}
+                    onValueChange={(v) => {
+                      setFiltroVendedor(v);
+                      setPaginaAtual(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Vendedor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Vendedores</SelectItem>
+                      {opcoesFiltro.vendedores.map((vend) => (
+                        <SelectItem key={vend} value={vend}>
+                          {vend}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Filtro Departamento */}
+              {opcoesFiltro.departamentos.length > 0 && (
+                <div className="w-40 sm:w-44">
+                  <Select
+                    value={filtroDepartamento}
+                    onValueChange={(d) => {
+                      setFiltroDepartamento(d);
+                      setPaginaAtual(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Departamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos Departamentos</SelectItem>
+                      {opcoesFiltro.departamentos.map((dep) => (
+                        <SelectItem key={dep} value={dep}>
+                          {dep}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Filtro Forma de Pagamento */}
+              {opcoesFiltro.formasPagto.length > 0 && (
+                <div className="w-40 sm:w-44">
+                  <Select
+                    value={filtroFormaPagto}
+                    onValueChange={(fp) => {
+                      setFiltroFormaPagto(fp);
+                      setPaginaAtual(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Forma Pagto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas as Formas</SelectItem>
+                      {opcoesFiltro.formasPagto.map((fp) => (
+                        <SelectItem key={fp} value={fp}>
+                          {fp}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {temFiltrosAtivos && (
+                <Button
+                  onClick={limparTodosFiltros}
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Limpar filtros
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -256,67 +580,202 @@ export function VendasView({
             </div>
           ) : vendas.length > 0 ? (
             <>
-              {/* Summary Bar */}
-              <div className="no-print mb-4 grid grid-cols-2 gap-3 rounded-lg border bg-muted/20 p-3.5 sm:grid-cols-4">
+              {/* Resumo Consolidado dos Filtros Aplicados */}
+              <div className="no-print mb-4 grid grid-cols-2 gap-3 rounded-lg border border-border/60 bg-muted/20 p-3.5 sm:grid-cols-4">
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Total Faturado
                   </span>
-                  <span className="text-base font-extrabold text-foreground">
+                  <span className="font-mono text-base font-extrabold text-foreground">
                     {moeda.format(resumoBusca.faturamento)}
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Notas Fiscais
                   </span>
-                  <span className="text-base font-extrabold text-foreground">
+                  <span className="font-mono text-base font-extrabold text-foreground">
                     {numero.format(resumoBusca.totalNotas)}
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Clientes Atendidos
                   </span>
-                  <span className="text-base font-extrabold text-foreground">
+                  <span className="font-mono text-base font-extrabold text-foreground">
                     {numero.format(resumoBusca.clientes)}
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Ticket Médio
                   </span>
-                  <span className="text-base font-extrabold text-foreground">
+                  <span className="font-mono text-base font-extrabold text-foreground">
                     {moeda.format(resumoBusca.ticketMedio)}
                   </span>
                 </div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/30 text-xs font-bold">
-                    <TableHead className="w-10" />
-                    <TableHead>NF</TableHead>
-                    <TableHead>Emissão</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead className="text-right">Itens</TableHead>
-                    <TableHead className="text-right">Total (R$)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {notasFiltradas.map((nota) => (
-                    <NotaRow
-                      key={nota.id}
-                      nota={nota}
-                      aberta={notaAberta === nota.id}
-                      onToggle={() =>
-                        setNotaAberta((aberta) =>
-                          aberta === nota.id ? null : nota.id,
-                        )
-                      }
-                    />
-                  ))}
-                </TableBody>
-              </Table>
+
+              {/* Tabela com Ordenação */}
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 text-xs font-bold">
+                      <TableHead className="w-10" />
+                      <TableHead
+                        onClick={() => alternarOrdenacao("numero")}
+                        className="cursor-pointer select-none hover:text-foreground"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>NF</span>
+                          <IconeOrdenacao
+                            campo="numero"
+                            campoAtual={campoOrdenacao}
+                            direcao={direcaoOrdenacao}
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        onClick={() => alternarOrdenacao("emissao")}
+                        className="cursor-pointer select-none hover:text-foreground"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Emissão</span>
+                          <IconeOrdenacao
+                            campo="emissao"
+                            campoAtual={campoOrdenacao}
+                            direcao={direcaoOrdenacao}
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        onClick={() => alternarOrdenacao("cliente")}
+                        className="cursor-pointer select-none hover:text-foreground"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Cliente</span>
+                          <IconeOrdenacao
+                            campo="cliente"
+                            campoAtual={campoOrdenacao}
+                            direcao={direcaoOrdenacao}
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell">Vendedor</TableHead>
+                      <TableHead
+                        onClick={() => alternarOrdenacao("quantidadeItens")}
+                        className="cursor-pointer select-none text-right hover:text-foreground"
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Itens</span>
+                          <IconeOrdenacao
+                            campo="quantidadeItens"
+                            campoAtual={campoOrdenacao}
+                            direcao={direcaoOrdenacao}
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        onClick={() => alternarOrdenacao("total")}
+                        className="cursor-pointer select-none text-right hover:text-foreground"
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Total (R$)</span>
+                          <IconeOrdenacao
+                            campo="total"
+                            campoAtual={campoOrdenacao}
+                            direcao={direcaoOrdenacao}
+                          />
+                        </div>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {notasPaginadas.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="py-8 text-center text-muted-foreground text-xs">
+                          Nenhuma nota fiscal encontrada com os filtros selecionados.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      notasPaginadas.map((nota) => (
+                        <NotaRow
+                          key={nota.id}
+                          nota={nota}
+                          aberta={notasAbertas.has(nota.id)}
+                          onToggle={() => alternarNota(nota.id)}
+                        />
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Barra de Paginação */}
+              <div className="no-print mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span>Exibindo</span>
+                  <select
+                    value={itensPorPagina}
+                    onChange={(e) => {
+                      setItensPorPagina(Number(e.target.value));
+                      setPaginaAtual(1);
+                    }}
+                    className="h-8 rounded-md border bg-background px-2 text-xs font-semibold focus:ring-1 focus:ring-primary"
+                  >
+                    <option value={25}>25 por página</option>
+                    <option value={50}>50 por página</option>
+                    <option value={100}>100 por página</option>
+                  </select>
+                  <span>
+                    de {numero.format(notasOrdenadas.length)} notas filtradas
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={() => setPaginaAtual(1)}
+                    disabled={paginaAtual === 1}
+                    title="Primeira página"
+                  >
+                    <ChevronsLeft className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+                    disabled={paginaAtual === 1}
+                    title="Página anterior"
+                  >
+                    <ChevronLeft className="size-3.5" />
+                  </Button>
+
+                  <span className="px-2 font-mono font-semibold text-foreground">
+                    Página {paginaAtual} de {totalPaginas}
+                  </span>
+
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
+                    disabled={paginaAtual >= totalPaginas}
+                    title="Próxima página"
+                  >
+                    <ChevronRight className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={() => setPaginaAtual(totalPaginas)}
+                    disabled={paginaAtual >= totalPaginas}
+                    title="Última página"
+                  >
+                    <ChevronsRight className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
             </>
           ) : !loading && !erro ? (
             <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
@@ -325,8 +784,7 @@ export function VendasView({
                 Nenhuma venda carregada para o período.
               </p>
               <p className="text-xs text-muted-foreground">
-                Selecione um período acima e clique em &quot;Consultar
-                Vendas&quot;.
+                Selecione um período acima e clique em &quot;Consultar Vendas&quot;.
               </p>
             </div>
           ) : null}
@@ -336,7 +794,26 @@ export function VendasView({
   );
 }
 
-function exportarExcel(vendas: VendaProduto[]) {
+function IconeOrdenacao({
+  campo,
+  campoAtual,
+  direcao,
+}: {
+  campo: CampoOrdenacao;
+  campoAtual: CampoOrdenacao;
+  direcao: DirecaoOrdenacao;
+}) {
+  if (campo !== campoAtual) {
+    return <ArrowUpDown className="size-3 text-muted-foreground/50" />;
+  }
+  return direcao === "asc" ? (
+    <ArrowUp className="size-3 text-primary font-bold" />
+  ) : (
+    <ArrowDown className="size-3 text-primary font-bold" />
+  );
+}
+
+function exportarCsv(vendas: VendaProduto[]) {
   const cabecalho = [
     "NF",
     "Emissão",
@@ -346,6 +823,7 @@ function exportarExcel(vendas: VendaProduto[]) {
     "Vendedor",
     "Modelo",
     "Forma de pagamento",
+    "Código Produto",
     "Produto",
     "Departamento",
     "Unidade",
@@ -365,6 +843,7 @@ function exportarExcel(vendas: VendaProduto[]) {
     venda.vendedor_nome,
     venda.nf_modelo,
     venda.nf_forma_pagto,
+    venda.produto_id,
     venda.produto_descricao,
     venda.produto_departamento,
     venda.produto_un,
@@ -378,7 +857,7 @@ function exportarExcel(vendas: VendaProduto[]) {
   const csv = [cabecalho, ...linhas]
     .map((linha) =>
       linha
-        .map((valor) => `"${String(valor).replaceAll('"', '""')}"`)
+        .map((valor) => `"${String(valor ?? "").replaceAll('"', '""')}"`)
         .join(";"),
     )
     .join("\n");
@@ -386,7 +865,7 @@ function exportarExcel(vendas: VendaProduto[]) {
   const url = URL.createObjectURL(arquivo);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "vendas-syspro.csv";
+  link.download = `vendas-syspro-${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -396,13 +875,13 @@ function NotaRow({
   aberta,
   onToggle,
 }: {
-  nota: ReturnType<typeof agruparVendasPorNota>[number];
+  nota: VendaAgrupada;
   aberta: boolean;
   onToggle: () => void;
 }) {
   return (
     <>
-      <TableRow data-state={aberta ? "selected" : undefined}>
+      <TableRow data-state={aberta ? "selected" : undefined} className="hover:bg-muted/25">
         <TableCell>
           <Button
             aria-expanded={aberta}
@@ -414,26 +893,31 @@ function NotaRow({
             {aberta ? <ChevronDown /> : <ChevronRight />}
           </Button>
         </TableCell>
-        <TableCell className="font-medium font-mono">{nota.numero}</TableCell>
-        <TableCell>{nota.emissao}</TableCell>
+        <TableCell className="font-mono font-bold text-xs text-foreground">
+          {nota.numero}
+        </TableCell>
+        <TableCell className="font-mono text-xs text-muted-foreground">{nota.emissao}</TableCell>
         <TableCell>
-          <div className="font-semibold text-foreground">{nota.cliente}</div>
+          <div className="font-semibold text-foreground text-xs">{nota.cliente}</div>
           {nota.cidade || nota.uf ? (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-[11px] text-muted-foreground">
               {[nota.cidade, nota.uf].filter(Boolean).join(" · ")}
             </div>
           ) : null}
         </TableCell>
-        <TableCell className="text-right font-mono">
+        <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+          {nota.vendedor}
+        </TableCell>
+        <TableCell className="text-right font-mono text-xs">
           {numero.format(nota.quantidadeItens)}
         </TableCell>
-        <TableCell className="text-right font-semibold font-mono">
+        <TableCell className="text-right font-mono font-bold text-xs text-foreground">
           {moeda.format(nota.total)}
         </TableCell>
       </TableRow>
       {aberta ? (
         <TableRow>
-          <TableCell colSpan={6} className="bg-muted/30 p-4">
+          <TableCell colSpan={7} className="bg-muted/30 p-4">
             <TabelaItens itens={nota.itens} />
           </TableCell>
         </TableRow>
@@ -448,14 +932,14 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
       <table className="w-full text-xs">
         <thead className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
           <tr>
+            <th className="p-2.5 font-semibold">Código</th>
             <th className="p-2.5 font-semibold">Produto</th>
             <th className="p-2.5 font-semibold">Departamento</th>
             <th className="p-2.5 font-semibold">Un.</th>
-            <th className="p-2.5 font-semibold">Código</th>
             <th className="p-2.5 text-right font-semibold">Qtd.</th>
+            <th className="p-2.5 text-right font-semibold">Unitário</th>
             <th className="p-2.5 text-right font-semibold">Desconto</th>
             <th className="p-2.5 text-right font-semibold">Frete</th>
-            <th className="p-2.5 text-right font-semibold">Unitário</th>
             <th className="p-2.5 text-right font-semibold">Total</th>
           </tr>
         </thead>
@@ -465,7 +949,10 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
               key={`${item.produto_id}-${indice}`}
               className="border-b last:border-0 hover:bg-muted/20"
             >
-              <td className="p-2.5 font-medium text-foreground">
+              <td className="p-2.5 font-mono text-muted-foreground text-[11px]">
+                {item.produto_id || "—"}
+              </td>
+              <td className="p-2.5 font-semibold text-foreground">
                 {item.produto_descricao}
               </td>
               <td className="p-2.5 text-muted-foreground">
@@ -474,22 +961,19 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
               <td className="p-2.5 text-muted-foreground">
                 {item.produto_un || "—"}
               </td>
-              <td className="p-2.5 font-mono text-muted-foreground">
-                {item.produto_id}
-              </td>
               <td className="p-2.5 text-right font-mono">
                 {numero.format(paraNumero(item.produto_qtde))}
               </td>
               <td className="p-2.5 text-right font-mono">
-                {moeda.format(paraNumero(item.produto_vlr_desconto))}
-              </td>
-              <td className="p-2.5 text-right font-mono">
-                {moeda.format(paraNumero(item.produto_vlr_frete))}
-              </td>
-              <td className="p-2.5 text-right font-mono">
                 {moeda.format(paraNumero(item.produto_vlr_item))}
               </td>
-              <td className="p-2.5 text-right font-semibold font-mono text-foreground">
+              <td className="p-2.5 text-right font-mono text-muted-foreground">
+                {moeda.format(paraNumero(item.produto_vlr_desconto))}
+              </td>
+              <td className="p-2.5 text-right font-mono text-muted-foreground">
+                {moeda.format(paraNumero(item.produto_vlr_frete))}
+              </td>
+              <td className="p-2.5 text-right font-mono font-bold text-foreground">
                 {moeda.format(paraNumero(item.produto_vlr_total_item))}
               </td>
             </tr>

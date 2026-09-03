@@ -24,14 +24,14 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
         href="/dashboard"
         className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
           isDashboard
-            ? "text-blue-600 dark:text-blue-400 font-semibold"
+            ? "text-primary font-bold"
             : "text-muted-foreground hover:text-foreground"
         }`}
       >
         <LayoutDashboardIcon className="size-4" />
         Dashboard
         {isDashboard && (
-          <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-blue-600 dark:bg-blue-500" />
+          <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-primary" />
         )}
       </Link>
 
@@ -39,14 +39,14 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
         href="/vendas"
         className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
           isVendas
-            ? "text-blue-600 dark:text-blue-400 font-semibold"
+            ? "text-primary font-bold"
             : "text-muted-foreground hover:text-foreground"
         }`}
       >
         <ShoppingCartIcon className="size-4" />
         Vendas
         {isVendas && (
-          <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-blue-600 dark:bg-blue-500" />
+          <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-primary" />
         )}
       </Link>
 
@@ -65,14 +65,14 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
             href="/usuarios"
             className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
               isUsuarios
-                ? "text-blue-600 dark:text-blue-400 font-semibold"
+                ? "text-primary font-bold"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <UsersIcon className="size-4" />
             Usuários
             {isUsuarios && (
-              <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-blue-600 dark:bg-blue-500" />
+              <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-primary" />
             )}
           </Link>
 
@@ -80,14 +80,14 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
             href="/configuracoes"
             className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
               isConfig
-                ? "text-blue-600 dark:text-blue-400 font-semibold"
+                ? "text-primary font-bold"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <SettingsIcon className="size-4" />
             Configurações
             {isConfig && (
-              <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-blue-600 dark:bg-blue-500" />
+              <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-primary" />
             )}
           </Link>
         </>
