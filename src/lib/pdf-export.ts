@@ -104,7 +104,7 @@ function adicionarRodape(doc: any) {
     doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
 
     doc.text(
-      "Syspro Sales Web · Trilink Software · Relatório Gerencial Confidencial",
+      "SysproERP Reports · Trilink Software · Relatório Gerencial Confidencial",
       14,
       pageHeight - 7,
     );

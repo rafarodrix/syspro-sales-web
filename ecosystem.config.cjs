@@ -1,5 +1,5 @@
 /**
- * PM2 ecosystem — syspro-sales-web (produção, servidor do cliente)
+ * PM2 ecosystem — SysproERP Reports (produção, servidor do cliente)
  * Uso: pm2 start ecosystem.config.cjs
  * Depois: pm2 save && pm2 startup (p/ subir com o Windows)
  *
@@ -9,7 +9,7 @@
 module.exports = {
   apps: [
     {
-      name: "syspro-sales-web",
+      name: "syspro-erp-reports",
       script: "start-prod.js",
       cwd: __dirname,
       instances: 1,

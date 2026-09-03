@@ -118,7 +118,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     // Se informou nova senha, atualiza o hash da conta
-    if (password && password.trim().length >= 6) {
+    if (password && password.trim().length >= 12) {
       const hashedPassword = await hashPassword(password.trim());
       await prisma.account.updateMany({
         where: { userId: id, providerId: "credential" },

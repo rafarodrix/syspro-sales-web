@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { SysproApiError } from "@/lib/syspro-api";
 import { resumoVendas } from "@/lib/vendas";
-import { obterVendas } from "@/lib/sales-service";
+import { obterVendas, SalesQueryError } from "@/lib/sales-service";
 import { vendasQuerySchema } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -91,6 +91,8 @@ async function handleVendas(request: NextRequest) {
 
   try {
     const vendas = await obterVendas({
+      actorId: session.user.id,
+      enforceRateLimit: false,
       empresasLiberadas,
       empresaSelecionadaId: empresaId,
       dtInicial,
@@ -107,6 +109,9 @@ async function handleVendas(request: NextRequest) {
       totalEmpresas: empresasLiberadas.length,
     });
   } catch (e) {
+    if (e instanceof SalesQueryError) {
+      return NextResponse.json({ error: e.message }, { status: e.status });
+    }
     if (e instanceof SysproApiError) {
       return NextResponse.json(
         { error: e.message },

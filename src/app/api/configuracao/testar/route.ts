@@ -61,6 +61,7 @@ export async function POST(request: Request) {
         method: "GET",
         headers: { Accept: "application/json" },
         signal: controller.signal,
+        redirect: "error",
       });
       clearTimeout(timeoutId);
     } catch (fetchErr) {

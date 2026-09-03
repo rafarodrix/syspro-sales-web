@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Syspro Sales Web",
+  title: "SysproERP Reports",
   description: "Consulta de vendas do Syspro ERP",
 };
 

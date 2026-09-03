@@ -73,12 +73,14 @@ export async function resolveServerPageContext({
     if (carregarPeriodoAnterior && periodoAnterior) {
       const [atual, anterior] = await Promise.all([
         obterVendas({
+          actorId: session.user.id,
           empresasLiberadas: empresas,
           empresaSelecionadaId: empresaSelecionada,
           dtInicial: periodo.inicial,
           dtFinal: periodo.final,
         }),
         obterVendas({
+          actorId: session.user.id,
           empresasLiberadas: empresas,
           empresaSelecionadaId: empresaSelecionada,
           dtInicial: periodoAnterior.inicial,
@@ -89,6 +91,7 @@ export async function resolveServerPageContext({
       vendasAnteriores = anterior;
     } else {
       vendas = await obterVendas({
+        actorId: session.user.id,
         empresasLiberadas: empresas,
         empresaSelecionadaId: empresaSelecionada,
         dtInicial: periodo.inicial,

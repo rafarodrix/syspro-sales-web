@@ -1,4 +1,4 @@
-# Syspro Sales Web
+# SysproERP Reports
 
 Aplicação web local (Next.js) para **consultar e apresentar as vendas do Syspro ERP** via API de exportação. Roda no servidor do cliente; o navegador nunca acessa a API do Syspro diretamente (o backend filtra por empresa).
 
@@ -19,7 +19,7 @@ Aplicação web local (Next.js) para **consultar e apresentar as vendas do Syspr
 
 ```bash
 npm install
-# criar .env (veja .env.example) com BETTER_AUTH_SECRET
+# criar .env a partir de .env.production.example e configurar os valores obrigatorios
 npx prisma migrate dev
 npx prisma generate
 npm run dev
@@ -27,11 +27,15 @@ npm run dev
 
 Acesse `http://localhost:3000`.
 
-### Seed (primeiro admin)
+### Bootstrap (primeiro admin)
 
 ```bash
-SEED_ADMIN_EMAIL=admin@empresa.com SEED_ADMIN_PASSWORD=troque123 npx tsx prisma/seed.ts
+SEED_ADMIN_EMAIL=admin@empresa.com SEED_ADMIN_PASSWORD="senha-forte-com-12-ou-mais" npx tsx prisma/seed.ts
 ```
+
+O bootstrap cria somente um administrador e apenas quando o banco nao possui usuarios.
+Ele nunca redefine senhas ou cria contas demonstrativas. Em producao, publique o app
+atras de HTTPS e configure `SYSPRO_ALLOWED_ORIGINS` com as origens exatas do Syspro.
 
 ## Estrutura
 
@@ -59,7 +63,7 @@ prisma/schema.prisma  User/Session/Account/Empresa/UserEmpresa/Configuracao
 
 Skills versionadas no repo (formato SKILL.md), referenciadas pelo `AGENTS.md`:
 
-- `syspro-sales-web` — arquitetura, estrutura, comandos e armadilhas do app
+- `SysproERP Reports` — arquitetura, estrutura, comandos e armadilhas do app
 - `syspro-api-exporta` — API de exportação do Syspro (URLs com/sem IIS, datas, campos)
 - `web-code-quality` — fluxo de desenvolvimento (questionar → arquitetar → implementar → revisar)
 

@@ -541,7 +541,7 @@ export function AppShell({
           <footer className="mt-12 border-t border-border/60 pt-6 pb-2 text-xs text-muted-foreground">
             <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-foreground">Syspro Sales Web</span>
+                <span className="font-bold text-foreground">SysproERP Reports</span>
                 <span>·</span>
                 <span>Trilink Software</span>
                 <span>·</span>

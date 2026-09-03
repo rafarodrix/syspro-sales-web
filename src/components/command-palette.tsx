@@ -136,7 +136,7 @@ export function CommandPalette() {
           </div>
 
           <div className="border-t border-border/60 bg-muted/20 px-3 py-2 text-[10.5px] text-muted-foreground flex items-center justify-between">
-            <span>Navegação instantânea do Syspro Sales Web</span>
+            <span>Navegação instantânea do SysproERP Reports</span>
             <kbd className="font-mono text-[9.5px]">ESC para fechar</kbd>
           </div>
         </DialogContent>

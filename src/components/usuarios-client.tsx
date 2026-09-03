@@ -99,8 +99,8 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
       toast.error("Preencha nome e e-mail");
       return;
     }
-    if (editPassword && editPassword.length < 6) {
-      toast.error("A nova senha deve ter no mínimo 6 caracteres");
+    if (editPassword && editPassword.length < 12) {
+      toast.error("A nova senha deve ter no minimo 12 caracteres");
       return;
     }
 
@@ -132,8 +132,8 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
       toast.error("Preencha nome, e-mail e senha");
       return;
     }
-    if (password.length < 6) {
-      toast.error("A senha deve ter no mínimo 6 caracteres");
+    if (password.length < 12) {
+      toast.error("A senha deve ter no minimo 12 caracteres");
       return;
     }
     setCriando(true);
@@ -308,7 +308,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Minimo 12 caracteres"
                 className="text-xs"
               />
             </div>

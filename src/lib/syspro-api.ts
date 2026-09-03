@@ -1,3 +1,5 @@
+import { sanitizarSysproUrl } from "@/lib/validations";
+
 /**
  * Cliente da API de exportação do Syspro ERP.
  * Rotas e campos conforme o manual oficial de Integração via API da Trilink.
@@ -140,15 +142,17 @@ async function request<T>(
   range: SysproDateRange,
   signal?: AbortSignal,
 ): Promise<T[]> {
+  const baseUrl = sanitizarSysproUrl(config.baseUrl);
   const params = new URLSearchParams({
     dt_inicial: formatDate(range.dtInicial),
     dt_final: formatDate(range.dtFinal),
   });
-  const url = `${config.baseUrl}${buildPath(config, rota)}?${params.toString()}`;
+  const url = `${baseUrl}${buildPath(config, rota)}?${params.toString()}`;
 
   const res = await fetch(url, {
     signal: signal ?? AbortSignal.timeout(30_000),
     headers: { Accept: "application/json" },
+    redirect: "error",
     // API local do Syspro: não validar TLS do cliente
     cache: "no-store",
   });
@@ -170,8 +174,51 @@ async function request<T>(
     );
   }
 
-  const data = (await res.json()) as T[] | T;
+  const data = await lerRespostaJsonLimitada<T>(res);
   return Array.isArray(data) ? data : [data];
+}
+
+const MAX_SYSPRO_RESPONSE_BYTES = 10 * 1024 * 1024;
+const MAX_SYSPRO_RECORDS = 50_000;
+
+async function lerRespostaJsonLimitada<T>(res: Response): Promise<T[] | T> {
+  const contentLength = Number(res.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_SYSPRO_RESPONSE_BYTES) {
+    throw new SysproApiError("A resposta da API Syspro excede o limite permitido.", 502);
+  }
+
+  if (!res.body) throw new SysproApiError("Resposta vazia da API Syspro.", 502);
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_SYSPRO_RESPONSE_BYTES) {
+      await reader.cancel();
+      throw new SysproApiError("A resposta da API Syspro excede o limite permitido.", 502);
+    }
+    chunks.push(value);
+  }
+
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  let data: T[] | T;
+  try {
+    data = JSON.parse(new TextDecoder().decode(body)) as T[] | T;
+  } catch {
+    throw new SysproApiError("A API Syspro retornou JSON inv\u00e1lido.", 502);
+  }
+  if (Array.isArray(data) && data.length > MAX_SYSPRO_RECORDS) {
+    throw new SysproApiError("A resposta da API Syspro excede o limite de registros permitido.", 502);
+  }
+  return data;
 }
 
 // ------------------------------------------------------------------

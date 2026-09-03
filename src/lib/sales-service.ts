@@ -1,5 +1,6 @@
 import { consultarVendas, type VendaComEmpresa } from "@/lib/syspro-api";
 import { dataInputParaSyspro } from "@/lib/vendas";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export interface EmpresaInfo {
   id: string;
@@ -65,22 +66,44 @@ async function executarComPool<T, R>(
 }
 
 export interface ObterVendasParametros {
+  actorId: string;
   empresasLiberadas: EmpresaInfo[];
   empresaSelecionadaId: string;
   dtInicial: string; // formato DD/MM/AAAA ou YYYY-MM-DD
   dtFinal: string;   // formato DD/MM/AAAA ou YYYY-MM-DD
   forcarAtualizacao?: boolean;
   signal?: AbortSignal;
+  enforceRateLimit?: boolean;
+}
+
+export class SalesQueryError extends Error {
+  constructor(message: string, public status: 400 | 429) {
+    super(message);
+    this.name = "SalesQueryError";
+  }
 }
 
 export async function obterVendas({
+  actorId,
   empresasLiberadas,
   empresaSelecionadaId,
   dtInicial,
   dtFinal,
   forcarAtualizacao = false,
   signal,
+  enforceRateLimit = true,
 }: ObterVendasParametros): Promise<VendaComEmpresa[]> {
+  if (!periodoConsultaValido(dtInicial, dtFinal)) {
+    throw new SalesQueryError("Informe um periodo valido de ate 366 dias.", 400);
+  }
+
+  if (enforceRateLimit) {
+    const rateCheck = checkRateLimit(`vendas:${actorId}`, 45, 60_000);
+    if (!rateCheck.success) {
+      throw new SalesQueryError("Limite de consultas excedido. Aguarde alguns instantes.", 429);
+    }
+  }
+
   limparCacheExpirado();
 
   const dtIniNormalizada = dtInicial.includes("-") ? dataInputParaSyspro(dtInicial) : dtInicial;
@@ -145,4 +168,23 @@ export async function obterVendas({
   if (!empresaAlvo) return [];
 
   return consultarEmpresa(empresaAlvo);
+}
+
+export function periodoConsultaValido(inicial: string, final: string): boolean {
+  const paraData = (valor: string) => {
+    const match = /^(?:(\d{2})\/(\d{2})\/(\d{4})|(\d{4})-(\d{2})-(\d{2}))$/.exec(valor);
+    if (!match) return null;
+    const [, diaBr, mesBr, anoBr, anoIso, mesIso, diaIso] = match;
+    const ano = Number(anoBr ?? anoIso);
+    const mes = Number(mesBr ?? mesIso);
+    const dia = Number(diaBr ?? diaIso);
+    const data = new Date(Date.UTC(ano, mes - 1, dia));
+    return data.getUTCFullYear() === ano && data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia
+      ? data
+      : null;
+  };
+
+  const inicio = paraData(inicial);
+  const fim = paraData(final);
+  return Boolean(inicio && fim && inicio <= fim && fim.getTime() - inicio.getTime() <= 366 * 86_400_000);
 }
