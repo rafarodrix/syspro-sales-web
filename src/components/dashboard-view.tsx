@@ -37,6 +37,7 @@ import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
 import {
   DateRangeFilter,
   periodoMesAtual,
+  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
 import { KpiCard } from "@/components/kpi-card";
@@ -223,6 +224,7 @@ export function DashboardView({
       toast.error("Preencha o período para atualizar");
       return;
     }
+    salvarPeriodoCookie(periodoDaConsulta);
     setLoading(true);
     setErro(null);
 
@@ -322,9 +324,10 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Barra de Filtro de Período em Linha Única */}
+      {/* Barra de Filtro de Período Executiva */}
       <Card className="no-print border-border/60 shadow-xs">
-        <CardContent className="p-3 sm:p-3.5">
+        <CardContent className="p-3 sm:p-3.5 space-y-2.5">
+          {/* Linha 1: Presets de data + Inputs de data inline + Botão Consultar + Botão Exportar PDF */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex-1 min-w-[280px]">
               <DateRangeFilter
@@ -335,35 +338,32 @@ export function DashboardView({
               />
             </div>
 
-            <div className="hidden h-5 w-px bg-border/80 lg:block" />
+            <Button
+              onClick={handleExportarPdf}
+              disabled={loading || vendas.length === 0}
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs font-semibold shrink-0"
+              title="Exportar Dashboard Executivo em PDF"
+            >
+              <FileText className="size-3.5 text-primary" />
+              Exportar PDF
+            </Button>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={compararPeriodoAnterior}
-                  onChange={(e) => setCompararPeriodoAnterior(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-primary size-3.5 cursor-pointer"
-                />
-                <span>
-                  Comparar anterior {periodoAnteriorFormatado ? `(${periodoAnteriorFormatado})` : ""}
-                </span>
-              </label>
-
-              <div className="hidden h-5 w-px bg-border/80 sm:block" />
-
-              <Button
-                onClick={handleExportarPdf}
-                disabled={loading || vendas.length === 0}
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs font-semibold"
-                title="Exportar Dashboard Executivo em PDF"
-              >
-                <FileText className="size-3.5 text-primary" />
-                Exportar PDF
-              </Button>
-            </div>
+          {/* Linha 2: Checkbox de Comparar Período Anterior logo abaixo dos botões */}
+          <div className="flex items-center gap-2 border-t border-border/40 pt-2">
+            <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={compararPeriodoAnterior}
+                onChange={(e) => setCompararPeriodoAnterior(e.target.checked)}
+                className="rounded border-border text-primary focus:ring-primary size-3.5 cursor-pointer"
+              />
+              <span>
+                Comparar com período anterior {periodoAnteriorFormatado ? `(${periodoAnteriorFormatado})` : ""}
+              </span>
+            </label>
           </div>
         </CardContent>
       </Card>

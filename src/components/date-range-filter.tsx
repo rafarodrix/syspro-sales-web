@@ -58,6 +58,13 @@ export function periodoMesAnterior(): Periodo {
   };
 }
 
+export function salvarPeriodoCookie(p: Periodo) {
+  if (typeof document !== "undefined" && p.inicial && p.final) {
+    document.cookie = `syspro_periodo_inicial=${encodeURIComponent(p.inicial)}; path=/; max-age=2592000; SameSite=Lax`;
+    document.cookie = `syspro_periodo_final=${encodeURIComponent(p.final)}; path=/; max-age=2592000; SameSite=Lax`;
+  }
+}
+
 export function DateRangeFilter({
   value,
   onChange,
@@ -94,6 +101,7 @@ export function DateRangeFilter({
               <Button
                 key={preset.label}
                 onClick={() => {
+                  salvarPeriodoCookie(preset.value);
                   onChange(preset.value);
                   onConsultar?.(preset.value);
                 }}
@@ -115,8 +123,8 @@ export function DateRangeFilter({
         {/* Divisor Vertical */}
         <div className="hidden h-5 w-px bg-border/80 sm:block" />
 
-        {/* Inputs de Data Inline */}
-        <div className="flex items-center gap-1.5">
+        {/* Inputs de Data Inline + Botão de Consulta na mesma linha */}
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-semibold text-muted-foreground">De:</span>
             <Input
@@ -142,23 +150,23 @@ export function DateRangeFilter({
               className="h-8 w-[138px] text-xs font-mono font-medium"
             />
           </div>
+
+          {!compact && onConsultar && (
+            <Button
+              onClick={() => {
+                salvarPeriodoCookie(value);
+                onConsultar(value);
+              }}
+              disabled={loading}
+              size="sm"
+              className="h-8 font-semibold gap-1.5 px-3.5 shadow-sm"
+            >
+              <SearchIcon className="size-3.5" />
+              {loading ? "Consultando..." : "Consultar"}
+            </Button>
+          )}
         </div>
       </div>
-
-      {/* Grupo Direito: Botão de Consulta */}
-      {!compact && onConsultar && (
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => onConsultar(value)}
-            disabled={loading}
-            size="sm"
-            className="h-8 font-semibold gap-1.5 px-4 shadow-sm"
-          >
-            <SearchIcon className="size-3.5" />
-            {loading ? "Consultando..." : "Consultar"}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

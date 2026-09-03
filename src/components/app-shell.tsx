@@ -125,6 +125,14 @@ export function AppShell({
   const podeVerRelatorios = isAdmin || isGerencia;
   const podeVerAdmin = isAdmin;
 
+  function criarLinkComEmpresa(hrefBase: string) {
+    if (!empresaSelecionada) return hrefBase;
+    const [path, query] = hrefBase.split("?");
+    const params = new URLSearchParams(query || "");
+    params.set("empresa", empresaSelecionada);
+    return `${path}?${params.toString()}`;
+  }
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* ========================================================= */}
@@ -138,7 +146,7 @@ export function AppShell({
         {/* Topo da Sidebar: Logo Oficial Trilink com Tag Syspro ERP */}
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/60 px-3.5">
           <Link
-            href="/dashboard"
+            href={criarLinkComEmpresa("/dashboard")}
             className={`flex items-center gap-2.5 transition-opacity hover:opacity-90 overflow-hidden ${
               collapsed ? "justify-center w-full" : ""
             }`}
@@ -180,7 +188,7 @@ export function AppShell({
               </span>
             )}
             <Link
-              href="/dashboard"
+              href={criarLinkComEmpresa("/dashboard")}
               title="Dashboard"
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                 pathname === "/dashboard"
@@ -193,7 +201,7 @@ export function AppShell({
             </Link>
 
             <Link
-              href="/vendas"
+              href={criarLinkComEmpresa("/vendas")}
               title="Vendas"
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                 pathname === "/vendas"
@@ -228,7 +236,7 @@ export function AppShell({
               {/* Se a sidebar estiver colapsada, exibe o link geral de relatórios */}
               {collapsed ? (
                 <Link
-                  href="/relatorios"
+                  href={criarLinkComEmpresa("/relatorios")}
                   title="Central de Relatórios"
                   className={`flex items-center justify-center rounded-lg p-2 text-xs font-semibold transition-all ${
                     pathname.startsWith("/relatorios")
@@ -248,7 +256,7 @@ export function AppShell({
                       return (
                         <Link
                           key={item.id}
-                          href={`/relatorios?aba=${item.id}`}
+                          href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)}
                           className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${
                             ativo
                               ? "bg-muted font-bold text-foreground shadow-2xs border-l-2 border-primary"
@@ -391,7 +399,7 @@ export function AppShell({
               <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground">Geral</span>
                 <Link
-                  href="/dashboard"
+                  href={criarLinkComEmpresa("/dashboard")}
                   className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
                     pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                   }`}
@@ -400,7 +408,7 @@ export function AppShell({
                   Dashboard
                 </Link>
                 <Link
-                  href="/vendas"
+                  href={criarLinkComEmpresa("/vendas")}
                   className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
                     pathname === "/vendas" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                   }`}
@@ -416,7 +424,7 @@ export function AppShell({
                   {relatoriosSubLinks.map((item) => (
                     <Link
                       key={item.id}
-                      href={`/relatorios?aba=${item.id}`}
+                      href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)}
                       className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
                     >
                       <item.icone className={`size-3.5 ${item.cor}`} />

@@ -37,6 +37,7 @@ import {
 import {
   DateRangeFilter,
   periodoMesAtual,
+  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
 import { buscarVendasApi } from "@/lib/vendas-client";
@@ -336,6 +337,7 @@ export function VendasView({
       toast.error("A data inicial deve ser anterior à data final");
       return;
     }
+    salvarPeriodoCookie(periodoDaConsulta);
     setLoading(true);
     setErro(null);
     setNotasAbertas(new Set());

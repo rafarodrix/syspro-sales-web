@@ -51,6 +51,9 @@ export function EmpresaNavSelect({
   const empresaUnica = !isTodas && !isMultiplo ? empresas.find((e) => e.id === empresaSelecionada) ?? empresas[0] : null;
 
   function navegarPara(idOuIds: string) {
+    if (typeof document !== "undefined") {
+      document.cookie = `syspro_empresa_ativa=${encodeURIComponent(idOuIds)}; path=/; max-age=2592000; SameSite=Lax`;
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.set("empresa", idOuIds);
     router.push(`${pathname}?${params.toString()}`);

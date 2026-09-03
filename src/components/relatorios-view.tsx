@@ -40,6 +40,7 @@ import {
 import {
   DateRangeFilter,
   periodoMesAtual,
+  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
 import { buscarVendasApi } from "@/lib/vendas-client";
@@ -306,6 +307,7 @@ export function RelatoriosView({
       toast.error("Preencha o período de consulta");
       return;
     }
+    salvarPeriodoCookie(periodoDaConsulta);
     setLoading(true);
     setErro(null);
     try {
