@@ -48,8 +48,10 @@ export function paraNumero(valor: unknown): number {
 export function classificarMovimentoKardex(
   grupoDocumento: string,
   operacaoSyspro: string,
+  descricaoGrupoDocumento = "",
 ): ClassificacaoKardex {
   const grupo = grupoDocumento.trim().toUpperCase();
+  const descricao = descricaoGrupoDocumento.trim().toUpperCase();
   const operacao = operacaoSyspro.trim().toUpperCase();
   const direcao: DirecaoKardex = operacao === "E"
     ? "entrada"
@@ -58,18 +60,38 @@ export function classificarMovimentoKardex(
       : "indefinida";
 
   const categorias: Record<string, Omit<ClassificacaoKardex, "direcao">> = {
+    EA: { categoria: "outros", rotulo: "Ajuste de estoque" },
+    EBC: { categoria: "bonificacao", rotulo: "Bonificação concedida" },
+    EDV: { categoria: "devolucao_venda", rotulo: "Devolução de venda" },
+    EDO: { categoria: "outros", rotulo: "Doação" },
+    ENP: { categoria: "venda", rotulo: "Venda PDV" },
+    ETM: { categoria: "transferencia", rotulo: "Transferência para produção" },
     EVP: { categoria: "venda", rotulo: "Venda PDV" },
     EVD: { categoria: "venda", rotulo: "Venda direta" },
-    ENP: { categoria: "venda", rotulo: "Venda PDV" },
-    EDV: { categoria: "devolucao_venda", rotulo: "Devolução de venda" },
-    EAQ: { categoria: "compra", rotulo: "Recebimento de mercadorias" },
     EDC: { categoria: "devolucao_compra", rotulo: "Devolução de compra" },
+    EPE: { categoria: "outros", rotulo: "Perda ou furto" },
+    ESS: { categoria: "outros", rotulo: "Simples remessa" },
     EST: { categoria: "transferencia", rotulo: "Transferência" },
-    EET: { categoria: "transferencia", rotulo: "Transferência" },
+    PCP: { categoria: "compra", rotulo: "Pedido de compra" },
     EBR: { categoria: "bonificacao", rotulo: "Bonificação" },
+    EAQ: { categoria: "compra", rotulo: "Recebimento de mercadorias" },
+    ECI: { categoria: "outros", rotulo: "Consumo interno" },
+    EOE: { categoria: "outros", rotulo: "Outras entradas" },
+    EPD: { categoria: "outros", rotulo: "Recebimento por produção" },
+    EES: { categoria: "outros", rotulo: "Simples remessa" },
+    EET: { categoria: "transferencia", rotulo: "Transferência" },
+    ETE: { categoria: "outros", rotulo: "Troca de mercadoria" },
   };
 
-  return { ...(categorias[grupo] ?? { categoria: "outros", rotulo: grupo || "Outros" }), direcao };
+  const classificacao = grupo === "EOS"
+    ? descricao.includes("VENDA FUTURA")
+      ? { categoria: "venda" as const, rotulo: "Venda futura" }
+      : descricao.includes("PRODUCAO")
+        ? { categoria: "outros" as const, rotulo: "Produção de mercadoria" }
+        : { categoria: "outros" as const, rotulo: "Outras saídas" }
+    : (categorias[grupo] ?? { categoria: "outros" as const, rotulo: grupo || "Outros" });
+
+  return { ...classificacao, direcao };
 }
 
 export function normalizarMovimentoKardex(item: unknown): MovimentoKardex {
@@ -79,7 +101,9 @@ export function normalizarMovimentoKardex(item: unknown): MovimentoKardex {
   const registro = item as Record<string, unknown>;
   const texto = (campo: string) => String(registro[campo] ?? "").trim();
   const grupoDocumento = texto("kardex_cd_grupo_documento");
+  const descricaoGrupoDocumento = texto("kardex_ds_grupo_documento");
   const operacaoSyspro = texto("kardex_operacao");
+  const classificacao = classificarMovimentoKardex(grupoDocumento, operacaoSyspro, descricaoGrupoDocumento);
 
   return {
     empresaCodigo: texto("empresa_codigo"),
@@ -94,11 +118,11 @@ export function normalizarMovimentoKardex(item: unknown): MovimentoKardex {
     saldo: paraNumero(registro.kardex_qtde_saldo),
     documento: texto("kardex_nro_documento"),
     grupoDocumento,
-    descricaoGrupoDocumento: texto("kardex_ds_grupo_documento"),
+    descricaoGrupoDocumento,
     operacaoSyspro,
     modeloDocumento: texto("kardex_modelo_documento"),
-    direcao: classificarMovimentoKardex(grupoDocumento, operacaoSyspro).direcao,
-    classificacao: classificarMovimentoKardex(grupoDocumento, operacaoSyspro),
+    direcao: classificacao.direcao,
+    classificacao,
   };
 }
 

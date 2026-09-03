@@ -51,6 +51,18 @@ describe("Kardex", () => {
     });
   });
 
+  it("classifica transferência, bonificação e ajuste pelos códigos reais", () => {
+    expect(classificarMovimentoKardex("EST", "S")).toMatchObject({ categoria: "transferencia", direcao: "saida" });
+    expect(classificarMovimentoKardex("EET", "E")).toMatchObject({ categoria: "transferencia", direcao: "entrada" });
+    expect(classificarMovimentoKardex("EBC", "S")).toMatchObject({ categoria: "bonificacao", direcao: "saida" });
+    expect(classificarMovimentoKardex("EA", "E")).toMatchObject({ categoria: "outros", rotulo: "Ajuste de estoque" });
+  });
+
+  it("diferencia EOS pela descrição retornada pelo Syspro", () => {
+    expect(classificarMovimentoKardex("EOS", "S", "EMISSAO DE VENDA FUTURA")).toMatchObject({ categoria: "venda", rotulo: "Venda futura" });
+    expect(classificarMovimentoKardex("EOS", "S", "EMISSAO POR OUTRAS SAIDAS")).toMatchObject({ categoria: "outros", rotulo: "Outras saídas" });
+  });
+
   it("aceita no máximo 31 dias de Kardex", () => {
     expect(validarPeriodoKardex("01/09/2026", "01/10/2026")).toBe(true);
     expect(validarPeriodoKardex("01/09/2026", "02/10/2026")).toBe(false);

@@ -55,16 +55,21 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-const relatoriosSubLinks = [
-  { id: "curva-abc", label: "Curva ABC (Produtos)", icone: Sparkles, cor: "text-amber-500" },
+const relatoriosProdutos = [
+  { id: "curva-abc", label: "Curva ABC", icone: Sparkles, cor: "text-amber-500" },
+  { id: "departamentos", label: "Departamentos & Mix", icone: Layers, cor: "text-blue-500" },
+];
+
+const relatoriosVendas = [
   { id: "clientes", label: "Clientes & Concentração", icone: UserCheck, cor: "text-emerald-500" },
   { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500" },
   { id: "sazonalidade", label: "Sazonalidade & Dias", icone: CalendarDays, cor: "text-indigo-500" },
-  { id: "departamentos", label: "Departamentos", icone: Layers, cor: "text-blue-500" },
   { id: "vendedores", label: "Vendedores", icone: Users, cor: "text-violet-500" },
   { id: "geografico", label: "Cidades / Praças", icone: MapPin, cor: "text-teal-500" },
   { id: "financeiro", label: "Financeiro & Fiscal", icone: CreditCard, cor: "text-orange-500" },
 ];
+
+const relatoriosSubLinks = [...relatoriosProdutos, ...relatoriosVendas];
 
 function extrairIniciais(nome: string): string {
   if (!nome) return "US";
@@ -114,7 +119,7 @@ export function AppShell({
     if (pathname.startsWith("/estoque")) return { secao: "Estoque", pagina: "Movimentações / Kardex" };
     if (pathname.startsWith("/relatorios")) {
       const relatorio = relatoriosSubLinks.find((r) => r.id === abaAtiva);
-      return { secao: "Relatórios & BI", pagina: relatorio ? relatorio.label : "Central de Relatórios" };
+      return { secao: "Relatórios", pagina: relatorio ? relatorio.label : "Central de Relatórios" };
     }
     if (pathname.startsWith("/usuarios")) return { secao: "Administração", pagina: "Gestão de Usuários" };
     if (pathname.startsWith("/configuracoes")) return { secao: "Administração", pagina: "Configurações da API" };
@@ -237,7 +242,7 @@ export function AppShell({
                   onClick={() => setRelatoriosOpen(!relatoriosOpen)}
                   className="flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 cursor-pointer hover:text-foreground transition-colors"
                 >
-                  <span>Relatórios & BI</span>
+                  <span>Relatórios</span>
                   <ChevronDown
                     className={`size-3 transition-transform duration-200 ${
                       relatoriosOpen ? "rotate-0" : "-rotate-90"
@@ -263,26 +268,20 @@ export function AppShell({
                 </Link>
               ) : (
                 relatoriosOpen && (
-                  <div className="space-y-0.5 pl-1 animate-in fade-in duration-150">
-                    {relatoriosSubLinks.map((item) => {
-                      const Icone = item.icone;
-                      const ativo = pathname === "/relatorios" && abaAtiva === item.id;
-
-                      return (
-                        <Link
-                          key={item.id}
-                          href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)}
-                          className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${
-                            ativo
-                              ? "bg-muted font-bold text-foreground shadow-2xs border-l-2 border-primary"
-                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                          }`}
-                        >
-                          <Icone className={`size-3.5 shrink-0 ${ativo ? item.cor : "text-muted-foreground"}`} />
-                          <span className="truncate">{item.label}</span>
-                        </Link>
-                      );
-                    })}
+                  <div className="space-y-2 pl-1 animate-in fade-in duration-150">
+                    {([
+                      ["Produtos", relatoriosProdutos],
+                      ["Vendas", relatoriosVendas],
+                    ] as const).map(([titulo, itens]) => (
+                      <div key={titulo} className="space-y-0.5">
+                        <span className="px-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">{titulo}</span>
+                        {itens.map((item) => {
+                          const Icone = item.icone;
+                          const ativo = pathname === "/relatorios" && abaAtiva === item.id;
+                          return <Link key={item.id} href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${ativo ? "bg-muted font-bold text-foreground shadow-2xs border-l-2 border-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}><Icone className={`size-3.5 shrink-0 ${ativo ? item.cor : "text-muted-foreground"}`} /><span className="truncate">{item.label}</span></Link>;
+                        })}
+                      </div>
+                    ))}
                   </div>
                 )
               )}
