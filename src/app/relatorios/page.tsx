@@ -47,23 +47,20 @@ export default async function RelatoriosPage({
   }
 
   return (
-    <div>
-      <NavApp empresaSelecionada={empresa?.id} />
-      <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-        <RelatoriosView
-          key={`${empresa?.id ?? "sem-empresa"}-${abaParam ?? "default"}`}
-          empresas={empresas.map((e) => ({
-            id: e.id,
-            cnpj: e.cnpj,
-            razaoSocial: e.razaoSocial,
-          }))}
-          empresaInicial={empresa?.id}
-          abaInicial={abaParam}
-          initialPeriod={periodo}
-          initialVendas={vendas}
-          initialError={erroInicial}
-        />
-      </main>
-    </div>
+    <NavApp empresaSelecionada={empresa?.id}>
+      <RelatoriosView
+        key={`${empresa?.id ?? "sem-empresa"}-${abaParam ?? "default"}`}
+        empresas={empresas.map((e) => ({
+          id: e.id,
+          cnpj: e.cnpj,
+          razaoSocial: e.razaoSocial,
+        }))}
+        empresaInicial={empresa?.id}
+        abaInicial={abaParam}
+        initialPeriod={periodo}
+        initialVendas={vendas}
+        initialError={erroInicial}
+      />
+    </NavApp>
   );
 }

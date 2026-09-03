@@ -58,23 +58,20 @@ export default async function DashboardPage({
   }
 
   return (
-    <div>
-      <NavApp empresaSelecionada={empresa?.id} />
-      <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-        <DashboardView
-          key={empresa?.id ?? "sem-empresa"}
-          empresas={empresas.map((item) => ({
-            id: item.id,
-            cnpj: item.cnpj,
-            razaoSocial: item.razaoSocial,
-          }))}
-          empresaInicial={empresa?.id}
-          initialPeriod={periodo}
-          initialVendas={vendas}
-          initialVendasAnteriores={vendasAnteriores}
-          initialError={erroInicial}
-        />
-      </main>
-    </div>
+    <NavApp empresaSelecionada={empresa?.id}>
+      <DashboardView
+        key={empresa?.id ?? "sem-empresa"}
+        empresas={empresas.map((item) => ({
+          id: item.id,
+          cnpj: item.cnpj,
+          razaoSocial: item.razaoSocial,
+        }))}
+        empresaInicial={empresa?.id}
+        initialPeriod={periodo}
+        initialVendas={vendas}
+        initialVendasAnteriores={vendasAnteriores}
+        initialError={erroInicial}
+      />
+    </NavApp>
   );
 }

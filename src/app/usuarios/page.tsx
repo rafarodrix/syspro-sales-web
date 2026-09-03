@@ -15,9 +15,8 @@ export default async function UsuariosPage() {
   ]);
 
   return (
-    <div>
-      <NavApp />
-      <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
+    <NavApp>
+      <div className="space-y-6">
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
           Gestão de Usuários
         </h1>
@@ -40,7 +39,7 @@ export default async function UsuariosPage() {
             razaoSocial: e.razaoSocial,
           }))}
         />
-      </main>
-    </div>
+      </div>
+    </NavApp>
   );
 }
