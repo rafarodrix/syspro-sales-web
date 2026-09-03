@@ -44,6 +44,7 @@ import { buscarVendasApi } from "@/lib/vendas-client";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
+import { ExportDropdown } from "@/components/export-dropdown";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -466,37 +467,14 @@ export function VendasView({
                   <Minimize2 className="size-3.5" />
                   Recolher todas
                 </Button>
-                <Button
-                  onClick={handleExportarPdf}
-                  disabled={loading || notasFiltradas.length === 0}
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1.5 text-xs font-semibold text-primary"
-                  title="Exportar Relatório Formatado em PDF"
-                >
-                  <FileText className="size-3.5" />
-                  Exportar PDF
-                </Button>
-                <Button
-                  onClick={() => exportarCsv(vendas)}
+
+                <ExportDropdown
+                  onExportarPdf={handleExportarPdf}
+                  onExportarCsv={() => exportarCsv(vendas)}
+                  onImprimir={() => window.print()}
                   disabled={loading || vendas.length === 0}
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1.5 text-xs font-semibold"
-                  title="Exportar Dados em CSV"
-                >
-                  <DownloadIcon className="size-3.5" />
-                  Exportar CSV
-                </Button>
-                <Button
-                  onClick={() => window.print()}
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1.5 text-xs font-semibold"
-                >
-                  <PrinterIcon className="size-3.5" />
-                  Imprimir
-                </Button>
+                  label="Exportar"
+                />
               </div>
             </div>
 

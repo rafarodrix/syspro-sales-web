@@ -43,6 +43,7 @@ import {
 import { KpiCard } from "@/components/kpi-card";
 import { RankingCard } from "@/components/ranking-card";
 import { PieChartCard } from "@/components/pie-chart-card";
+import { ExportDropdown } from "@/components/export-dropdown";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -338,17 +339,12 @@ export function DashboardView({
               />
             </div>
 
-            <Button
-              onClick={handleExportarPdf}
+            <ExportDropdown
+              onExportarPdf={handleExportarPdf}
+              onImprimir={() => window.print()}
               disabled={loading || vendas.length === 0}
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 text-xs font-semibold shrink-0"
-              title="Exportar Dashboard Executivo em PDF"
-            >
-              <FileText className="size-3.5 text-primary" />
-              Exportar PDF
-            </Button>
+              label="Exportar"
+            />
           </div>
 
           {/* Linha 2: Checkbox de Comparar Período Anterior logo abaixo dos botões */}

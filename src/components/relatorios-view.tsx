@@ -51,6 +51,7 @@ import {
   formatarNumero,
   formatarPercentual,
 } from "@/lib/formatters";
+import { ExportDropdown } from "@/components/export-dropdown";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -667,52 +668,24 @@ export function RelatoriosView({
       <Card className="border-border/60 shadow-sm">
         <CardHeader className="pb-3 border-b border-border/60">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            {/* Seletor Dinâmico do Relatório Ativo */}
-            <div className="flex items-center gap-2.5">
+            {/* Título Estático & Descrição do Relatório Ativo */}
+            <div className="flex items-center gap-3">
               <div
-                className={`flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/80 ${
+                className={`flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted/80 shadow-2xs ${
                   relatoriosOpcoes.find((r) => r.id === abaAtiva)?.cor ?? "text-primary"
                 }`}
               >
                 {(() => {
                   const IconeOp =
                     relatoriosOpcoes.find((r) => r.id === abaAtiva)?.icone ?? Sparkles;
-                  return <IconeOp className="size-4" />;
+                  return <IconeOp className="size-4.5" />;
                 })()}
               </div>
               <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={abaAtiva}
-                    onValueChange={(v) => {
-                      setAbaAtiva(v);
-                      setBusca("");
-                      setFiltroClasseAbc("todas");
-                      setFiltroClasseCli("todas");
-                      const url = new URL(window.location.href);
-                      url.searchParams.set("aba", v);
-                      window.history.replaceState({}, "", url.toString());
-                    }}
-                  >
-                    <SelectTrigger className="h-7 border-none bg-transparent p-0 text-sm font-extrabold text-foreground shadow-none hover:bg-muted/40 px-1.5 rounded-md cursor-pointer">
-                      <SelectValue placeholder="Selecione o relatório" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {relatoriosOpcoes.map((op) => {
-                        const IconeOp = op.icone;
-                        return (
-                          <SelectItem key={op.id} value={op.id} className="text-xs font-semibold">
-                            <div className="flex items-center gap-2">
-                              <IconeOp className={`size-3.5 ${op.cor}`} />
-                              <span>{op.label}</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-base font-extrabold text-foreground tracking-tight">
+                  {relatoriosOpcoes.find((r) => r.id === abaAtiva)?.label ?? "Relatório Analítico"}
+                </span>
+                <span className="text-xs text-muted-foreground">
                   {relatoriosOpcoes.find((r) => r.id === abaAtiva)?.desc}
                 </span>
               </div>
@@ -771,37 +744,13 @@ export function RelatoriosView({
                 </div>
               )}
 
-              <Button
-                onClick={handleExportarPdf}
+              <ExportDropdown
+                onExportarPdf={handleExportarPdf}
+                onExportarCsv={exportarCsvRelatorio}
+                onImprimir={() => window.print()}
                 disabled={loading || vendas.length === 0}
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1.5 text-xs font-semibold text-primary"
-                title="Exportar Relatório Analítico em PDF"
-              >
-                <FileText className="size-3.5" />
-                Exportar PDF
-              </Button>
-              <Button
-                onClick={exportarCsvRelatorio}
-                disabled={loading || vendas.length === 0}
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1.5 text-xs font-semibold"
-                title="Exportar Dados em CSV"
-              >
-                <DownloadIcon className="size-3.5" />
-                Exportar CSV
-              </Button>
-              <Button
-                onClick={() => window.print()}
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1.5 text-xs font-semibold"
-              >
-                <PrinterIcon className="size-3.5" />
-                Imprimir
-              </Button>
+                label="Exportar"
+              />
             </div>
           </div>
         </CardHeader>
