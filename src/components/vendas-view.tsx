@@ -90,9 +90,10 @@ export function VendasView({
 }: Props) {
   const searchParams = useSearchParams();
   const [empresaId] = useState(
-    empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial)
+    empresaInicial === "todas" ||
+    (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
-      : (empresas[0]?.id ?? ""),
+      : (empresas.length > 1 ? "todas" : (empresas[0]?.id ?? "")),
   );
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
@@ -104,6 +105,7 @@ export function VendasView({
 
   // Filtros
   const [buscaVenda, setBuscaVenda] = useState("");
+  const [filtroEmpresa, setFiltroEmpresa] = useState<string>("todos");
   const [filtroVendedor, setFiltroVendedor] = useState<string>("todos");
   const [filtroDepartamento, setFiltroDepartamento] = useState<string>("todos");
   const [filtroFormaPagto, setFiltroFormaPagto] = useState<string>("todos");
@@ -139,12 +141,16 @@ export function VendasView({
 
   // Opções para os selects de filtro
   const opcoesFiltro = useMemo(() => {
+    const empresasMap = new Map<string, string>();
     const vendedores = new Set<string>();
     const departamentos = new Set<string>();
     const formasPagto = new Set<string>();
     const modelos = new Set<string>();
 
     for (const v of vendas) {
+      if ((v as any).empresa_id && (v as any).empresa_nome) {
+        empresasMap.set((v as any).empresa_id, (v as any).empresa_nome);
+      }
       if (v.vendedor_nome?.trim()) vendedores.add(v.vendedor_nome.trim());
       if (v.produto_departamento?.trim()) departamentos.add(v.produto_departamento.trim());
       if (v.nf_forma_pagto?.trim()) formasPagto.add(v.nf_forma_pagto.trim());
@@ -152,6 +158,7 @@ export function VendasView({
     }
 
     return {
+      empresas: Array.from(empresasMap.entries()).map(([id, nome]) => ({ id, nome })),
       vendedores: Array.from(vendedores).sort(),
       departamentos: Array.from(departamentos).sort(),
       formasPagto: Array.from(formasPagto).sort(),
@@ -162,6 +169,11 @@ export function VendasView({
   // Filtragem
   const notasFiltradas = useMemo(() => {
     return notas.filter((n) => {
+      // Filtro Empresa
+      if (filtroEmpresa !== "todos" && n.empresaId && n.empresaId !== filtroEmpresa) {
+        return false;
+      }
+
       // Busca textual
       if (buscaVenda.trim()) {
         const termo = buscaVenda.toLowerCase().trim();
@@ -169,6 +181,7 @@ export function VendasView({
           n.numero.toLowerCase().includes(termo) ||
           n.cliente.toLowerCase().includes(termo) ||
           n.cidade?.toLowerCase().includes(termo) ||
+          (n.empresaNome && n.empresaNome.toLowerCase().includes(termo)) ||
           n.itens.some((item) =>
             item.produto_descricao?.toLowerCase().includes(termo) ||
             item.produto_id?.toLowerCase().includes(termo)
@@ -204,6 +217,7 @@ export function VendasView({
   }, [
     notas,
     buscaVenda,
+    filtroEmpresa,
     filtroVendedor,
     filtroDepartamento,
     filtroFormaPagto,
@@ -286,6 +300,7 @@ export function VendasView({
 
   function limparTodosFiltros() {
     setBuscaVenda("");
+    setFiltroEmpresa("todos");
     setFiltroVendedor("todos");
     setFiltroDepartamento("todos");
     setFiltroFormaPagto("todos");
@@ -323,6 +338,7 @@ export function VendasView({
 
   const temFiltrosAtivos =
     Boolean(buscaVenda.trim()) ||
+    filtroEmpresa !== "todos" ||
     filtroVendedor !== "todos" ||
     filtroDepartamento !== "todos" ||
     filtroFormaPagto !== "todos" ||
@@ -462,6 +478,33 @@ export function VendasView({
                   </button>
                 )}
               </div>
+
+              {/* Filtro Empresa (quando em modo consolidado) */}
+              {opcoesFiltro.empresas.length > 1 && (
+                <div className="w-44 sm:w-48">
+                  <Select
+                    value={filtroEmpresa}
+                    onValueChange={(v) => {
+                      setFiltroEmpresa(v);
+                      setPaginaAtual(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-xs font-semibold">
+                      <SelectValue placeholder="Empresa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos" className="font-bold text-primary">
+                        🏢 Todas as Empresas
+                      </SelectItem>
+                      {opcoesFiltro.empresas.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id} className="text-xs">
+                          {emp.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Filtro Vendedor */}
               {opcoesFiltro.vendedores.length > 0 && (
@@ -802,6 +845,7 @@ function IconeOrdenacao({
 
 function exportarCsv(vendas: VendaProduto[]) {
   const cabecalho = [
+    "Empresa",
     "NF",
     "Emissão",
     "Cliente",
@@ -822,6 +866,7 @@ function exportarCsv(vendas: VendaProduto[]) {
     "Total",
   ];
   const linhas = vendas.map((venda) => [
+    (venda as any).empresa_nome || "Empresa Principal",
     venda.nf_numero,
     venda.nf_dt_emissao,
     venda.cliente_nome,
@@ -881,7 +926,14 @@ function NotaRow({
           </Button>
         </TableCell>
         <TableCell className="font-mono font-bold text-xs text-foreground">
-          {nota.numero}
+          <div className="flex flex-col">
+            <span>{nota.numero}</span>
+            {nota.empresaNome && (
+              <span className="text-[10px] font-sans font-medium text-primary truncate max-w-[140px]" title={nota.empresaNome}>
+                {nota.empresaNome}
+              </span>
+            )}
+          </div>
         </TableCell>
         <TableCell className="font-mono text-xs text-muted-foreground">{nota.emissao}</TableCell>
         <TableCell>

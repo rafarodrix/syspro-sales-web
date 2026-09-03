@@ -82,9 +82,10 @@ export function DashboardView({
   initialError,
 }: Props) {
   const [empresaId] = useState(
-    empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial)
+    empresaInicial === "todas" ||
+    (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
-      : (empresas[0]?.id ?? ""),
+      : (empresas.length > 1 ? "todas" : (empresas[0]?.id ?? "")),
   );
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
@@ -217,18 +218,25 @@ export function DashboardView({
     <div className="flex flex-col gap-4">
       {/* Header Executivo de BI */}
       <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Visão Geral de Vendas
+            {empresaId === "todas" ? "Dashboard Consolidado" : "Dashboard de Vendas"}
           </h1>
-          <Badge variant="outline" className="text-xs font-mono">
-            BI Executivo
-          </Badge>
+          {empresaId === "todas" ? (
+            <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold gap-1 px-2.5 py-0.5">
+              <Building2Icon className="size-3.5" />
+              <span>Visão Consolidada ({empresas.length} Empresas)</span>
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs font-mono">
+              BI Executivo
+            </Badge>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-0.5">
           <span className="flex items-center gap-1 font-semibold text-foreground">
             <Building2Icon className="size-3.5 text-primary" />
-            {empresaAtual ? empresaAtual.razaoSocial : "Empresa Selecionada"}
+            {empresaId === "todas" ? "Todas as Empresas do Grupo" : (empresaAtual ? empresaAtual.razaoSocial : "Empresa Selecionada")}
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">

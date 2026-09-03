@@ -20,6 +20,7 @@ import {
   TrendingDown,
   Truck,
   ShieldCheck,
+  Building2,
 } from "lucide-react";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
@@ -101,9 +102,10 @@ export function RelatoriosView({
   initialError,
 }: Props) {
   const [empresaId] = useState(
-    empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial)
+    empresaInicial === "todas" ||
+    (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
-      : (empresas[0]?.id ?? ""),
+      : (empresas.length > 1 ? "todas" : (empresas[0]?.id ?? "")),
   );
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
@@ -422,14 +424,22 @@ export function RelatoriosView({
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <BarChart3 className="size-5 text-primary" />
                 <CardTitle className="text-xl font-bold tracking-tight text-foreground">
-                  Central de Relatórios & Inteligência
+                  {empresaId === "todas" ? "Central de Relatórios (Consolidado)" : "Central de Relatórios & Inteligência"}
                 </CardTitle>
+                {empresaId === "todas" && (
+                  <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold gap-1 px-2.5 py-0.5">
+                    <Building2 className="size-3.5" />
+                    <span>Visão Consolidada ({empresas.length} Empresas)</span>
+                  </Badge>
+                )}
               </div>
               <CardDescription className="text-xs">
-                Análise estruturada de Curva ABC, Clientes, Descontos, Sazonalidade, Departamentos, Vendedores e Fiscal.
+                {empresaId === "todas"
+                  ? `Análise consolidada de ${empresas.length} empresas: Curva ABC, Clientes, Descontos, Sazonalidade, Departamentos e Vendedores.`
+                  : "Análise estruturada de Curva ABC, Clientes, Descontos, Sazonalidade, Departamentos, Vendedores e Fiscal."}
               </CardDescription>
             </div>
           </div>

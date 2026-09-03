@@ -1,6 +1,5 @@
 import { NavApp } from "@/components/nav-app";
 import { RelatoriosView } from "@/components/relatorios-view";
-import { prisma } from "@/lib/database";
 import { requireAuth } from "@/lib/server-auth";
 import { consultarVendas, type VendaProduto } from "@/lib/syspro-api";
 import { dataInputParaSyspro, dataParaInput } from "@/lib/vendas";
@@ -11,8 +10,14 @@ export default async function RelatoriosPage({
   searchParams: Promise<{ empresa?: string; aba?: string }>;
 }) {
   const { empresas } = await requireAuth("gerente");
-  const { empresa: empresaId, aba: abaParam } = await searchParams;
-  const empresa = empresas.find((item) => item.id === empresaId) ?? empresas[0];
+  const { empresa: empresaParam, aba: abaParam } = await searchParams;
+
+  const empresaSelecionada =
+    empresaParam === "todas" || (!empresaParam && empresas.length > 1)
+      ? "todas"
+      : empresaParam && empresas.some((e) => e.id === empresaParam)
+        ? empresaParam
+        : empresas[0]?.id;
 
   const hoje = new Date();
   const periodo = {
@@ -20,39 +25,77 @@ export default async function RelatoriosPage({
     final: dataParaInput(hoje),
   };
 
-  let vendas: VendaProduto[] = [];
+  let vendas: (VendaProduto & { empresa_id?: string; empresa_nome?: string; empresa_cnpj?: string })[] = [];
   let erroInicial: string | undefined;
 
-  if (empresa && empresa.sysproBaseUrl) {
+  if (empresaSelecionada === "todas") {
     try {
-      vendas = await consultarVendas(
-        {
-          baseUrl: empresa.sysproBaseUrl,
-          useIis: empresa.sysproUseIis === "true",
-        },
-        {
+      const promessas = empresas.map(async (emp) => {
+        if (!emp.sysproBaseUrl) return [];
+        const configApi = {
+          baseUrl: emp.sysproBaseUrl,
+          useIis: emp.sysproUseIis === "true",
+        };
+
+        const dados = await consultarVendas(configApi, {
           dtInicial: dataInputParaSyspro(periodo.inicial),
           dtFinal: dataInputParaSyspro(periodo.final),
-        },
-      );
-      vendas = vendas.filter(
-        (venda) => venda.empresa_codigo === empresa.empresaCodigo,
-      );
+        }).catch(() => []);
+
+        return dados
+          .filter((v) => v.empresa_codigo === emp.empresaCodigo)
+          .map((v) => ({
+            ...v,
+            empresa_id: emp.id,
+            empresa_nome: emp.razaoSocial,
+            empresa_cnpj: emp.cnpj,
+          }));
+      });
+
+      const resultados = await Promise.all(promessas);
+      vendas = resultados.flat();
     } catch {
-      erroInicial = "Não foi possível carregar os dados dos relatórios.";
+      erroInicial = "Não foi possível carregar os dados consolidados dos relatórios.";
+    }
+  } else {
+    const empresa = empresas.find((item) => item.id === empresaSelecionada) ?? empresas[0];
+    if (empresa && empresa.sysproBaseUrl) {
+      try {
+        const dados = await consultarVendas(
+          {
+            baseUrl: empresa.sysproBaseUrl,
+            useIis: empresa.sysproUseIis === "true",
+          },
+          {
+            dtInicial: dataInputParaSyspro(periodo.inicial),
+            dtFinal: dataInputParaSyspro(periodo.final),
+          },
+        );
+
+        vendas = dados
+          .filter((v) => v.empresa_codigo === empresa.empresaCodigo)
+          .map((v) => ({
+            ...v,
+            empresa_id: empresa.id,
+            empresa_nome: empresa.razaoSocial,
+            empresa_cnpj: empresa.cnpj,
+          }));
+      } catch {
+        erroInicial = "Não foi possível carregar os dados dos relatórios.";
+      }
     }
   }
 
   return (
-    <NavApp empresaSelecionada={empresa?.id}>
+    <NavApp empresaSelecionada={empresaSelecionada}>
       <RelatoriosView
-        key={`${empresa?.id ?? "sem-empresa"}-${abaParam ?? "default"}`}
+        key={`${empresaSelecionada ?? "sem-empresa"}-${abaParam ?? "default"}`}
         empresas={empresas.map((e) => ({
           id: e.id,
           cnpj: e.cnpj,
           razaoSocial: e.razaoSocial,
         }))}
-        empresaInicial={empresa?.id}
+        empresaInicial={empresaSelecionada}
         abaInicial={abaParam}
         initialPeriod={periodo}
         initialVendas={vendas}

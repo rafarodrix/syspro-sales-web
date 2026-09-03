@@ -14,6 +14,9 @@ export interface VendaAgrupada {
   itens: VendaProduto[];
   quantidadeItens: number;
   total: number;
+  empresaId?: string;
+  empresaNome?: string;
+  empresaCnpj?: string;
 }
 
 export interface PontoFaturamento {
@@ -240,7 +243,7 @@ export function valorItem(venda: VendaProduto): number {
 
 export function chaveDaNota(venda: VendaProduto): string {
   return [
-    venda.empresa_codigo?.trim() || "1",
+    (venda as any).empresa_id || venda.empresa_codigo?.trim() || "1",
     venda.nf_modelo?.trim() || "55",
     venda.nf_numero?.trim() || "Sem número",
   ].join("|");
@@ -275,6 +278,9 @@ export function agruparVendasPorNota(vendas: VendaProduto[]): VendaAgrupada[] {
       itens: [venda],
       quantidadeItens: qtdItem,
       total: totalItem,
+      empresaId: (venda as any).empresa_id,
+      empresaNome: (venda as any).empresa_nome,
+      empresaCnpj: (venda as any).empresa_cnpj,
     });
   }
   return [...notas.values()].sort(
