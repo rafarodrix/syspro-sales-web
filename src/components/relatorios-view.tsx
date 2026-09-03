@@ -41,6 +41,7 @@ import {
   type Periodo,
 } from "@/components/date-range-filter";
 import { buscarVendasApi } from "@/lib/vendas-client";
+import { PainelComoLer, GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
 import {
   formatarMoeda,
   formatarNumero,
@@ -593,6 +594,9 @@ export function RelatoriosView({
             </div>
           ) : (
             <>
+              {/* Painel "Como ler" — explicação do relatório ativo */}
+              <PainelComoLer relatorioId={abaAtiva} />
+
               {/* ========================================================= */}
               {/* ABA 1: CURVA ABC DE PRODUTOS */}
               {/* ========================================================= */}
@@ -1290,6 +1294,16 @@ export function RelatoriosView({
                   </div>
                 </div>
               )}
+
+              {/* Glossário — termos do relatório ativo */}
+              {GUIAS_RELATORIOS[abaAtiva]?.glossario ? (
+                <GlossarioRelatorio
+                  itens={GUIAS_RELATORIOS[abaAtiva].glossario ?? []}
+                  relatorioLabel={
+                    relatoriosOpcoes.find((r) => r.id === abaAtiva)?.label ?? ""
+                  }
+                />
+              ) : null}
             </>
           )}
         </CardContent>
