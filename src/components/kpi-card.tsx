@@ -34,39 +34,47 @@ export function KpiCard({
           : "border-border/60 bg-card shadow-xs hover:border-primary/30"
       }`}
     >
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <CardContent className="p-4 flex flex-col justify-between h-full">
+        <div>
+          {/* Header com Título e Ícone sem colisão */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
               {titulo}
             </span>
-            <span
-              className={`mt-1 font-mono font-extrabold tracking-tight text-foreground tabular-nums ${
-                destaque ? "text-2xl sm:text-3xl text-primary" : "text-xl sm:text-2xl"
+            <div
+              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${
+                destaque
+                  ? "bg-primary/20 text-primary"
+                  : "bg-muted text-muted-foreground"
               }`}
+            >
+              <Icone className="size-3.5" />
+            </div>
+          </div>
+
+          {/* Valor com 100% da largura disponível */}
+          <div className="mt-2.5 flex flex-col min-w-0">
+            <span
+              className={`font-mono font-extrabold tracking-tight tabular-nums truncate ${
+                destaque
+                  ? "text-xl sm:text-2xl text-primary"
+                  : "text-lg sm:text-xl text-foreground"
+              }`}
+              title={valor}
             >
               {valor}
             </span>
             {subtitulo && (
-              <span className="text-[11px] text-muted-foreground mt-0.5">
+              <span className="text-[11px] text-muted-foreground mt-0.5 truncate">
                 {subtitulo}
               </span>
             )}
           </div>
-
-          <div
-            className={`flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${
-              destaque
-                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-                : "bg-muted text-foreground/80"
-            }`}
-          >
-            <Icone className="size-5" />
-          </div>
         </div>
 
+        {/* Rodapé comparativo */}
         {variacao || valorAnterior ? (
-          <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-border/40 pt-2.5 text-[11px]">
+          <div className="mt-3.5 flex flex-wrap items-center gap-1.5 border-t border-border/40 pt-2.5 text-[11px]">
             {variacao && (
               <div
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold ${
@@ -88,7 +96,7 @@ export function KpiCard({
               </div>
             )}
             {valorAnterior && (
-              <span className="text-muted-foreground font-medium">
+              <span className="text-muted-foreground font-medium text-[10.5px]">
                 vs. {valorAnterior} ant.
               </span>
             )}

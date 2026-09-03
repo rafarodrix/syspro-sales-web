@@ -6,6 +6,7 @@ import {
   HelpCircleIcon,
   LayoutDashboardIcon,
   ShoppingCartIcon,
+  BarChart3Icon,
   UsersIcon,
   SettingsIcon,
 } from "lucide-react";
@@ -15,6 +16,7 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
 
   const isDashboard = pathname.startsWith("/dashboard") || pathname === "/";
   const isVendas = pathname.startsWith("/vendas");
+  const isRelatorios = pathname.startsWith("/relatorios");
   const isUsuarios = pathname.startsWith("/usuarios");
   const isConfig = pathname.startsWith("/configuracoes");
 
@@ -46,6 +48,21 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
         <ShoppingCartIcon className="size-4" />
         Vendas
         {isVendas && (
+          <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-primary" />
+        )}
+      </Link>
+
+      <Link
+        href="/relatorios"
+        className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
+          isRelatorios
+            ? "text-primary font-bold"
+            : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <BarChart3Icon className="size-4" />
+        Relatórios
+        {isRelatorios && (
           <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-primary" />
         )}
       </Link>

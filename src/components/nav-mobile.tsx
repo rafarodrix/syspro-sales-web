@@ -8,6 +8,7 @@ import {
   X,
   LayoutDashboard,
   ShoppingCart,
+  BarChart3,
   Users,
   Settings,
   HelpCircle,
@@ -123,6 +124,19 @@ export function NavMobile({
             >
               <ShoppingCart className="size-4" />
               Vendas
+            </Link>
+
+            <Link
+              href="/relatorios"
+              onClick={() => setAberto(false)}
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors ${
+                pathname.startsWith("/relatorios")
+                  ? "bg-primary/10 font-bold text-primary"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              }`}
+            >
+              <BarChart3 className="size-4" />
+              Relatórios
             </Link>
 
             {isAdmin && (

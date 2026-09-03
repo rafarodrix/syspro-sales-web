@@ -287,18 +287,6 @@ export function DashboardView({
               />
               <span>Comparar com período anterior</span>
             </label>
-
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs font-semibold gap-1 text-primary hover:bg-primary/10"
-            >
-              <Link href={`/vendas?empresa=${empresaId}`}>
-                Explorar Vendas
-                <ChevronRight className="size-3.5" />
-              </Link>
-            </Button>
           </div>
         </div>
       </div>
