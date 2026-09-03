@@ -25,8 +25,8 @@ function renderSparklineSvg(data: number[], tendenciaPositiva: boolean, neutro: 
   const max = Math.max(...data);
   const range = max - min || 1;
 
-  const width = 80;
-  const height = 28;
+  const width = 64;
+  const height = 24;
   const padding = 2;
 
   const points = data.map((val, idx) => {
@@ -45,7 +45,7 @@ function renderSparklineSvg(data: number[], tendenciaPositiva: boolean, neutro: 
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className="h-7 w-20 shrink-0 overflow-visible opacity-80 transition-opacity group-hover:opacity-100"
+      className="h-6 w-14 sm:w-16 shrink-0 overflow-visible opacity-80 transition-opacity group-hover:opacity-100"
     >
       <path
         d={pathD}
@@ -55,12 +55,11 @@ function renderSparklineSvg(data: number[], tendenciaPositiva: boolean, neutro: 
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {/* Ponto no último valor */}
       {points.length > 0 && (
         <circle
           cx={points[points.length - 1].split(",")[0]}
           cy={points[points.length - 1].split(",")[1]}
-          r="2.5"
+          r="2"
           fill={corLinha}
           className="animate-pulse"
         />
@@ -98,7 +97,7 @@ export function KpiCard({
       {/* Luz sutil de destaque no topo estilo Uilora */}
       <div className="pointer-events-none absolute -top-12 right-0 size-24 rounded-full bg-primary/10 blur-2xl transition-opacity group-hover:opacity-100 opacity-60" />
 
-      <CardContent className="relative z-10 p-4 flex flex-col justify-between h-full">
+      <CardContent className="relative z-10 p-3.5 sm:p-4 flex flex-col justify-between h-full">
         <div>
           {/* Header com Título e Ícone */}
           <div className="flex items-center justify-between gap-2">
@@ -106,7 +105,7 @@ export function KpiCard({
               {titulo}
             </span>
             <div
-              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${
+              className={`flex size-6.5 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${
                 destaque
                   ? "bg-primary/20 text-primary shadow-xs shadow-primary/20"
                   : "bg-muted/70 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
@@ -117,36 +116,36 @@ export function KpiCard({
           </div>
 
           {/* Valor Principal com Números Tabulares + Sparkline integrado */}
-          <div className="mt-2.5 flex items-baseline justify-between gap-2 min-w-0">
-            <div className="flex flex-col min-w-0">
+          <div className="mt-2 flex items-baseline justify-between gap-1.5">
+            <div className="flex flex-col min-w-0 flex-1">
               <span
-                className={`font-mono font-extrabold tracking-tight tabular-nums truncate ${
+                className={`font-mono font-extrabold tracking-tight tabular-nums whitespace-nowrap leading-tight ${
                   destaque
-                    ? "text-xl sm:text-2xl text-primary"
-                    : "text-lg sm:text-xl text-foreground"
+                    ? "text-lg xl:text-xl 2xl:text-2xl text-primary"
+                    : "text-base xl:text-lg 2xl:text-xl text-foreground"
                 }`}
                 title={valor}
               >
                 {valor}
               </span>
               {subtitulo && (
-                <span className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                <span className="text-[10.5px] text-muted-foreground mt-0.5 whitespace-nowrap truncate">
                   {subtitulo}
                 </span>
               )}
             </div>
 
-            {/* Sparkline Visual */}
-            {sparkline && <div className="shrink-0">{sparkline}</div>}
+            {/* Sparkline Visual Compacto */}
+            {sparkline && <div className="shrink-0 pl-1">{sparkline}</div>}
           </div>
         </div>
 
         {/* Rodapé comparativo com Badge */}
         {variacao || valorAnterior ? (
-          <div className="mt-3.5 flex flex-wrap items-center gap-1.5 border-t border-border/40 pt-2.5 text-[11px]">
+          <div className="mt-3 flex items-center justify-between gap-1.5 border-t border-border/40 pt-2 text-[11px]">
             {variacao && (
               <div
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold transition-transform group-hover:scale-105 ${
+                className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10.5px] font-bold shrink-0 transition-transform group-hover:scale-105 ${
                   neutro
                     ? "bg-muted text-muted-foreground"
                     : tendenciaPositiva
@@ -155,25 +154,25 @@ export function KpiCard({
                 }`}
               >
                 {neutro ? (
-                  <Minus className="size-3" />
+                  <Minus className="size-2.5" />
                 ) : tendenciaPositiva ? (
-                  <TrendingUp className="size-3" />
+                  <TrendingUp className="size-2.5" />
                 ) : (
-                  <TrendingDown className="size-3" />
+                  <TrendingDown className="size-2.5" />
                 )}
                 <span>{variacao}</span>
               </div>
             )}
             {valorAnterior && (
               <span
-                className="text-muted-foreground font-medium text-[10.5px] truncate max-w-[170px]"
+                className="text-muted-foreground font-medium text-[10.5px] whitespace-nowrap truncate text-right ml-auto"
                 title={
                   periodoComparado
-                    ? `Comparando com o período de ${periodoComparado} (${valorAnterior})`
+                    ? `Comparando com o período anterior (${periodoComparado}): ${valorAnterior}`
                     : `Valor no período anterior: ${valorAnterior}`
                 }
               >
-                vs. {valorAnterior} {periodoComparado ? `(${periodoComparado})` : "ant."}
+                vs. {valorAnterior}
               </span>
             )}
           </div>
