@@ -65,11 +65,11 @@ interface Props {
   initialError?: string;
 }
 
-const moeda = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
-const numero = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+} from "@/lib/formatters";
 
 export function DashboardView({
   empresas,
@@ -321,11 +321,11 @@ export function DashboardView({
             {/* KPI 1: Faturamento (Hero KPI em destaque) */}
             <KpiCard
               titulo="Faturamento Total"
-              valor={moeda.format(resumo.faturamento)}
-              subtitulo={resumo.descontos > 0 ? `Descontos: ${moeda.format(resumo.descontos)}` : undefined}
+              valor={formatarMoeda(resumo.faturamento)}
+              subtitulo={resumo.descontos > 0 ? `Descontos: ${formatarMoeda(resumo.descontos)}` : undefined}
               variacao={variacaoFaturamento?.texto}
               valorAnterior={
-                resumoAnterior ? moeda.format(resumoAnterior.faturamento) : undefined
+                resumoAnterior ? formatarMoeda(resumoAnterior.faturamento) : undefined
               }
               tendenciaPositiva={variacaoFaturamento?.positivo}
               neutro={variacaoFaturamento?.neutro}
@@ -336,10 +336,10 @@ export function DashboardView({
             {/* KPI 2: Pedidos */}
             <KpiCard
               titulo="Pedidos Faturados"
-              valor={numero.format(resumo.notas)}
+              valor={formatarNumero(resumo.notas, 0)}
               variacao={variacaoPedidos?.texto}
               valorAnterior={
-                resumoAnterior ? numero.format(resumoAnterior.notas) : undefined
+                resumoAnterior ? formatarNumero(resumoAnterior.notas, 0) : undefined
               }
               tendenciaPositiva={variacaoPedidos?.positivo}
               neutro={variacaoPedidos?.neutro}
@@ -349,10 +349,10 @@ export function DashboardView({
             {/* KPI 3: Ticket Médio */}
             <KpiCard
               titulo="Ticket Médio"
-              valor={moeda.format(resumo.ticketMedio)}
+              valor={formatarMoeda(resumo.ticketMedio)}
               variacao={variacaoTicket?.texto}
               valorAnterior={
-                resumoAnterior ? moeda.format(resumoAnterior.ticketMedio) : undefined
+                resumoAnterior ? formatarMoeda(resumoAnterior.ticketMedio) : undefined
               }
               tendenciaPositiva={variacaoTicket?.positivo}
               neutro={variacaoTicket?.neutro}
@@ -362,10 +362,10 @@ export function DashboardView({
             {/* KPI 4: Clientes Ativos */}
             <KpiCard
               titulo="Clientes Ativos"
-              valor={numero.format(resumo.clientes)}
+              valor={formatarNumero(resumo.clientes, 0)}
               variacao={variacaoClientes?.texto}
               valorAnterior={
-                resumoAnterior ? numero.format(resumoAnterior.clientes) : undefined
+                resumoAnterior ? formatarNumero(resumoAnterior.clientes, 0) : undefined
               }
               tendenciaPositiva={variacaoClientes?.positivo}
               neutro={variacaoClientes?.neutro}
@@ -375,11 +375,11 @@ export function DashboardView({
             {/* KPI 5: Itens Vendidos */}
             <KpiCard
               titulo="Itens Vendidos"
-              valor={numero.format(resumo.quantidadeItens)}
+              valor={formatarNumero(resumo.quantidadeItens, 0)}
               variacao={variacaoItens?.texto}
               valorAnterior={
                 resumoAnterior
-                  ? numero.format(resumoAnterior.quantidadeItens)
+                  ? formatarNumero(resumoAnterior.quantidadeItens, 0)
                   : undefined
               }
               tendenciaPositiva={variacaoItens?.positivo}
@@ -454,7 +454,7 @@ export function DashboardView({
                     {destaques.melhorDia.data}
                   </span>
                   <span className="font-mono font-extrabold text-primary text-base">
-                    {moeda.format(destaques.melhorDia.total)}
+                    {formatarMoeda(destaques.melhorDia.total)}
                   </span>
                 </div>
                 <span className="text-[11px] text-muted-foreground">
@@ -473,7 +473,7 @@ export function DashboardView({
                     {destaques.maiorVenda.cliente}
                   </span>
                   <span className="font-mono font-extrabold text-foreground text-sm">
-                    {moeda.format(destaques.maiorVenda.total)}
+                    {formatarMoeda(destaques.maiorVenda.total)}
                   </span>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-mono">
@@ -492,11 +492,11 @@ export function DashboardView({
                     {destaques.topVendedor.nome}
                   </span>
                   <span className="font-mono font-extrabold text-foreground text-sm">
-                    {moeda.format(destaques.topVendedor.total)}
+                    {formatarMoeda(destaques.topVendedor.total)}
                   </span>
                 </div>
                 <span className="text-[11px] text-muted-foreground">
-                  {destaques.topVendedor.percentual.toFixed(1)}% do faturamento
+                  {formatarPercentual(destaques.topVendedor.percentual, 1)} do faturamento
                 </span>
               </div>
             ) : null}

@@ -1,14 +1,10 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/database";
 import { NavApp } from "@/components/nav-app";
 import { ConfiguracaoClient } from "@/components/configuracao-client";
+import { prisma } from "@/lib/database";
+import { requireAuth } from "@/lib/server-auth";
 
 export default async function ConfiguracoesPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/login");
-  if (session.user.role !== "admin") redirect("/dashboard");
+  await requireAuth("admin");
 
   const [configuracao, empresas] = await Promise.all([
     prisma.configuracao.findFirst(),

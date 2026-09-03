@@ -65,11 +65,11 @@ interface Props {
   initialError?: string;
 }
 
-const moeda = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
-const numero = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+} from "@/lib/formatters";
 
 export function RelatoriosView({
   empresas,
@@ -501,7 +501,7 @@ export function RelatoriosView({
                         </span>
                       </div>
                       <div className="mt-2 font-mono font-extrabold text-lg text-emerald-950 dark:text-emerald-200">
-                        {moeda.format(relatorioABC.resumoA.faturamento)}
+                        {formatarMoeda(relatorioABC.resumoA.faturamento)}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
                         {relatorioABC.resumoA.itens} itens ({relatorioABC.resumoA.percentualItens.toFixed(1)}% do catálogo)
@@ -516,7 +516,7 @@ export function RelatoriosView({
                         </span>
                       </div>
                       <div className="mt-2 font-mono font-extrabold text-lg text-blue-950 dark:text-blue-200">
-                        {moeda.format(relatorioABC.resumoB.faturamento)}
+                        {formatarMoeda(relatorioABC.resumoB.faturamento)}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
                         {relatorioABC.resumoB.itens} itens ({relatorioABC.resumoB.percentualItens.toFixed(1)}% do catálogo)
@@ -531,7 +531,7 @@ export function RelatoriosView({
                         </span>
                       </div>
                       <div className="mt-2 font-mono font-extrabold text-lg text-amber-950 dark:text-amber-200">
-                        {moeda.format(relatorioABC.resumoC.faturamento)}
+                        {formatarMoeda(relatorioABC.resumoC.faturamento)}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
                         {relatorioABC.resumoC.itens} itens ({relatorioABC.resumoC.percentualItens.toFixed(1)}% do catálogo)
@@ -582,13 +582,13 @@ export function RelatoriosView({
                             <td className="p-3 font-semibold text-foreground">{item.produto}</td>
                             <td className="p-3 text-muted-foreground">{item.departamento}</td>
                             <td className="p-3 text-right font-mono">
-                              {numero.format(item.quantidade)} {item.un}
+                              {formatarNumero(item.quantidade, 2)} {item.un}
                             </td>
                             <td className="p-3 text-right font-mono text-muted-foreground">
-                              {moeda.format(item.precoMedio)}
+                              {formatarMoeda(item.precoMedio)}
                             </td>
                             <td className="p-3 text-right font-mono font-bold text-foreground">
-                              {moeda.format(item.total)}
+                              {formatarMoeda(item.total)}
                             </td>
                             <td className="p-3 text-right font-mono">{item.percentual.toFixed(2)}%</td>
                             <td className="p-3 text-right font-mono font-semibold text-primary">
@@ -647,13 +647,13 @@ export function RelatoriosView({
                                   {dep.quantidadeProdutosDistintos}
                                 </td>
                                 <td className="p-3 text-right font-mono">
-                                  {numero.format(dep.quantidadeItens)}
+                                  {formatarNumero(dep.quantidadeItens, 2)}
                                 </td>
                                 <td className="p-3 text-right font-mono text-muted-foreground">
-                                  {moeda.format(dep.ticketMedioPorItem)}
+                                  {formatarMoeda(dep.ticketMedioPorItem)}
                                 </td>
                                 <td className="p-3 text-right font-mono font-bold text-foreground">
-                                  {moeda.format(dep.faturamento)}
+                                  {formatarMoeda(dep.faturamento)}
                                 </td>
                                 <td className="p-3 text-right font-mono font-semibold text-primary">
                                   {dep.percentual.toFixed(1)}%
@@ -683,9 +683,9 @@ export function RelatoriosView({
                                             <tr key={prod.id} className="border-b last:border-0 hover:bg-muted/10">
                                               <td className="p-2.5 font-mono text-muted-foreground">{prod.id}</td>
                                               <td className="p-2.5 font-medium text-foreground">{prod.produto}</td>
-                                              <td className="p-2.5 text-right font-mono">{numero.format(prod.quantidade)} {prod.un}</td>
-                                              <td className="p-2.5 text-right font-mono text-muted-foreground">{moeda.format(prod.precoMedio)}</td>
-                                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{moeda.format(prod.total)}</td>
+                                              <td className="p-2.5 text-right font-mono">{formatarNumero(prod.quantidade, 2)} {prod.un}</td>
+                                              <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(prod.precoMedio)}</td>
+                                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(prod.total)}</td>
                                               <td className="p-2.5 text-right font-mono text-primary font-semibold">{prod.percentual.toFixed(1)}%</td>
                                             </tr>
                                           ))}
@@ -726,16 +726,16 @@ export function RelatoriosView({
                       {vendedoresFiltrados.map((v) => (
                         <tr key={v.nome} className="border-b last:border-0 hover:bg-muted/20">
                           <td className="p-3 font-bold text-sm text-foreground">{v.nome}</td>
-                          <td className="p-3 text-right font-mono">{numero.format(v.pedidos)}</td>
-                          <td className="p-3 text-right font-mono">{numero.format(v.clientes)}</td>
+                          <td className="p-3 text-right font-mono">{formatarNumero(v.pedidos, 0)}</td>
+                          <td className="p-3 text-right font-mono">{formatarNumero(v.clientes, 0)}</td>
                           <td className="p-3 text-right font-mono text-muted-foreground">
-                            {numero.format(v.quantidadeItens)}
+                            {formatarNumero(v.quantidadeItens, 2)}
                           </td>
                           <td className="p-3 text-right font-mono text-muted-foreground">
-                            {moeda.format(v.ticketMedio)}
+                            {formatarMoeda(v.ticketMedio)}
                           </td>
                           <td className="p-3 text-right font-mono font-bold text-foreground">
-                            {moeda.format(v.faturamento)}
+                            {formatarMoeda(v.faturamento)}
                           </td>
                           <td className="p-3 text-right font-mono font-bold text-primary">
                             {v.percentual.toFixed(1)}%
@@ -774,13 +774,13 @@ export function RelatoriosView({
                           <td className="p-3 font-mono font-bold">
                             <Badge variant="outline">{c.uf}</Badge>
                           </td>
-                          <td className="p-3 text-right font-mono">{numero.format(c.pedidos)}</td>
-                          <td className="p-3 text-right font-mono">{numero.format(c.clientes)}</td>
+                          <td className="p-3 text-right font-mono">{formatarNumero(c.pedidos, 0)}</td>
+                          <td className="p-3 text-right font-mono">{formatarNumero(c.clientes, 0)}</td>
                           <td className="p-3 text-right font-mono text-muted-foreground">
-                            {moeda.format(c.ticketMedio)}
+                            {formatarMoeda(c.ticketMedio)}
                           </td>
                           <td className="p-3 text-right font-mono font-bold text-foreground">
-                            {moeda.format(c.faturamento)}
+                            {formatarMoeda(c.faturamento)}
                           </td>
                           <td className="p-3 text-right font-mono font-bold text-primary">
                             {c.percentual.toFixed(1)}%
@@ -817,9 +817,9 @@ export function RelatoriosView({
                           {relatorioFinanceiro.formasPagamento.map((fp) => (
                             <tr key={fp.nome} className="border-b last:border-0 hover:bg-muted/20">
                               <td className="p-2.5 font-medium text-foreground">{fp.nome}</td>
-                              <td className="p-2.5 text-right font-mono">{fp.pedidos}</td>
-                              <td className="p-2.5 text-right font-mono text-muted-foreground">{moeda.format(fp.ticketMedio)}</td>
-                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{moeda.format(fp.total)}</td>
+                              <td className="p-2.5 text-right font-mono">{formatarNumero(fp.pedidos, 0)}</td>
+                              <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(fp.ticketMedio)}</td>
+                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(fp.total)}</td>
                               <td className="p-2.5 text-right font-mono font-bold text-primary">{fp.percentual.toFixed(1)}%</td>
                             </tr>
                           ))}
@@ -848,9 +848,9 @@ export function RelatoriosView({
                           {relatorioFinanceiro.modelosDocumento.map((m) => (
                             <tr key={m.nome} className="border-b last:border-0 hover:bg-muted/20">
                               <td className="p-2.5 font-medium text-foreground">{m.nome}</td>
-                              <td className="p-2.5 text-right font-mono">{m.pedidos}</td>
-                              <td className="p-2.5 text-right font-mono text-muted-foreground">{moeda.format(m.ticketMedio)}</td>
-                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{moeda.format(m.total)}</td>
+                              <td className="p-2.5 text-right font-mono">{formatarNumero(m.pedidos, 0)}</td>
+                              <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(m.ticketMedio)}</td>
+                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(m.total)}</td>
                               <td className="p-2.5 text-right font-mono font-bold text-primary">{m.percentual.toFixed(1)}%</td>
                             </tr>
                           ))}

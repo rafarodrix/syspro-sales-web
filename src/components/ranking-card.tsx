@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { ItemRankeado } from "@/lib/vendas";
+import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
 import {
   Card,
   CardContent,
@@ -10,11 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-const moeda = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
 
 export function RankingCard({
   titulo,
@@ -78,10 +74,10 @@ export function RankingCard({
                     </div>
                     <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">
                       <span className="font-bold text-foreground">
-                        {moeda.format(item.total)}
+                        {formatarMoeda(item.total)}
                       </span>
                       <span className="text-muted-foreground text-[10px]">
-                        ({item.percentual.toFixed(1)}%)
+                        ({formatarPercentual(item.percentual, 1)})
                       </span>
                     </div>
                   </div>

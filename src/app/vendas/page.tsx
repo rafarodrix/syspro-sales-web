@@ -1,31 +1,15 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/database";
 import { NavApp } from "@/components/nav-app";
 import { VendasView } from "@/components/vendas-view";
+import { requireAuth } from "@/lib/server-auth";
 
 export default async function VendasPage({
   searchParams,
 }: {
   searchParams: Promise<{ empresa?: string }>;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/login");
-
-  const isAdmin = session.user.role === "admin";
-
-  const empresas = await prisma.empresa.findMany({
-    where: isAdmin
-      ? { ativa: true }
-      : {
-          ativa: true,
-          usuarios: { some: { userId: session.user.id } },
-        },
-    orderBy: { razaoSocial: "asc" },
-  });
-
+  const { empresas } = await requireAuth();
   const { empresa } = await searchParams;
+
   return (
     <div>
       <NavApp empresaSelecionada={empresa} />
