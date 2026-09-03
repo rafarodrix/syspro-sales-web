@@ -596,7 +596,7 @@ export function DashboardView({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <GraficoProdutos dados={topProdutos} />
+            <GraficoProdutos dados={topProdutos} empresaId={empresaId} />
           </CardContent>
         </Card>
 
