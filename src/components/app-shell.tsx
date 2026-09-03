@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
+  PackageSearch,
   BarChart3,
   Sparkles,
   UserCheck,
@@ -110,6 +111,7 @@ export function AppShell({
   const breadcrumb = useMemo(() => {
     if (pathname.startsWith("/dashboard")) return { secao: "Visão Geral", pagina: "Dashboard Executivo" };
     if (pathname.startsWith("/vendas")) return { secao: "Comercial", pagina: "Consulta de Vendas" };
+    if (pathname.startsWith("/estoque")) return { secao: "Estoque", pagina: "Movimentações / Kardex" };
     if (pathname.startsWith("/relatorios")) {
       const relatorio = relatoriosSubLinks.find((r) => r.id === abaAtiva);
       return { secao: "Relatórios & BI", pagina: relatorio ? relatorio.label : "Central de Relatórios" };
@@ -211,6 +213,19 @@ export function AppShell({
             >
               <ShoppingCart className="size-4 shrink-0" />
               {!collapsed && <span>Vendas</span>}
+            </Link>
+
+            <Link
+              href={criarLinkComEmpresa("/estoque")}
+              title="Estoque / Kardex"
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                pathname === "/estoque"
+                  ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+              } ${collapsed ? "justify-center px-2" : ""}`}
+            >
+              <PackageSearch className="size-4 shrink-0" />
+              {!collapsed && <span>Estoque</span>}
             </Link>
           </div>
 
@@ -415,6 +430,15 @@ export function AppShell({
                 >
                   <ShoppingCart className="size-4" />
                   Vendas
+                </Link>
+                <Link
+                  href={criarLinkComEmpresa("/estoque")}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
+                    pathname === "/estoque" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  <PackageSearch className="size-4" />
+                  Estoque
                 </Link>
               </div>
 

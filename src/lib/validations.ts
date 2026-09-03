@@ -86,3 +86,6 @@ export const vendasQuerySchema = z.object({
   dtFinal: z.string().refine((val) => padraoDataBR.test(val) || padraoDataISO.test(val), { message: "Data final deve estar no formato DD/MM/AAAA ou AAAA-MM-DD." }),
   forcarAtualizacao: z.boolean().optional().default(false),
 });
+
+export const kardexQuerySchema = vendasQuerySchema;
+
