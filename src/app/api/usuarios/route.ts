@@ -62,18 +62,36 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { id, role, name } = body;
+    const { id, role, name, email, password } = body;
 
     if (!id) {
       return NextResponse.json({ error: "ID do usuário obrigatório." }, { status: 400 });
     }
 
-    const dataToUpdate: { role?: string; name?: string } = {};
+    const usuarioExistente = await prisma.user.findUnique({ where: { id } });
+    if (!usuarioExistente) {
+      return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
+    }
+
+    const dataToUpdate: { role?: string; name?: string; email?: string } = {};
+
     if (role && ["admin", "gerente", "vendas"].includes(role)) {
       dataToUpdate.role = role;
     }
-    if (name && typeof name === "string") {
+
+    if (name && typeof name === "string" && name.trim()) {
       dataToUpdate.name = name.trim();
+    }
+
+    if (email && typeof email === "string" && email.trim()) {
+      const emailNormalizado = email.trim().toLowerCase();
+      if (emailNormalizado !== usuarioExistente.email) {
+        const outroComMesmoEmail = await prisma.user.findUnique({ where: { email: emailNormalizado } });
+        if (outroComMesmoEmail) {
+          return NextResponse.json({ error: "Já existe outro usuário com este e-mail." }, { status: 409 });
+        }
+        dataToUpdate.email = emailNormalizado;
+      }
     }
 
     const updated = await prisma.user.update({
@@ -81,9 +99,24 @@ export async function PATCH(request: NextRequest) {
       data: dataToUpdate,
     });
 
+    // Se informou nova senha, atualiza o hash da conta
+    if (password && typeof password === "string" && password.trim().length >= 6) {
+      // Better Auth password hashing
+      const hashedPassword = await (auth as any).context?.password?.hash(password.trim());
+      if (hashedPassword) {
+        await prisma.account.updateMany({
+          where: { userId: id, providerId: "credential" },
+          data: { password: hashedPassword },
+        });
+      }
+    }
+
     return NextResponse.json({ ok: true, user: updated });
-  } catch {
-    return NextResponse.json({ error: "Erro ao atualizar usuário." }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Erro ao atualizar usuário." },
+      { status: 500 },
+    );
   }
 }
 

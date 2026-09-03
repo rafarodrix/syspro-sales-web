@@ -7,13 +7,15 @@ import {
   Users,
   UserPlus,
   Search,
-  Shield,
-  Briefcase,
-  UserCheck,
   X,
   Plus,
   Trash2,
+  Edit2,
+  Save,
   Crown,
+  Briefcase,
+  UserCheck,
+  KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,16 +67,73 @@ interface Props {
 export function UsuariosClient({ usuarios, empresas }: Props) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
+
+  // Criação
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "gerente" | "vendas">("vendas");
   const [criando, setCriando] = useState(false);
+
+  // Edição
+  const [usuarioParaEditar, setUsuarioParaEditar] = useState<UsuarioRow | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editRole, setEditRole] = useState<"admin" | "gerente" | "vendas">("vendas");
+  const [editPassword, setEditPassword] = useState("");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+
+  // Exclusão
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<UsuarioRow | null>(null);
+
+  function abrirEdicao(u: UsuarioRow) {
+    setUsuarioParaEditar(u);
+    setEditNome(u.name);
+    setEditEmail(u.email);
+    setEditRole(u.role === "admin" ? "admin" : u.role === "gerente" ? "gerente" : "vendas");
+    setEditPassword("");
+  }
+
+  async function salvarEdicao() {
+    if (!usuarioParaEditar || !editNome.trim() || !editEmail.trim()) {
+      toast.error("Preencha nome e e-mail");
+      return;
+    }
+    if (editPassword && editPassword.length < 6) {
+      toast.error("A nova senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+
+    setSalvandoEdicao(true);
+    const res = await fetch("/api/usuarios", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: usuarioParaEditar.id,
+        name: editNome.trim(),
+        email: editEmail.trim(),
+        role: editRole,
+        password: editPassword.trim() || undefined,
+      }),
+    });
+    setSalvandoEdicao(false);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast.error(json.error ?? "Erro ao salvar alterações do usuário");
+      return;
+    }
+    toast.success("Usuário atualizado com sucesso!");
+    setUsuarioParaEditar(null);
+    router.refresh();
+  }
 
   async function criarUsuario() {
     if (!name.trim() || !email.trim() || !password.trim()) {
       toast.error("Preencha nome, e-mail e senha");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
       return;
     }
     setCriando(true);
@@ -99,21 +158,6 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
     setEmail("");
     setPassword("");
     setRole("vendas");
-    router.refresh();
-  }
-
-  async function alterarRole(userId: string, novaRole: string) {
-    const res = await fetch("/api/usuarios", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: userId, role: novaRole }),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      toast.error(json.error ?? "Erro ao alterar perfil do usuário");
-      return;
-    }
-    toast.success("Perfil de acesso atualizado");
     router.refresh();
   }
 
@@ -266,7 +310,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                 </CardTitle>
               </div>
               <CardDescription className="text-xs">
-                {usuarios.length} usuário(s) cadastrado(s). Gerencie perfis e empresas liberadas.
+                {usuarios.length} usuário(s) cadastrado(s). Gerencie perfis, empresas e credenciais.
               </CardDescription>
             </div>
 
@@ -329,33 +373,25 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                         </td>
 
                         <td className="p-3">
-                          <div className="w-36">
-                            <Select
-                              value={isAdmin ? "admin" : isGerente ? "gerente" : "vendas"}
-                              onValueChange={(novaRole) => alterarRole(u.id, novaRole)}
-                            >
-                              <SelectTrigger className="h-8 text-xs font-bold">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">
-                                  <span className="flex items-center gap-1 font-bold text-primary">
-                                    <Crown className="size-3" /> Admin
-                                  </span>
-                                </SelectItem>
-                                <SelectItem value="gerente">
-                                  <span className="flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400">
-                                    <Briefcase className="size-3" /> Gerência
-                                  </span>
-                                </SelectItem>
-                                <SelectItem value="vendas">
-                                  <span className="flex items-center gap-1 font-semibold text-foreground">
-                                    <UserCheck className="size-3" /> Vendas
-                                  </span>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                          <Badge
+                            variant={isAdmin ? "default" : isGerente ? "secondary" : "outline"}
+                            className={`gap-1 font-bold text-[11px] ${
+                              isAdmin
+                                ? "bg-primary text-primary-foreground"
+                                : isGerente
+                                  ? "bg-blue-500/15 text-blue-700 dark:text-blue-300"
+                                  : "text-foreground"
+                            }`}
+                          >
+                            {isAdmin ? (
+                              <Crown className="size-3" />
+                            ) : isGerente ? (
+                              <Briefcase className="size-3" />
+                            ) : (
+                              <UserCheck className="size-3" />
+                            )}
+                            {isAdmin ? "Administrador" : isGerente ? "Gerência" : "Vendas"}
+                          </Badge>
                         </td>
 
                         <td className="p-3">
@@ -421,15 +457,27 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                         </td>
 
                         <td className="p-3 text-right">
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            onClick={() => setUsuarioParaExcluir(u)}
-                            className="text-destructive hover:bg-destructive/10"
-                            title="Excluir usuário"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => abrirEdicao(u)}
+                              className="h-8 gap-1 text-xs"
+                              title="Editar dados e perfil do usuário"
+                            >
+                              <Edit2 className="size-3" />
+                              Editar
+                            </Button>
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              onClick={() => setUsuarioParaExcluir(u)}
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              title="Excluir usuário"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -440,6 +488,90 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Diálogo de Edição de Usuário */}
+      <Dialog
+        open={Boolean(usuarioParaEditar)}
+        onOpenChange={(open) => !open && setUsuarioParaEditar(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>
+              Altere o nome, e-mail, perfil de acesso ou redefina a senha do usuário.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2 text-xs">
+            <div className="space-y-1">
+              <Label htmlFor="editNome" className="text-xs font-semibold">
+                Nome Completo
+              </Label>
+              <Input
+                id="editNome"
+                value={editNome}
+                onChange={(e) => setEditNome(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="editEmail" className="text-xs font-semibold">
+                E-mail
+              </Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Perfil de Acesso</Label>
+              <Select value={editRole} onValueChange={(v) => setEditRole(v as any)}>
+                <SelectTrigger className="text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vendas">💼 Vendas (Dashboard & Vendas)</SelectItem>
+                  <SelectItem value="gerente">👔 Gerência (+ Relatórios)</SelectItem>
+                  <SelectItem value="admin">👑 Administrador (Acesso Total)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 border-t pt-2">
+              <Label htmlFor="editPassword" className="text-xs font-semibold flex items-center gap-1">
+                <KeyRound className="size-3 text-muted-foreground" />
+                Redefinir Senha (opcional)
+              </Label>
+              <Input
+                id="editPassword"
+                type="password"
+                placeholder="Deixe em branco para manter a senha atual"
+                value={editPassword}
+                onChange={(e) => setEditPassword(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setUsuarioParaEditar(null)}
+              disabled={salvandoEdicao}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={salvarEdicao}
+              disabled={salvandoEdicao}
+              className="gap-1.5 font-semibold"
+            >
+              <Save className="size-3.5" />
+              {salvandoEdicao ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Diálogo de Confirmação de Exclusão */}
       <Dialog
@@ -452,7 +584,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
             <DialogDescription>
               Tem certeza que deseja excluir o usuário{" "}
               <strong>{usuarioParaExcluir?.name}</strong> ({usuarioParaExcluir?.email})?
-              Esta ação revogará todo o acesso dele ao sistema.
+              Esta ação revogará todo o acesso dele ao sistema e removerá seus vínculos de empresas.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:justify-end">
