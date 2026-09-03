@@ -9,6 +9,7 @@ export interface KpiCardProps {
   subtitulo?: string;
   variacao?: string;
   valorAnterior?: string;
+  periodoComparado?: string;
   tendenciaPositiva?: boolean;
   neutro?: boolean;
   destaque?: boolean;
@@ -21,6 +22,7 @@ export function KpiCard({
   subtitulo,
   variacao,
   valorAnterior,
+  periodoComparado,
   tendenciaPositiva = true,
   neutro = false,
   destaque = false,
@@ -99,8 +101,15 @@ export function KpiCard({
               </div>
             )}
             {valorAnterior && (
-              <span className="text-muted-foreground font-medium text-[10.5px]">
-                vs. {valorAnterior} ant.
+              <span
+                className="text-muted-foreground font-medium text-[10.5px] truncate max-w-[170px]"
+                title={
+                  periodoComparado
+                    ? `Comparando com o período de ${periodoComparado} (${valorAnterior})`
+                    : `Valor no período anterior: ${valorAnterior}`
+                }
+              >
+                vs. {valorAnterior} {periodoComparado ? `(${periodoComparado})` : "ant."}
               </span>
             )}
           </div>

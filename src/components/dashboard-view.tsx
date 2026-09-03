@@ -167,6 +167,13 @@ export function DashboardView({
     [periodo.inicial, periodo.final],
   );
 
+  const periodoAnteriorFormatado = useMemo(() => {
+    if (!periodoAnteriorCalculado.inicial || !periodoAnteriorCalculado.final) return "";
+    const ini = formatarDataInputParaBR(periodoAnteriorCalculado.inicial);
+    const fim = formatarDataInputParaBR(periodoAnteriorCalculado.final);
+    return ini === fim ? ini : `${ini} a ${fim}`;
+  }, [periodoAnteriorCalculado]);
+
   async function consultar(periodoDaConsulta = periodo) {
     if (!empresaId || !periodoDaConsulta.inicial || !periodoDaConsulta.final) {
       toast.error("Preencha o período para atualizar");
@@ -222,20 +229,14 @@ export function DashboardView({
         agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
       );
       toast.success("Dashboard atualizado com sucesso!");
-    } catch (causa) {
-      const mensagem =
-        causa instanceof Error ? causa.message : "Erro ao atualizar dados.";
-      setErro(mensagem);
-      toast.error(mensagem);
+    } catch {
+      setErro("Não foi possível carregar os dados de vendas.");
     } finally {
       setLoading(false);
     }
   }
 
-  const empresaAtual = useMemo(
-    () => empresas.find((e) => e.id === empresaId),
-    [empresas, empresaId],
-  );
+  const empresaAtual = empresas.find((e) => e.id === empresaId);
 
   return (
     <div className="flex flex-col gap-4">
@@ -259,6 +260,14 @@ export function DashboardView({
             <Calendar className="size-3.5" />
             {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
           </span>
+          {compararPeriodoAnterior && periodoAnteriorFormatado && (
+            <>
+              <span>•</span>
+              <span className="text-primary font-semibold">
+                Comparativo: {periodoAnteriorFormatado}
+              </span>
+            </>
+          )}
           {ultimaAtualizacao && (
             <>
               <span>•</span>
@@ -291,7 +300,9 @@ export function DashboardView({
                   onChange={(e) => setCompararPeriodoAnterior(e.target.checked)}
                   className="rounded border-border text-primary focus:ring-primary size-3.5 cursor-pointer"
                 />
-                <span>Comparar com período anterior</span>
+                <span>
+                  Comparar com período anterior {periodoAnteriorFormatado ? `(${periodoAnteriorFormatado})` : ""}
+                </span>
               </label>
             </div>
           </div>
@@ -325,7 +336,6 @@ export function DashboardView({
           ))
         ) : (
           <>
-            {/* KPI 1: Faturamento (Hero KPI em destaque) */}
             <KpiCard
               titulo="Faturamento Total"
               valor={formatarMoeda(resumo.faturamento)}
@@ -334,13 +344,13 @@ export function DashboardView({
               valorAnterior={
                 resumoAnterior ? formatarMoeda(resumoAnterior.faturamento) : undefined
               }
+              periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoFaturamento?.positivo}
               neutro={variacaoFaturamento?.neutro}
               destaque={true}
               icone={DollarSignIcon}
             />
 
-            {/* KPI 2: Pedidos */}
             <KpiCard
               titulo="Pedidos Faturados"
               valor={formatarNumero(resumo.notas, 0)}
@@ -348,12 +358,12 @@ export function DashboardView({
               valorAnterior={
                 resumoAnterior ? formatarNumero(resumoAnterior.notas, 0) : undefined
               }
+              periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoPedidos?.positivo}
               neutro={variacaoPedidos?.neutro}
               icone={ShoppingCart}
             />
 
-            {/* KPI 3: Ticket Médio */}
             <KpiCard
               titulo="Ticket Médio"
               valor={formatarMoeda(resumo.ticketMedio)}
@@ -361,12 +371,12 @@ export function DashboardView({
               valorAnterior={
                 resumoAnterior ? formatarMoeda(resumoAnterior.ticketMedio) : undefined
               }
+              periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoTicket?.positivo}
               neutro={variacaoTicket?.neutro}
               icone={FileText}
             />
 
-            {/* KPI 4: Clientes Ativos */}
             <KpiCard
               titulo="Clientes Ativos"
               valor={formatarNumero(resumo.clientes, 0)}
@@ -374,12 +384,12 @@ export function DashboardView({
               valorAnterior={
                 resumoAnterior ? formatarNumero(resumoAnterior.clientes, 0) : undefined
               }
+              periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoClientes?.positivo}
               neutro={variacaoClientes?.neutro}
               icone={UsersRound}
             />
 
-            {/* KPI 5: Itens Vendidos */}
             <KpiCard
               titulo="Itens Vendidos"
               valor={formatarNumero(resumo.quantidadeItens, 0)}
@@ -389,6 +399,7 @@ export function DashboardView({
                   ? formatarNumero(resumoAnterior.quantidadeItens, 0)
                   : undefined
               }
+              periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoItens?.positivo}
               neutro={variacaoItens?.neutro}
               icone={Package}
