@@ -34,6 +34,7 @@ import {
   periodoMesAtual,
   type Periodo,
 } from "@/components/date-range-filter";
+import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,8 +78,6 @@ interface Props {
 
 type CampoOrdenacao = "emissao" | "numero" | "cliente" | "quantidadeItens" | "total";
 type DirecaoOrdenacao = "asc" | "desc";
-
-import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 
 export function VendasView({
   empresas,

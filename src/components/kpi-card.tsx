@@ -28,31 +28,34 @@ export function KpiCard({
 }: KpiCardProps) {
   return (
     <Card
-      className={`group relative overflow-hidden transition-all duration-200 hover:shadow-md ${
+      className={`group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 ${
         destaque
-          ? "border-primary/40 bg-gradient-to-br from-primary/10 via-background to-background shadow-sm"
-          : "border-border/60 bg-card shadow-xs hover:border-primary/30"
+          ? "border-primary/40 bg-gradient-to-br from-primary/10 via-background to-background shadow-xs hover:border-primary/60"
+          : "border-border/60 bg-card/90 backdrop-blur-md shadow-2xs hover:border-primary/30 hover:bg-card"
       }`}
     >
-      <CardContent className="p-4 flex flex-col justify-between h-full">
+      {/* Luz sutil de destaque no topo estilo Uilora */}
+      <div className="pointer-events-none absolute -top-12 right-0 size-24 rounded-full bg-primary/10 blur-2xl transition-opacity group-hover:opacity-100 opacity-60" />
+
+      <CardContent className="relative z-10 p-4 flex flex-col justify-between h-full">
         <div>
-          {/* Header com Título e Ícone sem colisão */}
+          {/* Header com Título e Ícone */}
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
               {titulo}
             </span>
             <div
-              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${
+              className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${
                 destaque
-                  ? "bg-primary/20 text-primary"
-                  : "bg-muted text-muted-foreground"
+                  ? "bg-primary/20 text-primary shadow-xs shadow-primary/20"
+                  : "bg-muted/70 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
               }`}
             >
               <Icone className="size-3.5" />
             </div>
           </div>
 
-          {/* Valor com 100% da largura disponível */}
+          {/* Valor Principal com Números Tabulares */}
           <div className="mt-2.5 flex flex-col min-w-0">
             <span
               className={`font-mono font-extrabold tracking-tight tabular-nums truncate ${
@@ -72,17 +75,17 @@ export function KpiCard({
           </div>
         </div>
 
-        {/* Rodapé comparativo */}
+        {/* Rodapé comparativo com Badge */}
         {variacao || valorAnterior ? (
           <div className="mt-3.5 flex flex-wrap items-center gap-1.5 border-t border-border/40 pt-2.5 text-[11px]">
             {variacao && (
               <div
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold ${
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold transition-transform group-hover:scale-105 ${
                   neutro
                     ? "bg-muted text-muted-foreground"
                     : tendenciaPositiva
-                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                      : "bg-rose-500/15 text-rose-700 dark:text-rose-400"
+                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                      : "bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20"
                 }`}
               >
                 {neutro ? (

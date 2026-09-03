@@ -851,6 +851,80 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
   };
 }
 
+export function extrairDataInfo(
+  dataStr: string | null | undefined,
+): { dia: number; mes: number; ano: number; dayOfWeek: number } | null {
+  if (!dataStr) return null;
+  const texto = String(dataStr).trim();
+  if (!texto) return null;
+
+  // Se contiver '/', ex: '02/09/2026' ou '02/09/2026 14:30:00'
+  if (texto.includes("/")) {
+    const apenasData = texto.split(" ")[0].split("T")[0];
+    const partes = apenasData.split("/");
+    if (partes.length >= 3) {
+      const p0 = parseInt(partes[0], 10);
+      const p1 = parseInt(partes[1], 10);
+      const p2 = parseInt(partes[2], 10);
+
+      let dia = p0;
+      let mes = p1;
+      let ano = p2;
+
+      // Se o primeiro campo for o ano (ex: 2026/09/02)
+      if (p0 > 1000) {
+        ano = p0;
+        mes = p1;
+        dia = p2;
+      }
+
+      if (!isNaN(dia) && !isNaN(mes) && !isNaN(ano) && ano > 1900) {
+        const d = new Date(ano, mes - 1, dia);
+        return { dia, mes, ano, dayOfWeek: d.getDay() };
+      }
+    }
+  }
+
+  // Se contiver '-', ex: '2026-09-02' ou '2026-09-02T14:30:00'
+  if (texto.includes("-")) {
+    const apenasData = texto.split(" ")[0].split("T")[0];
+    const partes = apenasData.split("-");
+    if (partes.length >= 3) {
+      const p0 = parseInt(partes[0], 10);
+      const p1 = parseInt(partes[1], 10);
+      const p2 = parseInt(partes[2], 10);
+
+      let ano = p0;
+      let mes = p1;
+      let dia = p2;
+
+      // Se for DD-MM-AAAA
+      if (p2 > 1000) {
+        dia = p0;
+        mes = p1;
+        ano = p2;
+      }
+
+      if (!isNaN(dia) && !isNaN(mes) && !isNaN(ano) && ano > 1900) {
+        const d = new Date(ano, mes - 1, dia);
+        return { dia, mes, ano, dayOfWeek: d.getDay() };
+      }
+    }
+  }
+
+  const d = new Date(texto);
+  if (!isNaN(d.getTime())) {
+    return {
+      dia: d.getDate(),
+      mes: d.getMonth() + 1,
+      ano: d.getFullYear(),
+      dayOfWeek: d.getDay(),
+    };
+  }
+
+  return null;
+}
+
 export function analiseSazonalidade(vendas: VendaProduto[]): RelatorioSazonalidade {
   const nomesDias = [
     "Domingo",
@@ -875,33 +949,23 @@ export function analiseSazonalidade(vendas: VendaProduto[]): RelatorioSazonalida
   for (const venda of vendas) {
     const total = valorItem(venda);
     const chaveNota = chaveDaNota(venda);
-    const dataStr = venda.nf_dt_emissao;
+    const infoData = extrairDataInfo(venda.nf_dt_emissao);
 
     faturamentoTotal += total;
 
-    if (dataStr && dataStr.includes("/")) {
-      const [diaStr, mesStr, anoStr] = dataStr.split("/");
-      const diaNum = Number(diaStr);
-      const mesNum = Number(mesStr);
-      const anoNum = Number(anoStr);
+    if (infoData) {
+      const diaData = diasSemanaMap.get(infoData.dayOfWeek);
+      if (diaData) {
+        diaData.faturamento += total;
+        diaData.notas.add(chaveNota);
+      }
 
-      if (diaNum && mesNum && anoNum) {
-        const dateObj = new Date(anoNum, mesNum - 1, diaNum);
-        const dayOfWeek = dateObj.getDay();
-
-        const diaData = diasSemanaMap.get(dayOfWeek);
-        if (diaData) {
-          diaData.faturamento += total;
-          diaData.notas.add(chaveNota);
-        }
-
-        if (diaNum <= 15) {
-          quinzena1.faturamento += total;
-          quinzena1.notas.add(chaveNota);
-        } else {
-          quinzena2.faturamento += total;
-          quinzena2.notas.add(chaveNota);
-        }
+      if (infoData.dia <= 15) {
+        quinzena1.faturamento += total;
+        quinzena1.notas.add(chaveNota);
+      } else {
+        quinzena2.faturamento += total;
+        quinzena2.notas.add(chaveNota);
       }
     }
   }
@@ -1276,9 +1340,9 @@ export function dataInputParaSyspro(data: string): string {
 }
 
 export function dataParaOrdem(data: string): number {
-  const [dia, mes, ano] = data.split("/").map(Number);
-  if (!dia || !mes || !ano) return 0;
-  return Date.UTC(ano, mes - 1, dia);
+  const info = extrairDataInfo(data);
+  if (!info) return 0;
+  return Date.UTC(info.ano, info.mes - 1, info.dia);
 }
 
 export function formatarDataInputParaBR(dataInput: string): string {
