@@ -282,6 +282,31 @@ export function agruparVendasPorNota(vendas: VendaProduto[]): VendaAgrupada[] {
   );
 }
 
+export function isClienteConsumidorGenerico(nome: string | null | undefined): boolean {
+  if (!nome) return true;
+  const limpo = nome.trim().toUpperCase();
+  const termos = [
+    "CONSUMIDOR",
+    "CONSUMIDOR FINAL",
+    "CLIENTE NAO IDENTIFICADO",
+    "CLIENTE NÃO IDENTIFICADO",
+    "NAO IDENTIFICADO",
+    "NÃO IDENTIFICADO",
+    "VENDA A VISTA",
+    "VENDA BALCAO",
+    "VENDA BALCÃO",
+    "CLIENTE BALCAO",
+    "CLIENTE BALCÃO",
+    "DIVERSOS",
+    "CLIENTE DIVERSOS",
+    "SEM CADASTRO",
+    "NAO INFORMADO",
+    "NÃO INFORMADO",
+    "SEM CLIENTE",
+  ];
+  return termos.some((t) => limpo === t || limpo.startsWith("CONSUMIDOR"));
+}
+
 export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
   const clienteNotasCount = new Map<string, Set<string>>();
   const departamentos = new Map<string, number>();
@@ -335,12 +360,17 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
   const taxaDesconto = faturamentoBruto > 0 ? (descontos / faturamentoBruto) * 100 : 0;
   const taxaFrete = faturamento > 0 ? (frete / faturamento) * 100 : 0;
 
+  let clientesCadastradosCount = 0;
   let clientesRecorrentes = 0;
-  for (const notasDoCli of clienteNotasCount.values()) {
-    if (notasDoCli.size >= 2) clientesRecorrentes++;
+  for (const [nomeCli, notasDoCli] of clienteNotasCount.entries()) {
+    if (!isClienteConsumidorGenerico(nomeCli)) {
+      clientesCadastradosCount++;
+      if (notasDoCli.size >= 2) clientesRecorrentes++;
+    }
   }
   const totalClientes = clienteNotasCount.size;
-  const percentualRecorrencia = totalClientes > 0 ? (clientesRecorrentes / totalClientes) * 100 : 0;
+  const percentualRecorrencia =
+    clientesCadastradosCount > 0 ? (clientesRecorrentes / clientesCadastradosCount) * 100 : 0;
 
   return {
     faturamento,
@@ -713,12 +743,18 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
   const clientesOrdenados = [...clientesMap.values()].sort((a, b) => b.faturamento - a.faturamento);
 
   let acumulado = 0;
+  let clientesCadastradosCount = 0;
   let recorrentes = 0;
 
   const itensClientes: ItemClienteAnalise[] = clientesOrdenados.map((c) => {
     acumulado += c.faturamento;
     const pedidos = c.notas.size;
-    if (pedidos >= 2) recorrentes++;
+    const isGenerico = isClienteConsumidorGenerico(c.nome);
+
+    if (!isGenerico) {
+      clientesCadastradosCount++;
+      if (pedidos >= 2) recorrentes++;
+    }
 
     const percentual = faturamentoTotal > 0 ? (c.faturamento / faturamentoTotal) * 100 : 0;
     const percentualAcumulado = faturamentoTotal > 0 ? (acumulado / faturamentoTotal) * 100 : 0;
@@ -748,8 +784,9 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
   });
 
   const totalClientes = itensClientes.length;
-  const pontuais = totalClientes - recorrentes;
-  const taxaRecorrencia = totalClientes > 0 ? (recorrentes / totalClientes) * 100 : 0;
+  const pontuais = Math.max(0, clientesCadastradosCount - recorrentes);
+  const taxaRecorrencia =
+    clientesCadastradosCount > 0 ? (recorrentes / clientesCadastradosCount) * 100 : 0;
 
   const top5Fat = itensClientes.slice(0, 5).reduce((acc, c) => acc + c.faturamento, 0);
   const top10Fat = itensClientes.slice(0, 10).reduce((acc, c) => acc + c.faturamento, 0);

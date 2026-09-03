@@ -460,9 +460,9 @@ export function DashboardView({
 
       {/* Grid Analítico Principal: Gráfico Temporal (65%) + Insights/Top Produtos (35%) */}
       <section className="grid gap-6 lg:grid-cols-12">
-        {/* Gráfico de Evolução Temporal */}
+        {/* Gráfico de Evolução Temporal (Bklit UI Gradient Area) */}
         <Card className="border-border/60 shadow-xs lg:col-span-8 flex flex-col justify-between">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
             <div>
               <CardTitle className="text-base font-bold text-foreground">
                 Evolução de Vendas
@@ -470,23 +470,30 @@ export function DashboardView({
               <CardDescription className="text-xs">
                 {compararPeriodoAnterior
                   ? `Comparando com período de ${formatarDataInputParaBR(periodoAnteriorCalculado.inicial)} a ${formatarDataInputParaBR(periodoAnteriorCalculado.final)}`
-                  : "Histórico detalhado do período selecionado"}
+                  : "Histórico detalhado da performance no período"}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Select
-                value={metrica}
-                onValueChange={(valor) => setMetrica(valor as MetricaDeVendas)}
-              >
-                <SelectTrigger className="h-8 text-xs font-semibold">
-                  <SelectValue placeholder="Métrica" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="faturamento">Faturamento (R$)</SelectItem>
-                  <SelectItem value="itens">Itens Vendidos</SelectItem>
-                  <SelectItem value="notas">Notas Fiscais</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Seletor Segmentado de Métricas Bklit UI */}
+            <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-muted/40 p-1 self-start sm:self-auto">
+              {[
+                { id: "faturamento", label: "Faturamento (R$)" },
+                { id: "notas", label: "Pedidos / NF" },
+                { id: "itens", label: "Itens Vendidos" },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMetrica(m.id as MetricaDeVendas)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    metrica === m.id
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
           </CardHeader>
           <CardContent className="pt-4">
