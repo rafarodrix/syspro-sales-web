@@ -21,6 +21,7 @@ import {
   Truck,
   ShieldCheck,
   Building2,
+  FileText,
 } from "lucide-react";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
@@ -42,6 +43,7 @@ import {
   type Periodo,
 } from "@/components/date-range-filter";
 import { buscarVendasApi } from "@/lib/vendas-client";
+import { exportarPdfAnalitico } from "@/lib/pdf-export";
 import { PainelComoLer, GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
 import {
   formatarMoeda,
@@ -406,6 +408,103 @@ export function RelatoriosView({
     toast.success("Arquivo CSV gerado com sucesso!");
   }
 
+  function handleExportarPdf() {
+    if (vendas.length === 0) {
+      toast.error("Não há dados para exportar no período selecionado.");
+      return;
+    }
+
+    const op = relatoriosOpcoes.find((r) => r.id === abaAtiva);
+    const titulo = op ? op.label : "Relatório Analítico";
+
+    const contexto = {
+      empresaNome:
+        empresaId === "todas"
+          ? "Todas as Empresas (Consolidado)"
+          : (empresaAtual?.razaoSocial ?? "Empresa Selecionada"),
+      cnpj: empresaId === "todas" ? undefined : empresaAtual?.cnpj,
+      periodo,
+    };
+
+    let colunas: string[] = [];
+    let linhas: (string | number)[][] = [];
+
+    if (abaAtiva === "curva-abc") {
+      colunas = ["Classe", "Código", "Descrição do Produto", "Depto", "Qtd", "Total", "Preço Médio", "%"];
+      linhas = itensAbcFiltrados.map((item) => [
+        item.classe,
+        item.id,
+        item.produto,
+        item.departamento,
+        formatarNumero(item.quantidade, 2),
+        formatarMoeda(item.total),
+        formatarMoeda(item.precoMedio),
+        formatarPercentual(item.percentual, 1),
+      ]);
+    } else if (abaAtiva === "clientes") {
+      colunas = ["Classe", "Razão Social / Cliente", "Cidade/UF", "Pedidos", "Faturamento", "Ticket Médio", "%"];
+      linhas = clientesFiltrados.map((c) => [
+        c.classe,
+        c.nome,
+        [c.cidade, c.uf].filter(Boolean).join("/"),
+        c.pedidos,
+        formatarMoeda(c.faturamento),
+        formatarMoeda(c.ticketMedio),
+        formatarPercentual(c.percentual, 1),
+      ]);
+    } else if (abaAtiva === "vendedores") {
+      colunas = ["Vendedor", "Faturamento", "% Part.", "Pedidos", "Clientes", "Itens", "Ticket Médio", "% Desc."];
+      linhas = vendedoresFiltrados.map((v) => [
+        v.nome,
+        formatarMoeda(v.faturamento),
+        formatarPercentual(v.percentual, 1),
+        v.pedidos,
+        v.clientes,
+        formatarNumero(v.quantidadeItens, 2),
+        formatarMoeda(v.ticketMedio),
+        formatarPercentual(v.taxaDesconto, 1),
+      ]);
+    } else if (abaAtiva === "departamentos") {
+      colunas = ["Departamento", "Faturamento", "% Part.", "Qtd Itens", "SKUs Distintos", "Preço Médio"];
+      linhas = deptosFiltrados.map((d) => [
+        d.nome,
+        formatarMoeda(d.faturamento),
+        formatarPercentual(d.percentual, 1),
+        formatarNumero(d.quantidadeItens, 2),
+        d.quantidadeProdutosDistintos,
+        formatarMoeda(d.ticketMedioPorItem),
+      ]);
+    } else if (abaAtiva === "geografico") {
+      colunas = ["Cidade", "UF", "Faturamento Total", "Frete Rateado", "% Faturamento", "Pedidos", "Ticket Médio"];
+      linhas = cidadesFiltradas.map((c) => [
+        c.cidade,
+        c.uf,
+        formatarMoeda(c.faturamento),
+        formatarMoeda(c.frete),
+        formatarPercentual(c.percentual, 1),
+        c.pedidos,
+        formatarMoeda(c.ticketMedio),
+      ]);
+    } else {
+      colunas = ["Descrição", "Faturamento Total", "% Participação", "Pedidos", "Ticket Médio"];
+      linhas = relatorioFinanceiro.formasPagamento.map((fp) => [
+        fp.nome,
+        formatarMoeda(fp.total),
+        formatarPercentual(fp.percentual, 1),
+        fp.pedidos,
+        formatarMoeda(fp.ticketMedio),
+      ]);
+    }
+
+    exportarPdfAnalitico({
+      titulo,
+      contexto,
+      colunas,
+      linhas,
+    });
+    toast.success(`Relatório em PDF de ${titulo} gerado com sucesso!`);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header de Impressão */}
@@ -571,10 +670,23 @@ export function RelatoriosView({
               )}
 
               <Button
+                onClick={handleExportarPdf}
+                disabled={loading || vendas.length === 0}
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-xs font-semibold text-primary"
+                title="Exportar Relatório Analítico em PDF"
+              >
+                <FileText className="size-3.5" />
+                Exportar PDF
+              </Button>
+              <Button
                 onClick={exportarCsvRelatorio}
+                disabled={loading || vendas.length === 0}
                 size="sm"
                 variant="outline"
                 className="h-8 gap-1.5 text-xs font-semibold"
+                title="Exportar Dados em CSV"
               >
                 <DownloadIcon className="size-3.5" />
                 Exportar CSV

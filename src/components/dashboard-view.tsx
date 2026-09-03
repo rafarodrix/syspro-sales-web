@@ -31,6 +31,7 @@ import {
   paraNumero,
 } from "@/lib/vendas";
 import { buscarVendasApi } from "@/lib/vendas-client";
+import { exportarPdfDashboard } from "@/lib/pdf-export";
 import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
 import {
   DateRangeFilter,
@@ -225,11 +226,31 @@ export function DashboardView({
         agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
       );
       toast.success("Dashboard atualizado com sucesso!");
-    } catch {
-      setErro("Não foi possível carregar os dados de vendas.");
+    } catch (causa) {
+      const mensagem =
+        causa instanceof Error ? causa.message : "Erro ao carregar o dashboard.";
+      setErro(mensagem);
+      toast.error(mensagem);
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleExportarPdf() {
+    if (vendas.length === 0) {
+      toast.error("Não há dados para exportar no período selecionado.");
+      return;
+    }
+    exportarPdfDashboard({
+      contexto: {
+        empresaNome: empresaId === "todas" ? "Todas as Empresas (Consolidado)" : (empresaAtual?.razaoSocial ?? "Empresa Selecionada"),
+        cnpj: empresaId === "todas" ? undefined : empresaAtual?.cnpj,
+        periodo,
+      },
+      resumo,
+      topProdutos,
+    });
+    toast.success("Relatório PDF do Dashboard gerado com sucesso!");
   }
 
   const empresaAtual = empresas.find((e) => e.id === empresaId);
@@ -295,7 +316,7 @@ export function DashboardView({
 
             <div className="hidden h-5 w-px bg-border/80 lg:block" />
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
               <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -304,9 +325,23 @@ export function DashboardView({
                   className="rounded border-border text-primary focus:ring-primary size-3.5 cursor-pointer"
                 />
                 <span>
-                  Comparar com período anterior {periodoAnteriorFormatado ? `(${periodoAnteriorFormatado})` : ""}
+                  Comparar anterior {periodoAnteriorFormatado ? `(${periodoAnteriorFormatado})` : ""}
                 </span>
               </label>
+
+              <div className="hidden h-5 w-px bg-border/80 sm:block" />
+
+              <Button
+                onClick={handleExportarPdf}
+                disabled={loading || vendas.length === 0}
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs font-semibold"
+                title="Exportar Dashboard Executivo em PDF"
+              >
+                <FileText className="size-3.5 text-primary" />
+                Exportar PDF
+              </Button>
             </div>
           </div>
         </CardContent>

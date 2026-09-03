@@ -20,6 +20,7 @@ import {
   ChevronsRight,
   Maximize2,
   Minimize2,
+  FileText,
 } from "lucide-react";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
@@ -36,6 +37,7 @@ import {
 } from "@/components/date-range-filter";
 import { buscarVendasApi } from "@/lib/vendas-client";
 import { exportarParaCSV } from "@/lib/exportar-csv";
+import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -338,6 +340,22 @@ export function VendasView({
     }
   }
 
+  function handleExportarPdf() {
+    if (notasFiltradas.length === 0) {
+      toast.error("Não há notas fiscais para exportar no período filtrado.");
+      return;
+    }
+    exportarPdfVendas({
+      contexto: {
+        empresaNome: empresaId === "todas" ? "Todas as Empresas (Consolidado)" : (empresaAtual?.razaoSocial ?? "Empresa Selecionada"),
+        cnpj: empresaId === "todas" ? undefined : empresaAtual?.cnpj,
+        periodo,
+      },
+      notas: notasFiltradas,
+    });
+    toast.success("Relatório de Vendas em PDF gerado com sucesso!");
+  }
+
   const temFiltrosAtivos =
     Boolean(buscaVenda.trim()) ||
     filtroEmpresa !== "todos" ||
@@ -432,10 +450,23 @@ export function VendasView({
                   Recolher todas
                 </Button>
                 <Button
+                  onClick={handleExportarPdf}
+                  disabled={loading || notasFiltradas.length === 0}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-xs font-semibold text-primary"
+                  title="Exportar Relatório Formatado em PDF"
+                >
+                  <FileText className="size-3.5" />
+                  Exportar PDF
+                </Button>
+                <Button
                   onClick={() => exportarCsv(vendas)}
+                  disabled={loading || vendas.length === 0}
                   size="sm"
                   variant="outline"
                   className="h-8 gap-1.5 text-xs font-semibold"
+                  title="Exportar Dados em CSV"
                 >
                   <DownloadIcon className="size-3.5" />
                   Exportar CSV
