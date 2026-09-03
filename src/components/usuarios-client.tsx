@@ -220,8 +220,47 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
     );
   }, [usuarios, busca]);
 
+  const totalAdmin = useMemo(() => usuarios.filter((u) => u.role.toLowerCase() === "admin").length, [usuarios]);
+  const totalGerente = useMemo(() => usuarios.filter((u) => u.role.toLowerCase() === "gerente" || u.role.toLowerCase() === "gerencia").length, [usuarios]);
+  const totalVendas = useMemo(() => usuarios.filter((u) => u.role.toLowerCase() === "vendas" || u.role.toLowerCase() === "user").length, [usuarios]);
+
   return (
     <div className="space-y-6">
+      {/* Resumo de Usuários e Permissões */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total de Usuários</span>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-mono text-2xl font-extrabold text-foreground">{usuarios.length}</span>
+            <span className="text-[11px] text-muted-foreground">contas ativas</span>
+          </div>
+        </Card>
+
+        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Administradores</span>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-mono text-2xl font-extrabold text-amber-500">{totalAdmin}</span>
+            <span className="text-[11px] text-muted-foreground">acesso total</span>
+          </div>
+        </Card>
+
+        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Gerência</span>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-mono text-2xl font-extrabold text-blue-500">{totalGerente}</span>
+            <span className="text-[11px] text-muted-foreground">+ relatórios</span>
+          </div>
+        </Card>
+
+        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Consultores / Vendas</span>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-mono text-2xl font-extrabold text-emerald-500">{totalVendas}</span>
+            <span className="text-[11px] text-muted-foreground">comercial</span>
+          </div>
+        </Card>
+      </div>
+
       {/* Cadastro de Novo Usuário */}
       <Card className="border-border/60 shadow-sm">
         <CardHeader>

@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Lock, Mail, ShieldCheck, ArrowRight } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 function LoginForm() {
   const router = useRouter();
@@ -22,7 +24,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/dashboard";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,9 +35,8 @@ function LoginForm() {
     );
     setLoading(false);
     if (error) {
-      toast.error("Falha no login", {
-        description:
-          error.message ?? "E-mail ou senha inválidos.",
+      toast.error("Falha na autenticação", {
+        description: error.message ?? "E-mail ou senha incorretos.",
       });
       return;
     }
@@ -44,42 +45,87 @@ function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-xl">Syspro Sales Web</CardTitle>
-        <CardDescription>
-          Acesse para consultar as vendas do Syspro ERP
-        </CardDescription>
+    <Card className="w-full max-w-md border-border/70 bg-card/95 shadow-xl backdrop-blur-md">
+      <CardHeader className="space-y-2 text-center pb-4">
+        {/* Logo Trilink Syspro */}
+        <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+          <svg
+            viewBox="0 0 24 24"
+            className="size-7 fill-current"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        <div className="space-y-1">
+          <CardTitle className="text-2xl font-extrabold tracking-tight text-foreground">
+            TRILINK Syspro
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            Plataforma Corporativa de Inteligência Comercial e Vendas
+          </CardDescription>
+        </div>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="voce@empresa.com.br"
-              required
-              autoComplete="email"
-            />
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-xs font-semibold">
+              E-mail Corporativo
+            </Label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="nome@empresa.com.br"
+                className="pl-9 text-xs"
+                required
+                autoComplete="email"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-xs font-semibold">
+                Senha de Acesso
+              </Label>
+            </div>
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="pl-9 text-xs"
+                required
+                autoComplete="current-password"
+              />
+            </div>
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
+
+          <Button
+            type="submit"
+            className="w-full text-xs font-bold gap-2 shadow-sm shadow-primary/20 cursor-pointer"
+            disabled={loading}
+          >
+            <span>{loading ? "Autenticando..." : "Entrar no Sistema"}</span>
+            {!loading && <ArrowRight className="size-4" />}
           </Button>
         </form>
+
+        <div className="border-t border-border/50 pt-3 text-center">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+            <ShieldCheck className="size-3.5 text-emerald-500" />
+            <span>Acesso restrito e monitorado via Syspro ERP</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -87,11 +133,16 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+      {/* Botão de tema no canto superior */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle variant="switch" />
+      </div>
+
       <Suspense
         fallback={
-          <Card className="w-full max-w-sm">
-            <CardContent className="pt-6">Carregando...</CardContent>
+          <Card className="w-full max-w-md border-border/70 p-8 text-center text-xs text-muted-foreground">
+            Carregando portal de acesso...
           </Card>
         }
       >
