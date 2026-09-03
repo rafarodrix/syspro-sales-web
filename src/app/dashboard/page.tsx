@@ -13,11 +13,14 @@ export default async function DashboardPage({
   const { empresas } = await requireAuth();
   const { empresa: empresaParam } = await searchParams;
 
+  const idsParam = (empresaParam ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const saoIdsValidos = idsParam.length > 0 && idsParam.every((id) => empresas.some((e) => e.id === id));
+
   const empresaSelecionada =
     empresaParam === "todas"
       ? "todas"
-      : empresaParam && empresas.some((e) => e.id === empresaParam)
-        ? empresaParam
+      : saoIdsValidos
+        ? empresaParam!
         : (empresas[0]?.id ?? "");
 
   const hoje = new Date();

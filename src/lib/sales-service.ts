@@ -116,9 +116,19 @@ export async function obterVendas({
   };
 
   if (empresaSelecionadaId === "todas") {
-    // Modo consolidado com pool de 4 requisições simultâneas para não sobrecarregar o Syspro local
+    // Modo consolidado com todas as filiais
     const resultadosPorEmpresa = await executarComPool(empresasLiberadas, 4, consultarEmpresa);
     return resultadosPorEmpresa.flat();
+  }
+
+  // Modo consolidado customizado (seleção de múltiplas filiais por vírgula: "id1,id2,id3")
+  if (empresaSelecionadaId.includes(",")) {
+    const idsAlvo = empresaSelecionadaId.split(",").map((id) => id.trim()).filter(Boolean);
+    const empresasFiltradas = empresasLiberadas.filter((e) => idsAlvo.includes(e.id));
+    if (empresasFiltradas.length > 0) {
+      const resultadosPorEmpresa = await executarComPool(empresasFiltradas, 4, consultarEmpresa);
+      return resultadosPorEmpresa.flat();
+    }
   }
 
   const empresaAlvo = empresasLiberadas.find((e) => e.id === empresaSelecionadaId) ?? empresasLiberadas[0];

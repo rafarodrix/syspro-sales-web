@@ -63,12 +63,15 @@ async function handleVendas(request: NextRequest) {
     );
   }
 
-  // Se for empresa única, validar se o usuário tem acesso
+  // Se for empresa única ou customizada, validar se o usuário tem acesso às filiais solicitadas
   if (empresaId !== "todas") {
-    const empresa = empresasLiberadas.find((e) => e.id === empresaId);
-    if (!empresa) {
+    const idsSolicitados = empresaId.split(",").map((id) => id.trim()).filter(Boolean);
+    const algumInvalido = idsSolicitados.some(
+      (id) => !empresasLiberadas.some((emp) => emp.id === id),
+    );
+    if (algumInvalido) {
       return NextResponse.json(
-        { error: "Empresa não encontrada ou não liberada para o usuário" },
+        { error: "Uma ou mais empresas selecionadas não foram encontradas ou não estão liberadas." },
         { status: 403 },
       );
     }
@@ -83,10 +86,12 @@ async function handleVendas(request: NextRequest) {
       forcarAtualizacao: Boolean(forcarAtualizacao),
     });
 
+    const isConsolidado = empresaId === "todas" || empresaId.includes(",");
+
     return NextResponse.json({
       vendas,
       resumo: resumoVendas(vendas),
-      isConsolidado: empresaId === "todas",
+      isConsolidado,
       totalEmpresas: empresasLiberadas.length,
     });
   } catch (e) {

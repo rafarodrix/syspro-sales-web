@@ -28,6 +28,8 @@ import {
   Moon,
   Sun,
   ShieldCheck,
+  Activity,
+  Server,
 } from "lucide-react";
 import { EmpresaNavSelect } from "@/components/empresa-nav-select";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -107,7 +109,7 @@ export function AppShell({
   // Determinar breadcrumb da página atual
   const breadcrumb = useMemo(() => {
     if (pathname.startsWith("/dashboard")) return { secao: "Visão Geral", pagina: "Dashboard Executivo" };
-    if (pathname.startsWith("/vendas")) return { secao: "Comercial", pagina: "Consulta Analítica de Vendas" };
+    if (pathname.startsWith("/vendas")) return { secao: "Comercial", pagina: "Consulta de Vendas" };
     if (pathname.startsWith("/relatorios")) {
       const relatorio = relatoriosSubLinks.find((r) => r.id === abaAtiva);
       return { secao: "Relatórios & BI", pagina: relatorio ? relatorio.label : "Central de Relatórios" };
@@ -129,7 +131,7 @@ export function AppShell({
       {/* 1. SIDEBAR DESKTOP RETRÁTIL */}
       {/* ========================================================= */}
       <aside
-        className={`hidden lg:flex flex-col border-r border-border/70 bg-card transition-all duration-300 ease-in-out select-none ${
+        className={`hidden lg:flex flex-col border-r border-border/70 bg-card transition-all duration-300 ease-in-out select-none shrink-0 ${
           collapsed ? "w-[70px]" : "w-64"
         }`}
       >
@@ -142,20 +144,20 @@ export function AppShell({
             }`}
           >
             {collapsed ? (
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-black text-sm">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-black text-sm shadow-2xs">
                 T
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <img
                   src="/logo-clara.png"
                   alt="Trilink"
-                  className="h-6 w-auto block dark:hidden object-contain"
+                  className="h-6 w-auto block dark:hidden object-contain shrink-0"
                 />
                 <img
                   src="/logo-escura.png"
                   alt="Trilink"
-                  className="h-6 w-auto hidden dark:block object-contain"
+                  className="h-6 w-auto hidden dark:block object-contain shrink-0"
                 />
                 <Badge
                   variant="outline"
@@ -459,46 +461,48 @@ export function AppShell({
       )}
 
       {/* ========================================================= */}
-      {/* 3. CONTEÚDO PRINCIPAL + TOPBAR EXECUTIVA */}
+      {/* 3. CONTEÚDO PRINCIPAL + TOPBAR EXECUTIVA ANTI-SOBREPOSIÇÃO */}
       {/* ========================================================= */}
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        {/* Topbar Executiva Glassmorphic */}
-        <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b border-border/60 bg-background/95 px-4 backdrop-blur-md sm:px-6">
+        {/* Topbar Executiva com Layout Flex Protegido contra Colisões */}
+        <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-2 sm:gap-4 border-b border-border/60 bg-background/95 px-3 sm:px-6 backdrop-blur-md">
           {/* Lado Esquerdo: Mobile Trigger + Breadcrumb + Status API */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 overflow-hidden">
             <Button
               variant="outline"
               size="icon"
-              className="size-8 lg:hidden"
+              className="size-8 shrink-0 lg:hidden"
               onClick={() => setMobileOpen(true)}
             >
               <Menu className="size-4" />
             </Button>
 
-            {/* Breadcrumb Elegante */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="font-semibold text-muted-foreground hidden sm:inline">
+            {/* Breadcrumb Elegante com Truncate */}
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs min-w-0 truncate">
+              <span className="font-semibold text-muted-foreground hidden md:inline shrink-0">
                 {breadcrumb.secao}
               </span>
-              <span className="text-muted-foreground/60 hidden sm:inline">/</span>
-              <span className="font-bold text-foreground">
+              <span className="text-muted-foreground/60 hidden md:inline shrink-0">/</span>
+              <span className="font-bold text-foreground truncate" title={breadcrumb.pagina}>
                 {breadcrumb.pagina}
               </span>
             </div>
 
             {/* Status da Conexão com Syspro ERP */}
-            <div className="hidden items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 md:flex">
+            <div className="hidden xl:flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>Syspro API Online</span>
             </div>
           </div>
 
           {/* Lado Direito: Command Palette + Seletor Multi-Empresa + Tema + Perfil */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <CommandPalette />
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <div className="shrink-0">
+              <CommandPalette />
+            </div>
 
             {empresas.length > 1 && (
-              <div className="max-w-[200px] sm:max-w-[260px]">
+              <div className="shrink min-w-0">
                 <EmpresaNavSelect
                   empresas={empresas}
                   empresaSelecionada={empresaSelecionada}
@@ -506,22 +510,47 @@ export function AppShell({
               </div>
             )}
 
-            <div className="h-4 w-px bg-border/60 hidden sm:block" />
+            <div className="h-4 w-px bg-border/60 hidden sm:block shrink-0" />
 
-            <ThemeToggle variant="switch" />
+            <div className="shrink-0">
+              <ThemeToggle variant="switch" />
+            </div>
 
-            <div className="hidden lg:flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs font-semibold text-foreground">
-              <ShieldCheck className="size-3.5 text-primary" />
-              <span>{userRole}</span>
+            <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 px-2.5 py-1 text-xs font-semibold text-foreground shrink-0">
+              <ShieldCheck className="size-3.5 text-primary shrink-0" />
+              <span className="capitalize">{userRole}</span>
             </div>
           </div>
         </header>
 
         {/* Área de Visualização do Conteúdo */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
+          <div className="mx-auto max-w-7xl w-full flex-1">
             {children}
           </div>
+
+          {/* Rodapé Corporativo Enterprise */}
+          <footer className="mt-12 border-t border-border/60 pt-6 pb-2 text-xs text-muted-foreground">
+            <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-foreground">Syspro Sales Web</span>
+                <span>·</span>
+                <span>Trilink Software</span>
+                <span>·</span>
+                <span className="text-[11px] font-mono bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
+                  v1.0.0 Enterprise
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-[11px]">
+                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  <span>Serviço Ativo</span>
+                </div>
+                <span>·</span>
+                <span>Consulta Segura Multi-Filial</span>
+              </div>
+            </div>
+          </footer>
         </main>
       </div>
     </div>
