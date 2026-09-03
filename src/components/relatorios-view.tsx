@@ -40,6 +40,7 @@ import {
   periodoMesAtual,
   type Periodo,
 } from "@/components/date-range-filter";
+import { buscarVendasApi } from "@/lib/vendas-client";
 import {
   formatarMoeda,
   formatarNumero,
@@ -203,20 +204,8 @@ export function RelatoriosView({
     setLoading(true);
     setErro(null);
     try {
-      const resposta = await fetch("/api/vendas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          empresaId,
-          dtInicial: dataInputParaSyspro(periodoDaConsulta.inicial),
-          dtFinal: dataInputParaSyspro(periodoDaConsulta.final),
-        }),
-      });
-      const json = await resposta.json().catch(() => ({}));
-      if (!resposta.ok) {
-        throw new Error(json.error ?? "Erro ao consultar relatórios.");
-      }
-      setVendas(json.vendas as VendaProduto[]);
+      const dados = await buscarVendasApi(empresaId, periodoDaConsulta);
+      setVendas(dados);
       toast.success("Relatórios atualizados com sucesso!");
     } catch (causa) {
       const mensagem =

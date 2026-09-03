@@ -34,6 +34,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LogOutButton } from "@/components/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CommandPalette } from "@/components/command-palette";
 
 type UserRole = "admin" | "gerente" | "vendas" | "user" | string;
 
@@ -476,8 +477,10 @@ export function AppShell({
             </div>
           </div>
 
-          {/* Lado Direito: Seletor Multi-Empresa + Tema + Perfil */}
+          {/* Lado Direito: Command Palette + Seletor Multi-Empresa + Tema + Perfil */}
           <div className="flex items-center gap-2.5 sm:gap-3">
+            <CommandPalette />
+
             {empresas.length > 1 && (
               <div className="max-w-[200px] sm:max-w-[260px]">
                 <EmpresaNavSelect

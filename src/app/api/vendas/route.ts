@@ -5,6 +5,14 @@ import { prisma } from "@/lib/database";
 import { consultarVendas, SysproApiError } from "@/lib/syspro-api";
 import { resumoVendas } from "@/lib/vendas";
 
+interface CacheEntry {
+  timestamp: number;
+  data: any[];
+}
+
+const vendasCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 45 * 1000; // 45 segundos
+
 export async function POST(request: NextRequest) {
   try {
     return await handleVendas(request);
@@ -25,14 +33,14 @@ async function handleVendas(request: NextRequest) {
 
   const isAdmin = session.user.role === "admin";
 
-  let body: { empresaId?: string; dtInicial?: string; dtFinal?: string };
+  let body: { empresaId?: string; dtInicial?: string; dtFinal?: string; forcarAtualizacao?: boolean };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { empresaId, dtInicial, dtFinal } = body;
+  const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = body;
   if (!empresaId || !dtInicial || !dtFinal) {
     return NextResponse.json(
       { error: "Empresa e período são obrigatórios" },
@@ -74,7 +82,25 @@ async function handleVendas(request: NextRequest) {
   }
 
   try {
-    const data = await consultarVendas(cfg, { dtInicial, dtFinal });
+    const cacheKey = `${cfg.baseUrl}_${dtInicial}_${dtFinal}`;
+    const agora = Date.now();
+    const emCache = vendasCache.get(cacheKey);
+
+    let data: any[];
+    if (!forcarAtualizacao && emCache && agora - emCache.timestamp < CACHE_TTL_MS) {
+      data = emCache.data;
+    } else {
+      data = await consultarVendas(cfg, { dtInicial, dtFinal });
+      vendasCache.set(cacheKey, { timestamp: agora, data });
+
+      // Limpeza preventiva de cache antigo se crescer muito
+      if (vendasCache.size > 50) {
+        for (const [k, v] of vendasCache.entries()) {
+          if (agora - v.timestamp > CACHE_TTL_MS) vendasCache.delete(k);
+        }
+      }
+    }
+
     // Filtra a empresa no backend (o browser nunca vê a API do Syspro)
     const filtradas = data.filter(
       (v) => v.empresa_codigo === empresa.empresaCodigo,
@@ -82,6 +108,7 @@ async function handleVendas(request: NextRequest) {
     return NextResponse.json({
       vendas: filtradas,
       resumo: resumoVendas(filtradas),
+      cached: Boolean(emCache && !forcarAtualizacao && agora - emCache.timestamp < CACHE_TTL_MS),
     });
   } catch (e) {
     if (e instanceof SysproApiError) {

@@ -34,6 +34,8 @@ import {
   periodoMesAtual,
   type Periodo,
 } from "@/components/date-range-filter";
+import { buscarVendasApi } from "@/lib/vendas-client";
+import { exportarParaCSV } from "@/lib/exportar-csv";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -304,20 +306,8 @@ export function VendasView({
     setErro(null);
     setNotasAbertas(new Set());
     try {
-      const resposta = await fetch("/api/vendas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          empresaId,
-          dtInicial: dataInputParaSyspro(periodoDaConsulta.inicial),
-          dtFinal: dataInputParaSyspro(periodoDaConsulta.final),
-        }),
-      });
-      const json = await resposta.json().catch(() => ({}));
-      if (!resposta.ok) {
-        throw new Error(json.error ?? "Erro ao consultar as vendas.");
-      }
-      setVendas(json.vendas as VendaProduto[]);
+      const dados = await buscarVendasApi(empresaId, periodoDaConsulta);
+      setVendas(dados);
       setPaginaAtual(1);
       toast.success("Vendas consultadas com sucesso!");
     } catch (causa) {

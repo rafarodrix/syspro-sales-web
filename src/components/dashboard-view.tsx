@@ -29,6 +29,7 @@ import {
   calcularDestaques,
   formatarDataInputParaBR,
 } from "@/lib/vendas";
+import { buscarVendasApi } from "@/lib/vendas-client";
 import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
 import {
   DateRangeFilter,
@@ -188,41 +189,15 @@ export function DashboardView({
     );
 
     try {
-      const [resAtual, resAnterior] = await Promise.all([
-        fetch("/api/vendas", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            empresaId,
-            dtInicial: dataInputParaSyspro(periodoDaConsulta.inicial),
-            dtFinal: dataInputParaSyspro(periodoDaConsulta.final),
-          }),
-        }),
+      const [dadosAtual, dadosAnt] = await Promise.all([
+        buscarVendasApi(empresaId, periodoDaConsulta),
         compararPeriodoAnterior
-          ? fetch("/api/vendas", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                empresaId,
-                dtInicial: dataInputParaSyspro(ant.inicial),
-                dtFinal: dataInputParaSyspro(ant.final),
-              }),
-            })
-          : Promise.resolve(null),
+          ? buscarVendasApi(empresaId, ant)
+          : Promise.resolve([]),
       ]);
 
-      const jsonAtual = await resAtual.json().catch(() => ({}));
-      if (!resAtual.ok) {
-        throw new Error(jsonAtual.error ?? "Erro ao consultar o dashboard.");
-      }
-      setVendas(jsonAtual.vendas as VendaProduto[]);
-
-      if (resAnterior) {
-        const jsonAnterior = await resAnterior.json().catch(() => ({}));
-        if (resAnterior.ok && Array.isArray(jsonAnterior.vendas)) {
-          setVendasAnteriores(jsonAnterior.vendas as VendaProduto[]);
-        }
-      }
+      setVendas(dadosAtual);
+      setVendasAnteriores(dadosAnt);
 
       const agora = new Date();
       setUltimaAtualizacao(
