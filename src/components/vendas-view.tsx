@@ -78,11 +78,7 @@ interface Props {
 type CampoOrdenacao = "emissao" | "numero" | "cliente" | "quantidadeItens" | "total";
 type DirecaoOrdenacao = "asc" | "desc";
 
-const moeda = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
-const numero = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
+import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 
 export function VendasView({
   empresas,
@@ -355,8 +351,8 @@ export function VendasView({
           Período: {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
         </p>
         <p className="text-xs text-slate-700 mt-1">
-          Total Faturado: {moeda.format(resumoBusca.faturamento)} | Notas: {numero.format(resumoBusca.totalNotas)} |
-          Clientes: {numero.format(resumoBusca.clientes)} | Ticket Médio: {moeda.format(resumoBusca.ticketMedio)}
+          Total Faturado: {formatarMoeda(resumoBusca.faturamento)} | Notas: {formatarNumero(resumoBusca.totalNotas, 0)} |
+          Clientes: {formatarNumero(resumoBusca.clientes, 0)} | Ticket Médio: {formatarMoeda(resumoBusca.ticketMedio)}
         </p>
       </div>
 
@@ -587,7 +583,7 @@ export function VendasView({
                     Total Faturado
                   </span>
                   <span className="font-mono text-base font-extrabold text-foreground">
-                    {moeda.format(resumoBusca.faturamento)}
+                    {formatarMoeda(resumoBusca.faturamento)}
                   </span>
                 </div>
                 <div className="flex flex-col">
@@ -595,7 +591,7 @@ export function VendasView({
                     Notas Fiscais
                   </span>
                   <span className="font-mono text-base font-extrabold text-foreground">
-                    {numero.format(resumoBusca.totalNotas)}
+                    {formatarNumero(resumoBusca.totalNotas, 0)}
                   </span>
                 </div>
                 <div className="flex flex-col">
@@ -603,7 +599,7 @@ export function VendasView({
                     Clientes Atendidos
                   </span>
                   <span className="font-mono text-base font-extrabold text-foreground">
-                    {numero.format(resumoBusca.clientes)}
+                    {formatarNumero(resumoBusca.clientes, 0)}
                   </span>
                 </div>
                 <div className="flex flex-col">
@@ -611,7 +607,7 @@ export function VendasView({
                     Ticket Médio
                   </span>
                   <span className="font-mono text-base font-extrabold text-foreground">
-                    {moeda.format(resumoBusca.ticketMedio)}
+                    {formatarMoeda(resumoBusca.ticketMedio)}
                   </span>
                 </div>
               </div>
@@ -728,7 +724,7 @@ export function VendasView({
                     <option value={100}>100 por página</option>
                   </select>
                   <span>
-                    de {numero.format(notasOrdenadas.length)} notas filtradas
+                    de {formatarNumero(notasOrdenadas.length, 0)} notas filtradas
                   </span>
                 </div>
 
@@ -909,10 +905,10 @@ function NotaRow({
           {nota.vendedor}
         </TableCell>
         <TableCell className="text-right font-mono text-xs">
-          {numero.format(nota.quantidadeItens)}
+          {formatarNumero(nota.quantidadeItens, 2)}
         </TableCell>
         <TableCell className="text-right font-mono font-bold text-xs text-foreground">
-          {moeda.format(nota.total)}
+          {formatarMoeda(nota.total)}
         </TableCell>
       </TableRow>
       {aberta ? (
@@ -962,19 +958,19 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
                 {item.produto_un || "—"}
               </td>
               <td className="p-2.5 text-right font-mono">
-                {numero.format(paraNumero(item.produto_qtde))}
+                {formatarNumero(paraNumero(item.produto_qtde), 2)}
               </td>
               <td className="p-2.5 text-right font-mono">
-                {moeda.format(paraNumero(item.produto_vlr_item))}
+                {formatarMoeda(paraNumero(item.produto_vlr_item))}
               </td>
               <td className="p-2.5 text-right font-mono text-muted-foreground">
-                {moeda.format(paraNumero(item.produto_vlr_desconto))}
+                {formatarMoeda(paraNumero(item.produto_vlr_desconto))}
               </td>
               <td className="p-2.5 text-right font-mono text-muted-foreground">
-                {moeda.format(paraNumero(item.produto_vlr_frete))}
+                {formatarMoeda(paraNumero(item.produto_vlr_frete))}
               </td>
               <td className="p-2.5 text-right font-mono font-bold text-foreground">
-                {moeda.format(paraNumero(item.produto_vlr_total_liquido))}
+                {formatarMoeda(paraNumero(item.produto_vlr_total_liquido || item.produto_vlr_total_item))}
               </td>
             </tr>
           ))}

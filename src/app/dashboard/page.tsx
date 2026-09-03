@@ -1,9 +1,7 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { NavApp } from "@/components/nav-app";
 import { DashboardView } from "@/components/dashboard-view";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
+import { requireAuth } from "@/lib/server-auth";
 import { consultarVendas, type VendaProduto } from "@/lib/syspro-api";
 import { dataInputParaSyspro, calcularPeriodoAnterior, dataParaInput } from "@/lib/vendas";
 
@@ -12,17 +10,10 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ empresa?: string }>;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/login");
+  const { empresas } = await requireAuth();
   const { empresa: empresaId } = await searchParams;
-  const isAdmin = session.user.role === "admin";
-  const empresas = await prisma.empresa.findMany({
-    where: isAdmin
-      ? { ativa: true }
-      : { ativa: true, usuarios: { some: { userId: session.user.id } } },
-    orderBy: { razaoSocial: "asc" },
-  });
   const empresa = empresas.find((item) => item.id === empresaId) ?? empresas[0];
+
   const hoje = new Date();
   const periodo = {
     inicial: dataParaInput(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),

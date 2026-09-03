@@ -2,17 +2,15 @@
 
 import { useId, useMemo, useState } from "react";
 import type { PontoFaturamento, ProdutoRankeado } from "@/lib/vendas";
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+  formatarK,
+  formatarDataVisual,
+} from "@/lib/formatters";
 
 type FormatoDoGrafico = "moeda" | "numero";
-
-const moedaCompleta = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
-
-const numeroBR = new Intl.NumberFormat("pt-BR", {
-  maximumFractionDigits: 1,
-});
 
 export function GraficoFaturamento({
   dados,
@@ -31,12 +29,16 @@ export function GraficoFaturamento({
     indice: number;
   } | null>(null);
 
-  const { pontosArray, pontosAnterioresArray, yLabels, maxVal } = useMemo(() => {
-    if (!dados.length) return { pontosArray: [], pontosAnterioresArray: [], yLabels: [], maxVal: 1 };
-    
+  const { pontosArray, pontosAnterioresArray, yLabels } = useMemo(() => {
+    if (!dados.length)
+      return { pontosArray: [], pontosAnterioresArray: [], yLabels: [] };
+
     let max = Math.max(...dados.map((item) => item.total), 1);
     if (temComparacao) {
-      const maxAnt = Math.max(...dados.map((item) => item.totalAnterior ?? 0), 1);
+      const maxAnt = Math.max(
+        ...dados.map((item) => item.totalAnterior ?? 0),
+        1,
+      );
       max = Math.max(max, maxAnt);
     }
 
@@ -56,11 +58,13 @@ export function GraficoFaturamento({
       return { x, y, total: totalAnt };
     });
 
-    return { pontosArray, pontosAnterioresArray, yLabels: labels, maxVal: max };
+    return { pontosArray, pontosAnterioresArray, yLabels: labels };
   }, [dados, temComparacao]);
 
   const pontosString = pontosArray.map((p) => `${p.x},${p.y}`).join(" ");
-  const pontosAnterioresString = pontosAnterioresArray.map((p) => `${p.x},${p.y}`).join(" ");
+  const pontosAnterioresString = pontosAnterioresArray
+    .map((p) => `${p.x},${p.y}`)
+    .join(" ");
 
   const dateTicks = useMemo(() => {
     if (dados.length <= 8) return dados;
@@ -82,7 +86,7 @@ export function GraficoFaturamento({
         <div className="flex flex-col-reverse justify-between pr-2 text-[11px] font-mono font-medium text-muted-foreground">
           {yLabels.map((val) => (
             <span key={val} className="leading-none">
-              {formato === "moeda" ? formatK(val) : val}
+              {formato === "moeda" ? formatarK(val) : val}
             </span>
           ))}
         </div>
@@ -97,8 +101,16 @@ export function GraficoFaturamento({
           >
             <defs>
               <linearGradient id={`area-${id}`} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-primary, #3b82f6)" stopOpacity=".25" />
-                <stop offset="100%" stopColor="var(--color-primary, #3b82f6)" stopOpacity="0" />
+                <stop
+                  offset="0%"
+                  stopColor="var(--color-primary, #3b82f6)"
+                  stopOpacity=".25"
+                />
+                <stop
+                  offset="100%"
+                  stopColor="var(--color-primary, #3b82f6)"
+                  stopOpacity="0"
+                />
               </linearGradient>
             </defs>
 
@@ -179,13 +191,15 @@ export function GraficoFaturamento({
                 top: `calc(${pontoHover.y}% - 10px)`,
               }}
             >
-              <div className="font-bold text-foreground">{pontoHover.item.rotulo}</div>
+              <div className="font-bold text-foreground">
+                {pontoHover.item.rotulo}
+              </div>
               <div className="mt-1 flex items-center gap-2 font-mono font-semibold text-primary">
                 <span>Período Atual:</span>
                 <span>
                   {formato === "moeda"
-                    ? moedaCompleta.format(pontoHover.item.total)
-                    : numeroBR.format(pontoHover.item.total)}
+                    ? formatarMoeda(pontoHover.item.total)
+                    : formatarNumero(pontoHover.item.total, 0)}
                 </span>
               </div>
               {temComparacao && pontoHover.item.totalAnterior !== undefined && (
@@ -193,8 +207,8 @@ export function GraficoFaturamento({
                   <span>Período Anterior:</span>
                   <span>
                     {formato === "moeda"
-                      ? moedaCompleta.format(pontoHover.item.totalAnterior)
-                      : numeroBR.format(pontoHover.item.totalAnterior)}
+                      ? formatarMoeda(pontoHover.item.totalAnterior)
+                      : formatarNumero(pontoHover.item.totalAnterior, 0)}
                   </span>
                 </div>
               )}
@@ -243,7 +257,10 @@ export function GraficoProdutos({ dados }: { dados: ProdutoRankeado[] }) {
     >
       <div className="flex flex-col gap-3 py-1">
         {dados.map((item, index) => (
-          <div key={`${item.id}-${index}`} className="group flex flex-col gap-1.5">
+          <div
+            key={`${item.id}-${index}`}
+            className="group flex flex-col gap-1.5"
+          >
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2 min-w-0 pr-2">
                 <span className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[10px] font-bold text-muted-foreground">
@@ -258,10 +275,10 @@ export function GraficoProdutos({ dados }: { dados: ProdutoRankeado[] }) {
               </div>
               <div className="flex items-center gap-2 shrink-0 font-mono text-xs">
                 <span className="font-bold text-foreground">
-                  {moedaCompleta.format(item.total)}
+                  {formatarMoeda(item.total)}
                 </span>
                 <span className="text-muted-foreground text-[11px]">
-                  ({item.percentual.toFixed(1)}%)
+                  ({formatarPercentual(item.percentual, 1)})
                 </span>
               </div>
             </div>
@@ -281,26 +298,11 @@ export function GraficoProdutos({ dados }: { dados: ProdutoRankeado[] }) {
       {/* X Axis Numbers Calculados Dinamicamente */}
       <div className="flex justify-between border-t border-border/60 pt-2 text-[10px] font-mono font-medium text-muted-foreground">
         {xTicks.map((val) => (
-          <span key={val}>{formatK(val)}</span>
+          <span key={val}>{formatarK(val)}</span>
         ))}
       </div>
     </div>
   );
-}
-
-function formatK(valor: number) {
-  if (valor === 0) return "0";
-  if (valor >= 1000000) return `${(valor / 1000000).toFixed(1)}M`;
-  if (valor >= 1000) return `${Math.round(valor / 1000)}k`;
-  return String(valor);
-}
-
-function formatarDataVisual(dataStr: string) {
-  if (dataStr.includes("/")) {
-    const parts = dataStr.split("/");
-    return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : dataStr;
-  }
-  return dataStr;
 }
 
 function EstadoVazio() {

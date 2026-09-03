@@ -1,9 +1,7 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/database";
 import { NavApp } from "@/components/nav-app";
 import { RelatoriosView } from "@/components/relatorios-view";
+import { prisma } from "@/lib/database";
+import { requireAuth } from "@/lib/server-auth";
 import { consultarVendas, type VendaProduto } from "@/lib/syspro-api";
 import { dataInputParaSyspro, dataParaInput } from "@/lib/vendas";
 
@@ -12,25 +10,8 @@ export default async function RelatoriosPage({
 }: {
   searchParams: Promise<{ empresa?: string }>;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/login");
-  if (session.user.role === "vendas" || session.user.role === "user") {
-    redirect("/dashboard");
-  }
-
+  const { empresas } = await requireAuth("gerente");
   const { empresa: empresaId } = await searchParams;
-  const isAdmin = session.user.role === "admin";
-
-  const empresas = await prisma.empresa.findMany({
-    where: isAdmin
-      ? { ativa: true }
-      : {
-          ativa: true,
-          usuarios: { some: { userId: session.user.id } },
-        },
-    orderBy: { razaoSocial: "asc" },
-  });
-
   const empresa = empresas.find((item) => item.id === empresaId) ?? empresas[0];
 
   const hoje = new Date();
