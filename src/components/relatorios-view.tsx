@@ -107,7 +107,7 @@ export function RelatoriosView({
     empresaInicial === "todas" ||
     (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
-      : (empresas.length > 1 ? "todas" : (empresas[0]?.id ?? "")),
+      : (empresas[0]?.id ?? ""),
   );
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),

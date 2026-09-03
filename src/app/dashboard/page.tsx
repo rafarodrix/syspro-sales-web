@@ -12,13 +12,13 @@ export default async function DashboardPage({
   const { empresas } = await requireAuth();
   const { empresa: empresaParam } = await searchParams;
 
-  // Se houver mais de 1 empresa e nenhuma selecionada, usa "todas" (Consolidado) por padrão
+  // Padrão seguro: Empresa 1 (a primeira vinculada), consolidando apenas se solicitado explicitamente
   const empresaSelecionada =
-    empresaParam === "todas" || (!empresaParam && empresas.length > 1)
+    empresaParam === "todas"
       ? "todas"
       : empresaParam && empresas.some((e) => e.id === empresaParam)
         ? empresaParam
-        : empresas[0]?.id;
+        : (empresas[0]?.id ?? "");
 
   const hoje = new Date();
   const periodo = {
