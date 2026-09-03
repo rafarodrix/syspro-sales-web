@@ -45,6 +45,7 @@ import { exportarParaCSV } from "@/lib/exportar-csv";
 import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { TablePagination } from "@/components/table-pagination";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -805,71 +806,17 @@ export function VendasView({
                 </div>
               </div>
 
-              {/* Barra de Paginação */}
-              <div className="no-print mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <span>Exibindo</span>
-                  <select
-                    value={itensPorPagina}
-                    onChange={(e) => {
-                      setItensPorPagina(Number(e.target.value));
-                      setPaginaAtual(1);
-                    }}
-                    className="h-8 rounded-md border bg-background px-2 text-xs font-semibold focus:ring-1 focus:ring-primary"
-                  >
-                    <option value={25}>25 por página</option>
-                    <option value={50}>50 por página</option>
-                    <option value={100}>100 por página</option>
-                  </select>
-                  <span>
-                    de {formatarNumero(notasOrdenadas.length, 0)} notas filtradas
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() => setPaginaAtual(1)}
-                    disabled={paginaAtual === 1}
-                    title="Primeira página"
-                  >
-                    <ChevronsLeft className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
-                    disabled={paginaAtual === 1}
-                    title="Página anterior"
-                  >
-                    <ChevronLeft className="size-3.5" />
-                  </Button>
-
-                  <span className="px-2 font-mono font-semibold text-foreground">
-                    Página {paginaAtual} de {totalPaginas}
-                  </span>
-
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
-                    disabled={paginaAtual >= totalPaginas}
-                    title="Próxima página"
-                  >
-                    <ChevronRight className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() => setPaginaAtual(totalPaginas)}
-                    disabled={paginaAtual >= totalPaginas}
-                    title="Última página"
-                  >
-                    <ChevronsRight className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
+              {/* Barra de Paginação Padrão */}
+              <TablePagination
+                paginaAtual={paginaAtual}
+                totalItens={notasOrdenadas.length}
+                itensPorPagina={itensPorPagina}
+                onPaginaChange={setPaginaAtual}
+                onItensPorPaginaChange={setItensPorPagina}
+                labelItens="notas filtradas"
+                opcoesItensPorPagina={[25, 50, 100]}
+                className="mt-4 border-t border-border/60"
+              />
             </>
           ) : !loading && !erro ? (
             <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">

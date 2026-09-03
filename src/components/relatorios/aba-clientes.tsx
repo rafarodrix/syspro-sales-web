@@ -1,7 +1,9 @@
+import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type { ItemClienteAnalise } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
+import { TablePagination } from "@/components/table-pagination";
 
 interface AbaClientesProps {
   relatorioClientes: {
@@ -16,6 +18,14 @@ interface AbaClientesProps {
 }
 
 export function AbaClientes({ relatorioClientes, clientesFiltrados }: AbaClientesProps) {
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(25);
+
+  const clientesPaginados = useMemo(() => {
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    return clientesFiltrados.slice(inicio, inicio + itensPorPagina);
+  }, [clientesFiltrados, paginaAtual, itensPorPagina]);
+
   return (
     <div className="space-y-4">
       {/* Cards Síntese de Clientes */}
@@ -87,7 +97,7 @@ export function AbaClientes({ relatorioClientes, clientesFiltrados }: AbaCliente
             </tr>
           </thead>
           <tbody>
-            {clientesFiltrados.map((cli, idx) => (
+            {clientesPaginados.map((cli, idx) => (
               <tr key={`${cli.nome}-${idx}`} className="border-b last:border-0 hover:bg-muted/20">
                 <td className="p-3 text-center">
                   <Badge
@@ -129,6 +139,16 @@ export function AbaClientes({ relatorioClientes, clientesFiltrados }: AbaCliente
           </tbody>
         </table>
       </div>
+
+      {/* Paginação Padrão */}
+      <TablePagination
+        paginaAtual={paginaAtual}
+        totalItens={clientesFiltrados.length}
+        itensPorPagina={itensPorPagina}
+        onPaginaChange={setPaginaAtual}
+        onItensPorPaginaChange={setItensPorPagina}
+        labelItens="clientes"
+      />
     </div>
   );
 }

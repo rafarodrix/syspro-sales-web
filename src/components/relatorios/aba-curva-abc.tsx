@@ -1,7 +1,9 @@
+import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type { ItemCurvaABC } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
+import { TablePagination } from "@/components/table-pagination";
 
 interface AbaCurvaABCProps {
   relatorioABC: {
@@ -14,6 +16,14 @@ interface AbaCurvaABCProps {
 }
 
 export function AbaCurvaABC({ relatorioABC, itensFiltrados }: AbaCurvaABCProps) {
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(25);
+
+  const itensPaginados = useMemo(() => {
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    return itensFiltrados.slice(inicio, inicio + itensPorPagina);
+  }, [itensFiltrados, paginaAtual, itensPorPagina]);
+
   return (
     <div className="space-y-4">
       {/* Cards Síntese ABC (Pareto) */}
@@ -81,7 +91,7 @@ export function AbaCurvaABC({ relatorioABC, itensFiltrados }: AbaCurvaABCProps) 
             </tr>
           </thead>
           <tbody>
-            {itensFiltrados.map((item, idx) => (
+            {itensPaginados.map((item, idx) => (
               <tr key={`${item.id}-${idx}`} className="border-b last:border-0 hover:bg-muted/20">
                 <td className="p-3 text-center">
                   <Badge
@@ -136,6 +146,16 @@ export function AbaCurvaABC({ relatorioABC, itensFiltrados }: AbaCurvaABCProps) 
           </tbody>
         </table>
       </div>
+
+      {/* Paginação Padrão */}
+      <TablePagination
+        paginaAtual={paginaAtual}
+        totalItens={itensFiltrados.length}
+        itensPorPagina={itensPorPagina}
+        onPaginaChange={setPaginaAtual}
+        onItensPorPaginaChange={setItensPorPagina}
+        labelItens="produtos"
+      />
     </div>
   );
 }
