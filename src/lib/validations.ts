@@ -9,7 +9,9 @@ export function sanitizarSysproUrl(rawUrl: string): string {
 
   let parsed: URL;
   try {
-    parsed = new URL(urlLimpa.startsWith("http://") || urlLimpa.startsWith("https://") ? urlLimpa : `http://${urlLimpa}`);
+    // Normaliza o protocolo para minúsculo antes do parse (HTTP://, HtTp:// etc.)
+    const comProtocolo = /^https?:\/\//i.test(urlLimpa) ? urlLimpa : `http://${urlLimpa}`;
+    parsed = new URL(comProtocolo);
   } catch {
     throw new Error("URL do Syspro invalida.");
   }
