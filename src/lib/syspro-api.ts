@@ -273,27 +273,12 @@ export async function consultarTransporte(
 // Configuração persistida no banco (tabela Empresa) + utilitário
 // ------------------------------------------------------------------
 
-import { prisma } from "@/lib/database";
-
 export interface SysproEmpresa {
   cnpj: string;
   razaoSocial: string;
   empresaCodigo: string;
 }
 
-export async function obterConfigSyspro(): Promise<SysproConfig> {
-  // Em Configurações o usuário define baseUrl/useIis; guardamos no
-  // banco (tabela Configuracao — criada na migration seguinte).
-  // Fallback: variáveis de ambiente.
-  const cfg = await prisma.configuracao.findFirst().catch(() => null);
-  if (cfg?.sysproBaseUrl) {
-    return {
-      baseUrl: cfg.sysproBaseUrl,
-      useIis: cfg.sysproUseIis === "true",
-    };
-  }
-  return {
-    baseUrl: process.env.SYSPRO_API_URL ?? "http://localhost:8080",
-    useIis: process.env.SYSPRO_USE_IIS === "true",
-  };
-}
+// A configuração de conexão (baseUrl/useIis) agora vive na tabela Empresa.
+// As rotas montam o SysproConfig a partir da empresa selecionada.
+// Fallback de ambiente permanece em consultarVendas quando baseUrl vazio.
