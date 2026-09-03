@@ -9,6 +9,10 @@ import {
   DownloadIcon,
   PrinterIcon,
   Search,
+  SearchX,
+  FilterX,
+  LayoutList,
+  AlignJustify,
   X,
   ChevronsUpDown,
   ArrowUpDown,
@@ -111,6 +115,9 @@ export function VendasView({
   const [vendas, setVendas] = useState<(VendaProduto | VendaComEmpresa)[]>(initialVendas);
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [notasAbertas, setNotasAbertas] = useState<Set<string>>(new Set());
+
+  // Densidade da tabela
+  const [densidade, setDensidade] = useState<"compacto" | "confortavel">("confortavel");
 
   // Filtros
   const [buscaVenda, setBuscaVenda] = useState("");
@@ -632,6 +639,30 @@ export function VendasView({
                   Limpar filtros
                 </Button>
               )}
+
+              {/* Seletor de Densidade */}
+              <div className="flex items-center gap-0.5 rounded-lg border bg-muted/20 p-0.5 ml-auto">
+                <Button
+                  variant={densidade === "confortavel" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setDensidade("confortavel")}
+                  className="h-7 px-2 text-[11px] gap-1 font-semibold"
+                  title="Exibição Confortável"
+                >
+                  <LayoutList className="size-3" />
+                  <span className="hidden md:inline">Confortável</span>
+                </Button>
+                <Button
+                  variant={densidade === "compacto" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setDensidade("compacto")}
+                  className="h-7 px-2 text-[11px] gap-1 font-semibold"
+                  title="Exibição Compacta"
+                >
+                  <AlignJustify className="size-3" />
+                  <span className="hidden md:inline">Compacto</span>
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -763,8 +794,29 @@ export function VendasView({
                   <TableBody>
                     {notasPaginadas.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="py-8 text-center text-muted-foreground text-xs">
-                          Nenhuma nota fiscal encontrada com os filtros selecionados.
+                        <TableCell colSpan={7} className="py-12 text-center">
+                          <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                            <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                              <SearchX className="size-5" />
+                            </div>
+                            <span className="font-bold text-sm text-foreground">
+                              Nenhuma nota encontrada
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Nenhum resultado corresponde aos filtros aplicados para este período.
+                            </span>
+                            {temFiltrosAtivos && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={limparTodosFiltros}
+                                className="mt-2 text-xs font-semibold gap-1.5"
+                              >
+                                <FilterX className="size-3.5" />
+                                Limpar filtros aplicados
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -774,6 +826,7 @@ export function VendasView({
                           nota={nota}
                           aberta={notasAbertas.has(nota.id)}
                           onToggle={() => alternarNota(nota.id)}
+                          densidade={densidade}
                         />
                       ))
                     )}
@@ -947,26 +1000,32 @@ function NotaRow({
   nota,
   aberta,
   onToggle,
+  densidade = "confortavel",
 }: {
   nota: VendaAgrupada;
   aberta: boolean;
   onToggle: () => void;
+  densidade?: "compacto" | "confortavel";
 }) {
+  const isCompacto = densidade === "compacto";
+  const cellPadding = isCompacto ? "py-1.5 px-3" : "py-3 px-4";
+
   return (
     <>
-      <TableRow data-state={aberta ? "selected" : undefined} className="hover:bg-muted/25">
-        <TableCell>
+      <TableRow data-state={aberta ? "selected" : undefined} className="hover:bg-muted/25 transition-colors">
+        <TableCell className={isCompacto ? "py-1 px-2 w-8" : "py-2.5 px-3 w-10"}>
           <Button
             aria-expanded={aberta}
             aria-label={`${aberta ? "Ocultar" : "Mostrar"} itens da nota ${nota.numero}`}
             onClick={onToggle}
             size="icon-sm"
             variant="ghost"
+            className={isCompacto ? "size-6" : "size-7"}
           >
-            {aberta ? <ChevronDown /> : <ChevronRight />}
+            {aberta ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
           </Button>
         </TableCell>
-        <TableCell className="font-mono font-bold text-xs text-foreground">
+        <TableCell className={`font-mono font-bold text-xs text-foreground ${cellPadding}`}>
           <div className="flex flex-col">
             <span>{nota.numero}</span>
             {nota.empresaNome && (
@@ -976,22 +1035,22 @@ function NotaRow({
             )}
           </div>
         </TableCell>
-        <TableCell className="font-mono text-xs text-muted-foreground">{nota.emissao}</TableCell>
-        <TableCell>
-          <div className="font-semibold text-foreground text-xs">{nota.cliente}</div>
+        <TableCell className={`font-mono text-xs text-muted-foreground ${cellPadding}`}>{nota.emissao}</TableCell>
+        <TableCell className={cellPadding}>
+          <div className="font-semibold text-foreground text-xs truncate max-w-[240px]" title={nota.cliente}>{nota.cliente}</div>
           {nota.cidade || nota.uf ? (
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-[10.5px] text-muted-foreground">
               {[nota.cidade, nota.uf].filter(Boolean).join(" · ")}
             </div>
           ) : null}
         </TableCell>
-        <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+        <TableCell className={`hidden md:table-cell text-xs text-muted-foreground truncate max-w-[150px] ${cellPadding}`} title={nota.vendedor}>
           {nota.vendedor}
         </TableCell>
-        <TableCell className="text-right font-mono text-xs">
+        <TableCell className={`text-right font-mono text-xs ${cellPadding}`}>
           {formatarNumero(nota.quantidadeItens, 2)}
         </TableCell>
-        <TableCell className="text-right font-mono font-bold text-xs text-foreground">
+        <TableCell className={`text-right font-mono font-bold text-xs text-foreground ${cellPadding}`}>
           {formatarMoeda(nota.total)}
         </TableCell>
       </TableRow>

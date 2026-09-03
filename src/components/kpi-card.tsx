@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -14,6 +15,58 @@ export interface KpiCardProps {
   neutro?: boolean;
   destaque?: boolean;
   icone: React.ElementType;
+  sparklineData?: number[];
+}
+
+function renderSparklineSvg(data: number[], tendenciaPositiva: boolean, neutro: boolean) {
+  if (!data || data.length < 2) return null;
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const width = 80;
+  const height = 28;
+  const padding = 2;
+
+  const points = data.map((val, idx) => {
+    const x = (idx / (data.length - 1)) * (width - padding * 2) + padding;
+    const y = height - ((val - min) / range) * (height - padding * 2) - padding;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
+  const pathD = `M ${points.join(" L ")}`;
+  const corLinha = neutro
+    ? "#94a3b8"
+    : tendenciaPositiva
+      ? "#10b981"
+      : "#f43f5e";
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="h-7 w-20 shrink-0 overflow-visible opacity-80 transition-opacity group-hover:opacity-100"
+    >
+      <path
+        d={pathD}
+        fill="none"
+        stroke={corLinha}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Ponto no último valor */}
+      {points.length > 0 && (
+        <circle
+          cx={points[points.length - 1].split(",")[0]}
+          cy={points[points.length - 1].split(",")[1]}
+          r="2.5"
+          fill={corLinha}
+          className="animate-pulse"
+        />
+      )}
+    </svg>
+  );
 }
 
 export function KpiCard({
@@ -27,7 +80,13 @@ export function KpiCard({
   neutro = false,
   destaque = false,
   icone: Icone,
+  sparklineData,
 }: KpiCardProps) {
+  const sparkline = useMemo(() => {
+    if (!sparklineData || sparklineData.length < 2) return null;
+    return renderSparklineSvg(sparklineData, tendenciaPositiva, neutro);
+  }, [sparklineData, tendenciaPositiva, neutro]);
+
   return (
     <Card
       className={`group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 ${
@@ -57,23 +116,28 @@ export function KpiCard({
             </div>
           </div>
 
-          {/* Valor Principal com Números Tabulares */}
-          <div className="mt-2.5 flex flex-col min-w-0">
-            <span
-              className={`font-mono font-extrabold tracking-tight tabular-nums truncate ${
-                destaque
-                  ? "text-xl sm:text-2xl text-primary"
-                  : "text-lg sm:text-xl text-foreground"
-              }`}
-              title={valor}
-            >
-              {valor}
-            </span>
-            {subtitulo && (
-              <span className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                {subtitulo}
+          {/* Valor Principal com Números Tabulares + Sparkline integrado */}
+          <div className="mt-2.5 flex items-baseline justify-between gap-2 min-w-0">
+            <div className="flex flex-col min-w-0">
+              <span
+                className={`font-mono font-extrabold tracking-tight tabular-nums truncate ${
+                  destaque
+                    ? "text-xl sm:text-2xl text-primary"
+                    : "text-lg sm:text-xl text-foreground"
+                }`}
+                title={valor}
+              >
+                {valor}
               </span>
-            )}
+              {subtitulo && (
+                <span className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                  {subtitulo}
+                </span>
+              )}
+            </div>
+
+            {/* Sparkline Visual */}
+            {sparkline && <div className="shrink-0">{sparkline}</div>}
           </div>
         </div>
 

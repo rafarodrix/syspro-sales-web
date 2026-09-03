@@ -69,6 +69,29 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
+function DataBarPercent({
+  valor,
+  percentual,
+  cor = "bg-primary/15",
+}: {
+  valor: string;
+  percentual: number;
+  cor?: string;
+}) {
+  const largura = Math.min(Math.max(percentual, 0), 100);
+  return (
+    <div className="relative flex items-center justify-end overflow-hidden rounded px-2 py-0.5 font-mono text-xs">
+      <div
+        className={`absolute inset-y-0 right-0 ${cor} rounded-sm transition-all duration-300`}
+        style={{ width: `${largura}%` }}
+      />
+      <span className="relative z-10 font-bold text-foreground tabular-nums">
+        {valor}
+      </span>
+    </div>
+  );
+}
+
 interface EmpresaOption {
   id: string;
   cnpj: string;
@@ -900,7 +923,13 @@ export function RelatoriosView({
                             <td className="p-3 text-right font-mono font-bold text-foreground">
                               {formatarMoeda(item.total)}
                             </td>
-                            <td className="p-3 text-right font-mono">{formatarPercentual(item.percentual, 2)}</td>
+                            <td className="p-3 text-right">
+                              <DataBarPercent
+                                valor={formatarPercentual(item.percentual, 2)}
+                                percentual={item.percentual}
+                                cor={item.classe === "A" ? "bg-emerald-500/20" : item.classe === "B" ? "bg-blue-500/20" : "bg-amber-500/20"}
+                              />
+                            </td>
                             <td className="p-3 text-right font-mono font-semibold text-primary">
                               {formatarPercentual(item.percentualAcumulado, 1)}
                             </td>
@@ -1015,7 +1044,13 @@ export function RelatoriosView({
                             <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(cli.ticketMedio)}</td>
                             <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(cli.descontos)}</td>
                             <td className="p-3 text-right font-mono font-bold text-foreground">{formatarMoeda(cli.faturamento)}</td>
-                            <td className="p-3 text-right font-mono">{formatarPercentual(cli.percentual, 2)}</td>
+                            <td className="p-3 text-right">
+                              <DataBarPercent
+                                valor={formatarPercentual(cli.percentual, 2)}
+                                percentual={cli.percentual}
+                                cor={cli.classe === "A" ? "bg-emerald-500/20" : cli.classe === "B" ? "bg-blue-500/20" : "bg-amber-500/20"}
+                              />
+                            </td>
                             <td className="p-3 text-right font-mono font-semibold text-primary">{formatarPercentual(cli.percentualAcumulado, 1)}</td>
                           </tr>
                         ))}
@@ -1263,8 +1298,12 @@ export function RelatoriosView({
                                 <td className="p-3 text-right font-mono font-bold text-foreground">
                                   {formatarMoeda(dep.faturamento)}
                                 </td>
-                                <td className="p-3 text-right font-mono font-semibold text-primary">
-                                  {formatarPercentual(dep.percentual, 1)}
+                                <td className="p-3 text-right">
+                                  <DataBarPercent
+                                    valor={formatarPercentual(dep.percentual, 1)}
+                                    percentual={dep.percentual}
+                                    cor="bg-blue-500/20"
+                                  />
                                 </td>
                               </tr>
 
@@ -1353,8 +1392,12 @@ export function RelatoriosView({
                           <td className="p-3 text-right font-mono font-bold text-foreground">
                             {formatarMoeda(v.faturamento)}
                           </td>
-                          <td className="p-3 text-right font-mono font-bold text-primary">
-                            {formatarPercentual(v.percentual, 1)}
+                          <td className="p-3 text-right">
+                            <DataBarPercent
+                              valor={formatarPercentual(v.percentual, 1)}
+                              percentual={v.percentual}
+                              cor="bg-violet-500/20"
+                            />
                           </td>
                           <td className="p-3 text-muted-foreground truncate max-w-[180px]" title={v.principalProduto}>
                             {v.principalProduto ?? "—"}

@@ -21,6 +21,7 @@ import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
   dataInputParaSyspro,
   dadosPorMetricaComparativa,
+  dadosPorMetrica,
   type MetricaDeVendas,
   produtosMaisVendidos,
   resumoVendas,
@@ -172,6 +173,18 @@ export function DashboardView({
 
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
   const destaques = useMemo(() => calcularDestaques(vendas, resumo), [vendas, resumo]);
+
+  const sparklineFaturamento = useMemo(() => {
+    return dadosPorMetrica(vendas, "faturamento").map((p) => p.total);
+  }, [vendas]);
+
+  const sparklinePedidos = useMemo(() => {
+    return dadosPorMetrica(vendas, "notas").map((p) => p.total);
+  }, [vendas]);
+
+  const sparklineItens = useMemo(() => {
+    return dadosPorMetrica(vendas, "itens").map((p) => p.total);
+  }, [vendas]);
 
   const rankingPorEmpresa = useMemo(() => {
     const mapa = new Map<string, { id: string; nome: string; faturamento: number; pedidos: number }>();
@@ -395,6 +408,7 @@ export function DashboardView({
               neutro={variacaoFaturamento?.neutro}
               destaque={true}
               icone={DollarSignIcon}
+              sparklineData={sparklineFaturamento}
             />
 
             <KpiCard
@@ -408,6 +422,7 @@ export function DashboardView({
               tendenciaPositiva={variacaoPedidos?.positivo}
               neutro={variacaoPedidos?.neutro}
               icone={ShoppingCart}
+              sparklineData={sparklinePedidos}
             />
 
             <KpiCard
@@ -421,6 +436,7 @@ export function DashboardView({
               tendenciaPositiva={variacaoTicket?.positivo}
               neutro={variacaoTicket?.neutro}
               icone={FileText}
+              sparklineData={sparklineFaturamento}
             />
 
             <KpiCard
@@ -434,6 +450,7 @@ export function DashboardView({
               tendenciaPositiva={variacaoClientes?.positivo}
               neutro={variacaoClientes?.neutro}
               icone={UsersRound}
+              sparklineData={sparklinePedidos}
             />
 
             <KpiCard
@@ -449,6 +466,7 @@ export function DashboardView({
               tendenciaPositiva={variacaoItens?.positivo}
               neutro={variacaoItens?.neutro}
               icone={Package}
+              sparklineData={sparklineItens}
             />
           </>
         )}
