@@ -100,7 +100,7 @@ export function agruparVendasPorNota(vendas: VendaProduto[]): VendaAgrupada[] {
     const chave = chaveDaNota(venda);
     const atual = notas.get(chave);
     const qtdItem = paraNumero(venda.produto_qtde);
-    const totalItem = paraNumero(venda.produto_vlr_total_item);
+    const totalItem = paraNumero(venda.produto_vlr_total_liquido);
 
     if (atual) {
       atual.itens.push(venda);
@@ -144,7 +144,7 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
   let quantidadeItens = 0;
 
   for (const venda of vendas) {
-    const total = paraNumero(venda.produto_vlr_total_item);
+    const total = paraNumero(venda.produto_vlr_total_liquido);
     faturamento += total;
     descontos += paraNumero(venda.produto_vlr_desconto);
     frete += paraNumero(venda.produto_vlr_frete);
@@ -199,7 +199,7 @@ export function produtosMaisVendidos(
     const id = String(venda.produto_id ?? "").trim() || "SEM-COD";
     const nome = venda.produto_descricao?.trim() || "Produto não identificado";
     const chave = `${id}|${nome}`;
-    const total = paraNumero(venda.produto_vlr_total_item);
+    const total = paraNumero(venda.produto_vlr_total_liquido);
     const qtd = paraNumero(venda.produto_qtde);
     faturamentoTotal += total;
 
@@ -330,7 +330,7 @@ function agruparPorDia(
       data,
       (totais.get(data) ?? 0) +
         (metrica === "faturamento"
-          ? paraNumero(venda.produto_vlr_total_item)
+          ? paraNumero(venda.produto_vlr_total_liquido)
           : paraNumero(venda.produto_qtde)),
     );
   }
@@ -369,7 +369,7 @@ export function calcularDestaques(
 
   for (const venda of vendas) {
     const data = venda.nf_dt_emissao || "Sem data";
-    const total = paraNumero(venda.produto_vlr_total_item);
+    const total = paraNumero(venda.produto_vlr_total_liquido);
     const diaInfo = faturamentoPorDiaMap.get(data) ?? { total: 0, pedidos: new Set() };
     diaInfo.total += total;
     diaInfo.pedidos.add(chaveDaNota(venda));

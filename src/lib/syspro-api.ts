@@ -38,6 +38,7 @@ export interface VendaProduto {
   produto_vlr_desconto: number | string;
   produto_vlr_frete: number | string;
   produto_vlr_total_item: number | string;
+  produto_vlr_total_liquido?: number | string;
   vendedor_nome: string;
   nf_dt_emissao: string; // DD/MM/AAAA
   nf_modelo: string; // ex.: 55, 65
@@ -214,6 +215,9 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
     produto_vlr_desconto: numero("produto_vlr_desconto"),
     produto_vlr_frete: numero("produto_vlr_frete"),
     produto_vlr_total_item: numero("produto_vlr_total_item"),
+    // Valor FINAL do item (bruto - desconto + frete + outros + seguro).
+    // produto_vlr_total_item é o BRUTO (não abate desconto).
+    produto_vlr_total_liquido: numero("produto_vlr_total_liquido"),
     vendedor_nome: texto("vendedor_nome"),
     nf_dt_emissao: texto("nf_dt_emissao"),
     nf_modelo: texto("nf_modelo"),

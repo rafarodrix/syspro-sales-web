@@ -852,7 +852,7 @@ function exportarCsv(vendas: VendaProduto[]) {
     paraNumero(venda.produto_vlr_desconto),
     paraNumero(venda.produto_vlr_frete),
     paraNumero(venda.produto_vlr_icms_stb),
-    paraNumero(venda.produto_vlr_total_item),
+    paraNumero(venda.produto_vlr_total_liquido),
   ]);
   const csv = [cabecalho, ...linhas]
     .map((linha) =>
@@ -974,7 +974,7 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
                 {moeda.format(paraNumero(item.produto_vlr_frete))}
               </td>
               <td className="p-2.5 text-right font-mono font-bold text-foreground">
-                {moeda.format(paraNumero(item.produto_vlr_total_item))}
+                {moeda.format(paraNumero(item.produto_vlr_total_liquido))}
               </td>
             </tr>
           ))}
