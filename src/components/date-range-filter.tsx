@@ -1,9 +1,8 @@
 "use client";
 
-import { CalendarDaysIcon, SearchIcon, Sparkles } from "lucide-react";
+import { CalendarDaysIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export interface Periodo {
   inicial: string;
@@ -82,77 +81,81 @@ export function DateRangeFilter({
   ];
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {presets.map((preset) => {
-          const ativo =
-            value.inicial === preset.value.inicial &&
-            value.final === preset.value.final;
-          return (
-            <Button
-              key={preset.label}
-              onClick={() => {
-                onChange(preset.value);
-                onConsultar?.(preset.value);
-              }}
-              size="sm"
-              type="button"
-              variant={ativo ? "default" : "outline"}
-              className={`h-7 px-2.5 text-xs font-semibold ${
-                ativo ? "shadow-xs" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {preset.label}
-            </Button>
-          );
-        })}
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Grupo Esquerdo: Filtros Rápidos + Inputs de Data inline */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        {/* Presets rápidos */}
+        <div className="flex flex-wrap items-center gap-1">
+          {presets.map((preset) => {
+            const ativo =
+              value.inicial === preset.value.inicial &&
+              value.final === preset.value.final;
+            return (
+              <Button
+                key={preset.label}
+                onClick={() => {
+                  onChange(preset.value);
+                  onConsultar?.(preset.value);
+                }}
+                size="sm"
+                type="button"
+                variant={ativo ? "default" : "outline"}
+                className={`h-8 px-2.5 text-xs font-semibold ${
+                  ativo
+                    ? "shadow-xs font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {preset.label}
+              </Button>
+            );
+          })}
+        </div>
+
+        {/* Divisor Vertical */}
+        <div className="hidden h-5 w-px bg-border/80 sm:block" />
+
+        {/* Inputs de Data Inline */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-muted-foreground">De:</span>
+            <Input
+              id="dt-inicial"
+              type="date"
+              value={value.inicial}
+              onChange={(event) =>
+                onChange({ ...value, inicial: event.target.value })
+              }
+              className="h-8 w-[138px] text-xs font-mono font-medium"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-muted-foreground">Até:</span>
+            <Input
+              id="dt-final"
+              type="date"
+              value={value.final}
+              onChange={(event) =>
+                onChange({ ...value, final: event.target.value })
+              }
+              className="h-8 w-[138px] text-xs font-mono font-medium"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="dt-inicial" className="text-[11px] font-semibold text-muted-foreground">
-            Data inicial
-          </Label>
-          <Input
-            id="dt-inicial"
-            type="date"
-            value={value.inicial}
-            onChange={(event) =>
-              onChange({ ...value, inicial: event.target.value })
-            }
-            className="h-8 text-xs font-mono"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="dt-final" className="text-[11px] font-semibold text-muted-foreground">
-            Data final
-          </Label>
-          <Input
-            id="dt-final"
-            type="date"
-            value={value.final}
-            onChange={(event) =>
-              onChange({ ...value, final: event.target.value })
-            }
-            className="h-8 text-xs font-mono"
-          />
-        </div>
-      </div>
-
+      {/* Grupo Direito: Botão de Consulta */}
       {!compact && onConsultar && (
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <CalendarDaysIcon className="size-3.5" />
-            Período analisado em tempo real.
-          </p>
+        <div className="flex items-center gap-2">
           <Button
             onClick={() => onConsultar(value)}
             disabled={loading}
             size="sm"
-            className="h-8 font-semibold gap-1.5"
+            className="h-8 font-semibold gap-1.5 px-4 shadow-sm"
           >
             <SearchIcon className="size-3.5" />
-            {loading ? "Consultando..." : "Consultar Vendas"}
+            {loading ? "Consultando..." : "Consultar"}
           </Button>
         </div>
       )}
