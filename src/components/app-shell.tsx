@@ -133,32 +133,36 @@ export function AppShell({
           collapsed ? "w-[70px]" : "w-64"
         }`}
       >
-        {/* Topo da Sidebar: Logo Trilink Syspro ERP */}
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/60 px-4">
+        {/* Topo da Sidebar: Logo Oficial Trilink com Tag Syspro ERP */}
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/60 px-3.5">
           <Link
             href="/dashboard"
-            className={`flex items-center gap-3 transition-opacity hover:opacity-90 overflow-hidden ${
+            className={`flex items-center gap-2.5 transition-opacity hover:opacity-90 overflow-hidden ${
               collapsed ? "justify-center w-full" : ""
             }`}
           >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/25">
-              <svg
-                viewBox="0 0 24 24"
-                className="size-5 fill-current"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-            </div>
-            {!collapsed && (
-              <div className="flex flex-col leading-tight animate-in fade-in duration-200">
-                <span className="text-base font-extrabold tracking-tight text-foreground">
-                  TRILINK
-                </span>
-                <span className="text-[10.5px] font-semibold text-muted-foreground">
-                  Syspro Sales Web
-                </span>
+            {collapsed ? (
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-black text-sm">
+                T
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logo-clara.png"
+                  alt="Trilink"
+                  className="h-6 w-auto block dark:hidden object-contain"
+                />
+                <img
+                  src="/logo-escura.png"
+                  alt="Trilink"
+                  className="h-6 w-auto hidden dark:block object-contain"
+                />
+                <Badge
+                  variant="outline"
+                  className="text-[9.5px] font-mono font-bold tracking-tight uppercase px-1.5 py-0 bg-muted/60 border-border/80 text-primary shrink-0"
+                >
+                  Syspro ERP
+                </Badge>
               </div>
             )}
           </Link>
@@ -353,11 +357,23 @@ export function AppShell({
           {/* Gaveta */}
           <div className="relative flex w-72 flex-col bg-card border-r border-border p-4 shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-                  S
-                </div>
-                <span className="font-extrabold text-sm">TRILINK Syspro</span>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logo-clara.png"
+                  alt="Trilink"
+                  className="h-6 w-auto block dark:hidden object-contain"
+                />
+                <img
+                  src="/logo-escura.png"
+                  alt="Trilink"
+                  className="h-6 w-auto hidden dark:block object-contain"
+                />
+                <Badge
+                  variant="outline"
+                  className="text-[9.5px] font-mono font-bold tracking-tight uppercase px-1.5 py-0 bg-muted/60 border-border/80 text-primary shrink-0"
+                >
+                  Syspro ERP
+                </Badge>
               </div>
               <Button
                 variant="ghost"

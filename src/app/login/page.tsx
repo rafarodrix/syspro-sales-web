@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Lock, Mail, ShieldCheck, ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -46,24 +47,32 @@ function LoginForm() {
 
   return (
     <Card className="w-full max-w-md border-border/70 bg-card/95 shadow-xl backdrop-blur-md">
-      <CardHeader className="space-y-2 text-center pb-4">
-        {/* Logo Trilink Syspro */}
-        <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
-          <svg
-            viewBox="0 0 24 24"
-            className="size-7 fill-current"
-            stroke="currentColor"
-            strokeWidth="1.5"
+      <CardHeader className="space-y-3 text-center pb-4">
+        {/* Logo Oficial Trilink com Tag Syspro ERP */}
+        <div className="flex flex-col items-center justify-center gap-2">
+          <img
+            src="/logo-clara.png"
+            alt="Trilink Software"
+            className="h-9 w-auto block dark:hidden object-contain"
+          />
+          <img
+            src="/logo-escura.png"
+            alt="Trilink Software"
+            className="h-9 w-auto hidden dark:block object-contain"
+          />
+          <Badge
+            variant="outline"
+            className="text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 bg-primary/10 border-primary/30 text-primary"
           >
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-          </svg>
+            Syspro ERP
+          </Badge>
         </div>
         <div className="space-y-1">
-          <CardTitle className="text-2xl font-extrabold tracking-tight text-foreground">
-            TRILINK Syspro
+          <CardTitle className="text-xl font-extrabold tracking-tight text-foreground">
+            Portal de Inteligência Comercial
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Plataforma Corporativa de Inteligência Comercial e Vendas
+            Acesse para consultar as vendas e relatórios executivos
           </CardDescription>
         </div>
       </CardHeader>

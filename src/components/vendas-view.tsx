@@ -121,11 +121,13 @@ export function VendasView({
 
   // Inicializar filtros a partir dos parâmetros de busca da URL (Drill-down)
   useEffect(() => {
+    const paramEmpresa = searchParams.get("empresa");
     const paramVendedor = searchParams.get("vendedor");
     const paramDepartamento = searchParams.get("departamento");
     const paramFormaPagto = searchParams.get("formaPagamento");
     const paramBusca = searchParams.get("busca");
 
+    if (paramEmpresa) setFiltroEmpresa(paramEmpresa);
     if (paramVendedor) setFiltroVendedor(paramVendedor);
     if (paramDepartamento) setFiltroDepartamento(paramDepartamento);
     if (paramFormaPagto) setFiltroFormaPagto(paramFormaPagto);

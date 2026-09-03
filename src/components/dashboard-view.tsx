@@ -28,6 +28,7 @@ import {
   calcularPeriodoAnterior,
   calcularDestaques,
   formatarDataInputParaBR,
+  paraNumero,
 } from "@/lib/vendas";
 import { buscarVendasApi } from "@/lib/vendas-client";
 import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
@@ -163,6 +164,25 @@ export function DashboardView({
 
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
   const destaques = useMemo(() => calcularDestaques(vendas, resumo), [vendas, resumo]);
+
+  const rankingPorEmpresa = useMemo(() => {
+    const mapa = new Map<string, { id: string; nome: string; faturamento: number; pedidos: number }>();
+    for (const v of vendas) {
+      const id = (v as any).empresa_id || "default";
+      const nome = (v as any).empresa_nome || "Empresa Principal";
+      const atual = mapa.get(id) ?? { id, nome, faturamento: 0, pedidos: 0 };
+      atual.faturamento += paraNumero(v.produto_vlr_total_liquido);
+      atual.pedidos += 1;
+      mapa.set(id, atual);
+    }
+    const total = Array.from(mapa.values()).reduce((acc, cur) => acc + cur.faturamento, 0);
+    return Array.from(mapa.values())
+      .map((item) => ({
+        ...item,
+        percentual: total > 0 ? (item.faturamento / total) * 100 : 0,
+      }))
+      .sort((a, b) => b.faturamento - a.faturamento);
+  }, [vendas]);
 
   const periodoAnteriorCalculado = useMemo(
     () => calcularPeriodoAnterior(periodo.inicial, periodo.final),
@@ -578,6 +598,63 @@ export function DashboardView({
           </CardContent>
         </Card>
       </section>
+
+      {/* Quebra Executiva por Empresa (Modo Consolidado) */}
+      {empresaId === "todas" && rankingPorEmpresa.length > 1 && (
+        <Card className="border-border/60 shadow-xs">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building2Icon className="size-4 text-primary" />
+                <CardTitle className="text-base font-bold text-foreground">
+                  Participação por Empresa no Faturamento
+                </CardTitle>
+              </div>
+              <Badge variant="outline" className="text-[10.5px] font-mono">
+                {rankingPorEmpresa.length} unidades
+              </Badge>
+            </div>
+            <CardDescription className="text-xs">
+              Volume financeiro e representatividade percentual de cada unidade no período.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {rankingPorEmpresa.map((emp) => (
+                <Link
+                  key={emp.id}
+                  href={`/vendas?empresa=${emp.id}`}
+                  className="flex flex-col gap-2 rounded-xl border border-border/60 bg-muted/20 p-3.5 hover:bg-muted/40 transition-colors group cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-bold text-xs text-foreground group-hover:text-primary transition-colors truncate">
+                      {emp.nome}
+                    </span>
+                    <Badge variant="secondary" className="font-mono text-[10px] shrink-0 font-bold">
+                      {formatarPercentual(emp.percentual, 1)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-mono text-base font-extrabold text-foreground">
+                      {formatarMoeda(emp.faturamento)}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {emp.pedidos} itens
+                    </span>
+                  </div>
+                  {/* Barra de Progresso Visual */}
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(2, emp.percentual))}%` }}
+                    />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Linha de Rankings e Top Produtos com Drill-Down Clicável */}
       <section className="grid gap-4 lg:grid-cols-12">
