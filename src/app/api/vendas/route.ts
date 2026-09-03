@@ -81,16 +81,19 @@ async function handleVendas(request: NextRequest) {
   }
 
   try {
-    const cacheKey = `${cfg.baseUrl}_${dtInicial}_${dtFinal}`;
+    const cacheKey = `${empresa.id}_${dtInicial}_${dtFinal}`;
     const agora = Date.now();
     const emCache = vendasCache.get(cacheKey);
 
-    let data: any[];
+    let filtradas: any[];
     if (!forcarAtualizacao && emCache && agora - emCache.timestamp < CACHE_TTL_MS) {
-      data = emCache.data;
+      filtradas = emCache.data;
     } else {
-      data = await consultarVendas(cfg, { dtInicial, dtFinal });
-      vendasCache.set(cacheKey, { timestamp: agora, data });
+      const data = await consultarVendas(cfg, { dtInicial, dtFinal });
+      filtradas = data.filter(
+        (v) => v.empresa_codigo === empresa.empresaCodigo,
+      );
+      vendasCache.set(cacheKey, { timestamp: agora, data: filtradas });
 
       // Limpeza preventiva de cache antigo se crescer muito
       if (vendasCache.size > 50) {
@@ -100,10 +103,6 @@ async function handleVendas(request: NextRequest) {
       }
     }
 
-    // Filtra a empresa no backend (o browser nunca vê a API do Syspro)
-    const filtradas = data.filter(
-      (v) => v.empresa_codigo === empresa.empresaCodigo,
-    );
     return NextResponse.json({
       vendas: filtradas,
       resumo: resumoVendas(filtradas),
