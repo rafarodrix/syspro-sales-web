@@ -6,25 +6,17 @@ loadEnv({ path: path.join(process.cwd(), ".env"), override: false });
 
 function validarAmbienteProducao() {
   const secret = process.env.BETTER_AUTH_SECRET;
-  const baseUrl = process.env.BETTER_AUTH_URL;
   if (!secret || secret.length < 32 || secret.includes("GERAR-COM")) {
     throw new Error("BETTER_AUTH_SECRET deve ter pelo menos 32 caracteres aleatorios.");
-  }
-  let url;
-  try {
-    url = new URL(baseUrl);
-  } catch {
-    throw new Error("BETTER_AUTH_URL deve ser uma URL valida.");
-  }
-  if (url.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(url.hostname)) {
-    throw new Error("BETTER_AUTH_URL deve usar HTTPS para acesso pela rede.");
   }
 }
 
 validarAmbienteProducao();
 
 const PORT = process.env.PORT || "3000";
-const HOST = "127.0.0.1";
+// Escuta em todas as interfaces p/ permitir acesso pela rede (No-IP, IP local,
+// VPN). Em producao com HTTPS, proteger na camada do proxy reverso (Caddy).
+const HOST = process.env.HOST || "0.0.0.0";
 const installDir = process.cwd();
 const standaloneDir = path.join(installDir, ".next", "standalone");
 const dbPath = path.join(installDir, "dev.db");
