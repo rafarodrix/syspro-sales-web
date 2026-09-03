@@ -102,11 +102,3 @@ model UserEmpresa {
 
   @@unique([userId, empresaId])
 }
-
-// Configurações da aplicação (URL/porta da API Syspro, com/sem IIS)
-model Configuracao {
-  id             String  @id @default("default")
-  sysproBaseUrl  String  @default("http://localhost:8080")
-  sysproUseIis   String  @default("false") // "true" | "false"
-  updatedAt      DateTime @updatedAt
-}
