@@ -80,7 +80,7 @@ export const empresaCreateSchema = z.object({
     .string()
     .optional()
     .transform((val) => (val ? sanitizarSysproUrl(val) : "http://localhost:8080")),
-  sysproUseIis: z.boolean().default(false),
+  sysproUseIis: z.boolean().default(false).transform((val) => (val ? "true" : "false")),
 });
 
 export const empresaUpdateSchema = z.object({
@@ -97,7 +97,7 @@ export const empresaUpdateSchema = z.object({
     .string()
     .optional()
     .transform((val) => (val !== undefined ? sanitizarSysproUrl(val) : undefined)),
-  sysproUseIis: z.boolean().optional(),
+  sysproUseIis: z.boolean().optional().transform((val) => (val === undefined ? undefined : val ? "true" : "false")),
 });
 
 // ==========================================
