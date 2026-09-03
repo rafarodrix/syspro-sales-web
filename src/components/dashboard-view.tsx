@@ -390,6 +390,67 @@ export function DashboardView({
         )}
       </section>
 
+      {/* Mini-Indicadores de Eficiência Comercial & Operacional */}
+      {!loading && vendas.length > 0 && (
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Taxa Média Desconto
+            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-base font-extrabold text-foreground">
+                {formatarPercentual(resumo.taxaDesconto, 1)}
+              </span>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                ({formatarMoeda(resumo.descontos)})
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Itens / Pedido (IPF)
+            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-base font-extrabold text-foreground">
+                {formatarNumero(resumo.itensPorNota, 1)}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                unidades/nota
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Clientes Recorrentes
+            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-base font-extrabold text-primary">
+                {formatarPercentual(resumo.percentualRecorrencia, 1)}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                ({resumo.clientesRecorrentes} de {resumo.clientes})
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Impacto do Frete
+            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-base font-extrabold text-foreground">
+                {formatarPercentual(resumo.taxaFrete, 1)}
+              </span>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                ({formatarMoeda(resumo.frete)})
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Grid Analítico Principal: Gráfico Temporal (65%) + Insights/Top Produtos (35%) */}
       <section className="grid gap-6 lg:grid-cols-12">
         {/* Gráfico de Evolução Temporal */}

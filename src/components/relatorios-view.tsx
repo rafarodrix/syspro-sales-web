@@ -8,20 +8,27 @@ import {
   Search,
   X,
   Layers,
-  Award,
   Users,
   MapPin,
   CreditCard,
-  Building2,
   ChevronDown,
   ChevronRight,
   Sparkles,
+  Percent,
+  CalendarDays,
+  UserCheck,
+  TrendingDown,
+  Truck,
+  ShieldCheck,
 } from "lucide-react";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
   calcularCurvaABC,
   analiseDepartamentos,
   analiseVendedores,
+  analiseClientes,
+  analiseDescontos,
+  analiseSazonalidade,
   analiseGeografica,
   analiseFinanceira,
   dataInputParaSyspro,
@@ -33,6 +40,11 @@ import {
   periodoMesAtual,
   type Periodo,
 } from "@/components/date-range-filter";
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+} from "@/lib/formatters";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +56,6 @@ import {
 } from "@/components/ui/card";
 import {
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
@@ -64,12 +75,6 @@ interface Props {
   initialVendas?: VendaProduto[];
   initialError?: string;
 }
-
-import {
-  formatarMoeda,
-  formatarNumero,
-  formatarPercentual,
-} from "@/lib/formatters";
 
 export function RelatoriosView({
   empresas,
@@ -94,6 +99,7 @@ export function RelatoriosView({
   // Filtros internos
   const [busca, setBusca] = useState("");
   const [filtroClasseAbc, setFiltroClasseAbc] = useState<"todas" | "A" | "B" | "C">("todas");
+  const [filtroClasseCli, setFiltroClasseCli] = useState<"todas" | "A" | "B" | "C">("todas");
   const [departamentoAberto, setDepartamentoAberto] = useState<string | null>(null);
 
   const empresaAtual = useMemo(
@@ -101,10 +107,13 @@ export function RelatoriosView({
     [empresas, empresaId],
   );
 
-  // Cálculos analíticos
+  // Cálculos analíticos completos
   const relatorioABC = useMemo(() => calcularCurvaABC(vendas), [vendas]);
   const relatorioDeptos = useMemo(() => analiseDepartamentos(vendas), [vendas]);
   const relatorioVendedores = useMemo(() => analiseVendedores(vendas), [vendas]);
+  const relatorioClientes = useMemo(() => analiseClientes(vendas), [vendas]);
+  const relatorioDescontos = useMemo(() => analiseDescontos(vendas), [vendas]);
+  const relatorioSazonalidade = useMemo(() => analiseSazonalidade(vendas), [vendas]);
   const relatorioGeografico = useMemo(() => analiseGeografica(vendas), [vendas]);
   const relatorioFinanceiro = useMemo(() => analiseFinanceira(vendas), [vendas]);
 
@@ -125,6 +134,24 @@ export function RelatoriosView({
       return true;
     });
   }, [relatorioABC, filtroClasseAbc, busca]);
+
+  // Clientes filtrados
+  const clientesFiltrados = useMemo(() => {
+    return relatorioClientes.itens.filter((c) => {
+      if (filtroClasseCli !== "todas" && c.classe !== filtroClasseCli) {
+        return false;
+      }
+      if (busca.trim()) {
+        const termo = busca.toLowerCase().trim();
+        return (
+          c.nome.toLowerCase().includes(termo) ||
+          c.cidade.toLowerCase().includes(termo) ||
+          c.uf.toLowerCase().includes(termo)
+        );
+      }
+      return true;
+    });
+  }, [relatorioClientes, filtroClasseCli, busca]);
 
   // Departamentos filtrados
   const deptosFiltrados = useMemo(() => {
@@ -217,6 +244,47 @@ export function RelatoriosView({
         `${item.percentual.toFixed(2)}%`,
         `${item.percentualAcumulado.toFixed(2)}%`,
       ]);
+    } else if (abaAtiva === "clientes") {
+      nomeArquivo = "relatorio-curva-abc-clientes";
+      cabecalho = [
+        "Classe",
+        "Cliente",
+        "Cidade",
+        "UF",
+        "Pedidos",
+        "Qtd Itens",
+        "Ticket Médio",
+        "Faturamento Total",
+        "% Faturamento",
+        "% Acumulado",
+      ];
+      linhas = clientesFiltrados.map((c) => [
+        c.classe,
+        c.nome,
+        c.cidade,
+        c.uf,
+        c.pedidos,
+        c.quantidadeItens,
+        c.ticketMedio.toFixed(2),
+        c.faturamento.toFixed(2),
+        `${c.percentual.toFixed(2)}%`,
+        `${c.percentualAcumulado.toFixed(2)}%`,
+      ]);
+    } else if (abaAtiva === "descontos") {
+      nomeArquivo = "relatorio-descontos-comerciais";
+      cabecalho = ["Categoria/Entidade", "Nome", "Faturamento Bruto", "Faturamento Líquido", "Desconto Concedido", "% Taxa Desconto"];
+      linhas = [
+        ...relatorioDescontos.porVendedor.map((v) => ["Vendedor", v.nome, v.faturamentoBruto.toFixed(2), v.faturamentoLiquido.toFixed(2), v.desconto.toFixed(2), `${v.taxaDesconto.toFixed(2)}%`]),
+        ...relatorioDescontos.porDepartamento.map((d) => ["Departamento", d.nome, d.faturamentoBruto.toFixed(2), d.faturamentoLiquido.toFixed(2), d.desconto.toFixed(2), `${d.taxaDesconto.toFixed(2)}%`]),
+        ...relatorioDescontos.porCliente.map((c) => ["Cliente", c.nome, c.faturamentoBruto.toFixed(2), c.faturamentoLiquido.toFixed(2), c.desconto.toFixed(2), `${c.taxaDesconto.toFixed(2)}%`]),
+      ];
+    } else if (abaAtiva === "sazonalidade") {
+      nomeArquivo = "relatorio-sazonalidade-temporal";
+      cabecalho = ["Tipo", "Período / Dia", "Faturamento Total", "Pedidos / NF", "Ticket Médio", "% Representatividade"];
+      linhas = [
+        ...relatorioSazonalidade.porDiaSemana.map((d) => ["Dia da Semana", d.dia, d.faturamento.toFixed(2), d.pedidos, d.ticketMedio.toFixed(2), `${d.percentual.toFixed(2)}%`]),
+        ...relatorioSazonalidade.porQuinzena.map((q) => ["Quinzena", q.quinzena, q.faturamento.toFixed(2), q.pedidos, q.ticketMedio.toFixed(2), `${q.percentual.toFixed(2)}%`]),
+      ];
     } else if (abaAtiva === "departamentos") {
       nomeArquivo = "relatorio-departamentos-itens";
       cabecalho = [
@@ -254,6 +322,8 @@ export function RelatoriosView({
         "Clientes Atendidos",
         "Qtd Itens",
         "Ticket Médio",
+        "Desconto Concedido",
+        "% Desconto",
         "Principal Produto",
       ];
       linhas = vendedoresFiltrados.map((v) => [
@@ -264,6 +334,8 @@ export function RelatoriosView({
         v.clientes,
         v.quantidadeItens,
         v.ticketMedio.toFixed(2),
+        v.descontoConcedido.toFixed(2),
+        `${v.taxaDesconto.toFixed(2)}%`,
         v.principalProduto ?? "—",
       ]);
     } else if (abaAtiva === "geografico") {
@@ -272,6 +344,7 @@ export function RelatoriosView({
         "Cidade",
         "UF",
         "Faturamento Total",
+        "Frete Rateado",
         "% Faturamento",
         "Pedidos / NF",
         "Clientes Atendidos",
@@ -281,6 +354,7 @@ export function RelatoriosView({
         c.cidade,
         c.uf,
         c.faturamento.toFixed(2),
+        c.frete.toFixed(2),
         `${c.percentual.toFixed(2)}%`,
         c.pedidos,
         c.clientes,
@@ -350,7 +424,7 @@ export function RelatoriosView({
                 </CardTitle>
               </div>
               <CardDescription className="text-xs">
-                Análise estruturada de Curva ABC, Departamentos, Vendedores, Praças e Financeiro.
+                Análise estruturada de Curva ABC, Clientes, Descontos, Sazonalidade, Departamentos, Vendedores e Fiscal.
               </CardDescription>
             </div>
           </div>
@@ -384,13 +458,26 @@ export function RelatoriosView({
                   setAbaAtiva(v);
                   setBusca("");
                   setFiltroClasseAbc("todas");
+                  setFiltroClasseCli("todas");
                 }}
                 className="w-full sm:w-auto"
               >
                 <TabsList className="grid grid-cols-2 sm:flex sm:flex-wrap h-auto p-1 gap-1">
                   <TabsTrigger value="curva-abc" className="text-xs font-bold gap-1.5 py-1.5">
-                    <Sparkles className="size-3.5" />
+                    <Sparkles className="size-3.5 text-amber-500" />
                     Curva ABC (Produtos)
+                  </TabsTrigger>
+                  <TabsTrigger value="clientes" className="text-xs font-bold gap-1.5 py-1.5">
+                    <UserCheck className="size-3.5 text-emerald-500" />
+                    Clientes & Concentração
+                  </TabsTrigger>
+                  <TabsTrigger value="descontos" className="text-xs font-bold gap-1.5 py-1.5">
+                    <Percent className="size-3.5 text-rose-500" />
+                    Descontos & Margem
+                  </TabsTrigger>
+                  <TabsTrigger value="sazonalidade" className="text-xs font-bold gap-1.5 py-1.5">
+                    <CalendarDays className="size-3.5 text-indigo-500" />
+                    Sazonalidade & Dias
                   </TabsTrigger>
                   <TabsTrigger value="departamentos" className="text-xs font-bold gap-1.5 py-1.5">
                     <Layers className="size-3.5" />
@@ -470,6 +557,23 @@ export function RelatoriosView({
                   ))}
                 </div>
               )}
+
+              {abaAtiva === "clientes" && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-muted-foreground">Classe:</span>
+                  {(["todas", "A", "B", "C"] as const).map((cls) => (
+                    <Button
+                      key={cls}
+                      size="sm"
+                      variant={filtroClasseCli === cls ? "default" : "outline"}
+                      onClick={() => setFiltroClasseCli(cls)}
+                      className="h-7 px-2.5 text-xs font-bold"
+                    >
+                      {cls === "todas" ? "Todas" : `Classe ${cls}`}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -497,14 +601,14 @@ export function RelatoriosView({
                       <div className="flex items-center justify-between">
                         <Badge className="bg-emerald-600 font-bold text-white">Classe A</Badge>
                         <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                          {relatorioABC.resumoA.percentualFaturamento.toFixed(1)}% Faturamento
+                          {formatarPercentual(relatorioABC.resumoA.percentualFaturamento, 1)} Faturamento
                         </span>
                       </div>
                       <div className="mt-2 font-mono font-extrabold text-lg text-emerald-950 dark:text-emerald-200">
                         {formatarMoeda(relatorioABC.resumoA.faturamento)}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {relatorioABC.resumoA.itens} itens ({relatorioABC.resumoA.percentualItens.toFixed(1)}% do catálogo)
+                        {relatorioABC.resumoA.itens} itens ({formatarPercentual(relatorioABC.resumoA.percentualItens, 1)} do catálogo)
                       </div>
                     </div>
 
@@ -512,14 +616,14 @@ export function RelatoriosView({
                       <div className="flex items-center justify-between">
                         <Badge className="bg-blue-600 font-bold text-white">Classe B</Badge>
                         <span className="font-mono text-xs font-bold text-blue-800 dark:text-blue-300">
-                          {relatorioABC.resumoB.percentualFaturamento.toFixed(1)}% Faturamento
+                          {formatarPercentual(relatorioABC.resumoB.percentualFaturamento, 1)} Faturamento
                         </span>
                       </div>
                       <div className="mt-2 font-mono font-extrabold text-lg text-blue-950 dark:text-blue-200">
                         {formatarMoeda(relatorioABC.resumoB.faturamento)}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {relatorioABC.resumoB.itens} itens ({relatorioABC.resumoB.percentualItens.toFixed(1)}% do catálogo)
+                        {relatorioABC.resumoB.itens} itens ({formatarPercentual(relatorioABC.resumoB.percentualItens, 1)} do catálogo)
                       </div>
                     </div>
 
@@ -527,14 +631,14 @@ export function RelatoriosView({
                       <div className="flex items-center justify-between">
                         <Badge className="bg-amber-600 font-bold text-white">Classe C</Badge>
                         <span className="font-mono text-xs font-bold text-amber-800 dark:text-amber-300">
-                          {relatorioABC.resumoC.percentualFaturamento.toFixed(1)}% Faturamento
+                          {formatarPercentual(relatorioABC.resumoC.percentualFaturamento, 1)} Faturamento
                         </span>
                       </div>
                       <div className="mt-2 font-mono font-extrabold text-lg text-amber-950 dark:text-amber-200">
                         {formatarMoeda(relatorioABC.resumoC.faturamento)}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {relatorioABC.resumoC.itens} itens ({relatorioABC.resumoC.percentualItens.toFixed(1)}% do catálogo)
+                        {relatorioABC.resumoC.itens} itens ({formatarPercentual(relatorioABC.resumoC.percentualItens, 1)} do catálogo)
                       </div>
                     </div>
                   </div>
@@ -590,9 +694,9 @@ export function RelatoriosView({
                             <td className="p-3 text-right font-mono font-bold text-foreground">
                               {formatarMoeda(item.total)}
                             </td>
-                            <td className="p-3 text-right font-mono">{item.percentual.toFixed(2)}%</td>
+                            <td className="p-3 text-right font-mono">{formatarPercentual(item.percentual, 2)}</td>
                             <td className="p-3 text-right font-mono font-semibold text-primary">
-                              {item.percentualAcumulado.toFixed(1)}%
+                              {formatarPercentual(item.percentualAcumulado, 1)}
                             </td>
                           </tr>
                         ))}
@@ -603,7 +707,297 @@ export function RelatoriosView({
               )}
 
               {/* ========================================================= */}
-              {/* ABA 2: DEPARTAMENTOS & PRODUTOS */}
+              {/* ABA 2: CLIENTES & CONCENTRAÇÃO (PARETO DE CLIENTES) */}
+              {/* ========================================================= */}
+              {abaAtiva === "clientes" && (
+                <div className="space-y-4">
+                  {/* Cards Síntese de Clientes */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Total de Clientes
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
+                        {formatarNumero(relatorioClientes.totalClientes, 0)}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">
+                        Ticket médio: {formatarMoeda(relatorioClientes.ticketMedioPorCliente)}
+                      </span>
+                    </div>
+
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Clientes Recorrentes
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-primary">
+                        {formatarPercentual(relatorioClientes.taxaRecorrencia, 1)}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">
+                        {relatorioClientes.clientesRecorrentes} compraram 2x ou mais
+                      </span>
+                    </div>
+
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Concentração Top 5
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
+                        {formatarPercentual(relatorioClientes.concentracaoTop5, 1)}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">
+                        do faturamento total da empresa
+                      </span>
+                    </div>
+
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Concentração Top 10
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
+                        {formatarPercentual(relatorioClientes.concentracaoTop10, 1)}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">
+                        dos 10 maiores compradores
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tabela de Clientes */}
+                  <div className="overflow-x-auto rounded-md border">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
+                          <th className="p-3 w-16 text-center">Classe</th>
+                          <th className="p-3">Cliente</th>
+                          <th className="p-3">Praça (Cidade/UF)</th>
+                          <th className="p-3 text-right">Pedidos / NF</th>
+                          <th className="p-3 text-right">Qtd Itens</th>
+                          <th className="p-3 text-right">Ticket Médio</th>
+                          <th className="p-3 text-right">Descontos</th>
+                          <th className="p-3 text-right">Total Faturado</th>
+                          <th className="p-3 text-right">% Fat.</th>
+                          <th className="p-3 text-right">% Acum.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {clientesFiltrados.map((cli, idx) => (
+                          <tr key={`${cli.nome}-${idx}`} className="border-b last:border-0 hover:bg-muted/20">
+                            <td className="p-3 text-center">
+                              <Badge
+                                variant={
+                                  cli.classe === "A"
+                                    ? "default"
+                                    : cli.classe === "B"
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                                className={`font-bold ${
+                                  cli.classe === "A"
+                                    ? "bg-emerald-600 text-white"
+                                    : cli.classe === "B"
+                                      ? "bg-blue-600 text-white"
+                                      : "text-amber-700 dark:text-amber-400 border-amber-500/40"
+                                }`}
+                              >
+                                {cli.classe}
+                              </Badge>
+                            </td>
+                            <td className="p-3 font-semibold text-foreground">{cli.nome}</td>
+                            <td className="p-3 text-muted-foreground">{cli.cidade} / {cli.uf}</td>
+                            <td className="p-3 text-right font-mono">{formatarNumero(cli.pedidos, 0)}</td>
+                            <td className="p-3 text-right font-mono text-muted-foreground">{formatarNumero(cli.quantidadeItens, 2)}</td>
+                            <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(cli.ticketMedio)}</td>
+                            <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(cli.descontos)}</td>
+                            <td className="p-3 text-right font-mono font-bold text-foreground">{formatarMoeda(cli.faturamento)}</td>
+                            <td className="p-3 text-right font-mono">{formatarPercentual(cli.percentual, 2)}</td>
+                            <td className="p-3 text-right font-mono font-semibold text-primary">{formatarPercentual(cli.percentualAcumulado, 1)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ========================================================= */}
+              {/* ABA 3: DESCONTOS & POLÍTICA COMERCIAL */}
+              {/* ========================================================= */}
+              {abaAtiva === "descontos" && (
+                <div className="space-y-6">
+                  {/* Síntese de Descontos */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="rounded-lg border bg-muted/20 p-3.5">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Faturamento Bruto
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
+                        {formatarMoeda(relatorioDescontos.faturamentoBruto)}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">Valor de tabela dos itens</span>
+                    </div>
+
+                    <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5">
+                      <span className="text-[11px] font-semibold text-rose-800 dark:text-rose-300 uppercase tracking-wider">
+                        Total de Descontos Concedidos
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-rose-950 dark:text-rose-200">
+                        {formatarMoeda(relatorioDescontos.descontoTotal)}
+                      </div>
+                      <span className="text-[11px] text-rose-700/80 dark:text-rose-400">
+                        Taxa global: {formatarPercentual(relatorioDescontos.taxaDescontoGlobal, 2)}
+                      </span>
+                    </div>
+
+                    <div className="rounded-lg border bg-muted/20 p-3.5">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Faturamento Líquido
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
+                        {formatarMoeda(relatorioDescontos.faturamentoLiquido)}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">Efetivamente faturado</span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    {/* Descontos por Vendedor */}
+                    <Card className="border-border/60">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold">Desconto Concedido por Vendedor</CardTitle>
+                        <CardDescription className="text-xs">Avaliação de concessão e taxa de desconto por consultor.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b text-left font-semibold text-muted-foreground">
+                              <th className="p-2.5">Vendedor</th>
+                              <th className="p-2.5 text-right">Fat. Líquido</th>
+                              <th className="p-2.5 text-right">Desconto (R$)</th>
+                              <th className="p-2.5 text-right">% Desconto</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {relatorioDescontos.porVendedor.map((v) => (
+                              <tr key={v.nome} className="border-b last:border-0 hover:bg-muted/20">
+                                <td className="p-2.5 font-bold text-foreground">{v.nome}</td>
+                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(v.faturamentoLiquido)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{formatarMoeda(v.desconto)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold">{formatarPercentual(v.taxaDesconto, 1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </CardContent>
+                    </Card>
+
+                    {/* Descontos por Departamento */}
+                    <Card className="border-border/60">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold">Desconto por Departamento / Categoria</CardTitle>
+                        <CardDescription className="text-xs">Categorias com maior pressão de desconto comercial.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b text-left font-semibold text-muted-foreground">
+                              <th className="p-2.5">Departamento</th>
+                              <th className="p-2.5 text-right">Fat. Líquido</th>
+                              <th className="p-2.5 text-right">Desconto (R$)</th>
+                              <th className="p-2.5 text-right">% Desconto</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {relatorioDescontos.porDepartamento.map((d) => (
+                              <tr key={d.nome} className="border-b last:border-0 hover:bg-muted/20">
+                                <td className="p-2.5 font-bold text-foreground">{d.nome}</td>
+                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(d.faturamentoLiquido)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{formatarMoeda(d.desconto)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold">{formatarPercentual(d.taxaDesconto, 1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              )}
+
+              {/* ========================================================= */}
+              {/* ABA 4: SAZONALIDADE & DIAS DA SEMANA */}
+              {/* ========================================================= */}
+              {abaAtiva === "sazonalidade" && (
+                <div className="space-y-6">
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    {/* Vendas por Dia da Semana */}
+                    <Card className="border-border/60">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold">Faturamento por Dia da Semana</CardTitle>
+                        <CardDescription className="text-xs">Distribuição de receita e pedidos de Segunda a Domingo.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b text-left font-semibold text-muted-foreground">
+                              <th className="p-2.5">Dia da Semana</th>
+                              <th className="p-2.5 text-right">Pedidos</th>
+                              <th className="p-2.5 text-right">Ticket Médio</th>
+                              <th className="p-2.5 text-right">Faturamento</th>
+                              <th className="p-2.5 text-right">% Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {relatorioSazonalidade.porDiaSemana.map((d) => (
+                              <tr key={d.dia} className="border-b last:border-0 hover:bg-muted/20">
+                                <td className="p-2.5 font-bold text-foreground">{d.dia}</td>
+                                <td className="p-2.5 text-right font-mono">{formatarNumero(d.pedidos, 0)}</td>
+                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(d.ticketMedio)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(d.faturamento)}</td>
+                                <td className="p-2.5 text-right font-mono font-semibold text-primary">{formatarPercentual(d.percentual, 1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </CardContent>
+                    </Card>
+
+                    {/* Comparativo Quinzenal */}
+                    <Card className="border-border/60">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold">Comparativo Quinzenal</CardTitle>
+                        <CardDescription className="text-xs">Início de mês (1 a 15) vs. Segunda quinzena (16+).</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b text-left font-semibold text-muted-foreground">
+                              <th className="p-2.5">Quinzena</th>
+                              <th className="p-2.5 text-right">Pedidos</th>
+                              <th className="p-2.5 text-right">Ticket Médio</th>
+                              <th className="p-2.5 text-right">Faturamento</th>
+                              <th className="p-2.5 text-right">% Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {relatorioSazonalidade.porQuinzena.map((q) => (
+                              <tr key={q.quinzena} className="border-b last:border-0 hover:bg-muted/20">
+                                <td className="p-2.5 font-bold text-foreground">{q.quinzena}</td>
+                                <td className="p-2.5 text-right font-mono">{formatarNumero(q.pedidos, 0)}</td>
+                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(q.ticketMedio)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(q.faturamento)}</td>
+                                <td className="p-2.5 text-right font-mono font-semibold text-primary">{formatarPercentual(q.percentual, 1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              )}
+
+              {/* ========================================================= */}
+              {/* ABA 5: DEPARTAMENTOS & PRODUTOS */}
               {/* ========================================================= */}
               {abaAtiva === "departamentos" && (
                 <div className="space-y-4">
@@ -656,7 +1050,7 @@ export function RelatoriosView({
                                   {formatarMoeda(dep.faturamento)}
                                 </td>
                                 <td className="p-3 text-right font-mono font-semibold text-primary">
-                                  {dep.percentual.toFixed(1)}%
+                                  {formatarPercentual(dep.percentual, 1)}
                                 </td>
                               </tr>
 
@@ -686,7 +1080,7 @@ export function RelatoriosView({
                                               <td className="p-2.5 text-right font-mono">{formatarNumero(prod.quantidade, 2)} {prod.un}</td>
                                               <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(prod.precoMedio)}</td>
                                               <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(prod.total)}</td>
-                                              <td className="p-2.5 text-right font-mono text-primary font-semibold">{prod.percentual.toFixed(1)}%</td>
+                                              <td className="p-2.5 text-right font-mono text-primary font-semibold">{formatarPercentual(prod.percentual, 1)}</td>
                                             </tr>
                                           ))}
                                         </tbody>
@@ -705,7 +1099,7 @@ export function RelatoriosView({
               )}
 
               {/* ========================================================= */}
-              {/* ABA 3: VENDEDORES & EQUIPE */}
+              {/* ABA 6: VENDEDORES & EQUIPE */}
               {/* ========================================================= */}
               {abaAtiva === "vendedores" && (
                 <div className="overflow-x-auto rounded-md border">
@@ -716,7 +1110,9 @@ export function RelatoriosView({
                         <th className="p-3 text-right">Pedidos / NF</th>
                         <th className="p-3 text-right">Clientes Únicos</th>
                         <th className="p-3 text-right">Qtd Itens</th>
-                        <th className="p-3 text-right">Ticket Médio / Pedido</th>
+                        <th className="p-3 text-right">Ticket Médio</th>
+                        <th className="p-3 text-right">Desconto (R$)</th>
+                        <th className="p-3 text-right">% Desconto</th>
                         <th className="p-3 text-right">Faturamento Total</th>
                         <th className="p-3 text-right">% Participação</th>
                         <th className="p-3">Principal Produto</th>
@@ -734,13 +1130,19 @@ export function RelatoriosView({
                           <td className="p-3 text-right font-mono text-muted-foreground">
                             {formatarMoeda(v.ticketMedio)}
                           </td>
+                          <td className="p-3 text-right font-mono text-rose-600 dark:text-rose-400">
+                            {formatarMoeda(v.descontoConcedido)}
+                          </td>
+                          <td className="p-3 text-right font-mono">
+                            {formatarPercentual(v.taxaDesconto, 1)}
+                          </td>
                           <td className="p-3 text-right font-mono font-bold text-foreground">
                             {formatarMoeda(v.faturamento)}
                           </td>
                           <td className="p-3 text-right font-mono font-bold text-primary">
-                            {v.percentual.toFixed(1)}%
+                            {formatarPercentual(v.percentual, 1)}
                           </td>
-                          <td className="p-3 text-muted-foreground truncate max-w-[200px]" title={v.principalProduto}>
+                          <td className="p-3 text-muted-foreground truncate max-w-[180px]" title={v.principalProduto}>
                             {v.principalProduto ?? "—"}
                           </td>
                         </tr>
@@ -751,7 +1153,7 @@ export function RelatoriosView({
               )}
 
               {/* ========================================================= */}
-              {/* ABA 4: CIDADES & PRAÇAS */}
+              {/* ABA 7: CIDADES & PRAÇAS */}
               {/* ========================================================= */}
               {abaAtiva === "geografico" && (
                 <div className="overflow-x-auto rounded-md border">
@@ -763,6 +1165,7 @@ export function RelatoriosView({
                         <th className="p-3 text-right">Pedidos / NF</th>
                         <th className="p-3 text-right">Clientes Atendidos</th>
                         <th className="p-3 text-right">Ticket Médio</th>
+                        <th className="p-3 text-right">Frete Rateado</th>
                         <th className="p-3 text-right">Faturamento Total</th>
                         <th className="p-3 text-right">% Participação</th>
                       </tr>
@@ -779,11 +1182,14 @@ export function RelatoriosView({
                           <td className="p-3 text-right font-mono text-muted-foreground">
                             {formatarMoeda(c.ticketMedio)}
                           </td>
+                          <td className="p-3 text-right font-mono text-muted-foreground">
+                            {formatarMoeda(c.frete)}
+                          </td>
                           <td className="p-3 text-right font-mono font-bold text-foreground">
                             {formatarMoeda(c.faturamento)}
                           </td>
                           <td className="p-3 text-right font-mono font-bold text-primary">
-                            {c.percentual.toFixed(1)}%
+                            {formatarPercentual(c.percentual, 1)}
                           </td>
                         </tr>
                       ))}
@@ -793,71 +1199,92 @@ export function RelatoriosView({
               )}
 
               {/* ========================================================= */}
-              {/* ABA 5: FINANCEIRO & FISCAL */}
+              {/* ABA 8: FINANCEIRO & FISCAL */}
               {/* ========================================================= */}
               {abaAtiva === "financeiro" && (
-                <div className="grid gap-6 md:grid-cols-2">
-                  <Card className="border-border/60">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-bold">Formas de Pagamento Declaradas</CardTitle>
-                      <CardDescription className="text-xs">Distribuição do faturamento por meio de recebimento.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b text-left font-semibold text-muted-foreground">
-                            <th className="p-2.5">Forma</th>
-                            <th className="p-2.5 text-right">Pedidos</th>
-                            <th className="p-2.5 text-right">Ticket Médio</th>
-                            <th className="p-2.5 text-right">Total</th>
-                            <th className="p-2.5 text-right">%</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {relatorioFinanceiro.formasPagamento.map((fp) => (
-                            <tr key={fp.nome} className="border-b last:border-0 hover:bg-muted/20">
-                              <td className="p-2.5 font-medium text-foreground">{fp.nome}</td>
-                              <td className="p-2.5 text-right font-mono">{formatarNumero(fp.pedidos, 0)}</td>
-                              <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(fp.ticketMedio)}</td>
-                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(fp.total)}</td>
-                              <td className="p-2.5 text-right font-mono font-bold text-primary">{fp.percentual.toFixed(1)}%</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </CardContent>
-                  </Card>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Total Frete
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
+                        {formatarMoeda(relatorioFinanceiro.totaisFrete)}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-3">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Total ICMS-ST
+                      </span>
+                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
+                        {formatarMoeda(relatorioFinanceiro.totaisIcmsSt)}
+                      </div>
+                    </div>
+                  </div>
 
-                  <Card className="border-border/60">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-bold">Modelos de Documentos Fiscais</CardTitle>
-                      <CardDescription className="text-xs">Divisão entre NF-e (Modelo 55) e NFC-e (Modelo 65).</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b text-left font-semibold text-muted-foreground">
-                            <th className="p-2.5">Modelo</th>
-                            <th className="p-2.5 text-right">Notas Emitidas</th>
-                            <th className="p-2.5 text-right">Ticket Médio</th>
-                            <th className="p-2.5 text-right">Total</th>
-                            <th className="p-2.5 text-right">%</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {relatorioFinanceiro.modelosDocumento.map((m) => (
-                            <tr key={m.nome} className="border-b last:border-0 hover:bg-muted/20">
-                              <td className="p-2.5 font-medium text-foreground">{m.nome}</td>
-                              <td className="p-2.5 text-right font-mono">{formatarNumero(m.pedidos, 0)}</td>
-                              <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(m.ticketMedio)}</td>
-                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(m.total)}</td>
-                              <td className="p-2.5 text-right font-mono font-bold text-primary">{m.percentual.toFixed(1)}%</td>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <Card className="border-border/60">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold">Formas de Pagamento Declaradas</CardTitle>
+                        <CardDescription className="text-xs">Distribuição do faturamento por meio de recebimento.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b text-left font-semibold text-muted-foreground">
+                              <th className="p-2.5">Forma</th>
+                              <th className="p-2.5 text-right">Pedidos</th>
+                              <th className="p-2.5 text-right">Ticket Médio</th>
+                              <th className="p-2.5 text-right">Total</th>
+                              <th className="p-2.5 text-right">%</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </CardContent>
-                  </Card>
+                          </thead>
+                          <tbody>
+                            {relatorioFinanceiro.formasPagamento.map((fp) => (
+                              <tr key={fp.nome} className="border-b last:border-0 hover:bg-muted/20">
+                                <td className="p-2.5 font-medium text-foreground">{fp.nome}</td>
+                                <td className="p-2.5 text-right font-mono">{formatarNumero(fp.pedidos, 0)}</td>
+                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(fp.ticketMedio)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(fp.total)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-primary">{formatarPercentual(fp.percentual, 1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-border/60">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold">Modelos de Documentos Fiscais</CardTitle>
+                        <CardDescription className="text-xs">Divisão entre NF-e (Modelo 55) e NFC-e (Modelo 65).</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b text-left font-semibold text-muted-foreground">
+                              <th className="p-2.5">Modelo</th>
+                              <th className="p-2.5 text-right">Notas Emitidas</th>
+                              <th className="p-2.5 text-right">Ticket Médio</th>
+                              <th className="p-2.5 text-right">Total</th>
+                              <th className="p-2.5 text-right">%</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {relatorioFinanceiro.modelosDocumento.map((m) => (
+                              <tr key={m.nome} className="border-b last:border-0 hover:bg-muted/20">
+                                <td className="p-2.5 font-medium text-foreground">{m.nome}</td>
+                                <td className="p-2.5 text-right font-mono">{formatarNumero(m.pedidos, 0)}</td>
+                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(m.ticketMedio)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(m.total)}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-primary">{formatarPercentual(m.percentual, 1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               )}
             </>
