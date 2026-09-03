@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   classificarMovimentoKardex,
   normalizarMovimentoKardex,
+  resumirProdutosKardex,
   validarPeriodoKardex,
+  type MovimentoKardex,
 } from "@/lib/kardex";
 
 describe("Kardex", () => {
@@ -61,6 +63,18 @@ describe("Kardex", () => {
   it("diferencia EOS pela descrição retornada pelo Syspro", () => {
     expect(classificarMovimentoKardex("EOS", "S", "EMISSAO DE VENDA FUTURA")).toMatchObject({ categoria: "venda", rotulo: "Venda futura" });
     expect(classificarMovimentoKardex("EOS", "S", "EMISSAO POR OUTRAS SAIDAS")).toMatchObject({ categoria: "outros", rotulo: "Outras saídas" });
+  });
+
+  it("agrega saídas, devoluções, entradas e transferências por produto", () => {
+    const resumo = resumirProdutosKardex([
+      { produtoCodigoAuxiliar: "10", produtoDescricao: "Produto A", quantidadeMovimentada: -4, classificacao: { categoria: "venda", direcao: "saida", rotulo: "Venda PDV" } },
+      { produtoCodigoAuxiliar: "10", produtoDescricao: "Produto A", quantidadeMovimentada: 1, classificacao: { categoria: "devolucao_venda", direcao: "entrada", rotulo: "Devolução de venda" } },
+      { produtoCodigoAuxiliar: "20", produtoDescricao: "Produto B", quantidadeMovimentada: 7, classificacao: { categoria: "compra", direcao: "entrada", rotulo: "Recebimento" } },
+      { produtoCodigoAuxiliar: "20", produtoDescricao: "Produto B", quantidadeMovimentada: -2, classificacao: { categoria: "transferencia", direcao: "saida", rotulo: "Transferência" } },
+    ] as MovimentoKardex[]);
+
+    expect(resumo.saidasEDevolucoes[0]).toMatchObject({ codigo: "10", saidasVenda: 4, devolucoesVenda: 1 });
+    expect(resumo.entradasETransferencias[0]).toMatchObject({ codigo: "20", entradasCompra: 7, transferenciasSaida: 2 });
   });
 
   it("aceita no máximo 31 dias de Kardex", () => {
