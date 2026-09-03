@@ -51,12 +51,12 @@ function LoginForm() {
         {/* Logo Oficial Trilink com Tag Syspro ERP */}
         <div className="flex flex-col items-center justify-center gap-2">
           <img
-            src="/logo-clara.png"
+            src="/logo-escura.png"
             alt="Trilink Software"
             className="h-9 w-auto block dark:hidden object-contain"
           />
           <img
-            src="/logo-escura.png"
+            src="/logo-clara.png"
             alt="Trilink Software"
             className="h-9 w-auto hidden dark:block object-contain"
           />

@@ -158,12 +158,12 @@ export function AppShell({
             ) : (
               <div className="flex items-center gap-2 min-w-0">
                 <img
-                  src="/logo-clara.png"
+                  src="/logo-escura.png"
                   alt="Trilink"
                   className="h-6 w-auto block dark:hidden object-contain shrink-0"
                 />
                 <img
-                  src="/logo-escura.png"
+                  src="/logo-clara.png"
                   alt="Trilink"
                   className="h-6 w-auto hidden dark:block object-contain shrink-0"
                 />
@@ -369,12 +369,12 @@ export function AppShell({
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
                 <img
-                  src="/logo-clara.png"
+                  src="/logo-escura.png"
                   alt="Trilink"
                   className="h-6 w-auto block dark:hidden object-contain"
                 />
                 <img
-                  src="/logo-escura.png"
+                  src="/logo-clara.png"
                   alt="Trilink"
                   className="h-6 w-auto hidden dark:block object-contain"
                 />
