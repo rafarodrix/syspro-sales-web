@@ -51,7 +51,7 @@ export interface EmpresaRow {
   empresaCodigo: string;
   ativa: boolean;
   sysproBaseUrl: string;
-  sysproUseIis: string;
+  sysproUseIis: boolean | string;
 }
 
 interface Props {
@@ -107,13 +107,16 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [empresaTestandoId, setEmpresaTestandoId] = useState<string | null>(null);
   const [resultadoTestePorEmpresa, setResultadoTestePorEmpresa] = useState<Record<string, TesteResultado>>({});
 
-  async function testarConexaoEmpresa(empresa: { id: string; baseUrl: string; useIis: string }) {
+  async function testarConexaoEmpresa(empresa: { id: string; baseUrl: string; useIis: boolean | string }) {
     setEmpresaTestandoId(empresa.id);
     try {
       const res = await fetch("/api/configuracao/testar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ baseUrl: empresa.baseUrl, useIis: empresa.useIis }),
+        body: JSON.stringify({
+          baseUrl: empresa.baseUrl,
+          useIis: empresa.useIis === true || empresa.useIis === "true",
+        }),
       });
       const data: TesteResultado = await res.json();
       setResultadoTestePorEmpresa((prev) => ({ ...prev, [empresa.id]: data }));
@@ -153,7 +156,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
         razaoSocial: razao.trim(),
         empresaCodigo: codigo.trim(),
         sysproBaseUrl: baseUrl.trim(),
-        sysproUseIis: useIis,
+        sysproUseIis: useIis === "true",
       }),
     });
     setAdicionando(false);
@@ -177,7 +180,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
     setEditRazao(empresa.razaoSocial);
     setEditCodigo(empresa.empresaCodigo);
     setEditBaseUrl(empresa.sysproBaseUrl || "http://localhost:8080");
-    setEditUseIis(empresa.sysproUseIis === "true" ? "true" : "false");
+    setEditUseIis(empresa.sysproUseIis === true || empresa.sysproUseIis === "true" ? "true" : "false");
     setEditAtiva(empresa.ativa);
   }
 
@@ -198,7 +201,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
         razaoSocial: editRazao.trim(),
         empresaCodigo: editCodigo.trim(),
         sysproBaseUrl: editBaseUrl.trim(),
-        sysproUseIis: editUseIis,
+        sysproUseIis: editUseIis === "true",
         ativa: editAtiva,
       }),
     });

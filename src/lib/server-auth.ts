@@ -2,18 +2,19 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
+import type { UserRole } from "@/lib/validations";
 
 export async function requireAuth(minRole?: "admin" | "gerente") {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
 
-  const userRole = session.user.role ?? "vendas";
+  const userRole = (session.user.role ?? "vendas") as UserRole;
 
   if (minRole === "admin" && userRole !== "admin") {
     redirect("/dashboard");
   }
 
-  if (minRole === "gerente" && (userRole === "vendas" || userRole === "user")) {
+  if (minRole === "gerente" && userRole !== "admin" && userRole !== "gerente") {
     redirect("/dashboard");
   }
 

@@ -7,7 +7,7 @@ export interface EmpresaInfo {
   razaoSocial: string;
   empresaCodigo: string;
   sysproBaseUrl?: string | null;
-  sysproUseIis?: string | null;
+  sysproUseIis?: boolean | string | null;
 }
 
 interface CacheEntry {
@@ -15,6 +15,7 @@ interface CacheEntry {
   data: VendaComEmpresa[];
 }
 
+const MAX_CACHE_ENTRIES = 100;
 const vendasCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 45 * 1000; // 45 segundos
 
@@ -23,6 +24,15 @@ function limparCacheExpirado() {
   for (const [chave, entrada] of vendasCache.entries()) {
     if (agora - entrada.timestamp > CACHE_TTL_MS) {
       vendasCache.delete(chave);
+    }
+  }
+
+  // Se ainda ultrapassar o limite, remove as entradas mais antigas (LRU simples)
+  if (vendasCache.size > MAX_CACHE_ENTRIES) {
+    const chaves = Array.from(vendasCache.keys());
+    const excesso = chaves.slice(0, vendasCache.size - MAX_CACHE_ENTRIES);
+    for (const k of excesso) {
+      vendasCache.delete(k);
     }
   }
 }
@@ -90,7 +100,7 @@ export async function obterVendas({
     try {
       const config = {
         baseUrl: emp.sysproBaseUrl || "http://localhost:8080",
-        useIis: emp.sysproUseIis === "true",
+        useIis: emp.sysproUseIis === true || emp.sysproUseIis === "true",
       };
 
       const dados = await consultarVendas(config, {

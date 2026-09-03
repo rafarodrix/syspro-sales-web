@@ -5,6 +5,8 @@ import { prisma } from "@/lib/database";
 import { SysproApiError } from "@/lib/syspro-api";
 import { resumoVendas } from "@/lib/vendas";
 import { obterVendas } from "@/lib/sales-service";
+import { vendasQuerySchema } from "@/lib/validations";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,22 +26,32 @@ async function handleVendas(request: NextRequest) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
 
+  // Rate limiter por usuário: máximo 45 consultas por minuto
+  const rateCheck = checkRateLimit(`vendas:${session.user.id}`, 45, 60_000);
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: "Limite de consultas excedido. Aguarde alguns instantes." },
+      { status: 429 },
+    );
+  }
+
   const isAdmin = session.user.role === "admin";
 
-  let body: { empresaId?: string; dtInicial?: string; dtFinal?: string; forcarAtualizacao?: boolean };
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = body;
-  if (!empresaId || !dtInicial || !dtFinal) {
-    return NextResponse.json(
-      { error: "Empresa e período são obrigatórios" },
-      { status: 400 },
-    );
+  const parsed = vendasQuerySchema.safeParse(body);
+  if (!parsed.success) {
+    const errorMsg = parsed.error.issues[0]?.message ?? "Parâmetros de consulta inválidos.";
+    return NextResponse.json({ error: errorMsg }, { status: 400 });
   }
+
+  const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = parsed.data;
+
   if (!periodoValido(dtInicial, dtFinal)) {
     return NextResponse.json(
       { error: "Informe um período válido de até 366 dias." },
@@ -83,7 +95,7 @@ async function handleVendas(request: NextRequest) {
       empresaSelecionadaId: empresaId,
       dtInicial,
       dtFinal,
-      forcarAtualizacao: Boolean(forcarAtualizacao),
+      forcarAtualizacao,
     });
 
     const isConsolidado = empresaId === "todas" || empresaId.includes(",");
@@ -109,7 +121,6 @@ async function handleVendas(request: NextRequest) {
 }
 
 function periodoValido(inicial: string, final: string) {
-  // Aceita DD/MM/AAAA ou AAAA-MM-DD
   const padraoBR = /^(\d{2})\/(\d{2})\/(\d{4})$/;
   const padraoISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 

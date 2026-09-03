@@ -2,153 +2,145 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
+import { empresaCreateSchema, empresaUpdateSchema } from "@/lib/validations";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-async function authorize() {
+async function authorizeAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session || session.user.role !== "admin") return null;
   return session;
 }
 
 export async function POST(request: NextRequest) {
-  const session = await authorize();
-  if (!session)
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  const session = await authorizeAdmin();
+  if (!session) {
+    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
+  }
 
-  let body: {
-    cnpj?: string;
-    razaoSocial?: string;
-    empresaCodigo?: string;
-    sysproBaseUrl?: string;
-    sysproUseIis?: string;
-  };
+  const rateCheck = checkRateLimit(`empresas:post:${session.user.id}`, 30, 60_000);
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: "Muitas requisições. Aguarde um momento." },
+      { status: 429 },
+    );
+  }
+
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
   }
-  const cnpj = (body.cnpj ?? "").replace(/\D/g, "");
-  const razaoSocial = (body.razaoSocial ?? "").trim();
-  const empresaCodigo = (body.empresaCodigo ?? "").trim();
-  const sysproBaseUrl = (body.sysproBaseUrl ?? "").trim() || "http://localhost:8080";
-  const sysproUseIis = body.sysproUseIis === "true" ? "true" : "false";
 
-  if (cnpj.length !== 14 || !razaoSocial || !empresaCodigo) {
-    return NextResponse.json(
-      { error: "CNPJ válido, razão social e código são obrigatórios" },
-      { status: 400 },
-    );
+  const parsed = empresaCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    const errorMsg = parsed.error.issues[0]?.message ?? "Dados da empresa inválidos.";
+    return NextResponse.json({ error: errorMsg }, { status: 400 });
   }
+
+  const { cnpj, razaoSocial, empresaCodigo, sysproBaseUrl, sysproUseIis } = parsed.data;
+
   try {
     const empresa = await prisma.empresa.create({
-      data: { cnpj, razaoSocial, empresaCodigo, sysproBaseUrl, sysproUseIis },
+      data: {
+        cnpj,
+        razaoSocial,
+        empresaCodigo,
+        sysproBaseUrl,
+        sysproUseIis,
+      },
     });
     return NextResponse.json({ empresa }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint")) {
       return NextResponse.json(
-        { error: "Já existe empresa com este CNPJ" },
+        { error: "Já existe uma filial cadastrada com este CNPJ." },
         { status: 409 },
       );
     }
-    throw error;
+    return NextResponse.json({ error: "Erro ao cadastrar empresa." }, { status: 500 });
   }
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await authorize();
+  const session = await authorizeAdmin();
   if (!session) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
   }
 
-  let body: {
-    id?: string;
-    cnpj?: string;
-    razaoSocial?: string;
-    empresaCodigo?: string;
-    ativa?: boolean;
-    sysproBaseUrl?: string;
-    sysproUseIis?: string;
-  };
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
   }
 
-  const { id } = body;
-  if (!id) {
-    return NextResponse.json({ error: "id é obrigatório" }, { status: 400 });
+  const parsed = empresaUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    const errorMsg = parsed.error.issues[0]?.message ?? "Dados inválidos para atualização.";
+    return NextResponse.json({ error: errorMsg }, { status: 400 });
   }
+
+  const { id, cnpj, razaoSocial, empresaCodigo, ativa, sysproBaseUrl, sysproUseIis } = parsed.data;
 
   const existente = await prisma.empresa.findUnique({ where: { id } });
   if (!existente) {
-    return NextResponse.json(
-      { error: "Empresa não encontrada" },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Empresa não encontrada." }, { status: 404 });
   }
 
-  const cnpj =
-    body.cnpj !== undefined ? body.cnpj.replace(/\D/g, "") : undefined;
-  if (cnpj !== undefined && cnpj.length !== 14) {
-    return NextResponse.json({ error: "CNPJ inválido" }, { status: 400 });
-  }
   // CNPJ duplicado em outra empresa?
-  if (cnpj) {
+  if (cnpj && cnpj !== existente.cnpj) {
     const duplicado = await prisma.empresa.findFirst({
       where: { cnpj, id: { not: id } },
     });
     if (duplicado) {
       return NextResponse.json(
-        { error: "CNPJ já cadastrado em outra empresa" },
+        { error: "Já existe outra filial cadastrada com este CNPJ." },
         { status: 409 },
       );
     }
   }
 
-  await prisma.empresa.update({
-    where: { id },
-    data: {
-      ...(cnpj ? { cnpj } : {}),
-      ...(body.razaoSocial !== undefined
-        ? { razaoSocial: body.razaoSocial.trim() }
-        : {}),
-      ...(body.empresaCodigo !== undefined
-        ? { empresaCodigo: body.empresaCodigo.trim() }
-        : {}),
-      ...(body.ativa !== undefined ? { ativa: body.ativa } : {}),
-      ...(body.sysproBaseUrl !== undefined
-        ? { sysproBaseUrl: body.sysproBaseUrl.trim() }
-        : {}),
-      ...(body.sysproUseIis !== undefined
-        ? { sysproUseIis: body.sysproUseIis === "true" ? "true" : "false" }
-        : {}),
-    },
-  });
+  try {
+    await prisma.empresa.update({
+      where: { id },
+      data: {
+        ...(cnpj ? { cnpj } : {}),
+        ...(razaoSocial !== undefined ? { razaoSocial } : {}),
+        ...(empresaCodigo !== undefined ? { empresaCodigo } : {}),
+        ...(ativa !== undefined ? { ativa } : {}),
+        ...(sysproBaseUrl !== undefined ? { sysproBaseUrl } : {}),
+        ...(sysproUseIis !== undefined ? { sysproUseIis } : {}),
+      },
+    });
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Erro ao atualizar empresa." }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await authorize();
+  const session = await authorizeAdmin();
   if (!session) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) {
-    return NextResponse.json({ error: "id é obrigatório" }, { status: 400 });
+    return NextResponse.json({ error: "ID da empresa é obrigatório." }, { status: 400 });
   }
 
   const existente = await prisma.empresa.findUnique({ where: { id } });
   if (!existente) {
-    return NextResponse.json(
-      { error: "Empresa não encontrada" },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Empresa não encontrada." }, { status: 404 });
   }
 
-  await prisma.empresa.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+  try {
+    await prisma.empresa.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Erro ao remover empresa." }, { status: 500 });
+  }
 }

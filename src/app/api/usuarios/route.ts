@@ -3,31 +3,43 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { hashPassword } from "better-auth/crypto";
+import { usuarioCreateSchema, usuarioUpdateSchema } from "@/lib/validations";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+async function authorizeAdmin() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session || session.user.role !== "admin") return null;
+  return session;
+}
 
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") {
+  const session = await authorizeAdmin();
+  if (!session) {
     return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
   }
 
-  let body: { name?: string; email?: string; password?: string; role?: string };
+  const rateCheck = checkRateLimit(`usuarios:post:${session.user.id}`, 30, 60_000);
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: "Muitas requisições. Aguarde um momento." },
+      { status: 429 },
+    );
+  }
+
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
   }
 
-  const name = (body.name ?? "").trim();
-  const email = (body.email ?? "").trim().toLowerCase();
-  const password = body.password ?? "";
-  const role = body.role === "admin" || body.role === "gerente" ? body.role : "vendas";
-
-  if (!name || !email || password.length < 6) {
-    return NextResponse.json(
-      { error: "Nome, e-mail e senha (mín. 6 caracteres) são obrigatórios." },
-      { status: 400 },
-    );
+  const parsed = usuarioCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    const errorMsg = parsed.error.issues[0]?.message ?? "Dados de usuário inválidos.";
+    return NextResponse.json({ error: errorMsg }, { status: 400 });
   }
+
+  const { name, email, password, role } = parsed.data;
 
   const existente = await prisma.user.findUnique({ where: { email } });
   if (existente) {
@@ -42,7 +54,7 @@ export async function POST(request: NextRequest) {
   });
   if (!criado?.user) {
     return NextResponse.json(
-      { error: "Falha ao registrar usuário." },
+      { error: "Falha ao registrar usuário no sistema de autenticação." },
       { status: 500 },
     );
   }
@@ -56,52 +68,57 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") {
+  const session = await authorizeAdmin();
+  if (!session) {
     return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
   }
 
+  let body: unknown;
   try {
-    const body = await request.json();
-    const { id, role, name, email, password } = body;
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
+  }
 
-    if (!id) {
-      return NextResponse.json({ error: "ID do usuário obrigatório." }, { status: 400 });
+  const parsed = usuarioUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    const errorMsg = parsed.error.issues[0]?.message ?? "Dados inválidos para atualização.";
+    return NextResponse.json({ error: errorMsg }, { status: 400 });
+  }
+
+  const { id, role, name, email, password } = parsed.data;
+
+  const usuarioExistente = await prisma.user.findUnique({ where: { id } });
+  if (!usuarioExistente) {
+    return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
+  }
+
+  const dataToUpdate: { role?: string; name?: string; email?: string } = {};
+
+  if (role) {
+    dataToUpdate.role = role;
+  }
+
+  if (name) {
+    dataToUpdate.name = name;
+  }
+
+  if (email && email !== usuarioExistente.email) {
+    const outroComMesmoEmail = await prisma.user.findUnique({ where: { email } });
+    if (outroComMesmoEmail) {
+      return NextResponse.json({ error: "Já existe outro usuário cadastrado com este e-mail." }, { status: 409 });
     }
+    dataToUpdate.email = email;
+  }
 
-    const usuarioExistente = await prisma.user.findUnique({ where: { id } });
-    if (!usuarioExistente) {
-      return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
-    }
-
-    const dataToUpdate: { role?: string; name?: string; email?: string } = {};
-
-    if (role && ["admin", "gerente", "vendas"].includes(role)) {
-      dataToUpdate.role = role;
-    }
-
-    if (name && typeof name === "string" && name.trim()) {
-      dataToUpdate.name = name.trim();
-    }
-
-    if (email && typeof email === "string" && email.trim()) {
-      const emailNormalizado = email.trim().toLowerCase();
-      if (emailNormalizado !== usuarioExistente.email) {
-        const outroComMesmoEmail = await prisma.user.findUnique({ where: { email: emailNormalizado } });
-        if (outroComMesmoEmail) {
-          return NextResponse.json({ error: "Já existe outro usuário com este e-mail." }, { status: 409 });
-        }
-        dataToUpdate.email = emailNormalizado;
-      }
-    }
-
+  try {
     const updated = await prisma.user.update({
       where: { id },
       data: dataToUpdate,
     });
 
     // Se informou nova senha, atualiza o hash da conta
-    if (password && typeof password === "string" && password.trim().length >= 6) {
+    if (password && password.trim().length >= 6) {
       const hashedPassword = await hashPassword(password.trim());
       await prisma.account.updateMany({
         where: { userId: id, providerId: "credential" },
@@ -119,8 +136,8 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") {
+  const session = await authorizeAdmin();
+  if (!session) {
     return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
   }
 

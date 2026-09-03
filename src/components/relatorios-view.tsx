@@ -3,25 +3,17 @@
 import { useState, useMemo, useEffect } from "react";
 import {
   BarChart3,
-  DownloadIcon,
-  PrinterIcon,
   Search,
   X,
   Layers,
   Users,
   MapPin,
   CreditCard,
-  ChevronDown,
-  ChevronRight,
   Sparkles,
   Percent,
   CalendarDays,
   UserCheck,
-  TrendingDown,
-  Truck,
-  ShieldCheck,
   Building2,
-  FileText,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
@@ -34,8 +26,6 @@ import {
   analiseGeografica,
   analiseFinanceira,
   dataInputParaSyspro,
-  formatarDataInputParaBR,
-  type ItemCurvaABC,
 } from "@/lib/vendas";
 import {
   DateRangeFilter,
@@ -61,38 +51,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function DataBarPercent({
-  valor,
-  percentual,
-  cor = "bg-primary/15",
-}: {
-  valor: string;
-  percentual: number;
-  cor?: string;
-}) {
-  const largura = Math.min(Math.max(percentual, 0), 100);
-  return (
-    <div className="relative flex items-center justify-end overflow-hidden rounded px-2 py-0.5 font-mono text-xs">
-      <div
-        className={`absolute inset-y-0 right-0 ${cor} rounded-sm transition-all duration-300`}
-        style={{ width: `${largura}%` }}
-      />
-      <span className="relative z-10 font-bold text-foreground tabular-nums">
-        {valor}
-      </span>
-    </div>
-  );
-}
+// Subcomponentes modulares de abas
+import { AbaCurvaABC } from "./relatorios/aba-curva-abc";
+import { AbaClientes } from "./relatorios/aba-clientes";
+import { AbaDescontos } from "./relatorios/aba-descontos";
+import { AbaSazonalidade } from "./relatorios/aba-sazonalidade";
+import { AbaDepartamentos } from "./relatorios/aba-departamentos";
+import { AbaVendedores } from "./relatorios/aba-vendedores";
+import { AbaGeografico } from "./relatorios/aba-geografico";
+import { AbaFinanceiro } from "./relatorios/aba-financeiro";
 
 interface EmpresaOption {
   id: string;
@@ -153,7 +123,6 @@ export function RelatoriosView({
   const [busca, setBusca] = useState("");
   const [filtroClasseAbc, setFiltroClasseAbc] = useState<"todas" | "A" | "B" | "C">("todas");
   const [filtroClasseCli, setFiltroClasseCli] = useState<"todas" | "A" | "B" | "C">("todas");
-  const [departamentoAberto, setDepartamentoAberto] = useState<string | null>(null);
 
   const empresaAtual = useMemo(
     () => empresas.find((e) => e.id === empresaId),
@@ -256,91 +225,95 @@ export function RelatoriosView({
       }
       return true;
     });
-  }, [relatorioABC, filtroClasseAbc, busca]);
+  }, [relatorioABC.itens, filtroClasseAbc, busca]);
 
   // Clientes filtrados
   const clientesFiltrados = useMemo(() => {
-    return relatorioClientes.itens.filter((c) => {
-      if (filtroClasseCli !== "todas" && c.classe !== filtroClasseCli) {
+    return relatorioClientes.itens.filter((item) => {
+      if (filtroClasseCli !== "todas" && item.classe !== filtroClasseCli) {
         return false;
       }
       if (busca.trim()) {
         const termo = busca.toLowerCase().trim();
         return (
-          c.nome.toLowerCase().includes(termo) ||
-          c.cidade.toLowerCase().includes(termo) ||
-          c.uf.toLowerCase().includes(termo)
+          item.nome.toLowerCase().includes(termo) ||
+          item.cidade.toLowerCase().includes(termo) ||
+          item.uf.toLowerCase().includes(termo)
         );
       }
       return true;
     });
-  }, [relatorioClientes, filtroClasseCli, busca]);
-
-  // Departamentos filtrados
-  const deptosFiltrados = useMemo(() => {
-    if (!busca.trim()) return relatorioDeptos;
-    const termo = busca.toLowerCase().trim();
-    return relatorioDeptos.filter(
-      (d) =>
-        d.nome.toLowerCase().includes(termo) ||
-        d.produtos.some((p) => p.produto.toLowerCase().includes(termo) || p.id.toLowerCase().includes(termo)),
-    );
-  }, [relatorioDeptos, busca]);
+  }, [relatorioClientes.itens, filtroClasseCli, busca]);
 
   // Vendedores filtrados
   const vendedoresFiltrados = useMemo(() => {
     if (!busca.trim()) return relatorioVendedores;
     const termo = busca.toLowerCase().trim();
-    return relatorioVendedores.filter((v) => v.nome.toLowerCase().includes(termo));
+    return relatorioVendedores.filter(
+      (v) =>
+        v.nome.toLowerCase().includes(termo) ||
+        (v.principalProduto && v.principalProduto.toLowerCase().includes(termo)),
+    );
   }, [relatorioVendedores, busca]);
+
+  // Departamentos filtrados
+  const deptosFiltrados = useMemo(() => {
+    if (!busca.trim()) return relatorioDeptos;
+    const termo = busca.toLowerCase().trim();
+    return relatorioDeptos.filter((d) => d.nome.toLowerCase().includes(termo));
+  }, [relatorioDeptos, busca]);
 
   // Cidades filtradas
   const cidadesFiltradas = useMemo(() => {
     if (!busca.trim()) return relatorioGeografico;
     const termo = busca.toLowerCase().trim();
     return relatorioGeografico.filter(
-      (g) => g.cidade.toLowerCase().includes(termo) || g.uf.toLowerCase().includes(termo),
+      (c) =>
+        c.cidade.toLowerCase().includes(termo) ||
+        c.uf.toLowerCase().includes(termo),
     );
   }, [relatorioGeografico, busca]);
 
-  async function consultar(periodoDaConsulta = periodo) {
-    if (!empresaId || !periodoDaConsulta.inicial || !periodoDaConsulta.final) {
-      toast.error("Preencha o período de consulta");
-      return;
-    }
-    salvarPeriodoCookie(periodoDaConsulta);
+  async function consultar() {
     setLoading(true);
     setErro(null);
+    salvarPeriodoCookie(periodo);
+
     try {
-      const dados = await buscarVendasApi(empresaId, periodoDaConsulta);
-      setVendas(dados);
-      toast.success("Relatórios atualizados com sucesso!");
-    } catch (causa) {
-      const mensagem =
-        causa instanceof Error ? causa.message : "Erro ao carregar dados.";
-      setErro(mensagem);
-      toast.error(mensagem);
+      const res = await buscarVendasApi(empresaId, periodo, {
+        forcarAtualizacao: true,
+      });
+      setVendas(res);
+      toast.success("Dados de relatórios atualizados com sucesso!");
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro ao carregar relatórios.");
+      toast.error("Não foi possível carregar os relatórios.");
     } finally {
       setLoading(false);
     }
   }
 
   function exportarCsvRelatorio() {
+    if (vendas.length === 0) {
+      toast.error("Não há dados para exportar no período selecionado.");
+      return;
+    }
+
+    let nomeArquivo = "relatorio";
     let cabecalho: string[] = [];
     let linhas: (string | number)[][] = [];
-    let nomeArquivo = "relatorio-syspro";
 
     if (abaAtiva === "curva-abc") {
-      nomeArquivo = "relatorio-curva-abc-produtos";
+      nomeArquivo = "relatorio-curva-abc";
       cabecalho = [
         "Classe",
         "Código",
-        "Produto",
+        "Descrição do Produto",
         "Departamento",
         "Unidade",
         "Qtd Vendida",
         "Preço Médio",
-        "Faturamento Total",
+        "Total Faturado",
         "% Faturamento",
         "% Acumulado",
       ];
@@ -357,16 +330,17 @@ export function RelatoriosView({
         `${item.percentualAcumulado.toFixed(2)}%`,
       ]);
     } else if (abaAtiva === "clientes") {
-      nomeArquivo = "relatorio-curva-abc-clientes";
+      nomeArquivo = "relatorio-clientes-concentracao";
       cabecalho = [
         "Classe",
-        "Cliente",
+        "Razão Social / Nome",
         "Cidade",
         "UF",
-        "Pedidos",
+        "Pedidos / NF",
         "Qtd Itens",
         "Ticket Médio",
-        "Faturamento Total",
+        "Total Descontos",
+        "Total Faturado",
         "% Faturamento",
         "% Acumulado",
       ];
@@ -378,64 +352,41 @@ export function RelatoriosView({
         c.pedidos,
         c.quantidadeItens,
         c.ticketMedio.toFixed(2),
+        c.descontos.toFixed(2),
         c.faturamento.toFixed(2),
         `${c.percentual.toFixed(2)}%`,
         `${c.percentualAcumulado.toFixed(2)}%`,
       ]);
-    } else if (abaAtiva === "descontos") {
-      nomeArquivo = "relatorio-descontos-comerciais";
-      cabecalho = ["Categoria/Entidade", "Nome", "Faturamento Bruto", "Faturamento Líquido", "Desconto Concedido", "% Taxa Desconto"];
-      linhas = [
-        ...relatorioDescontos.porVendedor.map((v) => ["Vendedor", v.nome, v.faturamentoBruto.toFixed(2), v.faturamentoLiquido.toFixed(2), v.desconto.toFixed(2), `${v.taxaDesconto.toFixed(2)}%`]),
-        ...relatorioDescontos.porDepartamento.map((d) => ["Departamento", d.nome, d.faturamentoBruto.toFixed(2), d.faturamentoLiquido.toFixed(2), d.desconto.toFixed(2), `${d.taxaDesconto.toFixed(2)}%`]),
-        ...relatorioDescontos.porCliente.map((c) => ["Cliente", c.nome, c.faturamentoBruto.toFixed(2), c.faturamentoLiquido.toFixed(2), c.desconto.toFixed(2), `${c.taxaDesconto.toFixed(2)}%`]),
-      ];
-    } else if (abaAtiva === "sazonalidade") {
-      nomeArquivo = "relatorio-sazonalidade-temporal";
-      cabecalho = ["Tipo", "Período / Dia", "Faturamento Total", "Pedidos / NF", "Ticket Médio", "% Representatividade"];
-      linhas = [
-        ...relatorioSazonalidade.porDiaSemana.map((d) => ["Dia da Semana", d.dia, d.faturamento.toFixed(2), d.pedidos, d.ticketMedio.toFixed(2), `${d.percentual.toFixed(2)}%`]),
-        ...relatorioSazonalidade.porQuinzena.map((q) => ["Quinzena", q.quinzena, q.faturamento.toFixed(2), q.pedidos, q.ticketMedio.toFixed(2), `${q.percentual.toFixed(2)}%`]),
-      ];
     } else if (abaAtiva === "departamentos") {
-      nomeArquivo = "relatorio-departamentos-itens";
+      nomeArquivo = "relatorio-departamentos";
       cabecalho = [
         "Departamento",
-        "Código Produto",
-        "Produto",
-        "Unidade",
-        "Qtd Vendida",
-        "Preço Médio",
-        "Total Faturado",
-        "% Participação no Depto",
+        "Produtos Distintos (SKUs)",
+        "Qtd Itens",
+        "Ticket Médio / Item",
+        "Faturamento Total",
+        "% Participação",
       ];
-      linhas = [];
-      for (const d of deptosFiltrados) {
-        for (const p of d.produtos) {
-          linhas.push([
-            d.nome,
-            p.id,
-            p.produto,
-            p.un,
-            p.quantidade,
-            p.precoMedio.toFixed(2),
-            p.total.toFixed(2),
-            `${p.percentual.toFixed(2)}%`,
-          ]);
-        }
-      }
+      linhas = deptosFiltrados.map((d) => [
+        d.nome,
+        d.quantidadeProdutosDistintos,
+        d.quantidadeItens,
+        d.ticketMedioPorItem.toFixed(2),
+        d.faturamento.toFixed(2),
+        `${d.percentual.toFixed(2)}%`,
+      ]);
     } else if (abaAtiva === "vendedores") {
       nomeArquivo = "relatorio-equipe-vendedores";
       cabecalho = [
         "Vendedor",
         "Faturamento Total",
-        "% Faturamento",
+        "% Participação",
         "Pedidos / NF",
-        "Clientes Atendidos",
+        "Clientes Únicos",
         "Qtd Itens",
         "Ticket Médio",
         "Desconto Concedido",
-        "% Desconto",
+        "Taxa Desconto",
         "Principal Produto",
       ];
       linhas = vendedoresFiltrados.map((v) => [
@@ -511,7 +462,7 @@ export function RelatoriosView({
     toast.success("Arquivo CSV gerado com sucesso!");
   }
 
-  function handleExportarPdf(modo: "download" | "imprimir" = "download") {
+  async function handleExportarPdf(modo: "download" | "imprimir" = "download") {
     if (vendas.length === 0) {
       toast.error("Não há dados para exportar no período selecionado.");
       return;
@@ -599,7 +550,7 @@ export function RelatoriosView({
       ]);
     }
 
-    exportarPdfAnalitico({
+    await exportarPdfAnalitico({
       titulo,
       contexto,
       colunas,
@@ -764,734 +715,43 @@ export function RelatoriosView({
               {/* Painel "Como ler" — explicação do relatório ativo */}
               <PainelComoLer relatorioId={abaAtiva} />
 
-              {/* ========================================================= */}
-              {/* ABA 1: CURVA ABC DE PRODUTOS */}
-              {/* ========================================================= */}
+              {/* Renderização condicional da aba ativa através de componentes modulares */}
               {abaAtiva === "curva-abc" && (
-                <div className="space-y-4">
-                  {/* Cards Síntese ABC (Pareto) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5">
-                      <div className="flex items-center justify-between">
-                        <Badge className="bg-emerald-600 font-bold text-white">Classe A</Badge>
-                        <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                          {formatarPercentual(relatorioABC.resumoA.percentualFaturamento, 1)} Faturamento
-                        </span>
-                      </div>
-                      <div className="mt-2 font-mono font-extrabold text-lg text-emerald-950 dark:text-emerald-200">
-                        {formatarMoeda(relatorioABC.resumoA.faturamento)}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {relatorioABC.resumoA.itens} itens ({formatarPercentual(relatorioABC.resumoA.percentualItens, 1)} do catálogo)
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3.5">
-                      <div className="flex items-center justify-between">
-                        <Badge className="bg-blue-600 font-bold text-white">Classe B</Badge>
-                        <span className="font-mono text-xs font-bold text-blue-800 dark:text-blue-300">
-                          {formatarPercentual(relatorioABC.resumoB.percentualFaturamento, 1)} Faturamento
-                        </span>
-                      </div>
-                      <div className="mt-2 font-mono font-extrabold text-lg text-blue-950 dark:text-blue-200">
-                        {formatarMoeda(relatorioABC.resumoB.faturamento)}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {relatorioABC.resumoB.itens} itens ({formatarPercentual(relatorioABC.resumoB.percentualItens, 1)} do catálogo)
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5">
-                      <div className="flex items-center justify-between">
-                        <Badge className="bg-amber-600 font-bold text-white">Classe C</Badge>
-                        <span className="font-mono text-xs font-bold text-amber-800 dark:text-amber-300">
-                          {formatarPercentual(relatorioABC.resumoC.percentualFaturamento, 1)} Faturamento
-                        </span>
-                      </div>
-                      <div className="mt-2 font-mono font-extrabold text-lg text-amber-950 dark:text-amber-200">
-                        {formatarMoeda(relatorioABC.resumoC.faturamento)}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {relatorioABC.resumoC.itens} itens ({formatarPercentual(relatorioABC.resumoC.percentualItens, 1)} do catálogo)
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tabela Curva ABC */}
-                  <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full min-w-[640px] text-xs">
-                      <thead>
-                        <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
-                          <th className="p-3 w-16 text-center">Classe</th>
-                          <th className="p-3">Código</th>
-                          <th className="p-3">Produto</th>
-                          <th className="p-3">Departamento</th>
-                          <th className="p-3 text-right">Qtd Vendida</th>
-                          <th className="p-3 text-right">Preço Médio</th>
-                          <th className="p-3 text-right">Total Faturado</th>
-                          <th className="p-3 text-right">% Fat.</th>
-                          <th className="p-3 text-right">% Acumulado</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {itensAbcFiltrados.map((item, idx) => (
-                          <tr key={`${item.id}-${idx}`} className="border-b last:border-0 hover:bg-muted/20">
-                            <td className="p-3 text-center">
-                              <Badge
-                                variant={
-                                  item.classe === "A"
-                                    ? "default"
-                                    : item.classe === "B"
-                                      ? "secondary"
-                                      : "outline"
-                                }
-                                className={`font-bold ${
-                                  item.classe === "A"
-                                    ? "bg-emerald-600 text-white"
-                                    : item.classe === "B"
-                                      ? "bg-blue-600 text-white"
-                                      : "text-amber-700 dark:text-amber-400 border-amber-500/40"
-                                }`}
-                              >
-                                {item.classe}
-                              </Badge>
-                            </td>
-                            <td className="p-3 font-mono text-muted-foreground">{item.id}</td>
-                            <td className="p-3 font-semibold text-foreground">{item.produto}</td>
-                            <td className="p-3 text-muted-foreground">{item.departamento}</td>
-                            <td className="p-3 text-right font-mono">
-                              {formatarNumero(item.quantidade, 2)} {item.un}
-                            </td>
-                            <td className="p-3 text-right font-mono text-muted-foreground">
-                              {formatarMoeda(item.precoMedio)}
-                            </td>
-                            <td className="p-3 text-right font-mono font-bold text-foreground">
-                              {formatarMoeda(item.total)}
-                            </td>
-                            <td className="p-3 text-right">
-                              <DataBarPercent
-                                valor={formatarPercentual(item.percentual, 2)}
-                                percentual={item.percentual}
-                                cor={item.classe === "A" ? "bg-emerald-500/20" : item.classe === "B" ? "bg-blue-500/20" : "bg-amber-500/20"}
-                              />
-                            </td>
-                            <td className="p-3 text-right font-mono font-semibold text-primary">
-                              {formatarPercentual(item.percentualAcumulado, 1)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <AbaCurvaABC
+                  relatorioABC={relatorioABC}
+                  itensFiltrados={itensAbcFiltrados}
+                />
               )}
 
-              {/* ========================================================= */}
-              {/* ABA 2: CLIENTES & CONCENTRAÇÃO (PARETO DE CLIENTES) */}
-              {/* ========================================================= */}
               {abaAtiva === "clientes" && (
-                <div className="space-y-4">
-                  {/* Cards Síntese de Clientes */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="rounded-lg border bg-muted/20 p-3">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Total de Clientes
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-                        {formatarNumero(relatorioClientes.totalClientes, 0)}
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        Ticket médio: {formatarMoeda(relatorioClientes.ticketMedioPorCliente)}
-                      </span>
-                    </div>
-
-                    <div className="rounded-lg border bg-muted/20 p-3">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Clientes Recorrentes
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-primary">
-                        {formatarPercentual(relatorioClientes.taxaRecorrencia, 1)}
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        {relatorioClientes.clientesRecorrentes} compraram 2x ou mais
-                      </span>
-                    </div>
-
-                    <div className="rounded-lg border bg-muted/20 p-3">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Concentração Top 5
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-                        {formatarPercentual(relatorioClientes.concentracaoTop5, 1)}
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        do faturamento total da empresa
-                      </span>
-                    </div>
-
-                    <div className="rounded-lg border bg-muted/20 p-3">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Concentração Top 10
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-                        {formatarPercentual(relatorioClientes.concentracaoTop10, 1)}
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        dos 10 maiores compradores
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tabela de Clientes */}
-                  <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full min-w-[640px] text-xs">
-                      <thead>
-                        <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
-                          <th className="p-3 w-16 text-center">Classe</th>
-                          <th className="p-3">Cliente</th>
-                          <th className="p-3">Praça (Cidade/UF)</th>
-                          <th className="p-3 text-right">Pedidos / NF</th>
-                          <th className="p-3 text-right">Qtd Itens</th>
-                          <th className="p-3 text-right">Ticket Médio</th>
-                          <th className="p-3 text-right">Descontos</th>
-                          <th className="p-3 text-right">Total Faturado</th>
-                          <th className="p-3 text-right">% Fat.</th>
-                          <th className="p-3 text-right">% Acum.</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {clientesFiltrados.map((cli, idx) => (
-                          <tr key={`${cli.nome}-${idx}`} className="border-b last:border-0 hover:bg-muted/20">
-                            <td className="p-3 text-center">
-                              <Badge
-                                variant={
-                                  cli.classe === "A"
-                                    ? "default"
-                                    : cli.classe === "B"
-                                      ? "secondary"
-                                      : "outline"
-                                }
-                                className={`font-bold ${
-                                  cli.classe === "A"
-                                    ? "bg-emerald-600 text-white"
-                                    : cli.classe === "B"
-                                      ? "bg-blue-600 text-white"
-                                      : "text-amber-700 dark:text-amber-400 border-amber-500/40"
-                                }`}
-                              >
-                                {cli.classe}
-                              </Badge>
-                            </td>
-                            <td className="p-3 font-semibold text-foreground">{cli.nome}</td>
-                            <td className="p-3 text-muted-foreground">{cli.cidade} / {cli.uf}</td>
-                            <td className="p-3 text-right font-mono">{formatarNumero(cli.pedidos, 0)}</td>
-                            <td className="p-3 text-right font-mono text-muted-foreground">{formatarNumero(cli.quantidadeItens, 2)}</td>
-                            <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(cli.ticketMedio)}</td>
-                            <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(cli.descontos)}</td>
-                            <td className="p-3 text-right font-mono font-bold text-foreground">{formatarMoeda(cli.faturamento)}</td>
-                            <td className="p-3 text-right">
-                              <DataBarPercent
-                                valor={formatarPercentual(cli.percentual, 2)}
-                                percentual={cli.percentual}
-                                cor={cli.classe === "A" ? "bg-emerald-500/20" : cli.classe === "B" ? "bg-blue-500/20" : "bg-amber-500/20"}
-                              />
-                            </td>
-                            <td className="p-3 text-right font-mono font-semibold text-primary">{formatarPercentual(cli.percentualAcumulado, 1)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <AbaClientes
+                  relatorioClientes={relatorioClientes}
+                  clientesFiltrados={clientesFiltrados}
+                />
               )}
 
-              {/* ========================================================= */}
-              {/* ABA 3: DESCONTOS & POLÍTICA COMERCIAL */}
-              {/* ========================================================= */}
               {abaAtiva === "descontos" && (
-                <div className="space-y-6">
-                  {/* Síntese de Descontos */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="rounded-lg border bg-muted/20 p-3.5">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Faturamento Bruto
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-                        {formatarMoeda(relatorioDescontos.faturamentoBruto)}
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">Valor de tabela dos itens</span>
-                    </div>
-
-                    <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5">
-                      <span className="text-[11px] font-semibold text-rose-800 dark:text-rose-300 uppercase tracking-wider">
-                        Total de Descontos Concedidos
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-rose-950 dark:text-rose-200">
-                        {formatarMoeda(relatorioDescontos.descontoTotal)}
-                      </div>
-                      <span className="text-[11px] text-rose-700/80 dark:text-rose-400">
-                        Taxa global: {formatarPercentual(relatorioDescontos.taxaDescontoGlobal, 2)}
-                      </span>
-                    </div>
-
-                    <div className="rounded-lg border bg-muted/20 p-3.5">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Faturamento Líquido
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-                        {formatarMoeda(relatorioDescontos.faturamentoLiquido)}
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">Efetivamente faturado</span>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Descontos por Vendedor */}
-                    <Card className="border-border/60">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-bold">Desconto Concedido por Vendedor</CardTitle>
-                        <CardDescription className="text-xs">Avaliação de concessão e taxa de desconto por consultor.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[640px] text-xs">
-                          <thead>
-                            <tr className="border-b text-left font-semibold text-muted-foreground">
-                              <th className="p-2.5">Vendedor</th>
-                              <th className="p-2.5 text-right">Fat. Líquido</th>
-                              <th className="p-2.5 text-right">Desconto (R$)</th>
-                              <th className="p-2.5 text-right">% Desconto</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {relatorioDescontos.porVendedor.map((v) => (
-                              <tr key={v.nome} className="border-b last:border-0 hover:bg-muted/20">
-                                <td className="p-2.5 font-bold text-foreground">{v.nome}</td>
-                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(v.faturamentoLiquido)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{formatarMoeda(v.desconto)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold">{formatarPercentual(v.taxaDesconto, 1)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Descontos por Departamento */}
-                    <Card className="border-border/60">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-bold">Desconto por Departamento / Categoria</CardTitle>
-                        <CardDescription className="text-xs">Categorias com maior pressão de desconto comercial.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[640px] text-xs">
-                          <thead>
-                            <tr className="border-b text-left font-semibold text-muted-foreground">
-                              <th className="p-2.5">Departamento</th>
-                              <th className="p-2.5 text-right">Fat. Líquido</th>
-                              <th className="p-2.5 text-right">Desconto (R$)</th>
-                              <th className="p-2.5 text-right">% Desconto</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {relatorioDescontos.porDepartamento.map((d) => (
-                              <tr key={d.nome} className="border-b last:border-0 hover:bg-muted/20">
-                                <td className="p-2.5 font-bold text-foreground">{d.nome}</td>
-                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(d.faturamentoLiquido)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{formatarMoeda(d.desconto)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold">{formatarPercentual(d.taxaDesconto, 1)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                <AbaDescontos relatorioDescontos={relatorioDescontos} />
               )}
 
-              {/* ========================================================= */}
-              {/* ABA 4: SAZONALIDADE & DIAS DA SEMANA */}
-              {/* ========================================================= */}
               {abaAtiva === "sazonalidade" && (
-                <div className="space-y-6">
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Vendas por Dia da Semana */}
-                    <Card className="border-border/60">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-bold">Faturamento por Dia da Semana</CardTitle>
-                        <CardDescription className="text-xs">Distribuição de receita e pedidos de Segunda a Domingo.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[640px] text-xs">
-                          <thead>
-                            <tr className="border-b text-left font-semibold text-muted-foreground">
-                              <th className="p-2.5">Dia da Semana</th>
-                              <th className="p-2.5 text-right">Pedidos</th>
-                              <th className="p-2.5 text-right">Ticket Médio</th>
-                              <th className="p-2.5 text-right">Faturamento</th>
-                              <th className="p-2.5 text-right">% Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {relatorioSazonalidade.porDiaSemana.map((d) => (
-                              <tr key={d.dia} className="border-b last:border-0 hover:bg-muted/20">
-                                <td className="p-2.5 font-bold text-foreground">{d.dia}</td>
-                                <td className="p-2.5 text-right font-mono">{formatarNumero(d.pedidos, 0)}</td>
-                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(d.ticketMedio)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(d.faturamento)}</td>
-                                <td className="p-2.5 text-right font-mono font-semibold text-primary">{formatarPercentual(d.percentual, 1)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Comparativo Quinzenal */}
-                    <Card className="border-border/60">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-bold">Comparativo Quinzenal</CardTitle>
-                        <CardDescription className="text-xs">Início de mês (1 a 15) vs. Segunda quinzena (16+).</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[640px] text-xs">
-                          <thead>
-                            <tr className="border-b text-left font-semibold text-muted-foreground">
-                              <th className="p-2.5">Quinzena</th>
-                              <th className="p-2.5 text-right">Pedidos</th>
-                              <th className="p-2.5 text-right">Ticket Médio</th>
-                              <th className="p-2.5 text-right">Faturamento</th>
-                              <th className="p-2.5 text-right">% Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {relatorioSazonalidade.porQuinzena.map((q) => (
-                              <tr key={q.quinzena} className="border-b last:border-0 hover:bg-muted/20">
-                                <td className="p-2.5 font-bold text-foreground">{q.quinzena}</td>
-                                <td className="p-2.5 text-right font-mono">{formatarNumero(q.pedidos, 0)}</td>
-                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(q.ticketMedio)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(q.faturamento)}</td>
-                                <td className="p-2.5 text-right font-mono font-semibold text-primary">{formatarPercentual(q.percentual, 1)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                <AbaSazonalidade relatorioSazonalidade={relatorioSazonalidade} />
               )}
 
-              {/* ========================================================= */}
-              {/* ABA 5: DEPARTAMENTOS & PRODUTOS */}
-              {/* ========================================================= */}
               {abaAtiva === "departamentos" && (
-                <div className="space-y-4">
-                  <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full min-w-[640px] text-xs">
-                      <thead>
-                        <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
-                          <th className="p-3 w-10" />
-                          <th className="p-3">Departamento</th>
-                          <th className="p-3 text-right">Produtos Distintos</th>
-                          <th className="p-3 text-right">Qtd Total Itens</th>
-                          <th className="p-3 text-right">Preço Médio / Item</th>
-                          <th className="p-3 text-right">Faturamento Total</th>
-                          <th className="p-3 text-right">% Participação</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {deptosFiltrados.map((dep) => {
-                          const aberto = departamentoAberto === dep.nome;
-                          return (
-                            <>
-                              <tr
-                                key={dep.nome}
-                                className={`border-b hover:bg-muted/20 ${aberto ? "bg-muted/30" : ""}`}
-                              >
-                                <td className="p-3">
-                                  <Button
-                                    size="icon-sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      setDepartamentoAberto(aberto ? null : dep.nome)
-                                    }
-                                  >
-                                    {aberto ? <ChevronDown /> : <ChevronRight />}
-                                  </Button>
-                                </td>
-                                <td className="p-3 font-bold text-sm text-foreground">
-                                  {dep.nome}
-                                </td>
-                                <td className="p-3 text-right font-mono">
-                                  {dep.quantidadeProdutosDistintos}
-                                </td>
-                                <td className="p-3 text-right font-mono">
-                                  {formatarNumero(dep.quantidadeItens, 2)}
-                                </td>
-                                <td className="p-3 text-right font-mono text-muted-foreground">
-                                  {formatarMoeda(dep.ticketMedioPorItem)}
-                                </td>
-                                <td className="p-3 text-right font-mono font-bold text-foreground">
-                                  {formatarMoeda(dep.faturamento)}
-                                </td>
-                                <td className="p-3 text-right">
-                                  <DataBarPercent
-                                    valor={formatarPercentual(dep.percentual, 1)}
-                                    percentual={dep.percentual}
-                                    cor="bg-blue-500/20"
-                                  />
-                                </td>
-                              </tr>
-
-                              {aberto && (
-                                <tr key={`${dep.nome}-itens`}>
-                                  <td colSpan={7} className="bg-muted/20 p-4">
-                                    <div className="rounded-md border bg-background overflow-hidden">
-                                      <div className="bg-muted/40 p-2.5 font-bold text-xs text-foreground border-b">
-                                        Produtos no Departamento: {dep.nome} ({dep.produtos.length} itens)
-                                      </div>
-                                      <table className="w-full min-w-[640px] text-xs">
-                                        <thead>
-                                          <tr className="border-b text-left text-muted-foreground font-semibold">
-                                            <th className="p-2.5">Código</th>
-                                            <th className="p-2.5">Descrição</th>
-                                            <th className="p-2.5 text-right">Qtd</th>
-                                            <th className="p-2.5 text-right">Preço Médio</th>
-                                            <th className="p-2.5 text-right">Faturamento</th>
-                                            <th className="p-2.5 text-right">% do Depto</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {dep.produtos.map((prod) => (
-                                            <tr key={prod.id} className="border-b last:border-0 hover:bg-muted/10">
-                                              <td className="p-2.5 font-mono text-muted-foreground">{prod.id}</td>
-                                              <td className="p-2.5 font-medium text-foreground">{prod.produto}</td>
-                                              <td className="p-2.5 text-right font-mono">{formatarNumero(prod.quantidade, 2)} {prod.un}</td>
-                                              <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(prod.precoMedio)}</td>
-                                              <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(prod.total)}</td>
-                                              <td className="p-2.5 text-right font-mono text-primary font-semibold">{formatarPercentual(prod.percentual, 1)}</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <AbaDepartamentos deptosFiltrados={deptosFiltrados} />
               )}
 
-              {/* ========================================================= */}
-              {/* ABA 6: VENDEDORES & EQUIPE */}
-              {/* ========================================================= */}
               {abaAtiva === "vendedores" && (
-                <div className="overflow-x-auto rounded-md border">
-                  <table className="w-full min-w-[640px] text-xs">
-                    <thead>
-                      <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
-                        <th className="p-3">Vendedor</th>
-                        <th className="p-3 text-right">Pedidos / NF</th>
-                        <th className="p-3 text-right">Clientes Únicos</th>
-                        <th className="p-3 text-right">Qtd Itens</th>
-                        <th className="p-3 text-right">Ticket Médio</th>
-                        <th className="p-3 text-right">Desconto (R$)</th>
-                        <th className="p-3 text-right">% Desconto</th>
-                        <th className="p-3 text-right">Faturamento Total</th>
-                        <th className="p-3 text-right">% Participação</th>
-                        <th className="p-3">Principal Produto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vendedoresFiltrados.map((v) => (
-                        <tr key={v.nome} className="border-b last:border-0 hover:bg-muted/20">
-                          <td className="p-3 font-bold text-sm text-foreground">{v.nome}</td>
-                          <td className="p-3 text-right font-mono">{formatarNumero(v.pedidos, 0)}</td>
-                          <td className="p-3 text-right font-mono">{formatarNumero(v.clientes, 0)}</td>
-                          <td className="p-3 text-right font-mono text-muted-foreground">
-                            {formatarNumero(v.quantidadeItens, 2)}
-                          </td>
-                          <td className="p-3 text-right font-mono text-muted-foreground">
-                            {formatarMoeda(v.ticketMedio)}
-                          </td>
-                          <td className="p-3 text-right font-mono text-rose-600 dark:text-rose-400">
-                            {formatarMoeda(v.descontoConcedido)}
-                          </td>
-                          <td className="p-3 text-right font-mono">
-                            {formatarPercentual(v.taxaDesconto, 1)}
-                          </td>
-                          <td className="p-3 text-right font-mono font-bold text-foreground">
-                            {formatarMoeda(v.faturamento)}
-                          </td>
-                          <td className="p-3 text-right">
-                            <DataBarPercent
-                              valor={formatarPercentual(v.percentual, 1)}
-                              percentual={v.percentual}
-                              cor="bg-violet-500/20"
-                            />
-                          </td>
-                          <td className="p-3 text-muted-foreground truncate max-w-[180px]" title={v.principalProduto}>
-                            {v.principalProduto ?? "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <AbaVendedores vendedoresFiltrados={vendedoresFiltrados} />
               )}
 
-              {/* ========================================================= */}
-              {/* ABA 7: CIDADES & PRAÇAS */}
-              {/* ========================================================= */}
               {abaAtiva === "geografico" && (
-                <div className="overflow-x-auto rounded-md border">
-                  <table className="w-full min-w-[640px] text-xs">
-                    <thead>
-                      <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
-                        <th className="p-3">Cidade</th>
-                        <th className="p-3">UF</th>
-                        <th className="p-3 text-right">Pedidos / NF</th>
-                        <th className="p-3 text-right">Clientes Atendidos</th>
-                        <th className="p-3 text-right">Ticket Médio</th>
-                        <th className="p-3 text-right">Frete Rateado</th>
-                        <th className="p-3 text-right">Faturamento Total</th>
-                        <th className="p-3 text-right">% Participação</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cidadesFiltradas.map((c, i) => (
-                        <tr key={`${c.cidade}-${c.uf}-${i}`} className="border-b last:border-0 hover:bg-muted/20">
-                          <td className="p-3 font-semibold text-foreground text-sm">{c.cidade}</td>
-                          <td className="p-3 font-mono font-bold">
-                            <Badge variant="outline">{c.uf}</Badge>
-                          </td>
-                          <td className="p-3 text-right font-mono">{formatarNumero(c.pedidos, 0)}</td>
-                          <td className="p-3 text-right font-mono">{formatarNumero(c.clientes, 0)}</td>
-                          <td className="p-3 text-right font-mono text-muted-foreground">
-                            {formatarMoeda(c.ticketMedio)}
-                          </td>
-                          <td className="p-3 text-right font-mono text-muted-foreground">
-                            {formatarMoeda(c.frete)}
-                          </td>
-                          <td className="p-3 text-right font-mono font-bold text-foreground">
-                            {formatarMoeda(c.faturamento)}
-                          </td>
-                          <td className="p-3 text-right font-mono font-bold text-primary">
-                            {formatarPercentual(c.percentual, 1)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <AbaGeografico cidadesFiltradas={cidadesFiltradas} />
               )}
 
-              {/* ========================================================= */}
-              {/* ABA 8: FINANCEIRO & FISCAL */}
-              {/* ========================================================= */}
               {abaAtiva === "financeiro" && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-lg border bg-muted/20 p-3">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Total Frete
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-                        {formatarMoeda(relatorioFinanceiro.totaisFrete)}
-                      </div>
-                    </div>
-                    <div className="rounded-lg border bg-muted/20 p-3">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Total ICMS-ST
-                      </span>
-                      <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-                        {formatarMoeda(relatorioFinanceiro.totaisIcmsSt)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="border-border/60">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-bold">Formas de Pagamento Declaradas</CardTitle>
-                        <CardDescription className="text-xs">Distribuição do faturamento por meio de recebimento.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[640px] text-xs">
-                          <thead>
-                            <tr className="border-b text-left font-semibold text-muted-foreground">
-                              <th className="p-2.5">Forma</th>
-                              <th className="p-2.5 text-right">Pedidos</th>
-                              <th className="p-2.5 text-right">Ticket Médio</th>
-                              <th className="p-2.5 text-right">Total</th>
-                              <th className="p-2.5 text-right">%</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {relatorioFinanceiro.formasPagamento.map((fp) => (
-                              <tr key={fp.nome} className="border-b last:border-0 hover:bg-muted/20">
-                                <td className="p-2.5 font-medium text-foreground">{fp.nome}</td>
-                                <td className="p-2.5 text-right font-mono">{formatarNumero(fp.pedidos, 0)}</td>
-                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(fp.ticketMedio)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(fp.total)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-primary">{formatarPercentual(fp.percentual, 1)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-border/60">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-bold">Modelos de Documentos Fiscais</CardTitle>
-                        <CardDescription className="text-xs">Divisão entre NF-e (Modelo 55) e NFC-e (Modelo 65).</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[640px] text-xs">
-                          <thead>
-                            <tr className="border-b text-left font-semibold text-muted-foreground">
-                              <th className="p-2.5">Modelo</th>
-                              <th className="p-2.5 text-right">Notas Emitidas</th>
-                              <th className="p-2.5 text-right">Ticket Médio</th>
-                              <th className="p-2.5 text-right">Total</th>
-                              <th className="p-2.5 text-right">%</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {relatorioFinanceiro.modelosDocumento.map((m) => (
-                              <tr key={m.nome} className="border-b last:border-0 hover:bg-muted/20">
-                                <td className="p-2.5 font-medium text-foreground">{m.nome}</td>
-                                <td className="p-2.5 text-right font-mono">{formatarNumero(m.pedidos, 0)}</td>
-                                <td className="p-2.5 text-right font-mono text-muted-foreground">{formatarMoeda(m.ticketMedio)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-foreground">{formatarMoeda(m.total)}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-primary">{formatarPercentual(m.percentual, 1)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                <AbaFinanceiro relatorioFinanceiro={relatorioFinanceiro} />
               )}
 
               {/* Glossário — termos do relatório ativo */}

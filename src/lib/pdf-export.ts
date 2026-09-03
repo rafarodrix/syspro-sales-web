@@ -1,5 +1,3 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type { ResumoVendas, VendaAgrupada, ProdutoRankeado } from "@/lib/vendas";
 import type { Periodo } from "@/components/date-range-filter";
@@ -28,7 +26,15 @@ function formatarDataBR(dataIso: string): string {
   return dataIso;
 }
 
-function adicionarCabecalho(doc: jsPDF, titulo: string, contexto: ContextoRelatorio) {
+async function carregarPdfLibs() {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  return { jsPDF, autoTable };
+}
+
+function adicionarCabecalho(doc: any, titulo: string, contexto: ContextoRelatorio) {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Barra Superior Colorida
@@ -83,7 +89,7 @@ function adicionarCabecalho(doc: jsPDF, titulo: string, contexto: ContextoRelato
   doc.line(14, 35, pageWidth - 14, 35);
 }
 
-function adicionarRodape(doc: jsPDF) {
+function adicionarRodape(doc: any) {
   const totalPaginas = doc.getNumberOfPages();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -109,7 +115,7 @@ function adicionarRodape(doc: jsPDF) {
 }
 
 function despacharPdf(
-  doc: jsPDF,
+  doc: any,
   nomeArquivo: string,
   modo: "download" | "imprimir" = "download",
 ) {
@@ -143,7 +149,7 @@ function despacharPdf(
 /**
  * Exporta o Dashboard Executivo com KPIs e Principais Motores de Venda
  */
-export function exportarPdfDashboard({
+export async function exportarPdfDashboard({
   contexto,
   resumo,
   topProdutos,
@@ -154,6 +160,7 @@ export function exportarPdfDashboard({
   topProdutos: ProdutoRankeado[];
   modo?: "download" | "imprimir";
 }) {
+  const { jsPDF, autoTable } = await carregarPdfLibs();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   adicionarCabecalho(doc, "Dashboard Executivo de Vendas", contexto);
 
@@ -281,7 +288,7 @@ export function exportarPdfDashboard({
 /**
  * Exporta Relatório de Notas Fiscais Emitidas
  */
-export function exportarPdfVendas({
+export async function exportarPdfVendas({
   contexto,
   notas,
   modo = "download",
@@ -290,6 +297,7 @@ export function exportarPdfVendas({
   notas: VendaAgrupada[];
   modo?: "download" | "imprimir";
 }) {
+  const { jsPDF, autoTable } = await carregarPdfLibs();
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   adicionarCabecalho(doc, "Relatório de Notas Fiscais Emitidas", contexto);
 
@@ -363,7 +371,7 @@ export function exportarPdfVendas({
 /**
  * Exporta Relatório Analítico Genérico (Curva ABC, Vendedores, Clientes, etc.)
  */
-export function exportarPdfAnalitico({
+export async function exportarPdfAnalitico({
   titulo,
   contexto,
   colunas,
@@ -378,6 +386,7 @@ export function exportarPdfAnalitico({
   kpis?: { label: string; valor: string }[];
   modo?: "download" | "imprimir";
 }) {
+  const { jsPDF, autoTable } = await carregarPdfLibs();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   adicionarCabecalho(doc, titulo, contexto);
 

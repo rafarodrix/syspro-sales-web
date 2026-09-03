@@ -2,11 +2,21 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { dataInputParaSyspro, dataParaInput } from "@/lib/vendas";
+import { sanitizarSysproUrl } from "@/lib/validations";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session || session.user.role !== "admin") {
     return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
+  }
+
+  const rateCheck = checkRateLimit(`config:testar:${session.user.id}`, 20, 60_000);
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: "Limite de testes atingido. Aguarde um momento." },
+      { status: 429 },
+    );
   }
 
   try {
@@ -16,6 +26,16 @@ export async function POST(request: Request) {
     if (!baseUrl || typeof baseUrl !== "string") {
       return NextResponse.json(
         { error: "URL da API Syspro não informada." },
+        { status: 400 },
+      );
+    }
+
+    let sanitizedBase: string;
+    try {
+      sanitizedBase = sanitizarSysproUrl(baseUrl);
+    } catch (urlErr) {
+      return NextResponse.json(
+        { error: urlErr instanceof Error ? urlErr.message : "URL inválida." },
         { status: 400 },
       );
     }
@@ -30,8 +50,7 @@ export async function POST(request: Request) {
       ? "/sysproserverisapi.dll/api/exporta/produto/venda"
       : "/api/exporta/produto/venda";
     
-    const cleanBase = baseUrl.replace(/\/+$/, "");
-    const urlFinal = `${cleanBase}${prefixo}?dt_inicial=${dtInicial}&dt_final=${dtFinal}`;
+    const urlFinal = `${sanitizedBase}${prefixo}?dt_inicial=${dtInicial}&dt_final=${dtFinal}`;
 
     const inicio = performance.now();
     let response: Response;
