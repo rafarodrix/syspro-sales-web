@@ -141,14 +141,31 @@ interface PainelComoLerProps {
 
 export function PainelComoLer({ relatorioId }: PainelComoLerProps) {
   const guia = GUIAS_RELATORIOS[relatorioId];
-  const [aberto, setAberto] = useState(true);
+  const [aberto, setAberto] = useState(false);
   if (!guia) return null;
+
+  if (!aberto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        title="Como ler este relatório"
+        aria-label="Abrir explicação do relatório"
+        className="group mb-3 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+      >
+        <span className="flex size-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+          ?
+        </span>
+        Como ler este relatório
+      </button>
+    );
+  }
 
   return (
     <div className="mb-4 rounded-lg border border-primary/20 bg-primary/[0.04]">
       <button
         type="button"
-        onClick={() => setAberto((v) => !v)}
+        onClick={() => setAberto(false)}
         className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left"
       >
         <span className="flex items-center gap-1.5">
@@ -157,35 +174,32 @@ export function PainelComoLer({ relatorioId }: PainelComoLerProps) {
             Como ler este relatório
           </span>
         </span>
-        <ChevronDown
-          className={`size-3.5 text-muted-foreground transition-transform ${
-            aberto ? "" : "-rotate-90"
-          }`}
-        />
+        <span className="flex items-center gap-1.5">
+          <span className="text-[10px] font-medium text-muted-foreground">fechar</span>
+          <ChevronDown className="size-3.5 text-muted-foreground transition-transform" />
+        </span>
       </button>
-      {aberto ? (
-        <div className="px-3.5 pb-3.5">
-          <div className="flex items-start gap-2.5">
-            <div className="min-w-0 flex-1 space-y-2">
-              <p className="text-xs leading-relaxed text-muted-foreground">{guia.resumo}</p>
-              <ul className="space-y-1">
-                {guia.comoLer.map((item, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
-                    <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-primary/60" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              {guia.dica ? (
-                <div className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                  <span className="font-bold">💡 Dica:</span>
-                  <span>{guia.dica}</span>
-                </div>
-              ) : null}
-            </div>
+      <div className="px-3.5 pb-3.5">
+        <div className="flex items-start gap-2.5">
+          <div className="min-w-0 flex-1 space-y-2">
+            <p className="text-xs leading-relaxed text-muted-foreground">{guia.resumo}</p>
+            <ul className="space-y-1">
+              {guia.comoLer.map((item, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                  <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-primary/60" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            {guia.dica ? (
+              <div className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+                <span className="font-bold">💡 Dica:</span>
+                <span>{guia.dica}</span>
+              </div>
+            ) : null}
           </div>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }
