@@ -15,6 +15,15 @@ import {
   Building2,
   User as UserIcon,
   LogOut,
+  ChevronDown,
+  Sparkles,
+  UserCheck,
+  Percent,
+  CalendarDays,
+  Layers,
+  MapPin,
+  CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -41,6 +50,8 @@ export function NavMobile({
   empresaSelecionada,
 }: Props) {
   const [aberto, setAberto] = useState(false);
+  const [relatoriosAberto, setRelatoriosAberto] = useState(false);
+  const [adminAberto, setAdminAberto] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -130,49 +141,151 @@ export function NavMobile({
               Vendas
             </Link>
 
+            {/* Submenu Relatórios Mobile */}
             {isGerenteOuAdmin && (
-              <Link
-                href="/relatorios"
-                onClick={() => setAberto(false)}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors ${
-                  isRelatorios
-                    ? "bg-primary/10 font-bold text-primary"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                }`}
-              >
-                <BarChart3 className="size-4" />
-                Relatórios
-              </Link>
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => setRelatoriosAberto(!relatoriosAberto)}
+                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    isRelatorios
+                      ? "bg-primary/10 font-bold text-primary"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <BarChart3 className="size-4" />
+                    <span>Relatórios</span>
+                  </div>
+                  <ChevronDown
+                    className={`size-4 transition-transform ${
+                      relatoriosAberto || isRelatorios ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {(relatoriosAberto || isRelatorios) && (
+                  <div className="ml-4 mt-1 flex flex-col gap-1 border-l-2 border-primary/30 pl-3 py-1 text-xs">
+                    <Link
+                      href="/relatorios"
+                      onClick={() => setAberto(false)}
+                      className="font-bold text-primary py-1"
+                    >
+                      Todos os Relatórios →
+                    </Link>
+                    <Link
+                      href="/relatorios?aba=curva-abc"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Sparkles className="size-3.5 text-amber-500" />
+                      Curva ABC (Produtos)
+                    </Link>
+                    <Link
+                      href="/relatorios?aba=clientes"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <UserCheck className="size-3.5 text-emerald-500" />
+                      Clientes & Concentração
+                    </Link>
+                    <Link
+                      href="/relatorios?aba=descontos"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Percent className="size-3.5 text-rose-500" />
+                      Descontos & Margem
+                    </Link>
+                    <Link
+                      href="/relatorios?aba=sazonalidade"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <CalendarDays className="size-3.5 text-indigo-500" />
+                      Sazonalidade & Dias
+                    </Link>
+                    <Link
+                      href="/relatorios?aba=departamentos"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Layers className="size-3.5" />
+                      Departamentos
+                    </Link>
+                    <Link
+                      href="/relatorios?aba=vendedores"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Users className="size-3.5" />
+                      Equipe de Vendedores
+                    </Link>
+                    <Link
+                      href="/relatorios?aba=geografico"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <MapPin className="size-3.5" />
+                      Cidades / Praças
+                    </Link>
+                    <Link
+                      href="/relatorios?aba=financeiro"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <CreditCard className="size-3.5" />
+                      Financeiro & Fiscal
+                    </Link>
+                  </div>
+                )}
+              </div>
             )}
 
+            {/* Submenu Administração Mobile */}
             {isAdmin && (
-              <>
-                <Link
-                  href="/usuarios"
-                  onClick={() => setAberto(false)}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors ${
-                    isUsuarios
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => setAdminAberto(!adminAberto)}
+                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    isUsuarios || isConfig
                       ? "bg-primary/10 font-bold text-primary"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   }`}
                 >
-                  <Users className="size-4" />
-                  Usuários
-                </Link>
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="size-4" />
+                    <span>Administração</span>
+                  </div>
+                  <ChevronDown
+                    className={`size-4 transition-transform ${
+                      adminAberto || isUsuarios || isConfig ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
 
-                <Link
-                  href="/configuracoes"
-                  onClick={() => setAberto(false)}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors ${
-                    isConfig
-                      ? "bg-primary/10 font-bold text-primary"
-                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                  }`}
-                >
-                  <Settings className="size-4" />
-                  Configurações
-                </Link>
-              </>
+                {(adminAberto || isUsuarios || isConfig) && (
+                  <div className="ml-4 mt-1 flex flex-col gap-1 border-l-2 border-primary/30 pl-3 py-1 text-xs">
+                    <Link
+                      href="/usuarios"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Users className="size-3.5" />
+                      Usuários & Permissões
+                    </Link>
+                    <Link
+                      href="/configuracoes"
+                      onClick={() => setAberto(false)}
+                      className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Settings className="size-3.5" />
+                      Configurações da API
+                    </Link>
+                  </div>
+                )}
+              </div>
             )}
 
             <Link

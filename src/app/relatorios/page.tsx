@@ -8,10 +8,10 @@ import { dataInputParaSyspro, dataParaInput } from "@/lib/vendas";
 export default async function RelatoriosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ empresa?: string }>;
+  searchParams: Promise<{ empresa?: string; aba?: string }>;
 }) {
   const { empresas } = await requireAuth("gerente");
-  const { empresa: empresaId } = await searchParams;
+  const { empresa: empresaId, aba: abaParam } = await searchParams;
   const empresa = empresas.find((item) => item.id === empresaId) ?? empresas[0];
 
   const hoje = new Date();
@@ -51,13 +51,14 @@ export default async function RelatoriosPage({
       <NavApp empresaSelecionada={empresa?.id} />
       <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
         <RelatoriosView
-          key={empresa?.id ?? "sem-empresa"}
+          key={`${empresa?.id ?? "sem-empresa"}-${abaParam ?? "default"}`}
           empresas={empresas.map((e) => ({
             id: e.id,
             cnpj: e.cnpj,
             razaoSocial: e.razaoSocial,
           }))}
           empresaInicial={empresa?.id}
+          abaInicial={abaParam}
           initialPeriod={periodo}
           initialVendas={vendas}
           initialError={erroInicial}

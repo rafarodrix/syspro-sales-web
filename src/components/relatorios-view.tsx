@@ -71,6 +71,7 @@ interface EmpresaOption {
 interface Props {
   empresas: EmpresaOption[];
   empresaInicial?: string;
+  abaInicial?: string;
   initialPeriod?: Periodo;
   initialVendas?: VendaProduto[];
   initialError?: string;
@@ -79,6 +80,7 @@ interface Props {
 export function RelatoriosView({
   empresas,
   empresaInicial,
+  abaInicial,
   initialPeriod,
   initialVendas = [],
   initialError,
@@ -94,7 +96,7 @@ export function RelatoriosView({
   const [loading, setLoading] = useState(false);
   const [vendas, setVendas] = useState<VendaProduto[]>(initialVendas);
   const [erro, setErro] = useState<string | null>(initialError ?? null);
-  const [abaAtiva, setAbaAtiva] = useState("curva-abc");
+  const [abaAtiva, setAbaAtiva] = useState(abaInicial || "curva-abc");
 
   // Filtros internos
   const [busca, setBusca] = useState("");
