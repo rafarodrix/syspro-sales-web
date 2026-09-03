@@ -14,6 +14,9 @@ export default async function RelatoriosPage({
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
+  if (session.user.role === "vendas" || session.user.role === "user") {
+    redirect("/dashboard");
+  }
 
   const { empresa: empresaId } = await searchParams;
   const isAdmin = session.user.role === "admin";

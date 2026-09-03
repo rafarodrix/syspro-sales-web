@@ -8,11 +8,12 @@ import {
   UserPlus,
   Search,
   Shield,
-  ShieldAlert,
-  Building,
+  Briefcase,
+  UserCheck,
   X,
   Plus,
-  CheckCircle2,
+  Trash2,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
 interface UsuarioRow {
@@ -59,7 +68,9 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"admin" | "gerente" | "vendas">("vendas");
   const [criando, setCriando] = useState(false);
+  const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<UsuarioRow | null>(null);
 
   async function criarUsuario() {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -70,7 +81,12 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
     const res = await fetch("/api/usuarios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), password: password.trim() }),
+      body: JSON.stringify({
+        name: name.trim(),
+        email: email.trim(),
+        password: password.trim(),
+        role,
+      }),
     });
     setCriando(false);
     const json = await res.json().catch(() => ({}));
@@ -78,10 +94,41 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
       toast.error(json.error ?? "Erro ao criar usuário");
       return;
     }
-    toast.success("Usuário criado com sucesso");
+    toast.success("Usuário criado com sucesso!");
     setName("");
     setEmail("");
     setPassword("");
+    setRole("vendas");
+    router.refresh();
+  }
+
+  async function alterarRole(userId: string, novaRole: string) {
+    const res = await fetch("/api/usuarios", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: userId, role: novaRole }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast.error(json.error ?? "Erro ao alterar perfil do usuário");
+      return;
+    }
+    toast.success("Perfil de acesso atualizado");
+    router.refresh();
+  }
+
+  async function confirmarExclusao() {
+    if (!usuarioParaExcluir) return;
+    const res = await fetch(`/api/usuarios?id=${usuarioParaExcluir.id}`, {
+      method: "DELETE",
+    });
+    const json = await res.json().catch(() => ({}));
+    setUsuarioParaExcluir(null);
+    if (!res.ok) {
+      toast.error(json.error ?? "Erro ao excluir usuário");
+      return;
+    }
+    toast.success("Usuário excluído com sucesso");
     router.refresh();
   }
 
@@ -122,6 +169,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
       (u) =>
         u.name.toLowerCase().includes(termo) ||
         u.email.toLowerCase().includes(termo) ||
+        u.role.toLowerCase().includes(termo) ||
         u.empresas.some((e) =>
           e.razaoSocial.toLowerCase().includes(termo) || e.cnpj.includes(termo)
         ),
@@ -135,14 +183,14 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <UserPlus className="size-5 text-primary" />
-            <CardTitle className="text-lg font-bold">Novo Usuário</CardTitle>
+            <CardTitle className="text-lg font-bold">Cadastrar Novo Usuário</CardTitle>
           </div>
           <CardDescription className="text-xs">
-            Crie novos usuários para acesso ao portal. Cada usuário visualiza somente as empresas liberadas abaixo.
+            Crie novos usuários atribuindo o perfil correspondente (Administrador, Gerência ou Vendas).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <Label htmlFor="nome" className="text-xs font-semibold">
                 Nome Completo
@@ -177,9 +225,22 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Mínimo 6 caracteres"
                 className="text-xs"
               />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Perfil de Acesso</Label>
+              <Select value={role} onValueChange={(v) => setRole(v as any)}>
+                <SelectTrigger className="text-xs font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vendas">💼 Vendas (Dashboard & Vendas)</SelectItem>
+                  <SelectItem value="gerente">👔 Gerência (+ Relatórios)</SelectItem>
+                  <SelectItem value="admin">👑 Administrador (Acesso Total)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <Button
@@ -188,12 +249,12 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
             className="font-semibold gap-1.5 shadow-xs"
           >
             <Plus className="size-4" />
-            {criando ? "Criando usuário..." : "Criar Usuário"}
+            {criando ? "Criando usuário..." : "Cadastrar Usuário"}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Lista e Gestão de Usuários */}
+      {/* Tabela de Usuários */}
       <Card className="border-border/60 shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -205,7 +266,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                 </CardTitle>
               </div>
               <CardDescription className="text-xs">
-                {usuarios.length} usuário(s) cadastrado(s). Gerencie os CNPJs autorizados para cada conta.
+                {usuarios.length} usuário(s) cadastrado(s). Gerencie perfis e empresas liberadas.
               </CardDescription>
             </div>
 
@@ -213,7 +274,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Pesquisar por nome, e-mail..."
+                placeholder="Pesquisar por nome, e-mail, perfil..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 className="h-9 w-full rounded-md border bg-background pl-8 pr-8 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
@@ -235,21 +296,23 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
               <thead>
                 <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
                   <th className="p-3">Usuário</th>
-                  <th className="p-3">Perfil</th>
+                  <th className="p-3">Perfil de Acesso</th>
                   <th className="p-3">Empresas Liberadas</th>
-                  <th className="p-3 text-right">Liberar Acesso</th>
+                  <th className="p-3 text-right">Liberar Empresa</th>
+                  <th className="p-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {usuariosFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                    <td colSpan={5} className="p-6 text-center text-muted-foreground">
                       Nenhum usuário encontrado.
                     </td>
                   </tr>
                 ) : (
                   usuariosFiltrados.map((u) => {
                     const isAdmin = u.role === "admin";
+                    const isGerente = u.role === "gerente";
                     const empresasDisponiveis = empresas.filter(
                       (e) => !u.empresas.some((ue) => ue.empresaId === e.id),
                     );
@@ -266,17 +329,33 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                         </td>
 
                         <td className="p-3">
-                          <Badge
-                            variant={isAdmin ? "default" : "secondary"}
-                            className="gap-1 text-[11px] font-bold"
-                          >
-                            {isAdmin ? (
-                              <Shield className="size-3" />
-                            ) : (
-                              <Users className="size-3" />
-                            )}
-                            {isAdmin ? "Administrador" : "Usuário"}
-                          </Badge>
+                          <div className="w-36">
+                            <Select
+                              value={isAdmin ? "admin" : isGerente ? "gerente" : "vendas"}
+                              onValueChange={(novaRole) => alterarRole(u.id, novaRole)}
+                            >
+                              <SelectTrigger className="h-8 text-xs font-bold">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">
+                                  <span className="flex items-center gap-1 font-bold text-primary">
+                                    <Crown className="size-3" /> Admin
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="gerente">
+                                  <span className="flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400">
+                                    <Briefcase className="size-3" /> Gerência
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="vendas">
+                                  <span className="flex items-center gap-1 font-semibold text-foreground">
+                                    <UserCheck className="size-3" /> Vendas
+                                  </span>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </td>
 
                         <td className="p-3">
@@ -286,7 +365,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                             </span>
                           ) : u.empresas.length === 0 ? (
                             <span className="text-amber-600 dark:text-amber-400 font-medium">
-                              Nenhum CNPJ liberado (sem acesso).
+                              Nenhum CNPJ liberado (sem acesso a dados).
                             </span>
                           ) : (
                             <div className="flex flex-wrap gap-1.5">
@@ -313,7 +392,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                         <td className="p-3 text-right">
                           {!isAdmin && (
                             <div className="flex justify-end">
-                              <div className="w-48">
+                              <div className="w-44">
                                 <Select
                                   onValueChange={(empresaId) =>
                                     liberarEmpresa(u.id, empresaId)
@@ -325,7 +404,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                                   <SelectContent>
                                     {empresasDisponiveis.length === 0 ? (
                                       <div className="p-2 text-center text-xs text-muted-foreground">
-                                        Todas as empresas já liberadas
+                                        Todas as empresas liberadas
                                       </div>
                                     ) : (
                                       empresasDisponiveis.map((e) => (
@@ -340,6 +419,18 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                             </div>
                           )}
                         </td>
+
+                        <td className="p-3 text-right">
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => setUsuarioParaExcluir(u)}
+                            className="text-destructive hover:bg-destructive/10"
+                            title="Excluir usuário"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </td>
                       </tr>
                     );
                   })
@@ -349,6 +440,37 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Diálogo de Confirmação de Exclusão */}
+      <Dialog
+        open={Boolean(usuarioParaExcluir)}
+        onOpenChange={(open) => !open && setUsuarioParaExcluir(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão de Usuário</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o usuário{" "}
+              <strong>{usuarioParaExcluir?.name}</strong> ({usuarioParaExcluir?.email})?
+              Esta ação revogará todo o acesso dele ao sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setUsuarioParaExcluir(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmarExclusao}
+            >
+              Excluir Usuário
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

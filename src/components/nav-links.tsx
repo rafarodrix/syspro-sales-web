@@ -11,8 +11,11 @@ import {
   SettingsIcon,
 } from "lucide-react";
 
-export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
+export function NavLinks({ userRole = "vendas" }: { userRole?: string }) {
   const pathname = usePathname();
+
+  const isAdmin = userRole === "admin";
+  const isGerenteOuAdmin = userRole === "admin" || userRole === "gerente";
 
   const isDashboard = pathname.startsWith("/dashboard") || pathname === "/";
   const isVendas = pathname.startsWith("/vendas");
@@ -52,20 +55,22 @@ export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
         )}
       </Link>
 
-      <Link
-        href="/relatorios"
-        className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
-          isRelatorios
-            ? "text-primary font-bold"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-      >
-        <BarChart3Icon className="size-4" />
-        Relatórios
-        {isRelatorios && (
-          <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-primary" />
-        )}
-      </Link>
+      {isGerenteOuAdmin && (
+        <Link
+          href="/relatorios"
+          className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
+            isRelatorios
+              ? "text-primary font-bold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <BarChart3Icon className="size-4" />
+          Relatórios
+          {isRelatorios && (
+            <span className="absolute bottom-[-10px] left-0 right-0 h-0.5 rounded-full bg-primary" />
+          )}
+        </Link>
+      )}
 
       <Link
         href="https://ajuda.trilinksoftware.com.br/"

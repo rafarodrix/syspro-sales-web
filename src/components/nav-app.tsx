@@ -56,7 +56,7 @@ export async function NavApp({
             </div>
           </Link>
 
-          <NavLinks isAdmin={isAdmin} />
+          <NavLinks userRole={session.user.role ?? "vendas"} />
         </div>
 
         <div className="flex items-center gap-3">
@@ -82,7 +82,7 @@ export async function NavApp({
           </div>
 
           <NavMobile
-            isAdmin={isAdmin}
+            userRole={session.user.role ?? "vendas"}
             userName={session.user.name}
             empresas={empresas}
             empresaSelecionada={empresaSelecionada}

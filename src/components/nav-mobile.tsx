@@ -28,14 +28,14 @@ interface EmpresaOption {
 }
 
 interface Props {
-  isAdmin: boolean;
+  userRole?: string;
   userName: string;
   empresas: EmpresaOption[];
   empresaSelecionada?: string;
 }
 
 export function NavMobile({
-  isAdmin,
+  userRole = "vendas",
   userName,
   empresas,
   empresaSelecionada,
@@ -44,8 +44,12 @@ export function NavMobile({
   const pathname = usePathname();
   const router = useRouter();
 
+  const isAdmin = userRole === "admin";
+  const isGerenteOuAdmin = userRole === "admin" || userRole === "gerente";
+
   const isDashboard = pathname.startsWith("/dashboard") || pathname === "/";
   const isVendas = pathname.startsWith("/vendas");
+  const isRelatorios = pathname.startsWith("/relatorios");
   const isUsuarios = pathname.startsWith("/usuarios");
   const isConfig = pathname.startsWith("/configuracoes");
 
@@ -126,18 +130,20 @@ export function NavMobile({
               Vendas
             </Link>
 
-            <Link
-              href="/relatorios"
-              onClick={() => setAberto(false)}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors ${
-                pathname.startsWith("/relatorios")
-                  ? "bg-primary/10 font-bold text-primary"
-                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-              }`}
-            >
-              <BarChart3 className="size-4" />
-              Relatórios
-            </Link>
+            {isGerenteOuAdmin && (
+              <Link
+                href="/relatorios"
+                onClick={() => setAberto(false)}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors ${
+                  isRelatorios
+                    ? "bg-primary/10 font-bold text-primary"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }`}
+              >
+                <BarChart3 className="size-4" />
+                Relatórios
+              </Link>
+            )}
 
             {isAdmin && (
               <>
