@@ -159,7 +159,7 @@ export function DashboardView({
     [metrica, vendas, vendasAnteriores, compararPeriodoAnterior],
   );
 
-  const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 6), [vendas]);
+  const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
   const destaques = useMemo(() => calcularDestaques(vendas, resumo), [vendas, resumo]);
 
   const periodoAnteriorCalculado = useMemo(
@@ -238,7 +238,7 @@ export function DashboardView({
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Header Executivo de BI */}
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2.5">
@@ -586,29 +586,31 @@ export function DashboardView({
       </section>
 
       {/* Linha de Rankings e Top Produtos com Drill-Down Clicável */}
-      <section className="grid gap-6 lg:grid-cols-12">
+      <section className="grid gap-4 lg:grid-cols-12">
         {/* Top Produtos */}
-        <Card className="border-border/60 shadow-xs lg:col-span-6">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-bold text-foreground">
-                Top Produtos por Faturamento
-              </CardTitle>
-              <Badge variant="secondary" className="text-[10px]">
-                Mais representativos
-              </Badge>
-            </div>
-            <CardDescription className="text-xs">
-              Produtos com maior volume financeiro vendido no período.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <GraficoProdutos dados={topProdutos} empresaId={empresaId} />
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-6 flex flex-col">
+          <Card className="border-border/60 shadow-xs h-full flex flex-col justify-between">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-bold text-foreground">
+                  Top Produtos por Faturamento
+                </CardTitle>
+                <Badge variant="secondary" className="text-[10px]">
+                  Mais representativos
+                </Badge>
+              </div>
+              <CardDescription className="text-xs">
+                Produtos com maior volume financeiro vendido no período.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GraficoProdutos dados={topProdutos} empresaId={empresaId} />
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Departamentos */}
-        <div className="lg:col-span-6">
+        <div className="lg:col-span-6 flex flex-col">
           <RankingCard
             descricao="Participação de cada departamento no faturamento."
             itens={resumo.porDepartamento}
@@ -619,7 +621,7 @@ export function DashboardView({
         </div>
 
         {/* Vendedores */}
-        <div className="lg:col-span-6">
+        <div className="lg:col-span-6 flex flex-col">
           <RankingCard
             descricao="Faturamento faturado por vendedor responsável."
             itens={resumo.porVendedor}
@@ -630,7 +632,7 @@ export function DashboardView({
         </div>
 
         {/* Formas de Pagamento (Pie / Donut Chart Bklit Style) */}
-        <div className="lg:col-span-6">
+        <div className="lg:col-span-6 flex flex-col">
           <PieChartCard
             descricao="Distribuição dos recebimentos declarados nas notas."
             itens={resumo.porFormaPagamento}

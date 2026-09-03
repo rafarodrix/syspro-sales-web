@@ -132,7 +132,7 @@ export function PieChartCard({
       : null;
 
   return (
-    <Card className="border-border/60 shadow-xs transition-all hover:shadow-md dark:border-border/40 flex flex-col justify-between">
+    <Card className="border-border/60 shadow-xs transition-all hover:shadow-md dark:border-border/40 flex flex-col justify-between h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -154,12 +154,12 @@ export function PieChartCard({
             Sem dados de pagamento no período.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-12 sm:items-center">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-12 sm:items-center">
             {/* Gráfico Donut Interativo (Bklit Style) */}
             <div className="relative flex items-center justify-center sm:col-span-6">
               <svg
                 viewBox="0 0 200 200"
-                className="size-48 sm:size-52 overflow-visible select-none transition-transform"
+                className="size-40 sm:size-44 overflow-visible select-none transition-transform"
               >
                 {fatias.map((fatia, index) => {
                   const isHovered = hoveredIndex === index;

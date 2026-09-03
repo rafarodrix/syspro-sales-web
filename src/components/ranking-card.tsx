@@ -38,7 +38,7 @@ export function RankingCard({
   const isDepto = drilldownParam === "departamento";
 
   return (
-    <Card className="border-border/60 shadow-xs transition-all hover:shadow-md dark:border-border/40 flex flex-col justify-between">
+    <Card className="border-border/60 shadow-xs transition-all hover:shadow-md dark:border-border/40 flex flex-col justify-between h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
