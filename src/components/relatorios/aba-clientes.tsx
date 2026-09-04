@@ -12,6 +12,7 @@ import type {
 import { DataBarPercent } from "./data-bar-percent";
 import { TablePagination } from "@/components/table-pagination";
 import { TermoExplicado } from "@/components/relatorio-guia";
+import { MetricaCard } from "@/components/metrica-card";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 
 interface AbaClientesProps {
@@ -66,108 +67,68 @@ export function AbaClientes({
   return (
     <div className="space-y-4">
       {/* Cards Síntese de Clientes */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Total de Clientes"
-            definicao="Clientes distintos que compraram no período, incluindo consumidor de balcão."
-          />
-          <div className="mt-1 font-mono text-lg font-extrabold text-foreground">
-            {formatarNumero(relatorioClientes.totalClientes, 0)}
-          </div>
-          <span className="text-[11px] text-muted-foreground">
-            Ticket médio: {formatarMoeda(relatorioClientes.ticketMedioPorCliente)}
-          </span>
-        </div>
-
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Clientes Recorrentes"
-            definicao="% dos clientes cadastrados que compraram 2x ou mais dentro do próprio período."
-          />
-          <div className="mt-1 font-mono text-lg font-extrabold text-primary">
-            {formatarPercentual(relatorioClientes.taxaRecorrencia, 1)}
-          </div>
-          <span className="text-[11px] text-muted-foreground">
-            {relatorioClientes.clientesRecorrentes} compraram 2x ou mais
-          </span>
-        </div>
-
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Concentração Top 5"
-            definicao="% do faturamento concentrado nos 5 maiores clientes. Alto = risco de dependência."
-          />
-          <div className="mt-1 font-mono text-lg font-extrabold text-foreground">
-            {formatarPercentual(relatorioClientes.concentracaoTop5, 1)}
-          </div>
-          <span className="text-[11px] text-muted-foreground">
-            dos 5 maiores compradores
-          </span>
-        </div>
-
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Concentração Top 10"
-            definicao="% do faturamento concentrado nos 10 maiores clientes."
-          />
-          <div className="mt-1 font-mono text-lg font-extrabold text-foreground">
-            {formatarPercentual(relatorioClientes.concentracaoTop10, 1)}
-          </div>
-          <span className="text-[11px] text-muted-foreground">
-            dos 10 maiores compradores
-          </span>
-        </div>
-
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Concentração Top 20"
-            definicao="% do faturamento concentrado nos 20 maiores clientes. Quanto mais perto de 100%, mais a receita depende de poucos clientes."
-          />
-          <div className="mt-1 font-mono text-lg font-extrabold text-foreground">
-            {formatarPercentual(concentracaoTop20?.percentualTop ?? 0, 1)}
-          </div>
-          <span className="text-[11px] text-muted-foreground">
-            dos 20 maiores compradores
-          </span>
-        </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricaCard
+          rotulo="Total de Clientes"
+          definicao="Clientes distintos que compraram no período, incluindo consumidor de balcão."
+          valor={formatarNumero(relatorioClientes.totalClientes, 0)}
+          rodape={`Ticket médio: ${formatarMoeda(relatorioClientes.ticketMedioPorCliente)}`}
+        />
+        <MetricaCard
+          rotulo="Clientes Recorrentes"
+          definicao="% dos clientes cadastrados que compraram 2x ou mais dentro do próprio período."
+          valor={formatarPercentual(relatorioClientes.taxaRecorrencia, 1)}
+          destaque="primario"
+          rodape={`${relatorioClientes.clientesRecorrentes} compraram 2x ou mais`}
+        />
+        <MetricaCard
+          rotulo="Concentração Top 5"
+          definicao="% do faturamento concentrado nos 5 maiores clientes. Alto = risco de dependência."
+          valor={formatarPercentual(relatorioClientes.concentracaoTop5, 1)}
+          rodape="dos 5 maiores compradores"
+        />
+        <MetricaCard
+          rotulo="Concentração Top 10"
+          definicao="% do faturamento concentrado nos 10 maiores clientes."
+          valor={formatarPercentual(relatorioClientes.concentracaoTop10, 1)}
+          rodape="dos 10 maiores compradores"
+        />
+        <MetricaCard
+          rotulo="Concentração Top 20"
+          definicao="% do faturamento concentrado nos 20 maiores clientes. Quanto mais perto de 100%, mais a receita depende de poucos clientes."
+          valor={formatarPercentual(concentracaoTop20?.percentualTop ?? 0, 1)}
+          rodape="dos 20 maiores compradores"
+        />
       </div>
 
       {/* Gestão da base: frequência e novos vs. recorrentes */}
-      <div className={`grid gap-3 ${temPeriodoAnterior ? "sm:grid-cols-2" : ""}`}>
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <TermoExplicado
-              termo="Frequência média de compra"
-              definicao="Total de pedidos/NF do período ÷ clientes cadastrados ativos (exclui consumidor de balcão). Mede quantas vezes, em média, cada cliente compra no período."
-            />
-            <span className="font-mono text-2xl font-extrabold text-foreground">
-              {formatarNumero(frequenciaMediaPedidosPorCliente ?? 0, 1)}
-            </span>
-          </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            pedidos por cliente ativo
-            {typeof pedidosNoPeriodo === "number" && ` · ${formatarNumero(pedidosNoPeriodo, 0)} pedidos no total`}
-          </p>
-        </div>
+      <div className={`grid grid-cols-1 gap-3 ${temPeriodoAnterior ? "sm:grid-cols-2" : ""}`}>
+        <MetricaCard
+          rotulo="Frequência média de compra"
+          definicao="Total de pedidos/NF do período ÷ clientes cadastrados ativos (exclui consumidor de balcão). Mede quantas vezes, em média, cada cliente compra no período."
+          valor={formatarNumero(frequenciaMediaPedidosPorCliente ?? 0, 1)}
+          rodape={
+            <>
+              pedidos por cliente ativo
+              {typeof pedidosNoPeriodo === "number" && ` · ${formatarNumero(pedidosNoPeriodo, 0)} pedidos no total`}
+            </>
+          }
+        />
 
         {temPeriodoAnterior ? (
-          <div className="rounded-lg border bg-muted/20 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <TermoExplicado
-                termo="Novos vs. Recorrentes"
-                definicao="Clientes que compraram agora e já compravam no período anterior (recorrentes) vs. os que compraram pela primeira vez (novos). Consumidor de balcão fica fora."
-              />
-              <span className="font-mono text-2xl font-extrabold text-primary">
-                {formatarPercentual(novosRecorrentes.percentualReceitaRecorrentes, 0)}
-              </span>
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              da receita de clientes cadastrados vem de <strong>recorrentes</strong> —{" "}
-              {formatarNumero(novosRecorrentes.recorrentes, 0)} clientes ({formatarMoeda(novosRecorrentes.receitaRecorrentes)}) vs.{" "}
-              {formatarNumero(novosRecorrentes.novos, 0)} novos ({formatarMoeda(novosRecorrentes.receitaNovos)})
-            </p>
-          </div>
+          <MetricaCard
+            rotulo="Novos vs. Recorrentes"
+            definicao="Clientes que compraram agora e já compravam no período anterior (recorrentes) vs. os que compraram pela primeira vez (novos). Consumidor de balcão fica fora."
+            valor={formatarPercentual(novosRecorrentes.percentualReceitaRecorrentes, 0)}
+            destaque="primario"
+            rodape={
+              <>
+                da receita de clientes cadastrados vem de <strong>recorrentes</strong> —{" "}
+                {formatarNumero(novosRecorrentes.recorrentes, 0)} clientes ({formatarMoeda(novosRecorrentes.receitaRecorrentes)}) vs.{" "}
+                {formatarNumero(novosRecorrentes.novos, 0)} novos ({formatarMoeda(novosRecorrentes.receitaNovos)})
+              </>
+            }
+          />
         ) : null}
       </div>
 

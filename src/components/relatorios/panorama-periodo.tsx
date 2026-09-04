@@ -1,9 +1,9 @@
 "use client";
 
-import { TrendingUp, TrendingDown, Minus, ArrowLeftRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ArrowLeftRight, DollarSign, FileText, Receipt, Users } from "lucide-react";
 import type { VariacoesPeriodoVendas, VariacaoMetrica } from "@/lib/vendas";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
-import { TermoExplicado } from "@/components/relatorio-guia";
+import { MetricaCard } from "@/components/metrica-card";
 
 interface PanoramaPeriodoProps {
   variacoes: VariacoesPeriodoVendas;
@@ -55,50 +55,40 @@ export function PanoramaPeriodo({ variacoes, rotuloPeriodoAnterior }: PanoramaPe
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Faturamento"
-            definicao="Valor final de todas as vendas do período, com descontos abatidos e frete/seguro/outros somados."
-          />
-          <div className="mt-1.5 font-mono text-lg font-extrabold text-foreground">
-            {formatarMoeda(variacoes.faturamento.atual)}
-          </div>
-          <div className="mt-1">{semComparativo ? null : <BadgeVariacao variacao={variacoes.faturamento} />}</div>
-        </div>
-
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Pedidos / NF"
-            definicao="Quantidade de notas fiscais emitidas no período — cada documento conta como uma venda."
-          />
-          <div className="mt-1.5 font-mono text-lg font-extrabold text-foreground">
-            {formatarNumero(variacoes.notas.atual, 0)}
-          </div>
-          <div className="mt-1">{semComparativo ? null : <BadgeVariacao variacao={variacoes.notas} />}</div>
-        </div>
-
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Ticket médio"
-            definicao="Faturamento do período ÷ número de notas. Mede o valor médio de cada venda."
-          />
-          <div className="mt-1.5 font-mono text-lg font-extrabold text-foreground">
-            {formatarMoeda(variacoes.ticketMedio.atual)}
-          </div>
-          <div className="mt-1">{semComparativo ? null : <BadgeVariacao variacao={variacoes.ticketMedio} />}</div>
-        </div>
-
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <TermoExplicado
-            termo="Clientes ativos"
-            definicao="Número de clientes distintos que compraram no período (inclui consumidor de balcão)."
-          />
-          <div className="mt-1.5 font-mono text-lg font-extrabold text-foreground">
-            {formatarNumero(variacoes.clientes.atual, 0)}
-          </div>
-          <div className="mt-1">{semComparativo ? null : <BadgeVariacao variacao={variacoes.clientes} />}</div>
-        </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricaCard
+          rotulo="Faturamento"
+          definicao="Valor final de todas as vendas do período, com descontos abatidos e frete/seguro/outros somados."
+          valor={formatarMoeda(variacoes.faturamento.atual)}
+          icone={DollarSign}
+          destaque="primario"
+          suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.faturamento} />}
+          rodape={semComparativo ? null : `antes: ${formatarMoeda(variacoes.faturamento.anterior)}`}
+        />
+        <MetricaCard
+          rotulo="Pedidos / NF"
+          definicao="Quantidade de notas fiscais emitidas no período — cada documento conta como uma venda."
+          valor={formatarNumero(variacoes.notas.atual, 0)}
+          icone={Receipt}
+          suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.notas} />}
+          rodape={semComparativo ? null : `antes: ${formatarNumero(variacoes.notas.anterior, 0)}`}
+        />
+        <MetricaCard
+          rotulo="Ticket médio"
+          definicao="Faturamento do período ÷ número de notas. Mede o valor médio de cada venda."
+          valor={formatarMoeda(variacoes.ticketMedio.atual)}
+          icone={FileText}
+          suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.ticketMedio} />}
+          rodape={semComparativo ? null : `antes: ${formatarMoeda(variacoes.ticketMedio.anterior)}`}
+        />
+        <MetricaCard
+          rotulo="Clientes ativos"
+          definicao="Número de clientes distintos que compraram no período (inclui consumidor de balcão)."
+          valor={formatarNumero(variacoes.clientes.atual, 0)}
+          icone={Users}
+          suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.clientes} />}
+          rodape={semComparativo ? null : `antes: ${formatarNumero(variacoes.clientes.anterior, 0)}`}
+        />
       </div>
     </div>
   );

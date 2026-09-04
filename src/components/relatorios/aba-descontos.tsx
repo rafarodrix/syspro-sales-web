@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
+import { MetricaCard } from "@/components/metrica-card";
 
 interface AbaDescontosProps {
   relatorioDescontos: {
@@ -17,38 +18,25 @@ export function AbaDescontos({ relatorioDescontos }: AbaDescontosProps) {
   return (
     <div className="space-y-6">
       {/* Síntese de Descontos */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-lg border bg-muted/20 p-3.5">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Faturamento Bruto
-          </span>
-          <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-            {formatarMoeda(relatorioDescontos.faturamentoBruto)}
-          </div>
-          <span className="text-[11px] text-muted-foreground">Valor de tabela dos itens</span>
-        </div>
-
-        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5">
-          <span className="text-[11px] font-semibold text-rose-800 dark:text-rose-300 uppercase tracking-wider">
-            Total de Descontos Concedidos
-          </span>
-          <div className="mt-1 font-mono font-extrabold text-lg text-rose-950 dark:text-rose-200">
-            {formatarMoeda(relatorioDescontos.descontoTotal)}
-          </div>
-          <span className="text-[11px] text-rose-700/80 dark:text-rose-400">
-            Taxa global: {formatarPercentual(relatorioDescontos.taxaDescontoGlobal, 2)}
-          </span>
-        </div>
-
-        <div className="rounded-lg border bg-muted/20 p-3.5">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Faturamento Líquido
-          </span>
-          <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-            {formatarMoeda(relatorioDescontos.faturamentoLiquido)}
-          </div>
-          <span className="text-[11px] text-muted-foreground">Efetivamente faturado</span>
-        </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <MetricaCard
+          rotulo="Faturamento bruto"
+          definicao="Soma do valor de tabela dos itens antes dos descontos."
+          valor={formatarMoeda(relatorioDescontos.faturamentoBruto)}
+        />
+        <MetricaCard
+          rotulo="Descontos concedidos"
+          definicao="Soma dos descontos registrados nos itens vendidos no período."
+          valor={formatarMoeda(relatorioDescontos.descontoTotal)}
+          destaque="negativo"
+          rodape={`Taxa global: ${formatarPercentual(relatorioDescontos.taxaDescontoGlobal, 2)}`}
+        />
+        <MetricaCard
+          rotulo="Faturamento líquido"
+          definicao="Faturamento bruto menos descontos concedidos — valor efetivamente faturado."
+          valor={formatarMoeda(relatorioDescontos.faturamentoLiquido)}
+          destaque="primario"
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

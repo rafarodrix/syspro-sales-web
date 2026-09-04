@@ -228,7 +228,7 @@ export function NavMobile({
                       className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
                     >
                       <MapPin className="size-3.5" />
-                      Cidades / Praças
+                      Cidade e UF
                     </Link>
                     <Link
                       href="/relatorios?aba=financeiro"

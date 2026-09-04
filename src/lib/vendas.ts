@@ -1627,3 +1627,57 @@ export function maioresCrescimentosProdutos(
     .sort((a, b) => b.variacao.diferenca - a.variacao.diferenca)
     .slice(0, limite);
 }
+
+// ==========================================
+// Distribuição geográfica por UF
+// ==========================================
+
+export interface ItemUFVendas {
+  uf: string;
+  faturamento: number;
+  frete: number;
+  percentual: number;
+  pedidos: number;
+  clientes: number;
+  cidades: number;
+  ticketMedio: number;
+}
+
+/** Distribuição das vendas por UF — o mesmo dado de cidades, agregado por estado. */
+export function analiseUFs(vendas: VendaProduto[]): ItemUFVendas[] {
+  const porUf = new Map<
+    string,
+    { uf: string; faturamento: number; frete: number; notas: Set<string>; clientes: Set<string>; cidades: Set<string> }
+  >();
+  let faturamentoTotal = 0;
+
+  for (const venda of vendas) {
+    const total = valorItem(venda);
+    const uf = venda.cliente_uf?.trim().toUpperCase() || "—";
+    faturamentoTotal += total;
+
+    const atual = porUf.get(uf) ?? { uf, faturamento: 0, frete: 0, notas: new Set(), clientes: new Set(), cidades: new Set() };
+    atual.faturamento += total;
+    atual.frete += paraNumero(venda.produto_vlr_frete);
+    atual.notas.add(chaveDaNota(venda));
+    if (venda.cliente_nome?.trim()) atual.clientes.add(venda.cliente_nome.trim().toUpperCase());
+    if (venda.cliente_cidade?.trim()) atual.cidades.add(venda.cliente_cidade.trim());
+    porUf.set(uf, atual);
+  }
+
+  return [...porUf.values()]
+    .map((dados) => {
+      const pedidos = dados.notas.size;
+      return {
+        uf: dados.uf,
+        faturamento: dados.faturamento,
+        frete: dados.frete,
+        percentual: faturamentoTotal > 0 ? (dados.faturamento / faturamentoTotal) * 100 : 0,
+        pedidos,
+        clientes: dados.clientes.size,
+        cidades: dados.cidades.size,
+        ticketMedio: pedidos > 0 ? dados.faturamento / pedidos : 0,
+      };
+    })
+    .sort((a, b) => b.faturamento - a.faturamento);
+}

@@ -24,6 +24,7 @@ import {
   analiseDescontos,
   analiseSazonalidade,
   analiseGeografica,
+  analiseUFs,
   analiseFinanceira,
   analiseClientesNovosRecorrentes,
   agruparVendasPorNota,
@@ -95,9 +96,9 @@ const relatoriosOpcoes = [
   { id: "clientes", label: "Clientes", icone: UserCheck, cor: "text-emerald-500", desc: "Recorrência, concentração e Pareto da base de clientes" },
   { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500", desc: "Taxa de desconto por vendedor e por departamento" },
   { id: "sazonalidade", label: "Sazonalidade & Dias", icone: CalendarDays, cor: "text-indigo-500", desc: "Vendas por dia da semana e comparativo quinzenal" },
-  { id: "departamentos", label: "Departamentos & Mix", icone: Layers, cor: "text-blue-500", desc: "Faturamento por categoria com itens detalhados" },
+  { id: "departamentos", label: "Departamentos", icone: Layers, cor: "text-blue-500", desc: "Faturamento por categoria com itens detalhados" },
   { id: "vendedores", label: "Equipe de Vendedores", icone: Users, cor: "text-violet-500", desc: "Ranking de consultores, ticket médio e descontos" },
-  { id: "geografico", label: "Cidades & Praças", icone: MapPin, cor: "text-teal-500", desc: "Geolocalização, clientes atendidos e frete rateado" },
+  { id: "geografico", label: "Cidade e UF", icone: MapPin, cor: "text-teal-500", desc: "Distribuição por cidade ou UF, clientes atendidos e frete rateado" },
   { id: "financeiro", label: "Financeiro & Fiscal", icone: CreditCard, cor: "text-orange-500", desc: "Formas de pagamento, NF-e vs NFC-e e ICMS-ST" },
 ];
 
@@ -262,6 +263,11 @@ export function RelatoriosView({
   const relatorioGeografico = useMemo(() => {
     if (abaAtiva !== "geografico") return [];
     return analiseGeografica(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioUFs = useMemo(() => {
+    if (abaAtiva !== "geografico") return [];
+    return analiseUFs(vendas);
   }, [vendas, abaAtiva]);
 
   const relatorioFinanceiro = useMemo(() => {
@@ -824,6 +830,7 @@ export function RelatoriosView({
               {abaAtiva === "geografico" && (
                 <AbaGeografico
                   cidadesFiltradas={cidadesFiltradas}
+                  ufsFiltradas={relatorioUFs.filter((item) => !busca.trim() || item.uf.toLowerCase().includes(busca.toLowerCase().trim()))}
                   notasAgrupadas={notasAgrupadasRelatorio}
                 />
               )}
