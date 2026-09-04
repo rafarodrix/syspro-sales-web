@@ -39,7 +39,7 @@ interface CommandItem {
 const comandos: CommandItem[] = [
   { id: "dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard },
   { id: "vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart },
-  { id: "curva-abc", titulo: "Curva ABC (Produtos)", categoria: "Relatórios", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500" },
+  { id: "curva-abc", titulo: "Curva ABC", categoria: "Relatórios", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500" },
   { id: "clientes", titulo: "Clientes & Concentração", categoria: "Relatórios", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500" },
   { id: "descontos", titulo: "Descontos & Margem", categoria: "Relatórios", href: "/relatorios?aba=descontos", icone: Percent, cor: "text-rose-500" },
   { id: "sazonalidade", titulo: "Sazonalidade & Dias", categoria: "Relatórios", href: "/relatorios?aba=sazonalidade", icone: CalendarDays, cor: "text-indigo-500" },

@@ -12,6 +12,11 @@ export async function POST(request: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
+    const role = (session.user.role ?? "vendas").toLowerCase();
+    if (role !== "admin" && role !== "gerente" && role !== "gerencia") {
+      return NextResponse.json({ error: "Acesso ao Kardex restrito a Administrador e Gerência." }, { status: 403 });
+    }
+
     const rateCheck = checkRateLimit(`estoque:${session.user.id}`, 20, 60_000);
     if (!rateCheck.success) {
       return NextResponse.json({ error: "Limite de consultas de estoque excedido. Aguarde alguns instantes." }, { status: 429 });

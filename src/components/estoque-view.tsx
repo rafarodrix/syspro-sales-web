@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PackageSearch, Search } from "lucide-react";
+import { PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 import { resumirProdutosKardex, type MovimentoKardex } from "@/lib/kardex";
 import { dataInputParaSyspro } from "@/lib/vendas";
 import { formatarNumero } from "@/lib/formatters";
+import { DataFilterBar } from "@/components/data-filter-bar";
 import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/date-range-filter";
 import { TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -129,55 +129,42 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
 
       <Card className="border-border/60 shadow-sm">
         <CardHeader className="gap-3 pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-base">Kardex detalhado</CardTitle>
-              <CardDescription>{filtrados.length} movimento(s) no período.</CardDescription>
-            </div>
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-              <Input
-                value={busca}
-                onChange={(evento) => {
-                  setBusca(evento.target.value);
-                  setPagina(1);
-                }}
-                className="pl-8"
-                placeholder="Pesquisar produto, documento, participante..."
-              />
-            </div>
+          <div>
+            <CardTitle className="text-base font-bold text-foreground">Kardex detalhado</CardTitle>
+            <CardDescription className="text-xs">{filtrados.length} movimento(s) no período filtrado.</CardDescription>
           </div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            <Select value={filtroDirecao} onValueChange={(valor) => { setFiltroDirecao(valor); setPagina(1); }}>
-              <SelectTrigger><SelectValue placeholder="Entrada / saída" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Entradas e saídas</SelectItem>
-                <SelectItem value="entrada">Somente entradas</SelectItem>
-                <SelectItem value="saida">Somente saídas</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filtroCategoria} onValueChange={(valor) => { setFiltroCategoria(valor); setPagina(1); }}>
-              <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as categorias</SelectItem>
-                <SelectItem value="venda">Vendas</SelectItem>
-                <SelectItem value="devolucao_venda">Devoluções de venda</SelectItem>
-                <SelectItem value="compra">Compras</SelectItem>
-                <SelectItem value="devolucao_compra">Devoluções de compra</SelectItem>
-                <SelectItem value="transferencia">Transferências</SelectItem>
-                <SelectItem value="bonificacao">Bonificações</SelectItem>
-                <SelectItem value="outros">Outros movimentos</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filtroGrupo} onValueChange={(valor) => { setFiltroGrupo(valor); setPagina(1); }}>
-              <SelectTrigger><SelectValue placeholder="Grupo" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os grupos</SelectItem>
-                {gruposDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <DataFilterBar
+            busca={busca}
+            onBuscaChange={(valor) => { setBusca(valor); setPagina(1); }}
+            placeholder="Buscar produto, documento, participante ou grupo..."
+            temFiltrosAtivos={Boolean(busca) || filtroDirecao !== "todas" || filtroCategoria !== "todas" || filtroGrupo !== "todos"}
+            onLimpar={() => {
+              setBusca("");
+              setFiltroDirecao("todas");
+              setFiltroCategoria("todas");
+              setFiltroGrupo("todos");
+              setPagina(1);
+            }}
+          >
+            <div className="w-40 sm:w-44">
+              <Select value={filtroDirecao} onValueChange={(valor) => { setFiltroDirecao(valor); setPagina(1); }}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Entrada / saída" /></SelectTrigger>
+                <SelectContent><SelectItem value="todas">Entradas e saídas</SelectItem><SelectItem value="entrada">Somente entradas</SelectItem><SelectItem value="saida">Somente saídas</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="w-40 sm:w-44">
+              <Select value={filtroCategoria} onValueChange={(valor) => { setFiltroCategoria(valor); setPagina(1); }}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
+                <SelectContent><SelectItem value="todas">Todas as categorias</SelectItem><SelectItem value="venda">Vendas</SelectItem><SelectItem value="devolucao_venda">Devoluções de venda</SelectItem><SelectItem value="compra">Compras</SelectItem><SelectItem value="devolucao_compra">Devoluções de compra</SelectItem><SelectItem value="transferencia">Transferências</SelectItem><SelectItem value="bonificacao">Bonificações</SelectItem><SelectItem value="outros">Outros movimentos</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="w-40 sm:w-44">
+              <Select value={filtroGrupo} onValueChange={(valor) => { setFiltroGrupo(valor); setPagina(1); }}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Grupo" /></SelectTrigger>
+                <SelectContent><SelectItem value="todos">Todos os grupos</SelectItem>{gruposDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </DataFilterBar>
         </CardHeader>
 
         <CardContent className="p-0">

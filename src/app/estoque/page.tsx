@@ -3,7 +3,7 @@ import { EstoqueView } from "@/components/estoque-view";
 import { requireAuth } from "@/lib/server-auth";
 
 export default async function EstoquePage({ searchParams }: { searchParams: Promise<{ empresa?: string }> }) {
-  const { empresas } = await requireAuth();
+  const { empresas } = await requireAuth("gerente");
   const { empresa } = await searchParams;
   const empresaSelecionada = empresa && empresas.some((item) => item.id === empresa)
     ? empresa
