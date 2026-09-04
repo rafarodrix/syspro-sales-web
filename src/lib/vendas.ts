@@ -155,18 +155,10 @@ export interface ItemClienteAnalise {
 
 export interface RelatorioClientes {
   itens: ItemClienteAnalise[];
-  totalClientes: number;
-  clientesRecorrentes: number;
-  clientesPontuais: number;
-  taxaRecorrencia: number;
-  concentracaoTop5: number;
-  concentracaoTop10: number;
-  ticketMedioPorCliente: number;
 }
 
 export interface ItemDescontoAnalise {
   nome: string;
-  faturamentoBruto: number;
   faturamentoLiquido: number;
   desconto: number;
   taxaDesconto: number;
@@ -174,14 +166,9 @@ export interface ItemDescontoAnalise {
 }
 
 export interface RelatorioDescontos {
-  descontoTotal: number;
-  faturamentoBruto: number;
-  faturamentoLiquido: number;
-  taxaDescontoGlobal: number;
   porVendedor: ItemDescontoAnalise[];
   porDepartamento: ItemDescontoAnalise[];
   porFormaPagamento: ItemDescontoAnalise[];
-  porCliente: ItemDescontoAnalise[];
 }
 
 export interface ItemDiaSemanaAnalise {
@@ -763,19 +750,9 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
   const clientesOrdenados = [...clientesMap.values()].sort((a, b) => b.faturamento - a.faturamento);
 
   let acumulado = 0;
-  let clientesCadastradosCount = 0;
-  let recorrentes = 0;
-
   const itensClientes: ItemClienteAnalise[] = clientesOrdenados.map((c) => {
     acumulado += c.faturamento;
     const pedidos = c.notas.size;
-    const isGenerico = isClienteConsumidorGenerico(c.nome);
-
-    if (!isGenerico) {
-      clientesCadastradosCount++;
-      if (pedidos >= 2) recorrentes++;
-    }
-
     const percentual = faturamentoTotal > 0 ? (c.faturamento / faturamentoTotal) * 100 : 0;
     const percentualAcumulado = faturamentoTotal > 0 ? (acumulado / faturamentoTotal) * 100 : 0;
 
@@ -803,38 +780,13 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
     };
   });
 
-  const totalClientes = itensClientes.length;
-  const pontuais = Math.max(0, clientesCadastradosCount - recorrentes);
-  const taxaRecorrencia =
-    clientesCadastradosCount > 0 ? (recorrentes / clientesCadastradosCount) * 100 : 0;
-
-  const top5Fat = itensClientes.slice(0, 5).reduce((acc, c) => acc + c.faturamento, 0);
-  const top10Fat = itensClientes.slice(0, 10).reduce((acc, c) => acc + c.faturamento, 0);
-
-  const concentracaoTop5 = faturamentoTotal > 0 ? (top5Fat / faturamentoTotal) * 100 : 0;
-  const concentracaoTop10 = faturamentoTotal > 0 ? (top10Fat / faturamentoTotal) * 100 : 0;
-  const ticketMedioPorCliente = totalClientes > 0 ? faturamentoTotal / totalClientes : 0;
-
-  return {
-    itens: itensClientes,
-    totalClientes,
-    clientesRecorrentes: recorrentes,
-    clientesPontuais: pontuais,
-    taxaRecorrencia,
-    concentracaoTop5,
-    concentracaoTop10,
-    ticketMedioPorCliente,
-  };
+  return { itens: itensClientes };
 }
 
 export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
   const vendMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
   const deptoMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
   const formaPagamentoMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
-  const cliMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
-
-  let faturamentoTotal = 0;
-  let descontoTotal = 0;
 
   for (const venda of vendas) {
     const total = valorItem(venda);
@@ -843,10 +795,6 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
     const vend = venda.vendedor_nome?.trim() || "Sem vendedor";
     const depto = venda.produto_departamento?.trim() || "Sem departamento";
     const formaPagamento = venda.nf_forma_pagto?.trim() || "Não informado";
-    const cli = venda.cliente_nome?.trim() || "Cliente não identificado";
-
-    faturamentoTotal += total;
-    descontoTotal += desc;
 
     // Vendedor
     let vData = vendMap.get(vend);
@@ -878,19 +826,7 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
     fpData.desconto += desc;
     fpData.notas.add(chaveNota);
 
-    // Cliente
-    let cData = cliMap.get(cli);
-    if (!cData) {
-      cData = { faturamento: 0, desconto: 0, notas: new Set() };
-      cliMap.set(cli, cData);
-    }
-    cData.faturamento += total;
-    cData.desconto += desc;
-    cData.notas.add(chaveNota);
   }
-
-  const faturamentoBruto = faturamentoTotal + descontoTotal;
-  const taxaDescontoGlobal = faturamentoBruto > 0 ? (descontoTotal / faturamentoBruto) * 100 : 0;
 
   function formatarRankingDesconto(map: Map<string, { faturamento: number; desconto: number; notas: Set<string> }>): ItemDescontoAnalise[] {
     return [...map.entries()]
@@ -899,7 +835,6 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
         const taxa = bruto > 0 ? (d.desconto / bruto) * 100 : 0;
         return {
           nome,
-          faturamentoBruto: bruto,
           faturamentoLiquido: d.faturamento,
           desconto: d.desconto,
           taxaDesconto: taxa,
@@ -910,14 +845,9 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
   }
 
   return {
-    descontoTotal,
-    faturamentoBruto,
-    faturamentoLiquido: faturamentoTotal,
-    taxaDescontoGlobal,
     porVendedor: formatarRankingDesconto(vendMap),
     porDepartamento: formatarRankingDesconto(deptoMap),
     porFormaPagamento: formatarRankingDesconto(formaPagamentoMap),
-    porCliente: formatarRankingDesconto(cliMap),
   };
 }
 

@@ -1,17 +1,12 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { CalendarDays, CalendarRange } from "lucide-react";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
+import { ReportViewSelector } from "./report-view-toggle";
 
-interface DiaSemanaItem {
-  dia: string;
-  pedidos: number;
-  ticketMedio: number;
-  faturamento: number;
-  percentual: number;
-}
+type VisaoSazonalidade = "dia-semana" | "quinzena";
 
-interface QuinzenaItem {
-  quinzena: string;
+interface ItemSazonalidadeBase {
   pedidos: number;
   ticketMedio: number;
   faturamento: number;
@@ -20,123 +15,58 @@ interface QuinzenaItem {
 
 interface AbaSazonalidadeProps {
   relatorioSazonalidade: {
-    porDiaSemana: DiaSemanaItem[];
-    porQuinzena: QuinzenaItem[];
+    porDiaSemana: Array<ItemSazonalidadeBase & { dia: string }>;
+    porQuinzena: Array<ItemSazonalidadeBase & { quinzena: string }>;
   };
 }
 
-export function AbaSazonalidade({ relatorioSazonalidade }: AbaSazonalidadeProps) {
+function TabelaSazonalidade({ itens, rotulo }: { itens: Array<ItemSazonalidadeBase & { rotulo: string }>; rotulo: string }) {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Vendas por Dia da Semana */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold">Faturamento por Dia da Semana</CardTitle>
-            <CardDescription className="text-xs">Distribuição de receita e pedidos de Segunda a Domingo.</CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-left font-semibold text-muted-foreground">
-                    <th className="py-2.5 pr-2">Dia</th>
-                    <th className="py-2.5 px-2 text-right">Pedidos</th>
-                    <th className="py-2.5 px-2 text-right">Ticket Médio</th>
-                    <th className="py-2.5 px-2 text-right">Faturamento</th>
-                    <th className="py-2.5 pl-2 text-right">% Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {relatorioSazonalidade.porDiaSemana.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-6 text-center text-muted-foreground">
-                        Nenhum registro encontrado.
-                      </td>
-                    </tr>
-                  ) : (
-                    relatorioSazonalidade.porDiaSemana.map((d) => (
-                      <tr key={d.dia} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="py-2.5 pr-2 font-bold text-foreground whitespace-nowrap">{d.dia}</td>
-                        <td className="py-2.5 px-2 text-right font-mono text-muted-foreground whitespace-nowrap">
-                          {formatarNumero(d.pedidos, 0)}
-                        </td>
-                        <td className="py-2.5 px-2 text-right font-mono text-muted-foreground whitespace-nowrap">
-                          {formatarMoeda(d.ticketMedio)}
-                        </td>
-                        <td className="py-2.5 px-2 text-right font-mono font-bold text-foreground whitespace-nowrap">
-                          {formatarMoeda(d.faturamento)}
-                        </td>
-                        <td className="py-2.5 pl-2 text-right whitespace-nowrap min-w-[90px]">
-                          <DataBarPercent
-                            valor={formatarPercentual(d.percentual, 1)}
-                            percentual={d.percentual}
-                            cor="bg-indigo-500/20"
-                          />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="overflow-x-auto rounded-md border">
+      <table className="w-full min-w-[640px] text-xs">
+        <thead>
+          <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
+            <th className="p-3">{rotulo}</th>
+            <th className="p-3 text-right">Pedidos / NF</th>
+            <th className="p-3 text-right">Ticket médio</th>
+            <th className="p-3 text-right">Faturamento</th>
+            <th className="p-3 text-right">Participação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {itens.map((item) => (
+            <tr key={item.rotulo} className="border-b last:border-0 hover:bg-muted/20">
+              <td className="p-3 font-semibold">{item.rotulo}</td>
+              <td className="p-3 text-right font-mono">{formatarNumero(item.pedidos, 0)}</td>
+              <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(item.ticketMedio)}</td>
+              <td className="p-3 text-right font-mono font-bold">{formatarMoeda(item.faturamento)}</td>
+              <td className="p-3 text-right"><DataBarPercent valor={formatarPercentual(item.percentual, 1)} percentual={item.percentual} cor="bg-indigo-500/20" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-        {/* Comparativo Quinzenal */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold">Comparativo Quinzenal</CardTitle>
-            <CardDescription className="text-xs">Início de mês (1 a 15) vs. Segunda quinzena (16+).</CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-left font-semibold text-muted-foreground">
-                    <th className="py-2.5 pr-2">Quinzena</th>
-                    <th className="py-2.5 px-2 text-right">Pedidos</th>
-                    <th className="py-2.5 px-2 text-right">Ticket Médio</th>
-                    <th className="py-2.5 px-2 text-right">Faturamento</th>
-                    <th className="py-2.5 pl-2 text-right">% Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {relatorioSazonalidade.porQuinzena.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-6 text-center text-muted-foreground">
-                        Nenhum registro encontrado.
-                      </td>
-                    </tr>
-                  ) : (
-                    relatorioSazonalidade.porQuinzena.map((q) => (
-                      <tr key={q.quinzena} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="py-2.5 pr-2 font-bold text-foreground whitespace-nowrap">{q.quinzena}</td>
-                        <td className="py-2.5 px-2 text-right font-mono text-muted-foreground whitespace-nowrap">
-                          {formatarNumero(q.pedidos, 0)}
-                        </td>
-                        <td className="py-2.5 px-2 text-right font-mono text-muted-foreground whitespace-nowrap">
-                          {formatarMoeda(q.ticketMedio)}
-                        </td>
-                        <td className="py-2.5 px-2 text-right font-mono font-bold text-foreground whitespace-nowrap">
-                          {formatarMoeda(q.faturamento)}
-                        </td>
-                        <td className="py-2.5 pl-2 text-right whitespace-nowrap min-w-[90px]">
-                          <DataBarPercent
-                            valor={formatarPercentual(q.percentual, 1)}
-                            percentual={q.percentual}
-                            cor="bg-indigo-500/20"
-                          />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+export function AbaSazonalidade({ relatorioSazonalidade }: AbaSazonalidadeProps) {
+  const [visao, setVisao] = useState<VisaoSazonalidade>("dia-semana");
+  const porDiaSemana = relatorioSazonalidade.porDiaSemana.map(({ dia, ...item }) => ({ ...item, rotulo: dia }));
+  const porQuinzena = relatorioSazonalidade.porQuinzena.map(({ quinzena, ...item }) => ({ ...item, rotulo: quinzena }));
+  const exibeDiaSemana = visao === "dia-semana";
+
+  return (
+    <div className="space-y-4">
+      <ReportViewSelector
+        view={visao}
+        onViewChange={setVisao}
+        description="Dia da semana mostra a distribuição operacional; quinzena mostra a composição do mês por metade do período."
+        options={[
+          { value: "dia-semana", label: "Dia da semana", icon: CalendarDays },
+          { value: "quinzena", label: "Quinzena", icon: CalendarRange },
+        ]}
+      />
+      <TabelaSazonalidade itens={exibeDiaSemana ? porDiaSemana : porQuinzena} rotulo={exibeDiaSemana ? "Dia da semana" : "Quinzena"} />
     </div>
   );
 }

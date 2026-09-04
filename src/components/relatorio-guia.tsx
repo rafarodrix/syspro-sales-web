@@ -44,35 +44,29 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
   },
   clientes: {
     resumo:
-      "Mostra a concentração da receita por cliente, quantos clientes são recorrentes e o peso dos maiores compradores no total.",
+      "Ordena os clientes por faturamento, mostra sua participação na receita e permite investigar as notas que compõem cada resultado.",
     comoLer: [
       "Se poucos clientes representam grande parte do faturamento, a operação depende muito deles — a perda de um único cliente seria sentida.",
-      "Clientes recorrentes (que compram em mais de um período) são a base saudável; clientes de evento único indicam venda de oportunidade.",
       "Na base PDV, o cliente 'CONSUMIDOR' concentra o balcão — a análise de concentração ganha sentido principalmente nas vendas faturadas (convênio/NF-e).",
     ],
     dica: "Para os clientes Top, avalie criar condições específicas (prazo, tabela) — são os que mais garantem previsibilidade de receita.",
     glossario: [
-      { termo: "Cliente recorrente", definicao: "Cliente que comprou em mais de um período/ocasião dentro da amostra." },
-      { termo: "Ticket médio por cliente", definicao: "Quanto, em média, o cliente gasta por nota no período." },
-      { termo: "Concentração Top 20", definicao: "% do faturamento concentrado nos 20 maiores clientes — mede a dependência da receita em poucos compradores." },
-      { termo: "Frequência média de compra", definicao: "Pedidos/NF do período ÷ clientes cadastrados ativos (exclui consumidor de balcão). Quantas vezes, em média, cada cliente compra." },
-      { termo: "Clientes novos", definicao: "Compraram no período atual e não haviam comprado no período anterior equivalente." },
-      { termo: "Clientes recorrentes entre períodos", definicao: "Compraram no período atual e também no anterior — a base que garante previsibilidade de receita." },
       { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por cliente com totais do período." },
       { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por cliente — mostra o que compõe os números do ranking." },
     ],
   },
   descontos: {
     resumo:
-      "Mede o desconto concedido sobre o faturamento, por vendedor e por departamento — ou seja, quanto de margem está sendo 'cedida' na negociação.",
+      "Mede os descontos concedidos por vendedor, departamento e forma de pagamento. Não calcula margem real, pois a API de vendas não informa custo ou CMV.",
     comoLer: [
       "Uma taxa de desconto alta em um vendedor pode indicar negociação agressiva ou falta de autoridade de preço — compare com os colegas.",
       "Departamentos com desconto recorrente podem ter preço de tabela acima do mercado ou sofrer pressão de concorrência.",
-      "Desconto médio saudável costuma ficar abaixo de 5% do faturamento — acima disso, verifique se a margem ainda cobre os custos.",
+      "Compare taxa, valor concedido e faturamento líquido dentro da mesma dimensão antes de tomar uma decisão comercial.",
     ],
     dica: "Vendedor com taxa de desconto muito acima da média é candidato a treinamento de negociação ou revisão da política de preços.",
     glossario: [
-      { termo: "Taxa de desconto", definicao: "Total de desconto concedido ÷ faturamento líquido, em %. Quanto menor, melhor para a margem." },
+      { termo: "Taxa de desconto", definicao: "Desconto concedido ÷ (faturamento líquido + desconto), em %. É a taxa sobre o valor antes do desconto." },
+      { termo: "Forma de pagamento", definicao: "Meio informado na nota fiscal. A visão mostra a associação registrada entre esse meio e os descontos dos itens da nota." },
     ],
   },
   sazonalidade: {
@@ -80,11 +74,13 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Revela o padrão de venda ao longo do tempo: quais dias da semana vendem mais e como o período se compara com a quinzena anterior.",
     comoLer: [
       "Dias da semana com pico indicam quando reforçar equipe e estoque; dias fracos indicam onde caberia uma ação de ativação.",
-      "A comparação quinzenal mostra se o negócio está crescendo, estável ou caindo — olhe a tendência, não só o número isolado.",
+      "A visão por quinzena divide o período entre os dias 1–15 e 16–fim do mês; ela mostra distribuição interna, não comparação com um período anterior.",
     ],
     dica: "Escale a operação (caixa, reposição) pelos dias de maior movimento e reserve ações promocionais para os dias fracos.",
     glossario: [
       { termo: "Sazonalidade", definicao: "Padrão de variação das vendas por dia da semana, quinzena ou época." },
+      { termo: "Visão por dia da semana", definicao: "Consolida faturamento, pedidos e ticket médio de todas as segundas, terças e demais dias presentes no período." },
+      { termo: "Visão por quinzena", definicao: "Agrupa as vendas emitidas entre os dias 1–15 e 16–fim de cada mês do período selecionado." },
     ],
   },
   departamentos: {
@@ -133,19 +129,17 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
   },
   financeiro: {
     resumo:
-      "Separa o faturamento por forma de pagamento e por tipo de documento fiscal (NF-e vs. NFC-e), além de ICMS-ST e frete.",
+      "Separa o faturamento por forma de pagamento declarada e por tipo de documento fiscal, em visões independentes.",
     comoLer: [
       "Forma de pagamento dominante indica o perfil do cliente (cartão/pix = balcão; convênio = venda faturada).",
       "NF-e (modelo 55) = venda direta/faturada; NFC-e (modelo 65) = venda de balcão. A proporção entre elas define o tipo de operação.",
-      "ICMS-ST alto sinaliza produtos com substituição tributária (ex.: muitos itens de limpeza/industrializados) — não é receita da empresa, é imposto repassado.",
     ],
     dica: "Se o convênio/NF-e é relevante, a gestão de prazo e inadimplência merece tanta atenção quanto a venda de balcão.",
     glossario: [
       { termo: "NF-e (modelo 55)", definicao: "Nota Fiscal eletrônica — venda faturada (empresa para empresa)." },
       { termo: "NFC-e (modelo 65)", definicao: "Nota de balcão/consumidor final (PDV), emitida no caixa." },
-      { termo: "ICMS-ST", definicao: "Imposto com Substituição Tributária — recolhido antecipadamente; aparece no item mas não é receita da loja." },
-      { termo: "Frete, seguro e outros acréscimos", definicao: "Valores informados nos itens da NF que compõem o valor final da venda; são exibidos separadamente para conferência." },
       { termo: "Forma de pagamento", definicao: "Meio informado na nota fiscal, como Pix, cartão, dinheiro ou faturado. Mede o mix declarado, não liquidação financeira." },
+      { termo: "Visão por documento fiscal", definicao: "Agrupa as notas por modelo de emissão, como NF-e (55) e NFC-e (65)." },
       { termo: "PDV", definicao: "Ponto de Venda — operação de balcão, com cupom fiscal." },
     ],
   },

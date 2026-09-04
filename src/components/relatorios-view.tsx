@@ -92,12 +92,12 @@ interface Props {
 const relatoriosOpcoes = [
   { id: "curva-abc", label: "Curva ABC (Produtos)", icone: Sparkles, cor: "text-amber-500", desc: "Pareto 80/15/5 de faturamento e volume de itens" },
   { id: "clientes", label: "Clientes", icone: UserCheck, cor: "text-emerald-500", desc: "Recorrência, concentração e Pareto da base de clientes" },
-  { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500", desc: "Taxa de desconto por vendedor e por departamento" },
+  { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500", desc: "Descontos por vendedor, departamento e forma de pagamento" },
   { id: "sazonalidade", label: "Sazonalidade & Dias", icone: CalendarDays, cor: "text-indigo-500", desc: "Vendas por dia da semana e comparativo quinzenal" },
   { id: "departamentos", label: "Departamentos", icone: Layers, cor: "text-blue-500", desc: "Faturamento por categoria com itens detalhados" },
   { id: "vendedores", label: "Equipe de Vendedores", icone: Users, cor: "text-violet-500", desc: "Ranking de consultores, ticket médio e descontos" },
   { id: "geografico", label: "Cidade e UF", icone: MapPin, cor: "text-teal-500", desc: "Distribuição por cidade ou UF, clientes atendidos e frete rateado" },
-  { id: "financeiro", label: "Financeiro & Fiscal", icone: CreditCard, cor: "text-orange-500", desc: "Formas de pagamento, NF-e vs NFC-e e ICMS-ST" },
+  { id: "financeiro", label: "Financeiro & Fiscal", icone: CreditCard, cor: "text-orange-500", desc: "Formas de pagamento declaradas e documentos fiscais" },
 ];
 
 export function RelatoriosView({
@@ -192,16 +192,7 @@ export function RelatoriosView({
 
   const relatorioClientes = useMemo(() => {
     if (abaAtiva !== "clientes") {
-      return {
-        itens: [],
-        totalClientes: 0,
-        clientesRecorrentes: 0,
-        clientesPontuais: 0,
-        taxaRecorrencia: 0,
-        concentracaoTop5: 0,
-        concentracaoTop10: 0,
-        ticketMedioPorCliente: 0,
-      };
+      return { itens: [] };
     }
     return analiseClientes(vendas);
   }, [vendas, abaAtiva]);
@@ -218,14 +209,9 @@ export function RelatoriosView({
   const relatorioDescontos = useMemo(() => {
     if (abaAtiva !== "descontos") {
       return {
-        descontoTotal: 0,
-        faturamentoBruto: 0,
-        faturamentoLiquido: 0,
-        taxaDescontoGlobal: 0,
         porVendedor: [],
         porDepartamento: [],
         porFormaPagamento: [],
-        porCliente: [],
       };
     }
     return analiseDescontos(vendas);
