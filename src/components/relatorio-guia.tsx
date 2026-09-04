@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import {
   Info,
   Lightbulb,
   HelpCircle,
   CheckCircle2,
-  ChevronDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -135,75 +133,6 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
   },
 };
 
-interface PainelComoLerProps {
-  relatorioId: string;
-}
-
-export function PainelComoLer({ relatorioId }: PainelComoLerProps) {
-  const guia = GUIAS_RELATORIOS[relatorioId];
-  const [aberto, setAberto] = useState(false);
-  if (!guia) return null;
-
-  if (!aberto) {
-    return (
-      <button
-        type="button"
-        onClick={() => setAberto(true)}
-        title="Como ler este relatório"
-        aria-label="Abrir explicação do relatório"
-        className="group mb-3 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-      >
-        <span className="flex size-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-          ?
-        </span>
-        Como ler este relatório
-      </button>
-    );
-  }
-
-  return (
-    <div className="mb-4 rounded-lg border border-primary/20 bg-primary/[0.04]">
-      <button
-        type="button"
-        onClick={() => setAberto(false)}
-        className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left"
-      >
-        <span className="flex items-center gap-1.5">
-          <Lightbulb className="size-3.5 text-primary" />
-          <span className="text-xs font-bold uppercase tracking-wide text-primary">
-            Como ler este relatório
-          </span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="text-[10px] font-medium text-muted-foreground">fechar</span>
-          <ChevronDown className="size-3.5 text-muted-foreground transition-transform" />
-        </span>
-      </button>
-      <div className="px-3.5 pb-3.5">
-        <div className="flex items-start gap-2.5">
-          <div className="min-w-0 flex-1 space-y-2">
-            <p className="text-xs leading-relaxed text-muted-foreground">{guia.resumo}</p>
-            <ul className="space-y-1">
-              {guia.comoLer.map((item, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
-                  <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-primary/60" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-            {guia.dica ? (
-              <div className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                <span className="font-bold">💡 Dica:</span>
-                <span>{guia.dica}</span>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /** Tooltip inline para explicar termos no cabeçalho de tabelas/cards */
 export function TermoExplicado({
   termo,
@@ -228,26 +157,54 @@ export function TermoExplicado({
 /** Glossário recolhível — listado no rodapé do conteúdo de cada relatório */
 export function GlossarioRelatorio({
   itens,
+  guia,
   relatorioLabel,
 }: {
   itens: { termo: string; definicao: string }[];
+  guia: GuiaRelatorio;
   relatorioLabel: string;
 }) {
-  if (!itens || itens.length === 0) return null;
   return (
     <details className="mt-4 rounded-lg border border-border/60 bg-muted/20 p-3 open:pb-3">
       <summary className="flex cursor-pointer select-none items-center gap-2 text-xs font-bold text-muted-foreground">
         <HelpCircle className="size-3.5" />
         Termos usados neste relatório ({relatorioLabel})
       </summary>
-      <dl className="mt-2 space-y-1.5">
-        {itens.map((g) => (
-          <div key={g.termo} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-            <dt className="shrink-0 text-xs font-semibold text-foreground sm:w-44">{g.termo}</dt>
-            <dd className="text-xs leading-relaxed text-muted-foreground">{g.definicao}</dd>
+      <div className="mt-3 space-y-4">
+        <section className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+            <Lightbulb className="size-3.5" />
+            Como interpretar este relatório
           </div>
-        ))}
-      </dl>
+          <p className="text-xs leading-relaxed text-muted-foreground">{guia.resumo}</p>
+          <ul className="space-y-1">
+            {guia.comoLer.map((item) => (
+              <li key={item} className="flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-primary/60" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+          {guia.dica ? (
+            <div className="rounded-md bg-amber-500/10 px-2 py-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+              <span className="font-bold">💡 Dica: </span>{guia.dica}
+            </div>
+          ) : null}
+        </section>
+        {itens.length > 0 ? (
+          <section className="border-t border-border/60 pt-3">
+            <h3 className="mb-2 text-xs font-bold text-foreground">Definições dos termos</h3>
+            <dl className="space-y-1.5">
+              {itens.map((item) => (
+                <div key={item.termo} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                  <dt className="shrink-0 text-xs font-semibold text-foreground sm:w-44">{item.termo}</dt>
+                  <dd className="text-xs leading-relaxed text-muted-foreground">{item.definicao}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ) : null}
+      </div>
     </details>
   );
 }

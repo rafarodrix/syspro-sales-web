@@ -35,7 +35,7 @@ import {
 } from "@/components/date-range-filter";
 import { buscarVendasApi } from "@/lib/vendas-client";
 import { exportarPdfAnalitico } from "@/lib/pdf-export";
-import { PainelComoLer, GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
+import { GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
 import {
   formatarMoeda,
   formatarNumero,
@@ -712,9 +712,6 @@ export function RelatoriosView({
             </div>
           ) : (
             <>
-              {/* Painel "Como ler" — explicação do relatório ativo */}
-              <PainelComoLer relatorioId={abaAtiva} />
-
               {/* Renderização condicional da aba ativa através de componentes modulares */}
               {abaAtiva === "curva-abc" && (
                 <AbaCurvaABC
@@ -754,10 +751,11 @@ export function RelatoriosView({
                 <AbaFinanceiro relatorioFinanceiro={relatorioFinanceiro} />
               )}
 
-              {/* Glossário — termos do relatório ativo */}
-              {GUIAS_RELATORIOS[abaAtiva]?.glossario ? (
+              {/* Ajuda consolidada no final do relatório ativo */}
+              {GUIAS_RELATORIOS[abaAtiva] ? (
                 <GlossarioRelatorio
                   itens={GUIAS_RELATORIOS[abaAtiva].glossario ?? []}
+                  guia={GUIAS_RELATORIOS[abaAtiva]}
                   relatorioLabel={
                     relatoriosOpcoes.find((r) => r.id === abaAtiva)?.label ?? ""
                   }
