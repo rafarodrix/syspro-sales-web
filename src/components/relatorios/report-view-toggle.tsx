@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 
 export type TipoVisaoRelatorio = "sintetico" | "analitico";
 
-export function ReportViewToggle({ visao, onChange, descricao }: {
+export function ReportViewToggle({ visao, onChange, descricao, rotuloAnalitico = "Notas detalhadas" }: {
   visao: TipoVisaoRelatorio;
   onChange: (visao: TipoVisaoRelatorio) => void;
   descricao: string;
+  rotuloAnalitico?: string;
 }) {
   return (
     <div className="rounded-lg border bg-muted/20 p-2 sm:flex sm:items-center sm:justify-between">
@@ -19,7 +20,7 @@ export function ReportViewToggle({ visao, onChange, descricao }: {
           <LayoutList className="size-3.5" /> Síntese
         </Button>
         <Button type="button" role="tab" aria-selected={visao === "analitico"} variant={visao === "analitico" ? "secondary" : "ghost"} className="h-8 flex-1 gap-1.5 text-xs sm:flex-none" onClick={() => onChange("analitico")}>
-          <FileText className="size-3.5" /> Notas detalhadas
+          <FileText className="size-3.5" /> {rotuloAnalitico}
         </Button>
       </div>
     </div>
