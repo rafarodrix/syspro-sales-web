@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
+  analiseDescontos,
   analiseClientesNovosRecorrentes,
   analiseUFs,
   calcularVariacoesPeriodo,
@@ -66,6 +67,18 @@ describe("cálculos de vendas", () => {
 });
 
 describe("métricas de gestão (comparativo e concentração)", () => {
+  it("agrupa descontos também pela forma de pagamento da nota", () => {
+    const relatorio = analiseDescontos([
+      vendaBase({ nf_forma_pagto: "PIX", produto_vlr_desconto: 10 }),
+      vendaBase({ nf_numero: "101", nf_forma_pagto: "Cartão", produto_vlr_desconto: 20 }),
+    ]);
+
+    expect(relatorio.porFormaPagamento).toEqual(expect.arrayContaining([
+      expect.objectContaining({ nome: "PIX", desconto: 10, pedidos: 1 }),
+      expect.objectContaining({ nome: "Cartão", desconto: 20, pedidos: 1 }),
+    ]));
+  });
+
   it("calcula variação de faturamento, notas, ticket e clientes entre períodos", () => {
     const atual = [vendaBase({ nf_numero: "1", cliente_nome: "CLIENTE A", produto_vlr_total_liquido: 200 })];
     const anterior = [vendaBase({ nf_numero: "2", cliente_nome: "CLIENTE A", produto_vlr_total_liquido: 100 })];

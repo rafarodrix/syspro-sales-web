@@ -247,6 +247,7 @@ export function RelatoriosView({
         taxaDescontoGlobal: 0,
         porVendedor: [],
         porDepartamento: [],
+        porFormaPagamento: [],
         porCliente: [],
       };
     }
@@ -275,10 +276,6 @@ export function RelatoriosView({
       return {
         formasPagamento: [],
         modelosDocumento: [],
-        totaisFrete: 0,
-        totaisIcmsSt: 0,
-        totaisSeguro: 0,
-        totaisOutros: 0,
       };
     }
     return analiseFinanceira(vendas);

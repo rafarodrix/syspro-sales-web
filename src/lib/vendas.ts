@@ -180,6 +180,7 @@ export interface RelatorioDescontos {
   taxaDescontoGlobal: number;
   porVendedor: ItemDescontoAnalise[];
   porDepartamento: ItemDescontoAnalise[];
+  porFormaPagamento: ItemDescontoAnalise[];
   porCliente: ItemDescontoAnalise[];
 }
 
@@ -829,6 +830,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
 export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
   const vendMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
   const deptoMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
+  const formaPagamentoMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
   const cliMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
 
   let faturamentoTotal = 0;
@@ -840,6 +842,7 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
     const chaveNota = chaveDaNota(venda);
     const vend = venda.vendedor_nome?.trim() || "Sem vendedor";
     const depto = venda.produto_departamento?.trim() || "Sem departamento";
+    const formaPagamento = venda.nf_forma_pagto?.trim() || "Não informado";
     const cli = venda.cliente_nome?.trim() || "Cliente não identificado";
 
     faturamentoTotal += total;
@@ -864,6 +867,16 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
     dData.faturamento += total;
     dData.desconto += desc;
     dData.notas.add(chaveNota);
+
+    // Forma de pagamento
+    let fpData = formaPagamentoMap.get(formaPagamento);
+    if (!fpData) {
+      fpData = { faturamento: 0, desconto: 0, notas: new Set() };
+      formaPagamentoMap.set(formaPagamento, fpData);
+    }
+    fpData.faturamento += total;
+    fpData.desconto += desc;
+    fpData.notas.add(chaveNota);
 
     // Cliente
     let cData = cliMap.get(cli);
@@ -903,6 +916,7 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
     taxaDescontoGlobal,
     porVendedor: formatarRankingDesconto(vendMap),
     porDepartamento: formatarRankingDesconto(deptoMap),
+    porFormaPagamento: formatarRankingDesconto(formaPagamentoMap),
     porCliente: formatarRankingDesconto(cliMap),
   };
 }
@@ -1124,19 +1138,11 @@ export function analiseGeografica(vendas: VendaProduto[]): ItemGeograficoAnalise
 export function analiseFinanceira(vendas: VendaProduto[]): {
   formasPagamento: ItemFinanceiroAnalise[];
   modelosDocumento: ItemFinanceiroAnalise[];
-  totaisFrete: number;
-  totaisIcmsSt: number;
-  totaisSeguro: number;
-  totaisOutros: number;
 } {
   const fpMap = new Map<string, { faturamento: number; notas: Set<string> }>();
   const modMap = new Map<string, { faturamento: number; notas: Set<string> }>();
 
   let faturamentoTotal = 0;
-  let totaisFrete = 0;
-  let totaisIcmsSt = 0;
-  let totaisSeguro = 0;
-  let totaisOutros = 0;
 
   for (const venda of vendas) {
     const fp = venda.nf_forma_pagto?.trim() || "Não informado";
@@ -1145,10 +1151,6 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
     const chaveNota = chaveDaNota(venda);
 
     faturamentoTotal += total;
-    totaisFrete += paraNumero(venda.produto_vlr_frete);
-    totaisIcmsSt += paraNumero(venda.produto_vlr_icms_stb);
-    totaisSeguro += paraNumero(venda.produto_vlr_seguro);
-    totaisOutros += paraNumero(venda.produto_vlr_outros);
 
     let atualFp = fpMap.get(fp);
     if (!atualFp) {
@@ -1187,7 +1189,7 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
     }))
     .sort((a, b) => b.total - a.total);
 
-  return { formasPagamento, modelosDocumento, totaisFrete, totaisIcmsSt, totaisSeguro, totaisOutros };
+  return { formasPagamento, modelosDocumento };
 }
 
 export function calcularVariacao(atual: number, anterior: number): VariacaoMetrica {

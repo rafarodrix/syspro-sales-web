@@ -1,149 +1,116 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
+import { useState } from "react";
+import { BadgePercent, CreditCard, Layers3, UserRound } from "lucide-react";
+import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import type { ItemDescontoAnalise, RelatorioDescontos } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
-import { MetricaCard } from "@/components/metrica-card";
+import { ReportViewSelector } from "./report-view-toggle";
+
+type VisaoDesconto = "vendedor" | "departamento" | "forma-pagamento";
 
 interface AbaDescontosProps {
-  relatorioDescontos: {
-    descontoTotal: number;
-    faturamentoBruto: number;
-    faturamentoLiquido: number;
-    taxaDescontoGlobal: number;
-    porVendedor: { nome: string; faturamentoLiquido: number; desconto: number; taxaDesconto: number }[];
-    porDepartamento: { nome: string; faturamentoLiquido: number; desconto: number; taxaDesconto: number }[];
+  relatorioDescontos: RelatorioDescontos;
+}
+
+const opcoesDeVisao = [
+  { value: "vendedor", label: "Vendedor", icon: UserRound },
+  { value: "departamento", label: "Departamento", icon: Layers3 },
+  { value: "forma-pagamento", label: "Forma de pagamento", icon: CreditCard },
+] as const;
+
+function dadosDaVisao(relatorio: RelatorioDescontos, visao: VisaoDesconto) {
+  if (visao === "departamento") {
+    return {
+      titulo: "Descontos por departamento",
+      descricao: "Compara o desconto concedido entre departamentos e categorias.",
+      rotulo: "Departamento",
+      itens: relatorio.porDepartamento,
+    };
+  }
+
+  if (visao === "forma-pagamento") {
+    return {
+      titulo: "Descontos por forma de pagamento",
+      descricao: "Mostra se a concessão de desconto varia conforme o meio de pagamento informado na nota.",
+      rotulo: "Forma de pagamento",
+      itens: relatorio.porFormaPagamento,
+    };
+  }
+
+  return {
+    titulo: "Descontos por vendedor",
+    descricao: "Compara a concessão de desconto entre os vendedores.",
+    rotulo: "Vendedor",
+    itens: relatorio.porVendedor,
   };
 }
 
-export function AbaDescontos({ relatorioDescontos }: AbaDescontosProps) {
+function TabelaDescontos({ itens, rotulo }: { itens: ItemDescontoAnalise[]; rotulo: string }) {
   return (
-    <div className="space-y-6">
-      {/* Síntese de Descontos */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <MetricaCard
-          rotulo="Faturamento bruto"
-          definicao="Soma do valor de tabela dos itens antes dos descontos."
-          valor={formatarMoeda(relatorioDescontos.faturamentoBruto)}
-        />
-        <MetricaCard
-          rotulo="Descontos concedidos"
-          definicao="Soma dos descontos registrados nos itens vendidos no período."
-          valor={formatarMoeda(relatorioDescontos.descontoTotal)}
-          destaque="negativo"
-          rodape={`Taxa global: ${formatarPercentual(relatorioDescontos.taxaDescontoGlobal, 2)}`}
-        />
-        <MetricaCard
-          rotulo="Faturamento líquido"
-          definicao="Faturamento bruto menos descontos concedidos — valor efetivamente faturado."
-          valor={formatarMoeda(relatorioDescontos.faturamentoLiquido)}
-          destaque="primario"
-        />
-      </div>
+    <div className="overflow-x-auto rounded-md border">
+      <table className="w-full min-w-[680px] text-xs">
+        <thead>
+          <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
+            <th className="p-3">{rotulo}</th>
+            <th className="p-3 text-right">Pedidos / NF</th>
+            <th className="p-3 text-right">Fat. líquido</th>
+            <th className="p-3 text-right">Desconto (R$)</th>
+            <th className="p-3 text-right">% desconto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {itens.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                Nenhum registro encontrado.
+              </td>
+            </tr>
+          ) : (
+            itens.map((item) => (
+              <tr key={item.nome} className="border-b last:border-0 hover:bg-muted/20">
+                <td className="max-w-[280px] truncate p-3 font-semibold" title={item.nome}>{item.nome}</td>
+                <td className="p-3 text-right font-mono">{formatarNumero(item.pedidos ?? 0, 0)}</td>
+                <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(item.faturamentoLiquido)}</td>
+                <td className="p-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{formatarMoeda(item.desconto)}</td>
+                <td className="p-3 text-right">
+                  <DataBarPercent
+                    valor={formatarPercentual(item.taxaDesconto, 1)}
+                    percentual={Math.min(item.taxaDesconto * 3, 100)}
+                    cor="bg-rose-500/20"
+                  />
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Descontos por Vendedor */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold">Desconto Concedido por Vendedor</CardTitle>
-            <CardDescription className="text-xs">Avaliação de concessão e taxa de desconto por consultor.</CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-left font-semibold text-muted-foreground">
-                    <th className="py-2.5 pr-2">Vendedor</th>
-                    <th className="py-2.5 px-2 text-right">Fat. Líquido</th>
-                    <th className="py-2.5 px-2 text-right">Desconto (R$)</th>
-                    <th className="py-2.5 pl-2 text-right">% Desconto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {relatorioDescontos.porVendedor.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-center text-muted-foreground">
-                        Nenhum registro encontrado.
-                      </td>
-                    </tr>
-                  ) : (
-                    relatorioDescontos.porVendedor.map((v) => (
-                      <tr key={v.nome} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="py-2.5 pr-2 font-bold text-foreground truncate max-w-[140px]" title={v.nome}>
-                          {v.nome}
-                        </td>
-                        <td className="py-2.5 px-2 text-right font-mono text-muted-foreground whitespace-nowrap">
-                          {formatarMoeda(v.faturamentoLiquido)}
-                        </td>
-                        <td className="py-2.5 px-2 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                          {formatarMoeda(v.desconto)}
-                        </td>
-                        <td className="py-2.5 pl-2 text-right whitespace-nowrap min-w-[90px]">
-                          <DataBarPercent
-                            valor={formatarPercentual(v.taxaDesconto, 1)}
-                            percentual={Math.min(v.taxaDesconto * 3, 100)}
-                            cor="bg-rose-500/20"
-                          />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+export function AbaDescontos({ relatorioDescontos }: AbaDescontosProps) {
+  const [visao, setVisao] = useState<VisaoDesconto>("vendedor");
+  const dados = dadosDaVisao(relatorioDescontos, visao);
 
-        {/* Descontos por Departamento */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold">Desconto por Departamento / Categoria</CardTitle>
-            <CardDescription className="text-xs">Categorias com maior pressão de desconto comercial.</CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-left font-semibold text-muted-foreground">
-                    <th className="py-2.5 pr-2">Departamento</th>
-                    <th className="py-2.5 px-2 text-right">Fat. Líquido</th>
-                    <th className="py-2.5 px-2 text-right">Desconto (R$)</th>
-                    <th className="py-2.5 pl-2 text-right">% Desconto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {relatorioDescontos.porDepartamento.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-center text-muted-foreground">
-                        Nenhum registro encontrado.
-                      </td>
-                    </tr>
-                  ) : (
-                    relatorioDescontos.porDepartamento.map((d) => (
-                      <tr key={d.nome} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="py-2.5 pr-2 font-bold text-foreground truncate max-w-[140px]" title={d.nome}>
-                          {d.nome}
-                        </td>
-                        <td className="py-2.5 px-2 text-right font-mono text-muted-foreground whitespace-nowrap">
-                          {formatarMoeda(d.faturamentoLiquido)}
-                        </td>
-                        <td className="py-2.5 px-2 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                          {formatarMoeda(d.desconto)}
-                        </td>
-                        <td className="py-2.5 pl-2 text-right whitespace-nowrap min-w-[90px]">
-                          <DataBarPercent
-                            valor={formatarPercentual(d.taxaDesconto, 1)}
-                            percentual={Math.min(d.taxaDesconto * 3, 100)}
-                            cor="bg-rose-500/20"
-                          />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+  return (
+    <div className="space-y-4">
+      <ReportViewSelector
+        view={visao}
+        onViewChange={setVisao}
+        ariaLabel="Visão de descontos"
+        description="Analise a concessão de descontos pela dimensão mais adequada à decisão comercial."
+        options={opcoesDeVisao}
+      />
+
+      <section className="space-y-3">
+        <div className="flex items-start gap-2 px-1">
+          <BadgePercent className="mt-0.5 size-4 text-rose-500" />
+          <div>
+            <h3 className="text-sm font-bold text-foreground">{dados.titulo}</h3>
+            <p className="text-xs text-muted-foreground">{dados.descricao}</p>
+          </div>
+        </div>
+        <TabelaDescontos itens={dados.itens} rotulo={dados.rotulo} />
+      </section>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { MousePointerClick } from "lucide-react";
+import { FileText, LayoutList, MousePointerClick } from "lucide-react";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
-import { ReportViewToggle } from "./report-view-toggle";
+import { ReportViewSelector } from "./report-view-toggle";
 import type { ItemVendedorAnalise, VendaAgrupada } from "@/lib/vendas";
 
 type VisaoVendedores = "sintetico" | "analitico";
@@ -25,7 +25,18 @@ export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVended
 
   return (
     <div className="space-y-4">
-      <ReportViewToggle visao={visao} descricao="Síntese compara a equipe; notas detalhadas explicam os resultados de cada vendedor." onChange={(proximaVisao) => { setVendedoresSelecionados([]); setVisao(proximaVisao); }} />
+      <ReportViewSelector
+        view={visao}
+        description="Síntese compara a equipe; notas detalhadas explicam os resultados de cada vendedor."
+        options={[
+          { value: "sintetico", label: "Síntese", icon: LayoutList },
+          { value: "analitico", label: "Notas detalhadas", icon: FileText },
+        ]}
+        onViewChange={(proximaVisao) => {
+          setVendedoresSelecionados([]);
+          setVisao(proximaVisao);
+        }}
+      />
 
       {visao === "sintetico" ? (
         <>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MousePointerClick } from "lucide-react";
+import { FileText, LayoutList, MousePointerClick } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type {
@@ -10,10 +10,9 @@ import type {
 } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { TablePagination } from "@/components/table-pagination";
-import { TermoExplicado } from "@/components/relatorio-guia";
 import { MetricaCard } from "@/components/metrica-card";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
-import { ReportViewToggle } from "./report-view-toggle";
+import { ReportViewSelector } from "./report-view-toggle";
 
 interface AbaClientesProps {
   relatorioClientes: {
@@ -136,10 +135,14 @@ export function AbaClientes({
         </div>
       </section>
 
-      <ReportViewToggle
-        visao={visao}
-        descricao="Síntese mostra o ranking; notas detalhadas mostram quais NF compõem cada cliente."
-        onChange={(proximaVisao) => {
+      <ReportViewSelector
+        view={visao}
+        description="Síntese mostra o ranking; notas detalhadas mostram quais NF compõem cada cliente."
+        options={[
+          { value: "sintetico", label: "Síntese", icon: LayoutList },
+          { value: "analitico", label: "Notas detalhadas", icon: FileText },
+        ]}
+        onViewChange={(proximaVisao) => {
           setClientesSelecionados([]);
           setVisao(proximaVisao);
         }}

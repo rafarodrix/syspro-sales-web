@@ -20,10 +20,6 @@ interface ModeloDocumentoItem {
 
 interface AbaFinanceiroProps {
   relatorioFinanceiro: {
-    totaisFrete: number;
-    totaisIcmsSt: number;
-    totaisSeguro: number;
-    totaisOutros: number;
     formasPagamento: FormaPagamentoItem[];
     modelosDocumento: ModeloDocumentoItem[];
   };
@@ -32,41 +28,6 @@ interface AbaFinanceiroProps {
 export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Total Frete
-          </span>
-          <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-            {formatarMoeda(relatorioFinanceiro.totaisFrete)}
-          </div>
-        </div>
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Total Seguro
-          </span>
-          <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-            {formatarMoeda(relatorioFinanceiro.totaisSeguro)}
-          </div>
-        </div>
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Outros Acréscimos
-          </span>
-          <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-            {formatarMoeda(relatorioFinanceiro.totaisOutros)}
-          </div>
-        </div>
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Total ICMS-ST
-          </span>
-          <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
-            {formatarMoeda(relatorioFinanceiro.totaisIcmsSt)}
-          </div>
-        </div>
-      </div>
-
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-border/60">
           <CardHeader className="pb-3">
