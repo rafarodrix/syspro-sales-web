@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import {
-  BarChart3,
   Search,
   X,
   Layers,
@@ -620,38 +619,104 @@ export function RelatoriosView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Painel Superior de Período & Filtros */}
+      {/* Cabeçalho único: contexto do relatório, período e ações. */}
       <Card className="no-print border-border/60 shadow-sm backdrop-blur-md">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <BarChart3 className="size-5 text-primary" />
-                <CardTitle className="text-xl font-bold tracking-tight text-foreground">
-                  {empresaId === "todas" ? "Central de Relatórios (Consolidado)" : "Central de Relatórios"}
-                </CardTitle>
-                {empresaId === "todas" && (
-                  <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold gap-1 px-2.5 py-0.5">
-                    <Building2 className="size-3.5" />
-                    <span>Visão Consolidada ({empresas.length} Empresas)</span>
-                  </Badge>
-                )}
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className={`flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted/80 shadow-2xs ${
+                  relatorioAtivo?.cor ?? "text-primary"
+                }`}
+              >
+                {(() => {
+                  const IconeOp = relatorioAtivo?.icone ?? Sparkles;
+                  return <IconeOp className="size-4.5" />;
+                })()}
               </div>
-              <CardDescription className="text-xs">
-                {empresaId === "todas"
-                  ? `Análise consolidada de ${empresas.length} empresas: Curva ABC, Clientes, Descontos, Sazonalidade, Departamentos e Vendedores.`
-                  : "Análise estruturada de Curva ABC, Clientes, Descontos, Sazonalidade, Departamentos, Vendedores e Fiscal."}
-              </CardDescription>
+              <div className="flex flex-col">
+                <CardTitle className="text-base font-extrabold tracking-tight text-foreground">
+                  {relatorioAtivo?.label ?? "Relatório Analítico"}
+                </CardTitle>
+                <CardDescription className="text-xs">{relatorioAtivo?.desc}</CardDescription>
+              </div>
+              {empresaId === "todas" && (
+                <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold gap-1 px-2.5 py-0.5">
+                  <Building2 className="size-3.5" />
+                  <span>Visão Consolidada ({empresas.length} Empresas)</span>
+                </Badge>
+              )}
             </div>
           </div>
         </CardHeader>
-        <CardContent className="border-t border-border/60 pt-4">
+        <CardContent className="space-y-3 border-t border-border/60 pt-4">
           <DateRangeFilter
             value={periodo}
             onChange={setPeriodo}
             onConsultar={consultar}
             loading={loading}
           />
+          <div className="no-print flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+            <div className="relative min-w-[170px] sm:min-w-[210px]">
+              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Pesquisar registros..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="h-8 w-full rounded-md border bg-background pl-8 pr-7 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
+              />
+              {busca && (
+                <button
+                  onClick={() => setBusca("")}
+                  aria-label="Limpar busca"
+                  className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            {abaAtiva === "curva-abc" && (
+              <div className="flex items-center gap-1">
+                {(["todas", "A", "B", "C"] as const).map((cls) => (
+                  <Button
+                    key={cls}
+                    size="sm"
+                    variant={filtroClasseAbc === cls ? "default" : "outline"}
+                    onClick={() => setFiltroClasseAbc(cls)}
+                    className="h-8 px-2 text-xs font-bold"
+                  >
+                    {cls === "todas" ? "Todas" : `Classe ${cls}`}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {abaAtiva === "clientes" && (
+              <div className="flex items-center gap-1">
+                {(["todas", "A", "B", "C"] as const).map((cls) => (
+                  <Button
+                    key={cls}
+                    size="sm"
+                    variant={filtroClasseCli === cls ? "default" : "outline"}
+                    onClick={() => setFiltroClasseCli(cls)}
+                    className="h-8 px-2 text-xs font-bold"
+                  >
+                    {cls === "todas" ? "Todas" : `Classe ${cls}`}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            <ExportDropdown
+              onExportarPdf={() => handleExportarPdf("download")}
+              onExportarCsv={exportarCsvRelatorio}
+              onImprimir={() => handleExportarPdf("imprimir")}
+              disabled={loading || vendas.length === 0}
+              label="Exportar"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -666,96 +731,6 @@ export function RelatoriosView({
 
       {/* Card Principal do Relatório Executivo */}
       <Card className="border-border/60 shadow-sm">
-        <CardHeader className="pb-3 border-b border-border/60">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            {/* Título Estático & Descrição do Relatório Ativo */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted/80 shadow-2xs ${
-                  relatorioAtivo?.cor ?? "text-primary"
-                }`}
-              >
-                {(() => {
-                  const IconeOp =
-                    relatorioAtivo?.icone ?? Sparkles;
-                  return <IconeOp className="size-4.5" />;
-                })()}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-base font-extrabold text-foreground tracking-tight">
-                  {relatorioAtivo?.label ?? "Relatório Analítico"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {relatorioAtivo?.desc}
-                </span>
-              </div>
-            </div>
-
-            {/* Ações da Direita: Busca + Filtros de Classe + Exportação */}
-            <div className="no-print flex flex-wrap items-center gap-2">
-              <div className="relative min-w-[170px] sm:min-w-[210px]">
-                <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Pesquisar registros..."
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="h-8 w-full rounded-md border bg-background pl-8 pr-7 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
-                />
-                {busca && (
-                  <button
-                    onClick={() => setBusca("")}
-                    aria-label="Limpar busca"
-                    className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {abaAtiva === "curva-abc" && (
-                <div className="flex items-center gap-1">
-                  {(["todas", "A", "B", "C"] as const).map((cls) => (
-                    <Button
-                      key={cls}
-                      size="sm"
-                      variant={filtroClasseAbc === cls ? "default" : "outline"}
-                      onClick={() => setFiltroClasseAbc(cls)}
-                      className="h-8 px-2 text-xs font-bold"
-                    >
-                      {cls === "todas" ? "Todas" : `Classe ${cls}`}
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              {abaAtiva === "clientes" && (
-                <div className="flex items-center gap-1">
-                  {(["todas", "A", "B", "C"] as const).map((cls) => (
-                    <Button
-                      key={cls}
-                      size="sm"
-                      variant={filtroClasseCli === cls ? "default" : "outline"}
-                      onClick={() => setFiltroClasseCli(cls)}
-                      className="h-8 px-2 text-xs font-bold"
-                    >
-                      {cls === "todas" ? "Todas" : `Classe ${cls}`}
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              <ExportDropdown
-                onExportarPdf={() => handleExportarPdf("download")}
-                onExportarCsv={exportarCsvRelatorio}
-                onImprimir={() => handleExportarPdf("imprimir")}
-                disabled={loading || vendas.length === 0}
-                label="Exportar"
-              />
-            </div>
-          </div>
-        </CardHeader>
-
         <CardContent>
           {loading ? (
             <div className="space-y-3 py-4">
