@@ -25,7 +25,6 @@ import {
   analiseGeografica,
   analiseUFs,
   analiseFinanceira,
-  analiseClientesNovosRecorrentes,
   agruparVendasPorNota,
   calcularVariacoesPeriodo,
   calcularPeriodoAnterior,
@@ -144,23 +143,6 @@ export function RelatoriosView({
     return `${formatarDataInputParaBR(periodoAnterior.inicial)} a ${formatarDataInputParaBR(periodoAnterior.final)}`;
   }, [periodoAnterior]);
 
-  // Análise de clientes novos vs. recorrentes (exclui consumidor de balcão)
-  const clientesNovosRecorrentes = useMemo(
-    () => analiseClientesNovosRecorrentes(vendas, vendasAnteriores),
-    [vendas, vendasAnteriores],
-  );
-
-  // Frequência média de compra: pedidos no período ÷ clientes cadastrados ativos
-  const metricasBaseClientes = useMemo(() => {
-    if (abaAtiva !== "clientes") return null;
-    const resumo = resumoVendas(vendas);
-    const ativosCadastrados = Math.max(1, clientesNovosRecorrentes.ativosAtual);
-    return {
-      pedidosNoPeriodo: resumo.notas,
-      frequenciaMediaPedidosPorCliente: resumo.notas / ativosCadastrados,
-    };
-  }, [abaAtiva, vendas, clientesNovosRecorrentes]);
-
   // Produtos em alta vs. período anterior (comparáveis nos dois períodos)
   const produtosEmAlta = useMemo(
     () => maioresCrescimentosProdutos(vendas, vendasAnteriores, 5),
@@ -225,10 +207,6 @@ export function RelatoriosView({
   }, [vendas, abaAtiva]);
 
   // Concentração Top 10/Top 20 de clientes e produtos (Pareto de dependência)
-  const concentracaoClientesTop20 = useMemo(
-    () => (abaAtiva === "clientes" ? concentracaoTopN(relatorioClientes.itens, 20) : null),
-    [abaAtiva, relatorioClientes],
-  );
   const concentracaoProdutosTop20 = useMemo(
     () =>
       abaAtiva === "curva-abc"
@@ -769,13 +747,7 @@ export function RelatoriosView({
 
               {abaAtiva === "clientes" && (
                 <AbaClientes
-                  relatorioClientes={relatorioClientes}
                   clientesFiltrados={clientesFiltrados}
-                  concentracaoTop20={concentracaoClientesTop20}
-                  novosRecorrentes={clientesNovosRecorrentes}
-                  temPeriodoAnterior={vendasAnteriores.length > 0}
-                  frequenciaMediaPedidosPorCliente={metricasBaseClientes?.frequenciaMediaPedidosPorCliente}
-                  pedidosNoPeriodo={metricasBaseClientes?.pedidosNoPeriodo}
                   notasAgrupadas={notasAgrupadasRelatorio}
                 />
               )}
