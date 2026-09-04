@@ -24,10 +24,10 @@ import {
   dadosPorMetrica,
   type MetricaDeVendas,
   produtosMaisVendidos,
+  analiseEmpresas,
   resumoVendas,
   calcularVariacao,
   calcularPeriodoAnterior,
-  valorItem,
   calcularDestaques,
   formatarDataInputParaBR,
   paraNumero,
@@ -47,6 +47,7 @@ import { PieChartCard } from "@/components/pie-chart-card";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { FeedbackState } from "@/components/feedback-state";
 import { toast } from "sonner";
+import { resolverEmpresaSelecionada } from "@/lib/empresa-selecao";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,18 +89,13 @@ export function DashboardView({
   initialVendasAnteriores = [],
   initialError,
 }: Props) {
-  const [empresaId, setEmpresaId] = useState(
-    empresaInicial === "todas" ||
-    (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
-      ? empresaInicial
-      : (empresas[0]?.id ?? ""),
-  );
+  const [empresaId, setEmpresaId] = useState(() => resolverEmpresaSelecionada(empresaInicial, empresas));
 
   useEffect(() => {
     if (!empresaInicial) return;
-    const frame = requestAnimationFrame(() => setEmpresaId(empresaInicial));
+    const frame = requestAnimationFrame(() => setEmpresaId(resolverEmpresaSelecionada(empresaInicial, empresas)));
     return () => cancelAnimationFrame(frame);
-  }, [empresaInicial]);
+  }, [empresaInicial, empresas]);
 
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
@@ -185,25 +181,7 @@ export function DashboardView({
     return dadosPorMetrica(vendas, "itens").map((p) => p.total);
   }, [vendas]);
 
-  const rankingPorEmpresa = useMemo(() => {
-    const mapa = new Map<string, { id: string; nome: string; faturamento: number; pedidos: number }>();
-    for (const v of vendas) {
-      const vEmp = v as VendaComEmpresa;
-      const id = vEmp.empresa_id || "default";
-      const nome = vEmp.empresa_nome || "Empresa Principal";
-      const atual = mapa.get(id) ?? { id, nome, faturamento: 0, pedidos: 0 };
-      atual.faturamento += valorItem(v);
-      atual.pedidos += 1;
-      mapa.set(id, atual);
-    }
-    const total = Array.from(mapa.values()).reduce((acc, cur) => acc + cur.faturamento, 0);
-    return Array.from(mapa.values())
-      .map((item) => ({
-        ...item,
-        percentual: total > 0 ? (item.faturamento / total) * 100 : 0,
-      }))
-      .sort((a, b) => b.faturamento - a.faturamento);
-  }, [vendas]);
+  const rankingPorEmpresa = useMemo(() => analiseEmpresas(vendas), [vendas]);
 
   const periodoAnteriorCalculado = useMemo(
     () => calcularPeriodoAnterior(periodo.inicial, periodo.final),
@@ -699,7 +677,7 @@ export function DashboardView({
                       {formatarMoeda(emp.faturamento)}
                     </span>
                     <span className="text-[11px] text-muted-foreground">
-                      {emp.pedidos} itens
+                      {emp.pedidos} NF
                     </span>
                   </div>
                   {/* Barra de Progresso Visual */}

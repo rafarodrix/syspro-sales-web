@@ -3,6 +3,9 @@ import type { VendaProduto } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
   analiseDescontos,
+  analiseEmpresas,
+  analiseEvolucaoVendas,
+  analiseProdutosPorDimensao,
   analiseClientesNovosRecorrentes,
   analiseUFs,
   calcularVariacoesPeriodo,
@@ -11,6 +14,7 @@ import {
   valorItem,
 } from "@/lib/vendas";
 import { periodoConsultaValido } from "@/lib/sales-service";
+import { resolverEmpresaSelecionada } from "@/lib/empresa-selecao";
 
 function vendaBase(campos: Partial<VendaProduto> = {}): VendaProduto {
   return {
@@ -38,6 +42,12 @@ function vendaBase(campos: Partial<VendaProduto> = {}): VendaProduto {
 }
 
 describe("cálculos de vendas", () => {
+  it("preserva uma seleção consolidada personalizada de empresas autorizadas", () => {
+    const empresas = [{ id: "a" }, { id: "b" }];
+    expect(resolverEmpresaSelecionada("a,b", empresas)).toBe("a,b");
+    expect(resolverEmpresaSelecionada("a,invalida", empresas)).toBe("a");
+  });
+
   it("usa o valor líquido informado pela API", () => {
     expect(valorItem(vendaBase({ produto_vlr_total_liquido: 91 }))).toBe(91);
   });
@@ -67,6 +77,45 @@ describe("cálculos de vendas", () => {
 });
 
 describe("métricas de gestão (comparativo e concentração)", () => {
+  it("consolida a evolução por data e por mês de emissão", () => {
+    const resultado = analiseEvolucaoVendas([
+      vendaBase({ nf_numero: "1", nf_dt_emissao: "2026-09-02", produto_vlr_total_liquido: 200, produto_vlr_desconto: 20 }),
+      vendaBase({ nf_numero: "2", nf_dt_emissao: "2026-09-01", produto_vlr_total_liquido: 100, produto_vlr_desconto: 10 }),
+      vendaBase({ nf_numero: "3", nf_dt_emissao: "inválida", produto_vlr_total_liquido: 300 }),
+    ]);
+
+    expect(resultado.diario).toEqual([
+      expect.objectContaining({ periodo: "2026-09-01", faturamento: 100, pedidos: 1, descontos: 10 }),
+      expect.objectContaining({ periodo: "2026-09-02", faturamento: 200, pedidos: 1, descontos: 20 }),
+    ]);
+    expect(resultado.mensal).toEqual([
+      expect.objectContaining({ periodo: "2026-09", faturamento: 300, pedidos: 2, descontos: 30 }),
+    ]);
+  });
+
+  it("separa empresas e não mistura NFs de mesmo número na consolidação", () => {
+    const resultado = analiseEmpresas([
+      vendaBase({ empresa_codigo: "1", nf_numero: "100", produto_vlr_total_liquido: 100 }),
+      vendaBase({ empresa_codigo: "2", nf_numero: "100", produto_vlr_total_liquido: 200 }),
+    ]);
+
+    expect(resultado).toHaveLength(2);
+    expect(resultado).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "1", faturamento: 100, pedidos: 1, percentual: expect.closeTo(33.33, 1) }),
+      expect.objectContaining({ id: "2", faturamento: 200, pedidos: 1, percentual: expect.closeTo(66.67, 1) }),
+    ]));
+  });
+
+  it("consolida produtos dentro de cada cliente ou vendedor", () => {
+    const vendas = [
+      vendaBase({ nf_numero: "1", cliente_nome: "Cliente A", vendedor_nome: "Vendedor A", produto_id: "P1", produto_vlr_total_liquido: 100, produto_qtde: 2 }),
+      vendaBase({ nf_numero: "2", cliente_nome: "Cliente A", vendedor_nome: "Vendedor A", produto_id: "P1", produto_vlr_total_liquido: 50, produto_qtde: 1 }),
+    ];
+
+    expect(analiseProdutosPorDimensao(vendas, "cliente")[0]).toMatchObject({ dimensao: "Cliente A", produtoId: "P1", pedidos: 2, quantidade: 3, faturamento: 150 });
+    expect(analiseProdutosPorDimensao(vendas, "vendedor")[0]).toMatchObject({ dimensao: "Vendedor A", produtoId: "P1", pedidos: 2, quantidade: 3, faturamento: 150 });
+  });
+
   it("agrupa descontos também pela forma de pagamento da nota", () => {
     const relatorio = analiseDescontos([
       vendaBase({ nf_forma_pagto: "PIX", produto_vlr_desconto: 10 }),

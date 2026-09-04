@@ -1,24 +1,27 @@
 import { useMemo, useState } from "react";
-import { FileText, LayoutList, MousePointerClick } from "lucide-react";
+import { FileText, LayoutList, MousePointerClick, PackageSearch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
-import type { ItemClienteAnalise, VendaAgrupada } from "@/lib/vendas";
+import type { ItemClienteAnalise, ItemProdutoPorDimensao, VendaAgrupada } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { TablePagination } from "@/components/table-pagination";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
+import { VisaoProdutosPorDimensao } from "./visao-produtos-por-dimensao";
 
 interface AbaClientesProps {
   clientesFiltrados: ItemClienteAnalise[];
+  produtosPorCliente: ItemProdutoPorDimensao[];
   /** Notas do período (agrupadas por NF), usadas na visão analítica. */
   notasAgrupadas: VendaAgrupada[];
 }
 
 export function AbaClientes({
   clientesFiltrados,
+  produtosPorCliente,
   notasAgrupadas,
 }: AbaClientesProps) {
-  const [visao, setVisao] = useState<"sintetico" | "analitico">("sintetico");
+  const [visao, setVisao] = useState<"sintetico" | "produtos" | "analitico">("sintetico");
   const [clientesSelecionados, setClientesSelecionados] = useState<string[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
@@ -37,9 +40,10 @@ export function AbaClientes({
     <div className="space-y-4">
       <ReportViewSelector
         view={visao}
-        description="Síntese mostra o ranking; notas detalhadas mostram quais NF compõem cada cliente."
+        description="Síntese mostra o ranking; produtos detalham o mix comprado; notas mostram os documentos que compõem cada cliente."
         options={[
           { value: "sintetico", label: "Síntese", icon: LayoutList },
+          { value: "produtos", label: "Produtos", icon: PackageSearch },
           { value: "analitico", label: "Notas detalhadas", icon: FileText },
         ]}
         onViewChange={(proximaVisao) => {
@@ -129,6 +133,8 @@ export function AbaClientes({
             💡 Clique em um cliente para abrir a visão analítica com as notas dele.
           </p>
         </>
+      ) : visao === "produtos" ? (
+        <VisaoProdutosPorDimensao itens={produtosPorCliente} dimensaoRotulo="Cliente" dimensaoPlural="clientes" />
       ) : (
         <VisaoAnaliticaNotas
           notas={notasAgrupadas}

@@ -204,7 +204,7 @@ export function NavMobile({
                       className="flex items-center gap-2 py-1 text-muted-foreground hover:text-foreground"
                     >
                       <CalendarDays className="size-3.5 text-indigo-500" />
-                      Sazonalidade & Dias
+                      Sazonalidade & Evolução
                     </Link>
                     <Link
                       href="/relatorios?aba=departamentos"

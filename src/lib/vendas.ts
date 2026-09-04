@@ -191,6 +191,45 @@ export interface RelatorioSazonalidade {
   }[];
 }
 
+export interface ItemEvolucaoVendas {
+  periodo: string;
+  faturamento: number;
+  pedidos: number;
+  ticketMedio: number;
+  descontos: number;
+  percentual: number;
+}
+
+export interface RelatorioEvolucaoVendas {
+  diario: ItemEvolucaoVendas[];
+  mensal: ItemEvolucaoVendas[];
+}
+
+export interface ItemProdutoPorDimensao {
+  dimensao: string;
+  produtoId: string;
+  produto: string;
+  departamento: string;
+  un: string;
+  quantidade: number;
+  pedidos: number;
+  descontos: number;
+  faturamento: number;
+}
+
+/** Resultado comparável de cada empresa dentro de uma consulta consolidada. */
+export interface ItemEmpresaAnalise {
+  id: string;
+  nome: string;
+  cnpj?: string;
+  faturamento: number;
+  pedidos: number;
+  quantidadeItens: number;
+  descontos: number;
+  ticketMedio: number;
+  percentual: number;
+}
+
 export interface ItemGeograficoAnalise {
   cidade: string;
   uf: string;
@@ -783,6 +822,45 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
   return { itens: itensClientes };
 }
 
+/**
+ * Separa os indicadores por empresa sem alterar os cálculos consolidados dos
+ * relatórios. A chave da nota inclui a empresa, evitando colisão de números
+ * de NF emitidos por filiais diferentes.
+ */
+export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): ItemEmpresaAnalise[] {
+  const empresas = new Map<string, Omit<ItemEmpresaAnalise, "pedidos" | "ticketMedio" | "percentual"> & { notas: Set<string> }>();
+
+  for (const venda of vendas) {
+    const vendaEmpresa = venda as VendaComEmpresa;
+    const id = vendaEmpresa.empresa_id || venda.empresa_codigo?.trim() || "sem-empresa";
+    const atual = empresas.get(id) ?? {
+      id,
+      nome: vendaEmpresa.empresa_nome?.trim() || venda.empresa_razao?.trim() || `Empresa ${venda.empresa_codigo || "não identificada"}`,
+      cnpj: vendaEmpresa.empresa_cnpj,
+      faturamento: 0,
+      quantidadeItens: 0,
+      descontos: 0,
+      notas: new Set<string>(),
+    };
+
+    atual.faturamento += valorItem(venda);
+    atual.quantidadeItens += paraNumero(venda.produto_qtde);
+    atual.descontos += paraNumero(venda.produto_vlr_desconto);
+    atual.notas.add(chaveDaNota(venda));
+    empresas.set(id, atual);
+  }
+
+  const faturamentoTotal = [...empresas.values()].reduce((total, empresa) => total + empresa.faturamento, 0);
+  return [...empresas.values()]
+    .map(({ notas, ...empresa }) => ({
+      ...empresa,
+      pedidos: notas.size,
+      ticketMedio: notas.size > 0 ? empresa.faturamento / notas.size : 0,
+      percentual: faturamentoTotal > 0 ? (empresa.faturamento / faturamentoTotal) * 100 : 0,
+    }))
+    .sort((a, b) => b.faturamento - a.faturamento);
+}
+
 export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
   const vendMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
   const deptoMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
@@ -1004,6 +1082,84 @@ export function analiseSazonalidade(vendas: VendaProduto[]): RelatorioSazonalida
     porDiaSemana,
     porQuinzena,
   };
+}
+
+/** Agrega a evolução cronológica usando exclusivamente a data de emissão da NF. */
+export function analiseEvolucaoVendas(vendas: VendaProduto[]): RelatorioEvolucaoVendas {
+  const diario = new Map<string, { faturamento: number; descontos: number; notas: Set<string> }>();
+  const mensal = new Map<string, { faturamento: number; descontos: number; notas: Set<string> }>();
+  let faturamentoComData = 0;
+
+  for (const venda of vendas) {
+    const data = extrairDataInfo(venda.nf_dt_emissao);
+    if (!data) continue;
+
+    const chaveDia = `${data.ano}-${String(data.mes).padStart(2, "0")}-${String(data.dia).padStart(2, "0")}`;
+    const chaveMes = `${data.ano}-${String(data.mes).padStart(2, "0")}`;
+    const total = valorItem(venda);
+    const desconto = paraNumero(venda.produto_vlr_desconto);
+    const nota = chaveDaNota(venda);
+    faturamentoComData += total;
+
+    for (const [chave, mapa] of [[chaveDia, diario], [chaveMes, mensal]] as const) {
+      const atual = mapa.get(chave) ?? { faturamento: 0, descontos: 0, notas: new Set<string>() };
+      atual.faturamento += total;
+      atual.descontos += desconto;
+      atual.notas.add(nota);
+      mapa.set(chave, atual);
+    }
+  }
+
+  const montar = (mapa: Map<string, { faturamento: number; descontos: number; notas: Set<string> }>) =>
+    [...mapa.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([periodo, dados]) => ({
+      periodo,
+      faturamento: dados.faturamento,
+      pedidos: dados.notas.size,
+      ticketMedio: dados.notas.size > 0 ? dados.faturamento / dados.notas.size : 0,
+      descontos: dados.descontos,
+      percentual: faturamentoComData > 0 ? (dados.faturamento / faturamentoComData) * 100 : 0,
+    }));
+
+  return { diario: montar(diario), mensal: montar(mensal) };
+}
+
+/** Produto consolidado dentro de cliente ou vendedor, para leitura de mix comercial. */
+export function analiseProdutosPorDimensao(
+  vendas: VendaProduto[],
+  dimensao: "cliente" | "vendedor",
+): ItemProdutoPorDimensao[] {
+  const mapa = new Map<string, ItemProdutoPorDimensao & { notas: Set<string> }>();
+
+  for (const venda of vendas) {
+    const nomeDimensao = dimensao === "cliente"
+      ? venda.cliente_nome?.trim() || "Cliente não identificado"
+      : venda.vendedor_nome?.trim() || "Sem vendedor";
+    const produtoId = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const produto = venda.produto_descricao?.trim() || "Produto sem descrição";
+    const chave = `${nomeDimensao}\u0000${produtoId}\u0000${produto}`;
+    const atual = mapa.get(chave) ?? {
+      dimensao: nomeDimensao,
+      produtoId,
+      produto,
+      departamento: venda.produto_departamento?.trim() || "Sem departamento",
+      un: venda.produto_un?.trim() || "UN",
+      quantidade: 0,
+      pedidos: 0,
+      descontos: 0,
+      faturamento: 0,
+      notas: new Set<string>(),
+    };
+
+    atual.quantidade += paraNumero(venda.produto_qtde);
+    atual.descontos += paraNumero(venda.produto_vlr_desconto);
+    atual.faturamento += valorItem(venda);
+    atual.notas.add(chaveDaNota(venda));
+    mapa.set(chave, atual);
+  }
+
+  return [...mapa.values()]
+    .map(({ notas, ...item }) => ({ ...item, pedidos: notas.size }))
+    .sort((a, b) => b.faturamento - a.faturamento);
 }
 
 export function analiseGeografica(vendas: VendaProduto[]): ItemGeograficoAnalise[] {

@@ -1,20 +1,22 @@
 import { useState } from "react";
-import { FileText, LayoutList, MousePointerClick } from "lucide-react";
+import { FileText, LayoutList, MousePointerClick, PackageSearch } from "lucide-react";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
-import type { ItemVendedorAnalise, VendaAgrupada } from "@/lib/vendas";
+import type { ItemProdutoPorDimensao, ItemVendedorAnalise, VendaAgrupada } from "@/lib/vendas";
+import { VisaoProdutosPorDimensao } from "./visao-produtos-por-dimensao";
 
-type VisaoVendedores = "sintetico" | "analitico";
+type VisaoVendedores = "sintetico" | "produtos" | "analitico";
 
 interface AbaVendedoresProps {
   vendedoresFiltrados: ItemVendedorAnalise[];
+  produtosPorVendedor: ItemProdutoPorDimensao[];
   /** Notas do período (agrupadas por NF), usadas na visão analítica. */
   notasAgrupadas: VendaAgrupada[];
 }
 
-export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVendedoresProps) {
+export function AbaVendedores({ vendedoresFiltrados, produtosPorVendedor, notasAgrupadas }: AbaVendedoresProps) {
   const [visao, setVisao] = useState<VisaoVendedores>("sintetico");
   const [vendedoresSelecionados, setVendedoresSelecionados] = useState<string[]>([]);
 
@@ -27,9 +29,10 @@ export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVended
     <div className="space-y-4">
       <ReportViewSelector
         view={visao}
-        description="Síntese compara a equipe; notas detalhadas explicam os resultados de cada vendedor."
+        description="Síntese compara a equipe; produtos mostram o mix vendido; notas detalhadas explicam os resultados de cada vendedor."
         options={[
           { value: "sintetico", label: "Síntese", icon: LayoutList },
+          { value: "produtos", label: "Produtos", icon: PackageSearch },
           { value: "analitico", label: "Notas detalhadas", icon: FileText },
         ]}
         onViewChange={(proximaVisao) => {
@@ -107,6 +110,8 @@ export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVended
             💡 Clique em um vendedor para alternar para a visão analítica com as notas dele.
           </p>
         </>
+      ) : visao === "produtos" ? (
+        <VisaoProdutosPorDimensao itens={produtosPorVendedor} dimensaoRotulo="Vendedor" dimensaoPlural="vendedores" />
       ) : (
         <VisaoAnaliticaNotas
           notas={notasAgrupadas}

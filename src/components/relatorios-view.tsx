@@ -21,6 +21,9 @@ import {
   analiseVendedores,
   analiseClientes,
   analiseDescontos,
+  analiseEmpresas,
+  analiseEvolucaoVendas,
+  analiseProdutosPorDimensao,
   analiseSazonalidade,
   analiseGeografica,
   analiseUFs,
@@ -50,6 +53,7 @@ import { ExportDropdown } from "@/components/export-dropdown";
 import { FeedbackState } from "@/components/feedback-state";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { toast } from "sonner";
+import { resolverEmpresaSelecionada } from "@/lib/empresa-selecao";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -71,6 +75,7 @@ import { AbaVendedores } from "./relatorios/aba-vendedores";
 import { AbaGeografico } from "./relatorios/aba-geografico";
 import { AbaFinanceiro } from "./relatorios/aba-financeiro";
 import { PanoramaPeriodo } from "./relatorios/panorama-periodo";
+import { ConsolidacaoEmpresas } from "./relatorios/consolidacao-empresas";
 
 interface EmpresaOption {
   id: string;
@@ -93,7 +98,7 @@ const relatoriosOpcoes = [
   { id: "curva-abc", label: "Curva ABC (Produtos)", icone: Sparkles, cor: "text-amber-500", desc: "Pareto 80/15/5 de faturamento e volume de itens" },
   { id: "clientes", label: "Clientes", icone: UserCheck, cor: "text-emerald-500", desc: "Recorrência, concentração e Pareto da base de clientes" },
   { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500", desc: "Descontos por vendedor, departamento e forma de pagamento" },
-  { id: "sazonalidade", label: "Sazonalidade & Dias", icone: CalendarDays, cor: "text-indigo-500", desc: "Vendas por dia da semana e comparativo quinzenal" },
+  { id: "sazonalidade", label: "Sazonalidade & Evolução", icone: CalendarDays, cor: "text-indigo-500", desc: "Evolução diária e mensal, dias da semana e quinzenas" },
   { id: "departamentos", label: "Departamentos", icone: Layers, cor: "text-blue-500", desc: "Faturamento por categoria com itens detalhados" },
   { id: "vendedores", label: "Equipe de Vendedores", icone: Users, cor: "text-violet-500", desc: "Ranking de consultores, ticket médio e descontos" },
   { id: "geografico", label: "Cidade e UF", icone: MapPin, cor: "text-teal-500", desc: "Distribuição por cidade ou UF, clientes atendidos e frete rateado" },
@@ -110,12 +115,7 @@ export function RelatoriosView({
   initialVendasAnteriores = [],
   initialError,
 }: Props) {
-  const [empresaId] = useState(
-    empresaInicial === "todas" ||
-    (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
-      ? empresaInicial
-      : (empresas[0]?.id ?? ""),
-  );
+  const [empresaId] = useState(() => resolverEmpresaSelecionada(empresaInicial, empresas));
 
 
   const [periodo, setPeriodo] = useState<Periodo>(
@@ -158,6 +158,17 @@ export function RelatoriosView({
     () => empresas.find((e) => e.id === empresaId),
     [empresas, empresaId],
   );
+  const empresasSelecionadas = useMemo(() => {
+    const ids = empresaId === "todas"
+      ? empresas.map((empresa) => empresa.id)
+      : empresaId.split(",").map((id) => id.trim()).filter(Boolean);
+    return empresas.filter((empresa) => ids.includes(empresa.id));
+  }, [empresaId, empresas]);
+  const modoConsolidado = empresasSelecionadas.length > 1;
+  const rotuloEmpresa = modoConsolidado
+    ? `Consolidado (${empresasSelecionadas.length} empresas)`
+    : (empresaAtual?.razaoSocial ?? "Empresa Selecionada");
+  const consolidacaoEmpresas = useMemo(() => analiseEmpresas(vendas), [vendas]);
 
   // Cálculos analíticos otimizados com Lazy Memoization por aba ativa
   const relatorioABC = useMemo(() => {
@@ -222,6 +233,21 @@ export function RelatoriosView({
       return { porDiaSemana: [], porQuinzena: [] };
     }
     return analiseSazonalidade(vendas);
+  }, [vendas, abaAtiva]);
+
+  const relatorioEvolucao = useMemo(() => {
+    if (abaAtiva !== "sazonalidade") return { diario: [], mensal: [] };
+    return analiseEvolucaoVendas(vendas);
+  }, [vendas, abaAtiva]);
+
+  const produtosPorCliente = useMemo(() => {
+    if (abaAtiva !== "clientes") return [];
+    return analiseProdutosPorDimensao(vendas, "cliente");
+  }, [vendas, abaAtiva]);
+
+  const produtosPorVendedor = useMemo(() => {
+    if (abaAtiva !== "vendedores") return [];
+    return analiseProdutosPorDimensao(vendas, "vendedor");
   }, [vendas, abaAtiva]);
 
   const relatorioGeografico = useMemo(() => {
@@ -489,11 +515,8 @@ export function RelatoriosView({
     const titulo = relatorioAtivo?.label ?? "Relatório Analítico";
 
     const contexto = {
-      empresaNome:
-        empresaId === "todas"
-          ? "Todas as Empresas (Consolidado)"
-          : (empresaAtual?.razaoSocial ?? "Empresa Selecionada"),
-      cnpj: empresaId === "todas" ? undefined : empresaAtual?.cnpj,
+      empresaNome: rotuloEmpresa,
+      cnpj: modoConsolidado ? undefined : empresaAtual?.cnpj,
       periodo,
     };
 
@@ -604,10 +627,10 @@ export function RelatoriosView({
                 </CardTitle>
                 <CardDescription className="text-xs">{relatorioAtivo?.desc}</CardDescription>
               </div>
-              {empresaId === "todas" && (
+              {modoConsolidado && (
                 <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold gap-1 px-2.5 py-0.5">
                   <Building2 className="size-3.5" />
-                  <span>Visão Consolidada ({empresas.length} Empresas)</span>
+                  <span>Visão Consolidada ({empresasSelecionadas.length} Empresas)</span>
                 </Badge>
               )}
             </div>
@@ -717,6 +740,10 @@ export function RelatoriosView({
                 rotuloPeriodoAnterior={rotuloPeriodoAnterior}
               />
 
+              {modoConsolidado && consolidacaoEmpresas.length > 1 ? (
+                <ConsolidacaoEmpresas empresas={consolidacaoEmpresas} abaAtiva={abaAtiva} />
+              ) : null}
+
               <div className="border-t border-border/60" />
 
               {/* Renderização condicional da aba ativa através de componentes modulares */}
@@ -734,6 +761,7 @@ export function RelatoriosView({
               {abaAtiva === "clientes" && (
                 <AbaClientes
                   clientesFiltrados={clientesFiltrados}
+                  produtosPorCliente={produtosPorCliente}
                   notasAgrupadas={notasAgrupadasRelatorio}
                 />
               )}
@@ -743,7 +771,10 @@ export function RelatoriosView({
               )}
 
               {abaAtiva === "sazonalidade" && (
-                <AbaSazonalidade relatorioSazonalidade={relatorioSazonalidade} />
+                <AbaSazonalidade
+                  relatorioSazonalidade={relatorioSazonalidade}
+                  relatorioEvolucao={relatorioEvolucao}
+                />
               )}
 
               {abaAtiva === "departamentos" && (
@@ -753,6 +784,7 @@ export function RelatoriosView({
               {abaAtiva === "vendedores" && (
                 <AbaVendedores
                   vendedoresFiltrados={vendedoresFiltrados}
+                  produtosPorVendedor={produtosPorVendedor}
                   notasAgrupadas={notasAgrupadasRelatorio}
                 />
               )}

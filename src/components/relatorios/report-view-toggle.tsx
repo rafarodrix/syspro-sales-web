@@ -29,7 +29,7 @@ export function ReportViewSelector<T extends string>({
         <p className="text-xs font-bold text-foreground">Escolha como analisar</p>
         <p className="text-[11px] text-muted-foreground">{description}</p>
       </div>
-      <div className="flex w-full items-center gap-1 rounded-md border bg-background p-0.5 sm:w-auto" role="group" aria-label={ariaLabel}>
+      <div className="flex w-full flex-wrap items-center gap-1 rounded-md border bg-background p-0.5 sm:w-auto" role="group" aria-label={ariaLabel}>
         {options.map(({ value, label, icon: Icon }) => {
           const active = view === value;
           return (

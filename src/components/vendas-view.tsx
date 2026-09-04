@@ -37,6 +37,7 @@ import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
 import { TablePagination } from "@/components/table-pagination";
 import { toast } from "sonner";
+import { resolverEmpresaSelecionada } from "@/lib/empresa-selecao";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -87,12 +88,7 @@ export function VendasView({
   initialError,
 }: Props) {
   const searchParams = useSearchParams();
-  const [empresaId] = useState(
-    empresaInicial === "todas" ||
-    (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
-      ? empresaInicial
-      : (empresas[0]?.id ?? ""),
-  );
+  const [empresaId] = useState(() => resolverEmpresaSelecionada(empresaInicial, empresas));
 
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),

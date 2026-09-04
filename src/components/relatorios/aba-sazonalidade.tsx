@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { CalendarDays, CalendarRange } from "lucide-react";
+import { CalendarDays, CalendarRange, ChartLine } from "lucide-react";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
 
-type VisaoSazonalidade = "dia-semana" | "quinzena";
+type VisaoSazonalidade = "dia-semana" | "quinzena" | "diario" | "mensal";
 
 interface ItemSazonalidadeBase {
   pedidos: number;
@@ -18,6 +18,15 @@ interface AbaSazonalidadeProps {
     porDiaSemana: Array<ItemSazonalidadeBase & { dia: string }>;
     porQuinzena: Array<ItemSazonalidadeBase & { quinzena: string }>;
   };
+  relatorioEvolucao: {
+    diario: ItemEvolucao[];
+    mensal: ItemEvolucao[];
+  };
+}
+
+interface ItemEvolucao extends ItemSazonalidadeBase {
+  periodo: string;
+  descontos: number;
 }
 
 function TabelaSazonalidade({ itens, rotulo }: { itens: Array<ItemSazonalidadeBase & { rotulo: string }>; rotulo: string }) {
@@ -49,24 +58,42 @@ function TabelaSazonalidade({ itens, rotulo }: { itens: Array<ItemSazonalidadeBa
   );
 }
 
-export function AbaSazonalidade({ relatorioSazonalidade }: AbaSazonalidadeProps) {
+function TabelaEvolucao({ itens, rotulo, mensal }: { itens: ItemEvolucao[]; rotulo: string; mensal: boolean }) {
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <table className="w-full min-w-[700px] text-xs">
+        <thead><tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground"><th className="p-3">{rotulo}</th><th className="p-3 text-right">Pedidos / NF</th><th className="p-3 text-right">Ticket médio</th><th className="p-3 text-right">Descontos</th><th className="p-3 text-right">Faturamento</th><th className="p-3 text-right">Participação</th></tr></thead>
+        <tbody>{itens.map((item) => <tr key={item.periodo} className="border-b last:border-0 hover:bg-muted/20"><td className="p-3 font-semibold">{mensal ? `${item.periodo.slice(5, 7)}/${item.periodo.slice(0, 4)}` : item.periodo.split("-").reverse().join("/")}</td><td className="p-3 text-right font-mono">{formatarNumero(item.pedidos, 0)}</td><td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(item.ticketMedio)}</td><td className="p-3 text-right font-mono text-rose-600 dark:text-rose-400">{formatarMoeda(item.descontos)}</td><td className="p-3 text-right font-mono font-bold">{formatarMoeda(item.faturamento)}</td><td className="p-3 text-right"><DataBarPercent valor={formatarPercentual(item.percentual, 1)} percentual={item.percentual} cor="bg-indigo-500/20" /></td></tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
+export function AbaSazonalidade({ relatorioSazonalidade, relatorioEvolucao }: AbaSazonalidadeProps) {
   const [visao, setVisao] = useState<VisaoSazonalidade>("dia-semana");
   const porDiaSemana = relatorioSazonalidade.porDiaSemana.map(({ dia, ...item }) => ({ ...item, rotulo: dia }));
   const porQuinzena = relatorioSazonalidade.porQuinzena.map(({ quinzena, ...item }) => ({ ...item, rotulo: quinzena }));
   const exibeDiaSemana = visao === "dia-semana";
+  const exibeEvolucao = visao === "diario" || visao === "mensal";
 
   return (
     <div className="space-y-4">
       <ReportViewSelector
         view={visao}
         onViewChange={setVisao}
-        description="Dia da semana mostra a distribuição operacional; quinzena mostra a composição do mês por metade do período."
+        description="Evolução acompanha faturamento no tempo; dia da semana e quinzena mostram a distribuição operacional do período."
         options={[
+          { value: "diario", label: "Diário", icon: ChartLine },
+          { value: "mensal", label: "Mensal", icon: CalendarRange },
           { value: "dia-semana", label: "Dia da semana", icon: CalendarDays },
           { value: "quinzena", label: "Quinzena", icon: CalendarRange },
         ]}
       />
-      <TabelaSazonalidade itens={exibeDiaSemana ? porDiaSemana : porQuinzena} rotulo={exibeDiaSemana ? "Dia da semana" : "Quinzena"} />
+      {exibeEvolucao ? (
+        <TabelaEvolucao itens={visao === "diario" ? relatorioEvolucao.diario : relatorioEvolucao.mensal} rotulo={visao === "diario" ? "Emissão" : "Mês"} mensal={visao === "mensal"} />
+      ) : (
+        <TabelaSazonalidade itens={exibeDiaSemana ? porDiaSemana : porQuinzena} rotulo={exibeDiaSemana ? "Dia da semana" : "Quinzena"} />
+      )}
     </div>
   );
 }

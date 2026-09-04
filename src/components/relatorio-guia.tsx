@@ -52,6 +52,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     dica: "Para os clientes Top, avalie criar condições específicas (prazo, tabela) — são os que mais garantem previsibilidade de receita.",
     glossario: [
       { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por cliente com totais do período." },
+      { termo: "Produtos por cliente", definicao: "Mostra os produtos comprados por cada cliente, com quantidade, notas, descontos e faturamento no período." },
       { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por cliente — mostra o que compõe os números do ranking." },
     ],
   },
@@ -71,7 +72,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
   },
   sazonalidade: {
     resumo:
-      "Revela o padrão de venda ao longo do tempo: quais dias da semana vendem mais e como o período se compara com a quinzena anterior.",
+      "Revela a evolução diária e mensal das vendas, além da distribuição por dia da semana e quinzena.",
     comoLer: [
       "Dias da semana com pico indicam quando reforçar equipe e estoque; dias fracos indicam onde caberia uma ação de ativação.",
       "A visão por quinzena divide o período entre os dias 1–15 e 16–fim do mês; ela mostra distribuição interna, não comparação com um período anterior.",
@@ -79,6 +80,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     dica: "Escale a operação (caixa, reposição) pelos dias de maior movimento e reserve ações promocionais para os dias fracos.",
     glossario: [
       { termo: "Sazonalidade", definicao: "Padrão de variação das vendas por dia da semana, quinzena ou época." },
+      { termo: "Evolução diária", definicao: "Consolida faturamento, notas, ticket médio e descontos por data de emissão da NF. Registros sem data válida não entram nesta visão." },
+      { termo: "Evolução mensal", definicao: "Consolida os mesmos indicadores por mês de emissão, facilitando a comparação da tendência no período selecionado." },
       { termo: "Visão por dia da semana", definicao: "Consolida faturamento, pedidos e ticket médio de todas as segundas, terças e demais dias presentes no período." },
       { termo: "Visão por quinzena", definicao: "Agrupa as vendas emitidas entre os dias 1–15 e 16–fim de cada mês do período selecionado." },
     ],
@@ -108,6 +111,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     glossario: [
       { termo: "Ticket médio", definicao: "Faturamento ÷ número de notas (vendas) do vendedor no período." },
       { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por vendedor com totais do período." },
+      { termo: "Produtos por vendedor", definicao: "Mostra o mix de produtos vendido por cada vendedor, com quantidade, notas, descontos e faturamento no período." },
       { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por vendedor — mostra o que compõe os números do ranking." },
     ],
   },
@@ -152,6 +156,7 @@ const TERMOS_PANORAMA = [
   { termo: "Ticket médio", definicao: "Faturamento do período ÷ número de notas. Valor médio de cada venda." },
   { termo: "Clientes ativos", definicao: "Clientes distintos que compraram no período, incluindo consumidor de balcão." },
   { termo: "Variação vs. período anterior", definicao: "Comparação com o período de mesma duração imediatamente anterior ao selecionado. Mostra crescimento (+) ou queda (−) em %." },
+  { termo: "Consolidação por empresa", definicao: "Exibida quando duas ou mais empresas são selecionadas. Mantém os totais de cada unidade separados para explicar a participação no resultado consolidado; os rankings abaixo continuam representando o grupo selecionado." },
 ];
 
 // Todo relatório usa o Panorama, então todo guia ganha os termos correspondentes.
