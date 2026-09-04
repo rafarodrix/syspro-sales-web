@@ -58,6 +58,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "Frequência média de compra", definicao: "Pedidos/NF do período ÷ clientes cadastrados ativos (exclui consumidor de balcão). Quantas vezes, em média, cada cliente compra." },
       { termo: "Clientes novos", definicao: "Compraram no período atual e não haviam comprado no período anterior equivalente." },
       { termo: "Clientes recorrentes entre períodos", definicao: "Compraram no período atual e também no anterior — a base que garante previsibilidade de receita." },
+      { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por cliente com totais do período." },
+      { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por cliente — mostra o que compõe os números do ranking." },
     ],
   },
   descontos: {
@@ -107,6 +109,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     dica: "Metas individuais fazem mais sentido quando consideram o perfil de cada um (balcão vs. venda direta).",
     glossario: [
       { termo: "Ticket médio", definicao: "Faturamento ÷ número de notas (vendas) do vendedor no período." },
+      { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por vendedor com totais do período." },
+      { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por vendedor — mostra o que compõe os números do ranking." },
     ],
   },
   geografico: {
@@ -119,6 +123,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     dica: "Se uma praça distante gera pouco faturamento e muito frete, considere política de entrega mínima ou parceiro logístico local.",
     glossario: [
       { termo: "Frete rateado", definicao: "Parcela do custo de frete distribuída nos itens da nota." },
+      { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por cidade/praça com totais do período." },
+      { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por cidade — mostra as vendas que compõem cada praça." },
     ],
   },
   financeiro: {

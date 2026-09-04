@@ -26,6 +26,7 @@ import {
   analiseGeografica,
   analiseFinanceira,
   analiseClientesNovosRecorrentes,
+  agruparVendasPorNota,
   calcularVariacoesPeriodo,
   calcularPeriodoAnterior,
   concentracaoTopN,
@@ -199,6 +200,12 @@ export function RelatoriosView({
   const relatorioVendedores = useMemo(() => {
     if (abaAtiva !== "vendedores") return [];
     return analiseVendedores(vendas);
+  }, [vendas, abaAtiva]);
+
+  // Notas agrupadas por NF — base das visões analíticas (Vendedores, Clientes, Cidades)
+  const notasAgrupadasRelatorio = useMemo(() => {
+    if (abaAtiva !== "vendedores" && abaAtiva !== "clientes" && abaAtiva !== "geografico") return [];
+    return agruparVendasPorNota(vendas);
   }, [vendas, abaAtiva]);
 
   const relatorioClientes = useMemo(() => {
@@ -791,6 +798,7 @@ export function RelatoriosView({
                   temPeriodoAnterior={vendasAnteriores.length > 0}
                   frequenciaMediaPedidosPorCliente={metricasBaseClientes?.frequenciaMediaPedidosPorCliente}
                   pedidosNoPeriodo={metricasBaseClientes?.pedidosNoPeriodo}
+                  notasAgrupadas={notasAgrupadasRelatorio}
                 />
               )}
 
@@ -807,11 +815,17 @@ export function RelatoriosView({
               )}
 
               {abaAtiva === "vendedores" && (
-                <AbaVendedores vendedoresFiltrados={vendedoresFiltrados} />
+                <AbaVendedores
+                  vendedoresFiltrados={vendedoresFiltrados}
+                  notasAgrupadas={notasAgrupadasRelatorio}
+                />
               )}
 
               {abaAtiva === "geografico" && (
-                <AbaGeografico cidadesFiltradas={cidadesFiltradas} />
+                <AbaGeografico
+                  cidadesFiltradas={cidadesFiltradas}
+                  notasAgrupadas={notasAgrupadasRelatorio}
+                />
               )}
 
               {abaAtiva === "financeiro" && (
