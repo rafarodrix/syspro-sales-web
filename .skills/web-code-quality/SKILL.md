@@ -1,11 +1,11 @@
 ---
 name: web-code-quality
-description: Use for syspro-sales-web dev flow (question, plan, code, review).
+description: Use for SysproERP Reports dev flow (question, plan, code, review).
 ---
 
 # Fluxo de Desenvolvimento (Next.js/TS/Prisma local)
 
-Padrão de qualidade para desenvolver no `syspro-sales-web` (e apps locais semelhantes). Método em 4 etapas — adaptado de boas práticas usadas em outros projetos da equipe, sem acoplar a domínios de terceiros.
+Padrão de qualidade para desenvolver no `SysproERP Reports` (e apps locais semelhantes). Método em 4 etapas — adaptado de boas práticas usadas em outros projetos da equipe, sem acoplar a domínios de terceiros.
 
 ## ETAPA 1 — Questionar antes de codar
 Nunca aceite a tarefa sem entender o "porquê":
@@ -25,13 +25,13 @@ Nunca aceite a tarefa sem entender o "porquê":
 - TypeScript estrito; sem `any` solto.
 - Erros tratados (rota devolve status correto; client mostra toast).
 - Comentários só para decisões não óbvias.
-- Respeite as armadilhas da skill `syspro-sales-web` (datas DD/MM/AAAA, Suspense, Prisma 7 adapter...).
+- Respeite as armadilhas da skill `syspro-erp-reports` (datas DD/MM/AAAA, Suspense, Prisma 7 adapter...).
 
 ## ETAPA 4 — Revisar antes de entregar
 - `npx tsc --noEmit` limpo (ignorar ruído de lint de node_modules quando roda por arquivo).
 - `npm run build` passa (prerender OK).
 - Teste manual do fluxo real (login + chamada) — **não** apenas "compilou".
-- Commit pequeno e descritivo; push para `github.com/rafarodrix/syspro-sales-web`.
+- Commit pequeno e descritivo; push para o repositório configurado do SysproERP Reports.
 
 ## Checklists rápidos
 - **Rota nova**: autenticada? admin vs user? valida input? erro claro?

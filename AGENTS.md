@@ -8,17 +8,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# syspro-sales-web — regras do projeto
+# SysproERP Reports — regras do projeto
 
-Aplicação web **local** de consulta de vendas do Syspro ERP (Next.js 16 + Prisma 7 + Better Auth + SQLite). Repo: `github.com/rafarodrix/syspro-sales-web`.
+Aplicação web **local** de consulta de vendas do Syspro ERP (Next.js 16 + Prisma 7 + Better Auth + SQLite). Produto: `SysproERP Reports`.
 
 ## Skills do projeto (carregar ANTES de tarefas relacionadas)
 Este repo versiona skills próprias em `.skills/` (formato SKILL.md). Consulte-as conforme o tema:
 
-- **`.skills/syspro-sales-web/SKILL.md`** — arquitetura, estrutura, comandos e **armadilhas** do app. Leia antes de QUALQUER mudança de código.
+- **`.skills/syspro-erp-reports/SKILL.md`** — arquitetura, estrutura, comandos e **armadilhas** do app. Leia antes de QUALQUER mudança de código.
 - **`.skills/syspro-api-exporta/SKILL.md`** — API de exportação do Syspro: URLs (com/sem IIS), datas DD/MM/AAAA, rotas, campos. Consulte ao mexer em consultas.
 - **`.skills/web-code-quality/SKILL.md`** — fluxo de dev em 4 etapas (questionar → arquitetar → implementar → revisar) e checklists.
-- **`.skills/syspro-sales-web-deploy/SKILL.md`** — instalar/atualizar o app no servidor do cliente (PM2 + standalone + .env de produção).
+- **`.skills/syspro-erp-reports-deploy/SKILL.md`** — instalar/atualizar o app no servidor do cliente (PM2 + standalone + .env de produção).
 - **`.skills/syspro-mcp/SKILL.md`** — conectar o MCP do Syspro (endpoint `/syspro` :3333, auth Bearer GUID) ao Hermes/Grok/ChatGPT; guia completo em `.skills/syspro-mcp/guia-configuracao.md`.
 
 ## Regras rápidas

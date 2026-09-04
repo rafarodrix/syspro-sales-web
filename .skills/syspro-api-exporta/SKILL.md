@@ -5,7 +5,7 @@ description: Use for Syspro export API queries (routes, fields, IIS).
 
 # Syspro — API de Exportação (consulta de dados)
 
-API REST do Syspro ERP para **consultar dados** (vendas, estoque, produção, títulos, transporte). Usada pelo `syspro-sales-web` e por análises de suporte. É **leitura** — não emite nem altera nada (emissão é ACBr/e-Frete, ver skill `syspro-erp`).
+API REST do Syspro ERP para **consultar dados** (vendas, estoque, produção, títulos, transporte). Usada pelo `SysproERP Reports` e por análises de suporte. É **leitura** — não emite nem altera nada (emissão é ACBr/e-Frete, ver skill `syspro-erp`).
 
 ## URLs — dois formatos (confirmados ao vivo; IIS via DLL)
 
@@ -18,7 +18,7 @@ API REST do Syspro ERP para **consultar dados** (vendas, estoque, produção, t�
 
 | Rota | Endpoint | Uso |
 |---|---|---|
-| Vendas de produto | `produto/venda` | foco do syspro-sales-web |
+| Vendas de produto | `produto/venda` | foco do SysproERP Reports |
 | Movimentações de estoque | `produto/kardex` | saldo/movimento |
 | Produção | `producao` | produzido/previsto |
 | Títulos a receber | `receber` | contas a receber |

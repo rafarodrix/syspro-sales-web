@@ -64,7 +64,7 @@ export const empresaCreateSchema = z.object({
   razaoSocial: z.string().trim().min(2, "Razao Social e obrigatoria."),
   empresaCodigo: z.string().trim().min(1, "Codigo da empresa no Syspro e obrigatorio."),
   sysproBaseUrl: z.string().optional().transform((val) => (val ? sanitizarSysproUrl(val) : "http://localhost:8080")),
-  sysproUseIis: z.boolean().default(false).transform((val) => (val ? "true" : "false")),
+  sysproUseIis: z.boolean().default(false),
 });
 
 export const empresaUpdateSchema = z.object({
@@ -74,7 +74,7 @@ export const empresaUpdateSchema = z.object({
   empresaCodigo: z.string().trim().min(1, "Codigo da empresa e obrigatorio.").optional(),
   ativa: z.boolean().optional(),
   sysproBaseUrl: z.string().optional().transform((val) => (val !== undefined ? sanitizarSysproUrl(val) : undefined)),
-  sysproUseIis: z.boolean().optional().transform((val) => (val === undefined ? undefined : val ? "true" : "false")),
+  sysproUseIis: z.boolean().optional(),
 });
 
 const padraoDataBR = /^\d{2}\/\d{2}\/\d{4}$/;

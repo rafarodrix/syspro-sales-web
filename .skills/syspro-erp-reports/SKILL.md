@@ -1,13 +1,13 @@
 ---
-name: syspro-sales-web
-description: Use for the syspro-sales-web app (Next.js local sales viewer).
+name: syspro-erp-reports
+description: Use for the SysproERP Reports app (Next.js local sales viewer).
 ---
 
-# syspro-sales-web
+# SysproERP Reports
 
 Aplicação **web local** (roda no servidor do cliente, não em nuvem) para consultar e apresentar as **vendas do Syspro ERP** via API de exportação. Sem agent Go, sem monitoramento remoto, sem integração com o Portal Trilink — escopo enxuto: usuário consulta vendas por CNPJ/período.
 
-**Repo:** `https://github.com/rafarodrix/syspro-sales-web` · **Local:** `C:\Users\trilink\syspro-sales-web` (dev em `npm run dev`, porta 3000)
+**Produto:** `SysproERP Reports` (dev em `npm run dev`, porta 3000)
 
 ## Stack
 

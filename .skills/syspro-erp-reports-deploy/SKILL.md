@@ -1,11 +1,11 @@
 ---
-name: syspro-sales-web-deploy
-description: Use to install/update syspro-sales-web on a client server.
+name: syspro-erp-reports-deploy
+description: Use to install/update SysproERP Reports on a client server.
 ---
 
 # Deploy no servidor do cliente (Windows)
 
-Como instalar e atualizar o `syspro-sales-web` **no servidor do cliente** — a mesma máquina que roda o Syspro (IIS porta 1234 ou SysproServer.exe). O app roda como **serviço PM2** (sobe com o Windows, reinicia sozinho). Usa o build **standalone** do Next.
+Como instalar e atualizar o `SysproERP Reports` **no servidor do cliente** — a mesma máquina que roda o Syspro (IIS porta 1234 ou SysproServer.exe). O app roda como **serviço PM2** (sobe com o Windows, reinicia sozinho). Usa o build **standalone** do Next.
 
 ## Pré-requisitos no servidor do cliente
 - **Node.js LTS** instalado (https://nodejs.org) — necessário p/ rodar o app.
@@ -30,7 +30,7 @@ git pull
 call npm install --omit=dev
 call npm run build
 xcopy /E /I /Y ".next\static" ".next\standalone\.next\static" >nul
-pm2 restart syspro-sales-web
+pm2 restart syspro-erp-reports
 ```
 (ou rodar o `instalar-servico.bat` de novo — é idempotente).
 
@@ -59,11 +59,11 @@ O app atende **dois públicos** com origens diferentes (ex.: IP local `192.168.x
 ## Operação (PM2)
 ```bat
 pm2 status                REM estado
-pm2 logs syspro-sales-web REM logs (erros ficam em logs/err.log)
-pm2 restart syspro-sales-web
-pm2 stop syspro-sales-web
+pm2 logs syspro-erp-reports REM logs (erros ficam em logs/err.log)
+pm2 restart syspro-erp-reports
+pm2 stop syspro-erp-reports
 ```
-Para **remover** o serviço: `pm2 delete syspro-sales-web`.
+Para **remover** o serviço: `pm2 delete syspro-erp-reports`.
 
 ## Diagnóstico rápido
 1. `pm2 status` → online?
