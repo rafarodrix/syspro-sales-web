@@ -181,7 +181,7 @@ export function TermoExplicado({
     <span className="group relative inline-flex cursor-help items-center gap-1 border-b border-dotted border-muted-foreground/50">
       {termo}
       <Icone className="size-3 text-muted-foreground/70" />
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-56 -translate-x-1/2 rounded-md border border-border bg-popover p-2 text-[11px] font-normal leading-snug text-popover-foreground shadow-md group-hover:block">
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-[100] mb-2 hidden w-72 max-w-[calc(100vw-2rem)] -translate-x-1/2 whitespace-normal rounded-lg border border-border bg-popover p-3 text-[11px] font-normal leading-relaxed text-popover-foreground shadow-xl group-hover:block">
         {definicao}
       </span>
     </span>

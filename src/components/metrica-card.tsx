@@ -67,7 +67,7 @@ export function MetricaCard({
   const estilo = estilosDestaque[destaque];
 
   return (
-    <Card className={`group relative overflow-hidden border shadow-2xs transition-all duration-300 hover:shadow-md ${estilo.card}`}>
+    <Card className={`group relative border shadow-2xs transition-all duration-300 hover:shadow-md ${estilo.card}`}>
       <CardContent className="flex h-full flex-col justify-between gap-2 p-3.5 sm:p-4">
         <div className="flex items-start justify-between gap-2">
           <TermoExplicado termo={rotulo} definicao={definicao} />

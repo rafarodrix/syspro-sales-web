@@ -67,7 +67,12 @@ export function AbaClientes({
   return (
     <div className="space-y-4">
       {/* Cards Síntese de Clientes */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="rounded-xl border border-border/60 bg-muted/[0.12] p-2.5 sm:p-3">
+        <div className="mb-2 flex items-center justify-between gap-2 px-1">
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Carteira de clientes</span>
+          <span className="text-[10px] text-muted-foreground/70">base, recorrência e concentração</span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricaCard
           rotulo="Total de Clientes"
           definicao="Clientes distintos que compraram no período, incluindo consumidor de balcão."
@@ -100,9 +105,12 @@ export function AbaClientes({
           rodape="dos 20 maiores compradores"
         />
       </div>
+      </section>
 
       {/* Gestão da base: frequência e novos vs. recorrentes */}
-      <div className={`grid grid-cols-1 gap-3 ${temPeriodoAnterior ? "sm:grid-cols-2" : ""}`}>
+      <section className="rounded-xl border border-border/60 bg-muted/[0.12] p-2.5 sm:p-3">
+        <div className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Saúde da carteira</div>
+        <div className={`grid grid-cols-1 gap-3 ${temPeriodoAnterior ? "sm:grid-cols-2" : ""}`}>
         <MetricaCard
           rotulo="Frequência média de compra"
           definicao="Total de pedidos/NF do período ÷ clientes cadastrados ativos (exclui consumidor de balcão). Mede quantas vezes, em média, cada cliente compra no período."
@@ -130,7 +138,8 @@ export function AbaClientes({
             }
           />
         ) : null}
-      </div>
+        </div>
+      </section>
 
       {/* Alternador de visão: ranking de clientes vs. notas por cliente */}
       <div className="flex flex-wrap items-center justify-between gap-2">
