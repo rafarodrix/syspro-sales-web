@@ -6,6 +6,7 @@ import type { ConcentracaoTop, CrescimentoProduto, ItemCurvaABC } from "@/lib/ve
 import { DataBarPercent } from "./data-bar-percent";
 import { TablePagination } from "@/components/table-pagination";
 import { TermoExplicado } from "@/components/relatorio-guia";
+import { MetricaCard } from "@/components/metrica-card";
 
 interface AbaCurvaABCProps {
   relatorioABC: {

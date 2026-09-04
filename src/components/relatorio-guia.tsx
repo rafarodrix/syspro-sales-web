@@ -97,6 +97,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     dica: "Use o mix para decidir onde concentrar estoque, espaço e verba de compra.",
     glossario: [
       { termo: "Mix de vendas", definicao: "Proporção da receita vinda de cada departamento/categoria." },
+      { termo: "Visão sintética", definicao: "Uma linha por departamento, com quantidade de produtos, volume e faturamento." },
+      { termo: "Visão analítica", definicao: "Uma linha por produto dentro dos departamentos, para identificar quais itens compõem o resultado." },
     ],
   },
   vendedores: {
@@ -118,13 +120,15 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Distribui as vendas por cidade/UF e mostra o frete rateado — de onde vêm os clientes e quanto custa atendê-los.",
     comoLer: [
       "Concentração em poucas cidades significa mercado regional dependente — expansão passa por diversificar praças.",
-      "Frete alto em praças distantes pode corroer a margem de pedidos pequenos — avalie valor mínimo de pedido por região.",
+      "Frete alto em cidades distantes pode elevar o custo de atendimento de pedidos pequenos — avalie valor mínimo de pedido por região.",
     ],
     dica: "Se uma praça distante gera pouco faturamento e muito frete, considere política de entrega mínima ou parceiro logístico local.",
     glossario: [
-      { termo: "Frete rateado", definicao: "Parcela do custo de frete distribuída nos itens da nota." },
-      { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por cidade/praça com totais do período." },
-      { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por cidade — mostra as vendas que compõem cada praça." },
+      { termo: "UF", definicao: "Unidade Federativa do endereço do cliente, obtida do campo cliente_uf da API. Registros sem UF são agrupados como '—'." },
+      { termo: "Visão por UF", definicao: "Faturamento, pedidos, clientes e cidades consolidados por estado; clique em uma UF para detalhar suas cidades." },
+      { termo: "Visão por cidade", definicao: "Detalhamento das cidades do período, opcionalmente limitado a uma UF selecionada." },
+      { termo: "Visão sintética", definicao: "Resumo agregado em uma linha por UF ou cidade." },
+      { termo: "Visão analítica", definicao: "Detalhe no nível da nota fiscal, filtrável por cidade." },
     ],
   },
   financeiro: {
@@ -179,7 +183,7 @@ export function TermoExplicado({
     <span className="group relative inline-flex cursor-help items-center gap-1 border-b border-dotted border-muted-foreground/50">
       {termo}
       <Icone className="size-3 text-muted-foreground/70" />
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-56 -translate-x-1/2 rounded-md border border-border bg-popover p-2 text-[11px] font-normal leading-snug text-popover-foreground shadow-md group-hover:block">
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-[100] mb-2 hidden w-72 max-w-[calc(100vw-2rem)] -translate-x-1/2 whitespace-normal rounded-lg border border-border bg-popover p-3 text-[11px] font-normal leading-relaxed text-popover-foreground shadow-xl group-hover:block">
         {definicao}
       </span>
     </span>

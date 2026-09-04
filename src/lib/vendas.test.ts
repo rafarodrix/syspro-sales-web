@@ -3,6 +3,7 @@ import type { VendaProduto } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
   analiseClientesNovosRecorrentes,
+  analiseUFs,
   calcularVariacoesPeriodo,
   concentracaoTopN,
   maioresCrescimentosProdutos,
@@ -128,5 +129,25 @@ describe("métricas de gestão (comparativo e concentração)", () => {
     expect(crescimentos).toHaveLength(1);
     expect(crescimentos[0].id).toBe("P1");
     expect(crescimentos[0].variacao.diferenca).toBe(150);
+  });
+
+  it("agrega as vendas por UF com faturamento, pedidos e clientes", () => {
+    const vendas = [
+      vendaBase({ nf_numero: "1", cliente_nome: "CLIENTE A", cliente_cidade: "Belo Horizonte", cliente_uf: "MG", produto_vlr_total_liquido: 100 }),
+      vendaBase({ nf_numero: "2", cliente_nome: "CLIENTE B", cliente_cidade: "Uberlândia", cliente_uf: "MG", produto_vlr_total_liquido: 50 }),
+      vendaBase({ nf_numero: "3", cliente_nome: "CLIENTE C", cliente_cidade: "São Paulo", cliente_uf: "sp", produto_vlr_total_liquido: 200 }),
+    ];
+
+    const ufs = analiseUFs(vendas);
+
+    expect(ufs).toHaveLength(2);
+    const mg = ufs.find((item) => item.uf === "MG");
+    const sp = ufs.find((item) => item.uf === "SP");
+    expect(mg?.faturamento).toBe(150);
+    expect(mg?.pedidos).toBe(2);
+    expect(mg?.clientes).toBe(2);
+    expect(mg?.cidades).toBe(2);
+    expect(sp?.faturamento).toBe(200);
+    expect(sp?.percentual).toBeCloseTo(57.14, 1);
   });
 });

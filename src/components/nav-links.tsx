@@ -223,7 +223,7 @@ export function NavLinks({ userRole = "vendas" }: { userRole?: string }) {
                       <MapPin className="size-3.5" />
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-foreground">Cidades & Praças</div>
+                      <div className="text-xs font-bold text-foreground">Cidade e UF</div>
                       <div className="text-[10.5px] text-muted-foreground">Geolocalização e frete</div>
                     </div>
                   </Link>
