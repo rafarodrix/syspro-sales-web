@@ -35,7 +35,7 @@ export async function obterMovimentosEstoque({
   const paraSyspro = (data: string) => data.includes("-") ? dataInputParaSyspro(data) : data;
   const dados = await consultarKardex({
     baseUrl: empresa.sysproBaseUrl,
-    useIis: empresa.sysproUseIis === true || empresa.sysproUseIis === "true",
+    useIis: empresa.sysproUseIis === true,
   }, {
     dtInicial: paraSyspro(dtInicial),
     dtFinal: paraSyspro(dtFinal),

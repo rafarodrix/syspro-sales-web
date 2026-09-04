@@ -1,6 +1,7 @@
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type { ResumoVendas, VendaAgrupada, ProdutoRankeado } from "@/lib/vendas";
 import type { Periodo } from "@/components/date-range-filter";
+import type { jsPDF } from "jspdf";
 
 interface ContextoRelatorio {
   empresaNome: string;
@@ -34,7 +35,7 @@ async function carregarPdfLibs() {
   return { jsPDF, autoTable };
 }
 
-function adicionarCabecalho(doc: any, titulo: string, contexto: ContextoRelatorio) {
+function adicionarCabecalho(doc: jsPDF, titulo: string, contexto: ContextoRelatorio) {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Barra Superior Colorida
@@ -89,7 +90,7 @@ function adicionarCabecalho(doc: any, titulo: string, contexto: ContextoRelatori
   doc.line(14, 35, pageWidth - 14, 35);
 }
 
-function adicionarRodape(doc: any) {
+function adicionarRodape(doc: jsPDF) {
   const totalPaginas = doc.getNumberOfPages();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -115,7 +116,7 @@ function adicionarRodape(doc: any) {
 }
 
 function despacharPdf(
-  doc: any,
+  doc: jsPDF,
   nomeArquivo: string,
   modo: "download" | "imprimir" = "download",
 ) {
@@ -242,7 +243,8 @@ export async function exportarPdfDashboard({
   });
 
   // Tabela: Departamentos e Vendedores
-  const lastY = (doc as any).lastAutoTable.finalY + 8;
+  const lastAutoTable = doc as jsPDF & { lastAutoTable?: { finalY: number } };
+  const lastY = (lastAutoTable.lastAutoTable?.finalY ?? currentY) + 8;
 
   if (lastY < 230) {
     doc.setFont("helvetica", "bold");

@@ -38,7 +38,9 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const [porPagina, setPorPagina] = useState(25);
 
   useEffect(() => {
-    if (empresaInicial) setEmpresaId(empresaInicial);
+    if (!empresaInicial) return;
+    const frame = requestAnimationFrame(() => setEmpresaId(empresaInicial));
+    return () => cancelAnimationFrame(frame);
   }, [empresaInicial]);
 
   async function consultar() {

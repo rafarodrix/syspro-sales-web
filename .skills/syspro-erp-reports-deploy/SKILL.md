@@ -29,6 +29,8 @@ Como instalar e atualizar o `SysproERP Reports` **no servidor do cliente** — a
 git pull
 call npm install --omit=dev
 call npm run build
+call npx prisma migrate deploy
+call npm run roles:normalize
 xcopy /E /I /Y ".next\static" ".next\standalone\.next\static" >nul
 pm2 restart syspro-erp-reports
 ```

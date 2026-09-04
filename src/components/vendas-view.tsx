@@ -1,46 +1,36 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   BarChart3,
   ChevronDown,
   ChevronRight,
-  DownloadIcon,
-  PrinterIcon,
   Search,
   SearchX,
   FilterX,
   LayoutList,
   AlignJustify,
   X,
-  ChevronsUpDown,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  SlidersHorizontal,
-  ChevronLeft,
-  ChevronsLeft,
-  ChevronsRight,
   Maximize2,
   Minimize2,
-  FileText,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
-  dataInputParaSyspro,
-  formatarDataInputParaBR,
   paraNumero,
+  valorItem,
   type VendaAgrupada,
 } from "@/lib/vendas";
 import {
   DateRangeFilter,
   periodoMesAtual,
-  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
-import { buscarVendasApi } from "@/lib/vendas-client";
+import { useConsultaVendas } from "@/hooks/use-consulta-vendas";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
@@ -70,7 +60,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface EmpresaOption {
@@ -98,36 +87,28 @@ export function VendasView({
   initialError,
 }: Props) {
   const searchParams = useSearchParams();
-  const [empresaId, setEmpresaId] = useState(
+  const [empresaId] = useState(
     empresaInicial === "todas" ||
     (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
       : (empresas[0]?.id ?? ""),
   );
 
-  useEffect(() => {
-    if (empresaInicial) {
-      setEmpresaId(empresaInicial);
-    }
-  }, [empresaInicial]);
-
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
-  const [loading, setLoading] = useState(false);
-  const [vendas, setVendas] = useState<(VendaProduto | VendaComEmpresa)[]>(initialVendas);
-  const [erro, setErro] = useState<string | null>(initialError ?? null);
+  const { vendas, erro, loading, consultar: consultarVendas } = useConsultaVendas(initialVendas, initialError);
   const [notasAbertas, setNotasAbertas] = useState<Set<string>>(new Set());
 
   // Densidade da tabela
   const [densidade, setDensidade] = useState<"compacto" | "confortavel">("confortavel");
 
   // Filtros
-  const [buscaVenda, setBuscaVenda] = useState("");
-  const [filtroEmpresa, setFiltroEmpresa] = useState<string>("todos");
-  const [filtroVendedor, setFiltroVendedor] = useState<string>("todos");
-  const [filtroDepartamento, setFiltroDepartamento] = useState<string>("todos");
-  const [filtroFormaPagto, setFiltroFormaPagto] = useState<string>("todos");
+  const [buscaVenda, setBuscaVenda] = useState(() => searchParams.get("busca") ?? "");
+  const [filtroEmpresa, setFiltroEmpresa] = useState<string>(() => searchParams.get("empresa") ?? "todos");
+  const [filtroVendedor, setFiltroVendedor] = useState<string>(() => searchParams.get("vendedor") ?? "todos");
+  const [filtroDepartamento, setFiltroDepartamento] = useState<string>(() => searchParams.get("departamento") ?? "todos");
+  const [filtroFormaPagto, setFiltroFormaPagto] = useState<string>(() => searchParams.get("formaPagamento") ?? "todos");
   const [filtroModelo, setFiltroModelo] = useState<string>("todos");
 
   // Ordenação
@@ -139,20 +120,6 @@ export function VendasView({
   const [itensPorPagina, setItensPorPagina] = useState(25);
 
   // Inicializar filtros a partir dos parâmetros de busca da URL (Drill-down)
-  useEffect(() => {
-    const paramEmpresa = searchParams.get("empresa");
-    const paramVendedor = searchParams.get("vendedor");
-    const paramDepartamento = searchParams.get("departamento");
-    const paramFormaPagto = searchParams.get("formaPagamento");
-    const paramBusca = searchParams.get("busca");
-
-    if (paramEmpresa) setFiltroEmpresa(paramEmpresa);
-    if (paramVendedor) setFiltroVendedor(paramVendedor);
-    if (paramDepartamento) setFiltroDepartamento(paramDepartamento);
-    if (paramFormaPagto) setFiltroFormaPagto(paramFormaPagto);
-    if (paramBusca) setBuscaVenda(paramBusca);
-  }, [searchParams]);
-
   const empresaAtual = useMemo(
     () => empresas.find((e) => e.id === empresaId),
     [empresas, empresaId],
@@ -271,7 +238,6 @@ export function VendasView({
   }, [notasFiltradas, campoOrdenacao, direcaoOrdenacao]);
 
   // Paginação
-  const totalPaginas = Math.ceil(notasOrdenadas.length / itensPorPagina) || 1;
   const notasPaginadas = useMemo(() => {
     const inicio = (paginaAtual - 1) * itensPorPagina;
     return notasOrdenadas.slice(inicio, inicio + itensPorPagina);
@@ -339,23 +305,15 @@ export function VendasView({
       toast.error("A data inicial deve ser anterior à data final");
       return;
     }
-    salvarPeriodoCookie(periodoDaConsulta);
-    setLoading(true);
-    setErro(null);
     setNotasAbertas(new Set());
     try {
-      const dados = await buscarVendasApi(empresaId, periodoDaConsulta);
-      setVendas(dados);
+      await consultarVendas({ empresaId, periodo: periodoDaConsulta });
       setPaginaAtual(1);
       toast.success("Vendas consultadas com sucesso!");
     } catch (causa) {
       const mensagem =
         causa instanceof Error ? causa.message : "Erro ao consultar as vendas.";
-      setErro(mensagem);
-      setVendas([]);
       toast.error(mensagem);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -593,6 +551,30 @@ export function VendasView({
                       {opcoesFiltro.formasPagto.map((fp) => (
                         <SelectItem key={fp} value={fp}>
                           {fp}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {opcoesFiltro.modelos.length > 0 && (
+                <div className="w-36 sm:w-40">
+                  <Select
+                    value={filtroModelo}
+                    onValueChange={(modelo) => {
+                      setFiltroModelo(modelo);
+                      setPaginaAtual(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Modelo fiscal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Modelos</SelectItem>
+                      {opcoesFiltro.modelos.map((modelo) => (
+                        <SelectItem key={modelo} value={modelo}>
+                          Modelo {modelo}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -863,6 +845,7 @@ function exportarCsv(vendas: VendaProduto[]) {
     "Cidade",
     "UF",
     "Vendedor",
+    "Grupo fiscal",
     "Modelo",
     "Forma de pagamento",
     "Código Produto",
@@ -873,6 +856,8 @@ function exportarCsv(vendas: VendaProduto[]) {
     "Valor unitário",
     "Desconto",
     "Frete",
+    "Seguro",
+    "Outros acréscimos",
     "ICMS-ST",
     "Total",
   ];
@@ -884,6 +869,7 @@ function exportarCsv(vendas: VendaProduto[]) {
     venda.cliente_cidade,
     venda.cliente_uf,
     venda.vendedor_nome,
+    venda.nf_ds_grupo_documento || venda.nf_cd_grupo_documento || "",
     venda.nf_modelo,
     venda.nf_forma_pagto,
     venda.produto_id,
@@ -894,23 +880,12 @@ function exportarCsv(vendas: VendaProduto[]) {
     paraNumero(venda.produto_vlr_item),
     paraNumero(venda.produto_vlr_desconto),
     paraNumero(venda.produto_vlr_frete),
+    paraNumero(venda.produto_vlr_seguro),
+    paraNumero(venda.produto_vlr_outros),
     paraNumero(venda.produto_vlr_icms_stb),
-    paraNumero(venda.produto_vlr_total_liquido),
+    valorItem(venda),
   ]);
-  const csv = [cabecalho, ...linhas]
-    .map((linha) =>
-      linha
-        .map((valor) => `"${String(valor ?? "").replaceAll('"', '""')}"`)
-        .join(";"),
-    )
-    .join("\n");
-  const arquivo = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(arquivo);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `vendas-syspro-${new Date().toISOString().slice(0, 10)}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  exportarParaCSV(`vendas-syspro-${new Date().toISOString().slice(0, 10)}`, cabecalho, linhas);
 }
 
 function NotaRow({
@@ -1030,7 +1005,7 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
                 {formatarMoeda(paraNumero(item.produto_vlr_frete))}
               </td>
               <td className="p-2.5 text-right font-mono font-bold text-foreground">
-                {formatarMoeda(paraNumero(item.produto_vlr_total_liquido || item.produto_vlr_total_item))}
+                {formatarMoeda(valorItem(item))}
               </td>
             </tr>
           ))}

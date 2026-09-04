@@ -1,4 +1,4 @@
-import { dataInputParaSyspro, ResumoVendas } from "@/lib/vendas";
+import { ResumoVendas } from "@/lib/vendas";
 import type { Periodo } from "@/components/date-range-filter";
 import type { VendaProduto } from "@/lib/syspro-api";
 
@@ -22,8 +22,8 @@ export async function buscarVendasApi(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       empresaId,
-      dtInicial: dataInputParaSyspro(periodo.inicial),
-      dtFinal: dataInputParaSyspro(periodo.final),
+      dtInicial: periodo.inicial,
+      dtFinal: periodo.final,
       forcarAtualizacao: opcoes?.forcarAtualizacao,
     }),
     signal: opcoes?.signal,

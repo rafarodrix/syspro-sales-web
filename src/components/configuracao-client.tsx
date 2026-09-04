@@ -51,7 +51,7 @@ export interface EmpresaRow {
   empresaCodigo: string;
   ativa: boolean;
   sysproBaseUrl: string;
-  sysproUseIis: boolean | string;
+  sysproUseIis: boolean;
 }
 
 interface Props {
@@ -107,7 +107,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [empresaTestandoId, setEmpresaTestandoId] = useState<string | null>(null);
   const [resultadoTestePorEmpresa, setResultadoTestePorEmpresa] = useState<Record<string, TesteResultado>>({});
 
-  async function testarConexaoEmpresa(empresa: { id: string; baseUrl: string; useIis: boolean | string }) {
+  async function testarConexaoEmpresa(empresa: { id: string; baseUrl: string; useIis: boolean }) {
     setEmpresaTestandoId(empresa.id);
     try {
       const res = await fetch("/api/configuracao/testar", {
@@ -115,7 +115,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           baseUrl: empresa.baseUrl,
-          useIis: empresa.useIis === true || empresa.useIis === "true",
+          useIis: empresa.useIis,
         }),
       });
       const data: TesteResultado = await res.json();
@@ -180,7 +180,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
     setEditRazao(empresa.razaoSocial);
     setEditCodigo(empresa.empresaCodigo);
     setEditBaseUrl(empresa.sysproBaseUrl || "http://localhost:8080");
-    setEditUseIis(empresa.sysproUseIis === true || empresa.sysproUseIis === "true" ? "true" : "false");
+    setEditUseIis(empresa.sysproUseIis ? "true" : "false");
     setEditAtiva(empresa.ativa);
   }
 
@@ -426,7 +426,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
                         </td>
                         <td className="px-4 py-3">
                           <Badge variant="outline" className="text-[10px] font-mono">
-                            {empresa.sysproUseIis === "true" ? "IIS" : "Direto"}
+                            {empresa.sysproUseIis ? "IIS" : "Direto"}
                           </Badge>
                         </td>
                         <td className="px-4 py-3">

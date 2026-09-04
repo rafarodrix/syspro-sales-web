@@ -27,6 +27,7 @@ import {
   resumoVendas,
   calcularVariacao,
   calcularPeriodoAnterior,
+  valorItem,
   calcularDestaques,
   formatarDataInputParaBR,
   paraNumero,
@@ -94,9 +95,9 @@ export function DashboardView({
   );
 
   useEffect(() => {
-    if (empresaInicial) {
-      setEmpresaId(empresaInicial);
-    }
+    if (!empresaInicial) return;
+    const frame = requestAnimationFrame(() => setEmpresaId(empresaInicial));
+    return () => cancelAnimationFrame(frame);
   }, [empresaInicial]);
 
   const [periodo, setPeriodo] = useState<Periodo>(
@@ -110,14 +111,9 @@ export function DashboardView({
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
   const [compararPeriodoAnterior, setCompararPeriodoAnterior] = useState(true);
-  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<string>("");
-
-  useEffect(() => {
-    const agora = new Date();
-    setUltimaAtualizacao(
-      agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    );
-  }, []);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState(() =>
+    new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+  );
 
   const resumo = useMemo(() => resumoVendas(vendas), [vendas]);
   const resumoAnterior = useMemo(
@@ -195,7 +191,7 @@ export function DashboardView({
       const id = vEmp.empresa_id || "default";
       const nome = vEmp.empresa_nome || "Empresa Principal";
       const atual = mapa.get(id) ?? { id, nome, faturamento: 0, pedidos: 0 };
-      atual.faturamento += paraNumero(v.produto_vlr_total_liquido);
+      atual.faturamento += valorItem(v);
       atual.pedidos += 1;
       mapa.set(id, atual);
     }

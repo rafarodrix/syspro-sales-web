@@ -43,7 +43,8 @@ export function EmpresaNavSelect({
   const [selecionadosLocal, setSelecionadosLocal] = useState<Set<string>>(new Set(idsAtivos));
 
   useEffect(() => {
-    setSelecionadosLocal(new Set(idsAtivos));
+    const frame = requestAnimationFrame(() => setSelecionadosLocal(new Set(idsAtivos)));
+    return () => cancelAnimationFrame(frame);
   }, [idsAtivos, aberto]);
 
   if (empresas.length <= 1) return null;

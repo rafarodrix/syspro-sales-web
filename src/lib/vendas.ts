@@ -238,7 +238,18 @@ export function paraNumero(valor: number | string | null | undefined): number {
 export function valorItem(venda: VendaProduto): number {
   // Valor FINAL do item (bruto - desconto + frete + outros + seguro).
   // produto_vlr_total_item é o BRUTO (não abate desconto) — sempre usar o líquido.
-  return paraNumero(venda.produto_vlr_total_liquido);
+  const liquidoInformado = venda.produto_vlr_total_liquido;
+  if (liquidoInformado !== undefined && liquidoInformado !== null && liquidoInformado !== "") {
+    return paraNumero(liquidoInformado);
+  }
+
+  return (
+    paraNumero(venda.produto_vlr_total_item)
+    - paraNumero(venda.produto_vlr_desconto)
+    + paraNumero(venda.produto_vlr_frete)
+    + paraNumero(venda.produto_vlr_seguro)
+    + paraNumero(venda.produto_vlr_outros)
+  );
 }
 
 export function chaveDaNota(venda: VendaProduto | VendaComEmpresa): string {
@@ -1115,6 +1126,8 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
   modelosDocumento: ItemFinanceiroAnalise[];
   totaisFrete: number;
   totaisIcmsSt: number;
+  totaisSeguro: number;
+  totaisOutros: number;
 } {
   const fpMap = new Map<string, { faturamento: number; notas: Set<string> }>();
   const modMap = new Map<string, { faturamento: number; notas: Set<string> }>();
@@ -1122,6 +1135,8 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
   let faturamentoTotal = 0;
   let totaisFrete = 0;
   let totaisIcmsSt = 0;
+  let totaisSeguro = 0;
+  let totaisOutros = 0;
 
   for (const venda of vendas) {
     const fp = venda.nf_forma_pagto?.trim() || "Não informado";
@@ -1132,6 +1147,8 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
     faturamentoTotal += total;
     totaisFrete += paraNumero(venda.produto_vlr_frete);
     totaisIcmsSt += paraNumero(venda.produto_vlr_icms_stb);
+    totaisSeguro += paraNumero(venda.produto_vlr_seguro);
+    totaisOutros += paraNumero(venda.produto_vlr_outros);
 
     let atualFp = fpMap.get(fp);
     if (!atualFp) {
@@ -1170,7 +1187,7 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
     }))
     .sort((a, b) => b.total - a.total);
 
-  return { formasPagamento, modelosDocumento, totaisFrete, totaisIcmsSt };
+  return { formasPagamento, modelosDocumento, totaisFrete, totaisIcmsSt, totaisSeguro, totaisOutros };
 }
 
 export function calcularVariacao(atual: number, anterior: number): VariacaoMetrica {

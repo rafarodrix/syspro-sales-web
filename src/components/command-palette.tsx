@@ -115,7 +115,7 @@ export function CommandPalette({ userRole }: { userRole: string }) {
           <div className="max-h-80 overflow-y-auto p-2 space-y-1">
             {filtrados.length === 0 ? (
               <div className="py-8 text-center text-xs text-muted-foreground">
-                Nenhum atalho encontrado para "{busca}".
+                Nenhum atalho encontrado para &quot;{busca}&quot;.
               </div>
             ) : (
               filtrados.map((item) => {

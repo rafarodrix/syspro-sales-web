@@ -94,9 +94,9 @@ export function AppShell({
   // Carregar preferência salva
   useEffect(() => {
     const saved = localStorage.getItem("syspro_sidebar_collapsed");
-    if (saved !== null) {
-      setCollapsed(saved === "true");
-    }
+    if (saved === null) return;
+    const frame = requestAnimationFrame(() => setCollapsed(saved === "true"));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   function toggleCollapse() {
@@ -107,7 +107,8 @@ export function AppShell({
 
   // Fechar gaveta mobile em mudança de rota
   useEffect(() => {
-    setMobileOpen(false);
+    const frame = requestAnimationFrame(() => setMobileOpen(false));
+    return () => cancelAnimationFrame(frame);
   }, [pathname, searchParams]);
 
   // Determinar breadcrumb da página atual

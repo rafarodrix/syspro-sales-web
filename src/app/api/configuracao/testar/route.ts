@@ -30,6 +30,9 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    if (typeof useIis !== "boolean") {
+      return NextResponse.json({ error: "Modo IIS inválido." }, { status: 400 });
+    }
 
     let sanitizedBase: string;
     try {
@@ -46,7 +49,7 @@ export async function POST(request: Request) {
     const dtInicial = dataInputParaSyspro(dataParaInput(seteDiasAtras));
     const dtFinal = dataInputParaSyspro(dataParaInput(hoje));
 
-    const isIis = useIis === "true" || useIis === true;
+    const isIis = useIis;
     const prefixo = isIis
       ? "/sysproserverisapi.dll/api/exporta/produto/venda"
       : "/api/exporta/produto/venda";

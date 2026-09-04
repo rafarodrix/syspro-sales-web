@@ -8,7 +8,7 @@ export interface EmpresaInfo {
   razaoSocial: string;
   empresaCodigo: string;
   sysproBaseUrl?: string | null;
-  sysproUseIis?: boolean | string | null;
+  sysproUseIis?: boolean | null;
 }
 
 interface CacheEntry {
@@ -83,6 +83,13 @@ export class SalesQueryError extends Error {
   }
 }
 
+export class SalesIntegrationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SalesIntegrationError";
+  }
+}
+
 export async function obterVendas({
   actorId,
   empresasLiberadas,
@@ -123,7 +130,7 @@ export async function obterVendas({
     try {
       const config = {
         baseUrl: emp.sysproBaseUrl || "http://localhost:8080",
-        useIis: emp.sysproUseIis === true || emp.sysproUseIis === "true",
+        useIis: emp.sysproUseIis === true,
       };
 
       const dados = await consultarVendas(config, {
@@ -144,7 +151,7 @@ export async function obterVendas({
       return filtradas;
     } catch (err) {
       console.error(`[sales-service] Erro ao consultar vendas da empresa ${emp.razaoSocial} (${emp.cnpj}):`, err);
-      return [];
+      throw new SalesIntegrationError(`Não foi possível consultar a filial ${emp.razaoSocial}. A consolidação não foi gerada para evitar totais incompletos.`);
     }
   };
 

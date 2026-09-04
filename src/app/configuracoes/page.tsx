@@ -24,7 +24,7 @@ export default async function ConfiguracoesPage() {
             empresaCodigo: e.empresaCodigo,
             ativa: e.ativa,
             sysproBaseUrl: e.sysproBaseUrl || "http://localhost:8080",
-            sysproUseIis: e.sysproUseIis ?? "false",
+            sysproUseIis: e.sysproUseIis,
           }))}
         />
       </div>

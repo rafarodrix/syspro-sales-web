@@ -26,6 +26,9 @@ export interface SysproDateRange {
 
 export interface VendaProduto {
   empresa_codigo: string;
+  empresa_razao?: string;
+  nf_cd_grupo_documento?: string;
+  nf_ds_grupo_documento?: string;
   nf_numero: string;
   cliente_nome: string;
   cliente_cidade: string;
@@ -40,6 +43,8 @@ export interface VendaProduto {
   produto_vlr_desconto: number | string;
   produto_vlr_frete: number | string;
   produto_vlr_total_item: number | string;
+  produto_vlr_seguro?: number | string;
+  produto_vlr_outros?: number | string;
   produto_vlr_total_liquido?: number | string;
   vendedor_nome: string;
   nf_dt_emissao: string; // DD/MM/AAAA
@@ -246,6 +251,10 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
     const valor = venda[campo];
     return typeof valor === "number" || typeof valor === "string" ? valor : 0;
   };
+  const numeroOpcional = (campo: string) => {
+    const valor = venda[campo];
+    return typeof valor === "number" || typeof valor === "string" ? valor : undefined;
+  };
   const camposObrigatorios = ["empresa_codigo", "nf_numero", "nf_dt_emissao"];
   if (camposObrigatorios.some((campo) => !texto(campo))) {
     throw new SysproApiError(
@@ -254,6 +263,9 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
   }
   return {
     empresa_codigo: texto("empresa_codigo"),
+    empresa_razao: texto("empresa_razao"),
+    nf_cd_grupo_documento: texto("nf_cd_grupo_documento"),
+    nf_ds_grupo_documento: texto("nf_ds_grupo_documento"),
     nf_numero: texto("nf_numero"),
     cliente_nome: texto("cliente_nome"),
     cliente_cidade: texto("cliente_cidade"),
@@ -267,10 +279,12 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
     produto_vlr_icms_stb: numero("produto_vlr_icms_stb"),
     produto_vlr_desconto: numero("produto_vlr_desconto"),
     produto_vlr_frete: numero("produto_vlr_frete"),
+    produto_vlr_seguro: numeroOpcional("produto_vlr_seguro"),
+    produto_vlr_outros: numeroOpcional("produto_vlr_outros"),
     produto_vlr_total_item: numero("produto_vlr_total_item"),
     // Valor FINAL do item (bruto - desconto + frete + outros + seguro).
     // produto_vlr_total_item é o BRUTO (não abate desconto).
-    produto_vlr_total_liquido: numero("produto_vlr_total_liquido"),
+    produto_vlr_total_liquido: numeroOpcional("produto_vlr_total_liquido"),
     vendedor_nome: texto("vendedor_nome"),
     nf_dt_emissao: texto("nf_dt_emissao"),
     nf_modelo: texto("nf_modelo"),

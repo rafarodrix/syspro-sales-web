@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart3,
   Search,
@@ -25,15 +25,13 @@ import {
   analiseSazonalidade,
   analiseGeografica,
   analiseFinanceira,
-  dataInputParaSyspro,
 } from "@/lib/vendas";
 import {
   DateRangeFilter,
   periodoMesAtual,
-  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
-import { buscarVendasApi } from "@/lib/vendas-client";
+import { useConsultaVendas } from "@/hooks/use-consulta-vendas";
 import { exportarPdfAnalitico } from "@/lib/pdf-export";
 import { GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
 import {
@@ -98,26 +96,19 @@ export function RelatoriosView({
   initialVendas = [],
   initialError,
 }: Props) {
-  const [empresaId, setEmpresaId] = useState(
+  const [empresaId] = useState(
     empresaInicial === "todas" ||
     (empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial))
       ? empresaInicial
       : (empresas[0]?.id ?? ""),
   );
 
-  useEffect(() => {
-    if (empresaInicial) {
-      setEmpresaId(empresaInicial);
-    }
-  }, [empresaInicial]);
 
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
-  const [loading, setLoading] = useState(false);
-  const [vendas, setVendas] = useState<(VendaProduto | VendaComEmpresa)[]>(initialVendas);
-  const [erro, setErro] = useState<string | null>(initialError ?? null);
-  const [abaAtiva, setAbaAtiva] = useState(abaInicial || "curva-abc");
+  const { vendas, erro, loading, consultar: consultarVendas } = useConsultaVendas(initialVendas, initialError);
+  const [abaAtiva] = useState(abaInicial || "curva-abc");
 
   // Filtros internos
   const [busca, setBusca] = useState("");
@@ -204,6 +195,8 @@ export function RelatoriosView({
         modelosDocumento: [],
         totaisFrete: 0,
         totaisIcmsSt: 0,
+        totaisSeguro: 0,
+        totaisOutros: 0,
       };
     }
     return analiseFinanceira(vendas);
@@ -275,21 +268,15 @@ export function RelatoriosView({
   }, [relatorioGeografico, busca]);
 
   async function consultar() {
-    setLoading(true);
-    setErro(null);
-    salvarPeriodoCookie(periodo);
-
     try {
-      const res = await buscarVendasApi(empresaId, periodo, {
+      await consultarVendas({
+        empresaId,
+        periodo,
         forcarAtualizacao: true,
       });
-      setVendas(res);
       toast.success("Dados de relatórios atualizados com sucesso!");
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Erro ao carregar relatórios.");
+    } catch {
       toast.error("Não foi possível carregar os relatórios.");
-    } finally {
-      setLoading(false);
     }
   }
 

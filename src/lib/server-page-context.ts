@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { requireAuth } from "@/lib/server-auth";
 import { calcularPeriodoAnterior, dataParaInput } from "@/lib/vendas";
-import { obterVendas, type EmpresaInfo } from "@/lib/sales-service";
+import { obterVendas, SalesIntegrationError, type EmpresaInfo } from "@/lib/sales-service";
 import type { VendaComEmpresa } from "@/lib/syspro-api";
 import type { UserRole } from "@/lib/validations";
 import type { Permissao } from "@/lib/role-permissions";
@@ -99,8 +99,10 @@ export async function resolveServerPageContext({
         dtFinal: periodo.final,
       });
     }
-  } catch {
-    erroInicial = "Não foi possível carregar os dados de vendas.";
+  } catch (error) {
+    erroInicial = error instanceof SalesIntegrationError
+      ? error.message
+      : "Não foi possível carregar os dados de vendas.";
   }
 
   return {

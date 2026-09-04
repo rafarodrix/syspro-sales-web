@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { SysproApiError } from "@/lib/syspro-api";
 import { resumoVendas } from "@/lib/vendas";
-import { obterVendas, SalesQueryError } from "@/lib/sales-service";
+import { obterVendas, periodoConsultaValido, SalesIntegrationError, SalesQueryError } from "@/lib/sales-service";
 import { vendasQuerySchema } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { temAcessoTodasEmpresas, temPermissao } from "@/lib/role-permissions";
@@ -56,7 +56,7 @@ async function handleVendas(request: NextRequest) {
 
   const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = parsed.data;
 
-  if (!periodoValido(dtInicial, dtFinal)) {
+  if (!periodoConsultaValido(dtInicial, dtFinal)) {
     return NextResponse.json(
       { error: "Informe um período válido de até 366 dias." },
       { status: 400 },
@@ -116,6 +116,9 @@ async function handleVendas(request: NextRequest) {
     if (e instanceof SalesQueryError) {
       return NextResponse.json({ error: e.message }, { status: e.status });
     }
+    if (e instanceof SalesIntegrationError) {
+      return NextResponse.json({ error: e.message }, { status: 502 });
+    }
     if (e instanceof SysproApiError) {
       return NextResponse.json(
         { error: e.message },
@@ -127,33 +130,4 @@ async function handleVendas(request: NextRequest) {
       { status: 502 },
     );
   }
-}
-
-function periodoValido(inicial: string, final: string) {
-  const padraoBR = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-  const padraoISO = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-  const paraData = (valor: string) => {
-    if (padraoBR.test(valor)) {
-      const [dia, mes, ano] = valor.split("/").map(Number);
-      return new Date(Date.UTC(ano, mes - 1, dia));
-    }
-    if (padraoISO.test(valor)) {
-      const [ano, mes, dia] = valor.split("-").map(Number);
-      return new Date(Date.UTC(ano, mes - 1, dia));
-    }
-    return null;
-  };
-
-  const inicio = paraData(inicial);
-  const fim = paraData(final);
-
-  return Boolean(
-    inicio &&
-    fim &&
-    !isNaN(inicio.getTime()) &&
-    !isNaN(fim.getTime()) &&
-    inicio <= fim &&
-    fim.getTime() - inicio.getTime() <= 366 * 86_400_000,
-  );
 }
