@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { FileText, LayoutList, MousePointerClick } from "lucide-react";
+import { MousePointerClick } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type {
   ClientesNovosRecorrentes,
@@ -13,6 +12,7 @@ import { DataBarPercent } from "./data-bar-percent";
 import { TablePagination } from "@/components/table-pagination";
 import { TermoExplicado } from "@/components/relatorio-guia";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
+import { ReportViewToggle } from "./report-view-toggle";
 
 interface AbaClientesProps {
   relatorioClientes: {
@@ -32,11 +32,6 @@ interface AbaClientesProps {
   /** Notas do período (agrupadas por NF), usadas na visão analítica. */
   notasAgrupadas: VendaAgrupada[];
 }
-
-const estiloBotaoVisao = (ativo: boolean) =>
-  `flex h-7 items-center gap-1 px-2 text-[11px] font-semibold transition-colors ${
-    ativo ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-  }`;
 
 export function AbaClientes({
   relatorioClientes,
@@ -171,36 +166,14 @@ export function AbaClientes({
         ) : null}
       </div>
 
-      {/* Alternador de visão: ranking de clientes vs. notas por cliente */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <TermoExplicado
-          termo="Visões do relatório"
-          definicao="Sintético: ranking de clientes com concentração. Analítico: as notas/NF de cada cliente. Clique em um cliente do ranking para abrir as notas dele."
-        />
-        <div className="flex items-center gap-0.5 rounded-lg border bg-muted/20 p-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            className={estiloBotaoVisao(visao === "sintetico")}
-            onClick={() => setVisao("sintetico")}
-          >
-            <LayoutList className="size-3.5" />
-            Sintético
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className={estiloBotaoVisao(visao === "analitico")}
-            onClick={() => {
-              setClientesSelecionados([]);
-              setVisao("analitico");
-            }}
-          >
-            <FileText className="size-3.5" />
-            Analítico
-          </Button>
-        </div>
-      </div>
+      <ReportViewToggle
+        visao={visao}
+        descricao="Síntese mostra o ranking; notas detalhadas mostram quais NF compõem cada cliente."
+        onChange={(proximaVisao) => {
+          setClientesSelecionados([]);
+          setVisao(proximaVisao);
+        }}
+      />
 
       {visao === "sintetico" ? (
         <>

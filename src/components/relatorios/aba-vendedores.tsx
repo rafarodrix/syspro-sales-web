@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { FileText, LayoutList, MousePointerClick } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MousePointerClick } from "lucide-react";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
-import { TermoExplicado } from "@/components/relatorio-guia";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
+import { ReportViewToggle } from "./report-view-toggle";
 import type { ItemVendedorAnalise, VendaAgrupada } from "@/lib/vendas";
 
 type VisaoVendedores = "sintetico" | "analitico";
@@ -14,11 +13,6 @@ interface AbaVendedoresProps {
   /** Notas do período (agrupadas por NF), usadas na visão analítica. */
   notasAgrupadas: VendaAgrupada[];
 }
-
-const estiloBotaoVisao = (ativo: boolean) =>
-  `flex h-7 items-center gap-1 px-2 text-[11px] font-semibold transition-colors ${
-    ativo ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-  }`;
 
 export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVendedoresProps) {
   const [visao, setVisao] = useState<VisaoVendedores>("sintetico");
@@ -31,38 +25,7 @@ export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVended
 
   return (
     <div className="space-y-4">
-      {/* Alternador de visão: Sintético (ranking) vs. Analítico (notas) */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <TermoExplicado
-          termo="Visões do relatório"
-          definicao="Sintético: ranking consolidado por vendedor. Analítico: as notas/NF que compõem os números, filtráveis por vendedor. Clique em um vendedor do ranking para abrir o analítico dele."
-        />
-        <div className="flex items-center gap-0.5 rounded-lg border bg-muted/20 p-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            className={estiloBotaoVisao(visao === "sintetico")}
-            onClick={() => setVisao("sintetico")}
-            title="Ranking consolidado por vendedor"
-          >
-            <LayoutList className="size-3.5" />
-            Sintético
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className={estiloBotaoVisao(visao === "analitico")}
-            onClick={() => {
-              setVendedoresSelecionados([]);
-              setVisao("analitico");
-            }}
-            title="Notas/NF detalhadas, filtráveis por vendedor"
-          >
-            <FileText className="size-3.5" />
-            Analítico
-          </Button>
-        </div>
-      </div>
+      <ReportViewToggle visao={visao} descricao="Síntese compara a equipe; notas detalhadas explicam os resultados de cada vendedor." onChange={(proximaVisao) => { setVendedoresSelecionados([]); setVisao(proximaVisao); }} />
 
       {visao === "sintetico" ? (
         <>

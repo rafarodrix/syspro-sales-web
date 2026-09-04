@@ -140,6 +140,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "NF-e (modelo 55)", definicao: "Nota Fiscal eletrônica — venda faturada (empresa para empresa)." },
       { termo: "NFC-e (modelo 65)", definicao: "Nota de balcão/consumidor final (PDV), emitida no caixa." },
       { termo: "ICMS-ST", definicao: "Imposto com Substituição Tributária — recolhido antecipadamente; aparece no item mas não é receita da loja." },
+      { termo: "Frete, seguro e outros acréscimos", definicao: "Valores informados nos itens da NF que compõem o valor final da venda; são exibidos separadamente para conferência." },
+      { termo: "Forma de pagamento", definicao: "Meio informado na nota fiscal, como Pix, cartão, dinheiro ou faturado. Mede o mix declarado, não liquidação financeira." },
       { termo: "PDV", definicao: "Ponto de Venda — operação de balcão, com cupom fiscal." },
     ],
   },
@@ -195,10 +197,10 @@ export function GlossarioRelatorio({
   relatorioLabel: string;
 }) {
   return (
-    <details className="mt-4 rounded-lg border border-border/60 bg-muted/20 p-3 open:pb-3">
+    <details open className="mt-4 rounded-lg border border-border/60 bg-muted/20 p-3 open:pb-3">
       <summary className="flex cursor-pointer select-none items-center gap-2 text-xs font-bold text-muted-foreground">
         <HelpCircle className="size-3.5" />
-        Termos usados neste relatório ({relatorioLabel})
+        Como interpretar e definições — {relatorioLabel}
       </summary>
       <div className="mt-3 space-y-4">
         <section className="space-y-2">

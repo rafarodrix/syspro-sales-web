@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, MousePointerClick } from "lucide-react";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type { ItemDepartamentoAnalise } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
@@ -11,6 +11,7 @@ interface AbaDepartamentosProps {
 
 export function AbaDepartamentos({ deptosFiltrados }: AbaDepartamentosProps) {
   const [departamentoAberto, setDepartamentoAberto] = useState<string | null>(null);
+  const alternarDepartamento = (nome: string) => setDepartamentoAberto((atual) => atual === nome ? null : nome);
 
   return (
     <div className="space-y-4">
@@ -39,15 +40,17 @@ export function AbaDepartamentos({ deptosFiltrados }: AbaDepartamentosProps) {
                       <Button
                         size="icon-sm"
                         variant="ghost"
-                        onClick={() =>
-                          setDepartamentoAberto(aberto ? null : dep.nome)
-                        }
+                        onClick={() => alternarDepartamento(dep.nome)}
+                        aria-label={`${aberto ? "Fechar" : "Abrir"} itens de ${dep.nome}`}
                       >
                         {aberto ? <ChevronDown /> : <ChevronRight />}
                       </Button>
                     </td>
                     <td className="p-3 font-bold text-sm text-foreground">
-                      {dep.nome}
+                      <button type="button" onClick={() => alternarDepartamento(dep.nome)} className="inline-flex items-center gap-1.5 text-left underline-offset-4 hover:text-primary hover:underline" aria-expanded={aberto}>
+                        {dep.nome}
+                        <MousePointerClick className="size-3 text-muted-foreground/60" aria-hidden="true" />
+                      </button>
                     </td>
                     <td className="p-3 text-right font-mono">
                       {dep.quantidadeProdutosDistintos}
