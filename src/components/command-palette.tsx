@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { temPermissao, type Permissao } from "@/lib/role-permissions";
 
 interface CommandItem {
   id: string;
@@ -34,24 +35,25 @@ interface CommandItem {
   href: string;
   icone: React.ElementType;
   cor?: string;
+  permissao: Permissao;
 }
 
 const comandos: CommandItem[] = [
-  { id: "dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard },
-  { id: "vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart },
-  { id: "curva-abc", titulo: "Curva ABC", categoria: "Relatórios", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500" },
-  { id: "clientes", titulo: "Clientes & Concentração", categoria: "Relatórios", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500" },
-  { id: "descontos", titulo: "Descontos & Margem", categoria: "Relatórios", href: "/relatorios?aba=descontos", icone: Percent, cor: "text-rose-500" },
-  { id: "sazonalidade", titulo: "Sazonalidade & Dias", categoria: "Relatórios", href: "/relatorios?aba=sazonalidade", icone: CalendarDays, cor: "text-indigo-500" },
-  { id: "departamentos", titulo: "Departamentos", categoria: "Relatórios", href: "/relatorios?aba=departamentos", icone: Layers, cor: "text-blue-500" },
-  { id: "vendedores", titulo: "Vendedores & Performance", categoria: "Relatórios", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500" },
-  { id: "geografico", titulo: "Cidades / Praças", categoria: "Relatórios", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500" },
-  { id: "financeiro", titulo: "Financeiro & Formas de Pagto", categoria: "Relatórios", href: "/relatorios?aba=financeiro", icone: CreditCard, cor: "text-orange-500" },
-  { id: "usuarios", titulo: "Gestão de Usuários & Acessos", categoria: "Administração", href: "/usuarios", icone: UserCog },
-  { id: "configuracoes", titulo: "Configurações da API Syspro", categoria: "Administração", href: "/configuracoes", icone: Settings },
+  { id: "dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard, permissao: "dashboard:visualizar" },
+  { id: "vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart, permissao: "vendas:visualizar" },
+  { id: "curva-abc", titulo: "Curva ABC", categoria: "Relatórios", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500", permissao: "relatorios:visualizar" },
+  { id: "clientes", titulo: "Clientes & Concentração", categoria: "Relatórios", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500", permissao: "relatorios:visualizar" },
+  { id: "descontos", titulo: "Descontos & Margem", categoria: "Relatórios", href: "/relatorios?aba=descontos", icone: Percent, cor: "text-rose-500", permissao: "relatorios:visualizar" },
+  { id: "sazonalidade", titulo: "Sazonalidade & Dias", categoria: "Relatórios", href: "/relatorios?aba=sazonalidade", icone: CalendarDays, cor: "text-indigo-500", permissao: "relatorios:visualizar" },
+  { id: "departamentos", titulo: "Departamentos", categoria: "Relatórios", href: "/relatorios?aba=departamentos", icone: Layers, cor: "text-blue-500", permissao: "relatorios:visualizar" },
+  { id: "vendedores", titulo: "Vendedores & Performance", categoria: "Relatórios", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500", permissao: "relatorios:visualizar" },
+  { id: "geografico", titulo: "Cidades / Praças", categoria: "Relatórios", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500", permissao: "relatorios:visualizar" },
+  { id: "financeiro", titulo: "Financeiro & Formas de Pagto", categoria: "Relatórios", href: "/relatorios?aba=financeiro", icone: CreditCard, cor: "text-orange-500", permissao: "relatorios:visualizar" },
+  { id: "usuarios", titulo: "Gestão de Usuários & Acessos", categoria: "Administração", href: "/usuarios", icone: UserCog, permissao: "usuarios:gerenciar" },
+  { id: "configuracoes", titulo: "Configurações da API Syspro", categoria: "Administração", href: "/configuracoes", icone: Settings, permissao: "configuracoes:gerenciar" },
 ];
 
-export function CommandPalette() {
+export function CommandPalette({ userRole }: { userRole: string }) {
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
   const router = useRouter();
@@ -69,8 +71,10 @@ export function CommandPalette() {
   }, []);
 
   const filtrados = comandos.filter((c) =>
-    c.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-    c.categoria.toLowerCase().includes(busca.toLowerCase())
+    temPermissao(userRole, c.permissao) && (
+      c.titulo.toLowerCase().includes(busca.toLowerCase()) ||
+      c.categoria.toLowerCase().includes(busca.toLowerCase())
+    ),
   );
 
   function selecionar(href: string) {

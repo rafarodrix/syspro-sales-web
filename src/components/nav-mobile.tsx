@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { temPermissao } from "@/lib/role-permissions";
 
 interface EmpresaOption {
   id: string;
@@ -55,8 +56,8 @@ export function NavMobile({
   const pathname = usePathname();
   const router = useRouter();
 
-  const isAdmin = userRole === "admin";
-  const isGerenteOuAdmin = userRole === "admin" || userRole === "gerente";
+  const podeVerRelatorios = temPermissao(userRole, "relatorios:visualizar");
+  const podeVerAdmin = temPermissao(userRole, "usuarios:gerenciar");
 
   const isDashboard = pathname.startsWith("/dashboard") || pathname === "/";
   const isVendas = pathname.startsWith("/vendas");
@@ -142,7 +143,7 @@ export function NavMobile({
             </Link>
 
             {/* Submenu Relatórios Mobile */}
-            {isGerenteOuAdmin && (
+            {podeVerRelatorios && (
               <div className="flex flex-col">
                 <button
                   type="button"
@@ -243,7 +244,7 @@ export function NavMobile({
             )}
 
             {/* Submenu Administração Mobile */}
-            {isAdmin && (
+            {podeVerAdmin && (
               <div className="flex flex-col">
                 <button
                   type="button"

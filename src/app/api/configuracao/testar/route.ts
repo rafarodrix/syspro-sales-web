@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { temPermissao } from "@/lib/role-permissions";
 import { dataInputParaSyspro, dataParaInput } from "@/lib/vendas";
 import { sanitizarSysproUrl } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") {
+  if (!session || !temPermissao(session.user.role, "configuracoes:gerenciar")) {
     return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
   }
 

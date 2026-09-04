@@ -27,12 +27,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { temPermissao } from "@/lib/role-permissions";
 
 export function NavLinks({ userRole = "vendas" }: { userRole?: string }) {
   const pathname = usePathname();
 
-  const isAdmin = userRole === "admin";
-  const isGerenteOuAdmin = userRole === "admin" || userRole === "gerente";
+  const podeVerRelatorios = temPermissao(userRole, "relatorios:visualizar");
+  const podeVerAdmin = temPermissao(userRole, "usuarios:gerenciar");
 
   const isDashboard = pathname.startsWith("/dashboard") || pathname === "/";
   const isVendas = pathname.startsWith("/vendas");
@@ -76,7 +77,7 @@ export function NavLinks({ userRole = "vendas" }: { userRole?: string }) {
       </Link>
 
       {/* 3. Dropdown Enterprise: Relatórios Analíticos */}
-      {isGerenteOuAdmin && (
+      {podeVerRelatorios && (
         <DropdownMenu>
           <DropdownMenuTrigger
             className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer outline-none ${
@@ -249,7 +250,7 @@ export function NavLinks({ userRole = "vendas" }: { userRole?: string }) {
       )}
 
       {/* 4. Dropdown Administração (Apenas Admin) */}
-      {isAdmin && (
+      {podeVerAdmin && (
         <DropdownMenu>
           <DropdownMenuTrigger
             className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer outline-none ${

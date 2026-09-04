@@ -8,6 +8,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ empresa?: string }>;
 }) {
   const ctx = await resolveServerPageContext({
+    permissao: "dashboard:visualizar",
     searchParams: searchParams as Promise<{ empresa?: string; aba?: string }>,
     carregarPeriodoAnterior: true,
   });

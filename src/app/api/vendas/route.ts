@@ -7,6 +7,7 @@ import { resumoVendas } from "@/lib/vendas";
 import { obterVendas, SalesQueryError } from "@/lib/sales-service";
 import { vendasQuerySchema } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { temAcessoTodasEmpresas, temPermissao } from "@/lib/role-permissions";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +26,9 @@ async function handleVendas(request: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
+  if (!temPermissao(session.user.role, "vendas:visualizar")) {
+    return NextResponse.json({ error: "Perfil sem permissão para consultar vendas." }, { status: 403 });
+  }
 
   // Rate limiter por usuário: máximo 45 consultas por minuto
   const rateCheck = checkRateLimit(`vendas:${session.user.id}`, 45, 60_000);
@@ -35,7 +39,7 @@ async function handleVendas(request: NextRequest) {
     );
   }
 
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = temAcessoTodasEmpresas(session.user.role);
 
   let body: unknown;
   try {

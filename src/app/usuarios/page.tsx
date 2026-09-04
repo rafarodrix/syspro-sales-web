@@ -4,7 +4,7 @@ import { prisma } from "@/lib/database";
 import { requireAuth } from "@/lib/server-auth";
 
 export default async function UsuariosPage() {
-  await requireAuth("admin");
+  await requireAuth("usuarios:gerenciar");
 
   const [usuarios, empresas] = await Promise.all([
     prisma.user.findMany({

@@ -2,25 +2,20 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
+import { temAcessoTodasEmpresas, temPermissao, type Permissao } from "@/lib/role-permissions";
 import type { UserRole } from "@/lib/validations";
 
-export async function requireAuth(minRole?: "admin" | "gerente") {
+export async function requireAuth(permissao?: Permissao) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
 
   const userRole = (session.user.role ?? "vendas") as UserRole;
 
-  const roleNormalizada = String(userRole).toLowerCase();
-
-  if (minRole === "admin" && roleNormalizada !== "admin") {
+  if (permissao && !temPermissao(userRole, permissao)) {
     redirect("/dashboard");
   }
 
-  if (minRole === "gerente" && roleNormalizada !== "admin" && roleNormalizada !== "gerente" && roleNormalizada !== "gerencia") {
-    redirect("/dashboard");
-  }
-
-  const isAdmin = userRole === "admin";
+  const isAdmin = temAcessoTodasEmpresas(userRole);
   const empresas = await prisma.empresa.findMany({
     where: isAdmin
       ? { ativa: true }

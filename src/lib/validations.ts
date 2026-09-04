@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const UserRoleSchema = z.enum(["admin", "gerente", "vendas"]);
+export const UserRoleSchema = z.enum(["admin", "gerente", "supervisor", "vendas"]);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
 export function sanitizarSysproUrl(rawUrl: string): string {

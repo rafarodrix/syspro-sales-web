@@ -4,7 +4,7 @@ import { prisma } from "@/lib/database";
 import { requireAuth } from "@/lib/server-auth";
 
 export default async function ConfiguracoesPage() {
-  await requireAuth("admin");
+  await requireAuth("configuracoes:gerenciar");
 
   const empresas = await prisma.empresa.findMany({
     orderBy: { razaoSocial: "asc" },

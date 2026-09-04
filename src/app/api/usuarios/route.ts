@@ -5,10 +5,11 @@ import { prisma } from "@/lib/database";
 import { hashPassword } from "better-auth/crypto";
 import { usuarioCreateSchema, usuarioUpdateSchema } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { temPermissao } from "@/lib/role-permissions";
 
 async function authorizeAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") return null;
+  if (!session || !temPermissao(session.user.role, "usuarios:gerenciar")) return null;
   return session;
 }
 

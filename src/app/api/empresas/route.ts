@@ -4,10 +4,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { empresaCreateSchema, empresaUpdateSchema } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { temPermissao } from "@/lib/role-permissions";
 
 async function authorizeAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") return null;
+  if (!session || !temPermissao(session.user.role, "empresas:gerenciar")) return null;
   return session;
 }
 

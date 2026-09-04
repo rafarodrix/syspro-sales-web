@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
 import { usuarioLiberarSchema } from "@/lib/validations";
+import { temPermissao } from "@/lib/role-permissions";
 
 async function authorizeAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") return null;
+  if (!session || !temPermissao(session.user.role, "usuarios:gerenciar")) return null;
   return session;
 }
 

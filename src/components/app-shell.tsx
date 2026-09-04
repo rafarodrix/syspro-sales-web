@@ -38,8 +38,9 @@ import { LogOutButton } from "@/components/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/command-palette";
+import { temPermissao } from "@/lib/role-permissions";
 
-type UserRole = "admin" | "gerente" | "gerencia" | "vendas" | "user" | string;
+type UserRole = "admin" | "gerente" | "supervisor" | "vendas";
 
 interface Empresa {
   id: string;
@@ -123,12 +124,9 @@ export function AppShell({
     return { secao: "Syspro ERP", pagina: "Visão Geral" };
   }, [pathname, abaAtiva]);
 
-  const roleNormalizada = (userRole ?? "").toLowerCase();
-  const isAdmin = roleNormalizada === "admin";
-  const isGerencia = roleNormalizada === "gerente" || roleNormalizada === "gerencia";
-  const podeVerRelatorios = isAdmin || isGerencia;
-  const podeVerEstoque = isAdmin || isGerencia;
-  const podeVerAdmin = isAdmin;
+  const podeVerRelatorios = temPermissao(userRole, "relatorios:visualizar");
+  const podeVerEstoque = temPermissao(userRole, "estoque:visualizar");
+  const podeVerAdmin = temPermissao(userRole, "usuarios:gerenciar");
 
   function criarLinkComEmpresa(hrefBase: string) {
     if (!empresaSelecionada) return hrefBase;
@@ -524,7 +522,7 @@ export function AppShell({
           {/* Lado Direito: Command Palette + Seletor Multi-Empresa + Tema + Perfil */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             <div className="shrink-0">
-              <CommandPalette />
+            <CommandPalette userRole={userRole} />
             </div>
 
             {empresas.length > 1 && (

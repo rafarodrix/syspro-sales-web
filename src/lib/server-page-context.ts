@@ -4,9 +4,10 @@ import { calcularPeriodoAnterior, dataParaInput } from "@/lib/vendas";
 import { obterVendas, type EmpresaInfo } from "@/lib/sales-service";
 import type { VendaComEmpresa } from "@/lib/syspro-api";
 import type { UserRole } from "@/lib/validations";
+import type { Permissao } from "@/lib/role-permissions";
 
 export interface ServerPageContextOptions {
-  minRole?: "admin" | "gerente";
+  permissao?: Permissao;
   searchParams: Promise<{ empresa?: string; aba?: string }>;
   carregarPeriodoAnterior?: boolean;
 }
@@ -26,11 +27,11 @@ export interface ServerPageContextResult {
 }
 
 export async function resolveServerPageContext({
-  minRole,
+  permissao,
   searchParams,
   carregarPeriodoAnterior = false,
 }: ServerPageContextOptions): Promise<ServerPageContextResult> {
-  const { session, userRole, isAdmin, empresas } = await requireAuth(minRole);
+  const { session, userRole, isAdmin, empresas } = await requireAuth(permissao);
   const { empresa: empresaParam, aba: abaParam } = await searchParams;
   const cookieStore = await cookies();
   const cookieEmpresa = cookieStore.get("syspro_empresa_ativa")?.value;

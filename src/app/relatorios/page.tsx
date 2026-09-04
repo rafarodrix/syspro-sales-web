@@ -8,7 +8,7 @@ export default async function RelatoriosPage({
   searchParams: Promise<{ empresa?: string; aba?: string }>;
 }) {
   const ctx = await resolveServerPageContext({
-    minRole: "gerente",
+    permissao: "relatorios:visualizar",
     searchParams,
   });
 

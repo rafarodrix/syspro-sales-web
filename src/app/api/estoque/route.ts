@@ -6,14 +6,14 @@ import { SysproApiError } from "@/lib/syspro-api";
 import { obterMovimentosEstoque, EstoqueQueryError } from "@/lib/estoque-service";
 import { kardexQuerySchema } from "@/lib/validations";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { temAcessoTodasEmpresas, temPermissao } from "@/lib/role-permissions";
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-    const role = (session.user.role ?? "vendas").toLowerCase();
-    if (role !== "admin" && role !== "gerente" && role !== "gerencia") {
+    if (!temPermissao(session.user.role, "estoque:visualizar")) {
       return NextResponse.json({ error: "Acesso ao Kardex restrito a Administrador e Gerência." }, { status: 403 });
     }
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Selecione uma única empresa para consultar o Kardex." }, { status: 400 });
     }
 
-    const isAdmin = session.user.role === "admin";
+    const isAdmin = temAcessoTodasEmpresas(session.user.role);
     const empresa = await prisma.empresa.findFirst({
       where: {
         id: empresaId,

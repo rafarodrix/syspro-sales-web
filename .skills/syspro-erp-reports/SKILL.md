@@ -15,7 +15,7 @@ Aplicação **web local** (roda no servidor do cliente, não em nuvem) para cons
 |---|---|
 | Frontend/Backend | Next.js **16** (App Router, Turbopack) + React 19 + TypeScript estrito |
 | UI | Tailwind v4 + shadcn/ui (radix, preset nova) |
-| Auth | Better Auth 1.x (email/senha, cookie HttpOnly) + RBAC admin/user |
+| Auth | Better Auth 1.x (email/senha, cookie HttpOnly) + RBAC por permissões |
 | Dados | Prisma **7** + SQLite (arquivo `./dev.db` na **raiz**) |
 | Fonte externa | API de exportação do Syspro (ver skill `syspro-api-exporta`) |
 
@@ -48,7 +48,7 @@ prisma7.config.ts config do Prisma 7 (carrega .env via dotenv)
 ## Regras de arquitetura (validado nesta stack)
 - **O navegador NUNCA chama a API do Syspro** — só o backend (`app/api/vendas`). O backend filtra por `empresa_codigo`; o usuário vê só o que tem liberado.
 - **Multi-empresa:** uma base Syspro pode ter N empresas (`empresa_codigo` 1, 2...). Cada registro retornado traz `empresa_codigo`. A separação por usuário é via tabela `UserEmpresa` (CNPJ liberado por usuário); admin vê todas.
-- **Admin** = role `admin` no User (vê tudo). **User** = só CNPJs em `UserEmpresa`.
+- Perfis canônicos: `vendas`, `supervisor`, `gerente` e `admin`. Vendas, Supervisor e Gerente veem só CNPJs em `UserEmpresa`; Admin vê todas as empresas ativas.
 
 ## Comandos
 ```bash
@@ -57,6 +57,7 @@ npm run build        # build produção (valida TS + prerender)
 npx prisma migrate dev --name <x>   # migration
 npx prisma generate  # regenera client (necessário após mudar schema)
 npx tsx prisma/seed.ts  # cria admin (SEED_ADMIN_EMAIL/SENHA, default admin@trilink.com.br/admin123)
+npm run roles:normalize # migra perfis legados para os valores canônicos
 ```
 
 ## Armadilhas conhecidas (NÃO repetir)

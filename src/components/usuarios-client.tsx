@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { obterPerfilAcesso, PERFIS_ORDENADOS, type PerfilAcesso } from "@/lib/role-permissions";
 
 interface UsuarioRow {
   id: string;
@@ -72,14 +73,14 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"admin" | "gerente" | "vendas">("vendas");
+  const [role, setRole] = useState<PerfilAcesso>("vendas");
   const [criando, setCriando] = useState(false);
 
   // Edição
   const [usuarioParaEditar, setUsuarioParaEditar] = useState<UsuarioRow | null>(null);
   const [editNome, setEditNome] = useState("");
   const [editEmail, setEditEmail] = useState("");
-  const [editRole, setEditRole] = useState<"admin" | "gerente" | "vendas">("vendas");
+  const [editRole, setEditRole] = useState<PerfilAcesso>("vendas");
   const [editPassword, setEditPassword] = useState("");
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
@@ -87,10 +88,15 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<UsuarioRow | null>(null);
 
   function abrirEdicao(u: UsuarioRow) {
+    const perfil = obterPerfilAcesso(u.role);
+    if (!perfil) {
+      toast.error("Este usuário possui um perfil inválido. Execute a normalização de perfis.");
+      return;
+    }
     setUsuarioParaEditar(u);
     setEditNome(u.name);
     setEditEmail(u.email);
-    setEditRole(u.role === "admin" ? "admin" : u.role === "gerente" ? "gerente" : "vendas");
+    setEditRole(perfil.id);
     setEditPassword("");
   }
 
@@ -220,14 +226,17 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
     );
   }, [usuarios, busca]);
 
-  const totalAdmin = useMemo(() => usuarios.filter((u) => u.role.toLowerCase() === "admin").length, [usuarios]);
-  const totalGerente = useMemo(() => usuarios.filter((u) => u.role.toLowerCase() === "gerente" || u.role.toLowerCase() === "gerencia").length, [usuarios]);
-  const totalVendas = useMemo(() => usuarios.filter((u) => u.role.toLowerCase() === "vendas" || u.role.toLowerCase() === "user").length, [usuarios]);
+  const totaisPorPerfil = useMemo(() => Object.fromEntries(
+    PERFIS_ORDENADOS.map((perfil) => [
+      perfil.id,
+      usuarios.filter((u) => u.role === perfil.id).length,
+    ]),
+  ) as Record<PerfilAcesso, number>, [usuarios]);
 
   return (
     <div className="space-y-6">
       {/* Resumo de Usuários e Permissões */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total de Usuários</span>
           <div className="mt-1 flex items-baseline gap-2">
@@ -236,29 +245,15 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
           </div>
         </Card>
 
-        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Administradores</span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="font-mono text-2xl font-extrabold text-amber-500">{totalAdmin}</span>
-            <span className="text-[11px] text-muted-foreground">acesso total</span>
-          </div>
-        </Card>
-
-        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Gerência</span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="font-mono text-2xl font-extrabold text-blue-500">{totalGerente}</span>
-            <span className="text-[11px] text-muted-foreground">+ relatórios</span>
-          </div>
-        </Card>
-
-        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Consultores / Vendas</span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="font-mono text-2xl font-extrabold text-emerald-500">{totalVendas}</span>
-            <span className="text-[11px] text-muted-foreground">comercial</span>
-          </div>
-        </Card>
+        {PERFIS_ORDENADOS.map((perfil) => (
+          <Card key={perfil.id} className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{perfil.nome}</span>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="font-mono text-2xl font-extrabold text-primary">{totaisPorPerfil[perfil.id]}</span>
+              <span className="text-[11px] text-muted-foreground">{perfil.descricao}</span>
+            </div>
+          </Card>
+        ))}
       </div>
 
       {/* Cadastro de Novo Usuário */}
@@ -269,7 +264,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
             <CardTitle className="text-lg font-bold">Cadastrar Novo Usuário</CardTitle>
           </div>
           <CardDescription className="text-xs">
-            Crie novos usuários atribuindo o perfil correspondente (Administrador, Gerência ou Vendas).
+            Cada perfil recebe apenas as permissões necessárias à sua função.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -314,14 +309,14 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Perfil de Acesso</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as any)}>
+              <Select value={role} onValueChange={(v) => setRole(obterPerfilAcesso(v)?.id ?? "vendas")}>
                 <SelectTrigger className="text-xs font-medium">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vendas">💼 Vendas (Dashboard & Vendas)</SelectItem>
-                  <SelectItem value="gerente">👔 Gerência (+ Relatórios)</SelectItem>
-                  <SelectItem value="admin">👑 Administrador (Acesso Total)</SelectItem>
+                  {PERFIS_ORDENADOS.map((perfil) => (
+                    <SelectItem key={perfil.id} value={perfil.id}>{perfil.nome} — {perfil.descricao}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -394,8 +389,10 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                   </tr>
                 ) : (
                   usuariosFiltrados.map((u) => {
-                    const isAdmin = u.role === "admin";
-                    const isGerente = u.role === "gerente";
+                    const perfil = obterPerfilAcesso(u.role);
+                    const isAdmin = perfil?.id === "admin";
+                    const isGerente = perfil?.id === "gerente";
+                    const isSupervisor = perfil?.id === "supervisor";
                     const empresasDisponiveis = empresas.filter(
                       (e) => !u.empresas.some((ue) => ue.empresaId === e.id),
                     );
@@ -413,12 +410,14 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
 
                         <td className="p-3">
                           <Badge
-                            variant={isAdmin ? "default" : isGerente ? "secondary" : "outline"}
+                            variant={isAdmin ? "default" : isGerente || isSupervisor ? "secondary" : "outline"}
                             className={`gap-1 font-bold text-[11px] ${
                               isAdmin
                                 ? "bg-primary text-primary-foreground"
                                 : isGerente
                                   ? "bg-blue-500/15 text-blue-700 dark:text-blue-300"
+                                  : isSupervisor
+                                    ? "bg-violet-500/15 text-violet-700 dark:text-violet-300"
                                   : "text-foreground"
                             }`}
                           >
@@ -426,10 +425,12 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                               <Crown className="size-3" />
                             ) : isGerente ? (
                               <Briefcase className="size-3" />
+                            ) : isSupervisor ? (
+                              <Briefcase className="size-3" />
                             ) : (
                               <UserCheck className="size-3" />
                             )}
-                            {isAdmin ? "Administrador" : isGerente ? "Gerência" : "Vendas"}
+                            {perfil?.nome ?? "Perfil inválido"}
                           </Badge>
                         </td>
 
@@ -566,14 +567,14 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Perfil de Acesso</Label>
-              <Select value={editRole} onValueChange={(v) => setEditRole(v as any)}>
+              <Select value={editRole} onValueChange={(v) => setEditRole(obterPerfilAcesso(v)?.id ?? "vendas")}>
                 <SelectTrigger className="text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vendas">💼 Vendas (Dashboard & Vendas)</SelectItem>
-                  <SelectItem value="gerente">👔 Gerência (+ Relatórios)</SelectItem>
-                  <SelectItem value="admin">👑 Administrador (Acesso Total)</SelectItem>
+                  {PERFIS_ORDENADOS.map((perfil) => (
+                    <SelectItem key={perfil.id} value={perfil.id}>{perfil.nome} — {perfil.descricao}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

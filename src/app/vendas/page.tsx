@@ -8,6 +8,7 @@ export default async function VendasPage({
   searchParams: Promise<{ empresa?: string }>;
 }) {
   const ctx = await resolveServerPageContext({
+    permissao: "vendas:visualizar",
     searchParams: searchParams as Promise<{ empresa?: string; aba?: string }>,
   });
 
