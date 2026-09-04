@@ -7,8 +7,17 @@ import { salvarPeriodoCookie, type Periodo } from "@/components/date-range-filte
 
 type Venda = VendaProduto | VendaComEmpresa;
 
-export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: string) {
+interface ConsultaParams {
+  empresaId: string;
+  periodo: Periodo;
+  forcarAtualizacao?: boolean;
+  /** Quando informado, busca também o período anterior equivalente (comparativos). */
+  periodoAnterior?: Periodo | null;
+}
+
+export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: string, initialVendasAnteriores: Venda[] = []) {
   const [vendas, setVendas] = useState<Venda[]>(initialVendas);
+  const [vendasAnteriores, setVendasAnteriores] = useState<Venda[]>(initialVendasAnteriores);
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [loading, setLoading] = useState(false);
 
@@ -16,11 +25,8 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
     empresaId,
     periodo,
     forcarAtualizacao = false,
-  }: {
-    empresaId: string;
-    periodo: Periodo;
-    forcarAtualizacao?: boolean;
-  }) => {
+    periodoAnterior = null,
+  }: ConsultaParams) => {
     if (!empresaId || !periodo.inicial || !periodo.final) {
       throw new Error("Empresa e período são obrigatórios para a consulta.");
     }
@@ -29,9 +35,16 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
     setLoading(true);
     setErro(null);
     try {
-      const dados = await buscarVendasApi(empresaId, periodo, { forcarAtualizacao });
-      setVendas(dados);
-      return dados;
+      const [dadosAtuais, dadosAnteriores] = await Promise.all([
+        buscarVendasApi(empresaId, periodo, { forcarAtualizacao }),
+        periodoAnterior?.inicial && periodoAnterior?.final
+          ? buscarVendasApi(empresaId, periodoAnterior, { forcarAtualizacao })
+          : Promise.resolve([] as Venda[]),
+      ]);
+
+      setVendas(dadosAtuais);
+      setVendasAnteriores(dadosAnteriores);
+      return dadosAtuais;
     } catch (causa) {
       const mensagem = causa instanceof Error ? causa.message : "Erro ao consultar as vendas.";
       setErro(mensagem);
@@ -41,5 +54,5 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
     }
   }, []);
 
-  return { vendas, erro, loading, consultar };
+  return { vendas, vendasAnteriores, erro, loading, consultar };
 }

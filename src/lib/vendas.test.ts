@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { VendaProduto } from "@/lib/syspro-api";
-import { agruparVendasPorNota, valorItem } from "@/lib/vendas";
+import {
+  agruparVendasPorNota,
+  analiseClientesNovosRecorrentes,
+  calcularVariacoesPeriodo,
+  concentracaoTopN,
+  maioresCrescimentosProdutos,
+  valorItem,
+} from "@/lib/vendas";
 import { periodoConsultaValido } from "@/lib/sales-service";
 
 function vendaBase(campos: Partial<VendaProduto> = {}): VendaProduto {
@@ -54,5 +61,72 @@ describe("cálculos de vendas", () => {
   it("rejeita datas inexistentes antes de consultar o Syspro", () => {
     expect(periodoConsultaValido("31/02/2026", "01/03/2026")).toBe(false);
     expect(periodoConsultaValido("01/09/2026", "30/09/2026")).toBe(true);
+  });
+});
+
+describe("métricas de gestão (comparativo e concentração)", () => {
+  it("calcula variação de faturamento, notas, ticket e clientes entre períodos", () => {
+    const atual = [vendaBase({ nf_numero: "1", cliente_nome: "CLIENTE A", produto_vlr_total_liquido: 200 })];
+    const anterior = [vendaBase({ nf_numero: "2", cliente_nome: "CLIENTE A", produto_vlr_total_liquido: 100 })];
+
+    const variacoes = calcularVariacoesPeriodo(atual, anterior);
+
+    expect(variacoes.temAnterior).toBe(true);
+    expect(variacoes.faturamento.diferenca).toBe(100);
+    expect(variacoes.faturamento.percentual).toBe(100);
+    expect(variacoes.notas.diferenca).toBe(0);
+    expect(variacoes.clientes.diferenca).toBe(0);
+  });
+
+  it("soma corretamente a concentração do Top N em um ranking", () => {
+    const ranking = [
+      { nome: "C1", faturamento: 500 },
+      { nome: "C2", faturamento: 300 },
+      { nome: "C3", faturamento: 200 },
+    ];
+
+    expect(concentracaoTopN(ranking, 2).percentualTop).toBe(80);
+    expect(concentracaoTopN(ranking, 2).faturamentoTop).toBe(800);
+    expect(concentracaoTopN(ranking, 10).itensNoTop).toBe(3);
+    expect(concentracaoTopN([], 5).percentualTop).toBe(0);
+  });
+
+  it("separa clientes novos, recorrentes e inativos comparando os períodos", () => {
+    const anterior = [
+      vendaBase({ nf_numero: "1", cliente_nome: "CLIENTE ANTIGO", produto_vlr_total_liquido: 100 }),
+      vendaBase({ nf_numero: "2", cliente_nome: "CONSUMIDOR FINAL", produto_vlr_total_liquido: 50 }),
+    ];
+    const atual = [
+      vendaBase({ nf_numero: "3", cliente_nome: "CLIENTE ANTIGO", produto_vlr_total_liquido: 150 }),
+      vendaBase({ nf_numero: "4", cliente_nome: "CLIENTE NOVO", produto_vlr_total_liquido: 80 }),
+    ];
+
+    const resultado = analiseClientesNovosRecorrentes(atual, anterior);
+
+    expect(resultado.recorrentes).toBe(1);
+    expect(resultado.novos).toBe(1);
+    expect(resultado.inativos).toBe(0);
+    expect(resultado.ativosAtual).toBe(2);
+    expect(resultado.receitaRecorrentes).toBe(150);
+    expect(resultado.receitaNovos).toBe(80);
+    expect(resultado.percentualReceitaRecorrentes).toBeCloseTo(65.22, 1);
+  });
+
+  it("aponta os produtos com maior crescimento de receita entre períodos", () => {
+    const atual = [
+      vendaBase({ nf_numero: "1", produto_id: "P1", produto_descricao: "Produto Um", produto_vlr_total_liquido: 200 }),
+      vendaBase({ nf_numero: "2", produto_id: "P2", produto_descricao: "Produto Dois", produto_vlr_total_liquido: 300 }),
+      vendaBase({ nf_numero: "3", produto_id: "P3", produto_descricao: "Produto Novo", produto_vlr_total_liquido: 500 }),
+    ];
+    const anterior = [
+      vendaBase({ nf_numero: "4", produto_id: "P1", produto_descricao: "Produto Um", produto_vlr_total_liquido: 50 }),
+      vendaBase({ nf_numero: "5", produto_id: "P2", produto_descricao: "Produto Dois", produto_vlr_total_liquido: 400 }),
+    ];
+
+    const crescimentos = maioresCrescimentosProdutos(atual, anterior);
+
+    expect(crescimentos).toHaveLength(1);
+    expect(crescimentos[0].id).toBe("P1");
+    expect(crescimentos[0].variacao.diferenca).toBe(150);
   });
 });

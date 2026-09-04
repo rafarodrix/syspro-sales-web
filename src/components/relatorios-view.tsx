@@ -25,6 +25,13 @@ import {
   analiseSazonalidade,
   analiseGeografica,
   analiseFinanceira,
+  analiseClientesNovosRecorrentes,
+  calcularVariacoesPeriodo,
+  calcularPeriodoAnterior,
+  concentracaoTopN,
+  maioresCrescimentosProdutos,
+  resumoVendas,
+  formatarDataInputParaBR,
 } from "@/lib/vendas";
 import {
   DateRangeFilter,
@@ -63,6 +70,7 @@ import { AbaDepartamentos } from "./relatorios/aba-departamentos";
 import { AbaVendedores } from "./relatorios/aba-vendedores";
 import { AbaGeografico } from "./relatorios/aba-geografico";
 import { AbaFinanceiro } from "./relatorios/aba-financeiro";
+import { PanoramaPeriodo } from "./relatorios/panorama-periodo";
 
 interface EmpresaOption {
   id: string;
@@ -76,6 +84,8 @@ interface Props {
   abaInicial?: string;
   initialPeriod?: Periodo;
   initialVendas?: (VendaProduto | VendaComEmpresa)[];
+  initialPeriodoAnterior?: { inicial: string; final: string };
+  initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialError?: string;
 }
 
@@ -96,6 +106,8 @@ export function RelatoriosView({
   abaInicial,
   initialPeriod,
   initialVendas = [],
+  initialPeriodoAnterior,
+  initialVendasAnteriores = [],
   initialError,
 }: Props) {
   const [empresaId] = useState(
@@ -109,11 +121,49 @@ export function RelatoriosView({
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
-  const { vendas, erro, loading, consultar: consultarVendas } = useConsultaVendas(initialVendas, initialError);
+  const [periodoAnterior, setPeriodoAnterior] = useState<{ inicial: string; final: string } | null>(
+    initialPeriodoAnterior ??
+      (initialPeriod ? calcularPeriodoAnterior(initialPeriod.inicial, initialPeriod.final) : null),
+  );
+  const { vendas, vendasAnteriores, erro, loading, consultar: consultarVendas } =
+    useConsultaVendas(initialVendas, initialError, initialVendasAnteriores);
   const [abaAtiva] = useState(abaInicial || "curva-abc");
   const relatorioAtivo = useMemo(
     () => relatoriosOpcoes.find((relatorio) => relatorio.id === abaAtiva),
     [abaAtiva],
+  );
+
+  // Comparativo do período (métricas centrais) — infraestrutura já usada no Dashboard.
+  const variacoesPeriodo = useMemo(
+    () => calcularVariacoesPeriodo(vendas, vendasAnteriores),
+    [vendas, vendasAnteriores],
+  );
+  const rotuloPeriodoAnterior = useMemo(() => {
+    if (!periodoAnterior?.inicial || !periodoAnterior?.final) return undefined;
+    return `${formatarDataInputParaBR(periodoAnterior.inicial)} a ${formatarDataInputParaBR(periodoAnterior.final)}`;
+  }, [periodoAnterior]);
+
+  // Análise de clientes novos vs. recorrentes (exclui consumidor de balcão)
+  const clientesNovosRecorrentes = useMemo(
+    () => analiseClientesNovosRecorrentes(vendas, vendasAnteriores),
+    [vendas, vendasAnteriores],
+  );
+
+  // Frequência média de compra: pedidos no período ÷ clientes cadastrados ativos
+  const metricasBaseClientes = useMemo(() => {
+    if (abaAtiva !== "clientes") return null;
+    const resumo = resumoVendas(vendas);
+    const ativosCadastrados = Math.max(1, clientesNovosRecorrentes.ativosAtual);
+    return {
+      pedidosNoPeriodo: resumo.notas,
+      frequenciaMediaPedidosPorCliente: resumo.notas / ativosCadastrados,
+    };
+  }, [abaAtiva, vendas, clientesNovosRecorrentes]);
+
+  // Produtos em alta vs. período anterior (comparáveis nos dois períodos)
+  const produtosEmAlta = useMemo(
+    () => maioresCrescimentosProdutos(vendas, vendasAnteriores, 5),
+    [vendas, vendasAnteriores],
   );
 
   // Filtros internos
@@ -166,6 +216,19 @@ export function RelatoriosView({
     }
     return analiseClientes(vendas);
   }, [vendas, abaAtiva]);
+
+  // Concentração Top 10/Top 20 de clientes e produtos (Pareto de dependência)
+  const concentracaoClientesTop20 = useMemo(
+    () => (abaAtiva === "clientes" ? concentracaoTopN(relatorioClientes.itens, 20) : null),
+    [abaAtiva, relatorioClientes],
+  );
+  const concentracaoProdutosTop20 = useMemo(
+    () =>
+      abaAtiva === "curva-abc"
+        ? concentracaoTopN(relatorioABC.itens.map((item) => ({ faturamento: item.total })), 20)
+        : null,
+    [abaAtiva, relatorioABC],
+  );
 
   const relatorioDescontos = useMemo(() => {
     if (abaAtiva !== "descontos") {
@@ -274,10 +337,13 @@ export function RelatoriosView({
   }, [relatorioGeografico, busca]);
 
   async function consultar() {
+    const proximoAnterior = calcularPeriodoAnterior(periodo.inicial, periodo.final);
+    setPeriodoAnterior(proximoAnterior);
     try {
       await consultarVendas({
         empresaId,
         periodo,
+        periodoAnterior: proximoAnterior,
         forcarAtualizacao: true,
       });
       toast.success("Dados de relatórios atualizados com sucesso!");
@@ -696,11 +762,23 @@ export function RelatoriosView({
             />
           ) : (
             <>
+              {/* Panorama do período: variações vs. período anterior (métricas explicadas) */}
+              <PanoramaPeriodo
+                variacoes={variacoesPeriodo}
+                rotuloPeriodoAnterior={rotuloPeriodoAnterior}
+              />
+
+              <div className="border-t border-border/60" />
+
               {/* Renderização condicional da aba ativa através de componentes modulares */}
               {abaAtiva === "curva-abc" && (
                 <AbaCurvaABC
                   relatorioABC={relatorioABC}
                   itensFiltrados={itensAbcFiltrados}
+                  concentracaoTop10={concentracaoProdutosTop20 ? concentracaoTopN(relatorioABC.itens.map((item) => ({ faturamento: item.total })), 10) : null}
+                  concentracaoTop20={concentracaoProdutosTop20}
+                  produtosEmAlta={produtosEmAlta}
+                  temPeriodoAnterior={vendasAnteriores.length > 0}
                 />
               )}
 
@@ -708,6 +786,11 @@ export function RelatoriosView({
                 <AbaClientes
                   relatorioClientes={relatorioClientes}
                   clientesFiltrados={clientesFiltrados}
+                  concentracaoTop20={concentracaoClientesTop20}
+                  novosRecorrentes={clientesNovosRecorrentes}
+                  temPeriodoAnterior={vendasAnteriores.length > 0}
+                  frequenciaMediaPedidosPorCliente={metricasBaseClientes?.frequenciaMediaPedidosPorCliente}
+                  pedidosNoPeriodo={metricasBaseClientes?.pedidosNoPeriodo}
                 />
               )}
 

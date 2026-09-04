@@ -1427,3 +1427,203 @@ export function dataParaInput(data: Date): string {
   const dia = String(data.getDate()).padStart(2, "0");
   return `${ano}-${mes}-${dia}`;
 }
+
+// ==========================================
+// Comparativos de período e concentração
+// (métricas padrão de gestão comercial)
+// ==========================================
+
+export interface VariacoesPeriodoVendas {
+  /** Tem dados do período anterior para comparar */
+  temAnterior: boolean;
+  faturamento: VariacaoMetrica;
+  notas: VariacaoMetrica;
+  ticketMedio: VariacaoMetrica;
+  clientes: VariacaoMetrica;
+  quantidadeItens: VariacaoMetrica;
+}
+
+/** Variação das métricas principais entre o período atual e o período anterior equivalente. */
+export function calcularVariacoesPeriodo(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+): VariacoesPeriodoVendas {
+  const atual = resumoVendas(vendasAtuais);
+  const anterior = resumoVendas(vendasAnteriores);
+  return {
+    temAnterior: vendasAnteriores.length > 0,
+    faturamento: calcularVariacao(atual.faturamento, anterior.faturamento),
+    notas: calcularVariacao(atual.notas, anterior.notas),
+    ticketMedio: calcularVariacao(atual.ticketMedio, anterior.ticketMedio),
+    clientes: calcularVariacao(atual.clientes, anterior.clientes),
+    quantidadeItens: calcularVariacao(atual.quantidadeItens, anterior.quantidadeItens),
+  };
+}
+
+export interface ConcentracaoTop {
+  topN: number;
+  itensNoTop: number;
+  faturamentoTop: number;
+  faturamentoTotal: number;
+  percentualTop: number;
+}
+
+/**
+ * Soma do faturamento dos N maiores itens de um ranking já calculado
+ * (clientes, produtos, departamentos...). Quanto maior o % no Top 10,
+ * maior a dependência da receita em poucos itens.
+ */
+export function concentracaoTopN<T extends { faturamento: number }>(
+  itens: T[],
+  topN: number,
+  faturamentoTotal?: number,
+): ConcentracaoTop {
+  const ordenados = [...itens].sort((a, b) => b.faturamento - a.faturamento);
+  const top = ordenados.slice(0, topN);
+  const faturamentoTop = top.reduce((soma, item) => soma + item.faturamento, 0);
+  const total = faturamentoTotal ?? itens.reduce((soma, item) => soma + item.faturamento, 0);
+  return {
+    topN,
+    itensNoTop: top.length,
+    faturamentoTop,
+    faturamentoTotal: total,
+    percentualTop: total > 0 ? (faturamentoTop / total) * 100 : 0,
+  };
+}
+
+export interface ClientesNovosRecorrentes {
+  /** Clientes ativos no período atual (exclui consumidor/balcão genérico) */
+  ativosAtual: number;
+  /** Clientes que não compraram no período anterior (base nova) */
+  novos: number;
+  /** Clientes que compraram nos dois períodos */
+  recorrentes: number;
+  /** Clientes do período anterior que não compraram no atual (inatividade) */
+  inativos: number;
+  /** Faturamento atual vindo de clientes novos */
+  receitaNovos: number;
+  /** Faturamento atual vindo de clientes recorrentes */
+  receitaRecorrentes: number;
+  /** % do faturamento (clientes cadastrados) vindo de recorrentes */
+  percentualReceitaRecorrentes: number;
+}
+
+/** Chave canônica de cliente (ignora consumidor genérico de balcão). */
+function chaveClienteCadastrado(nome: string | null | undefined): string | null {
+  if (!nome) return null;
+  const chave = nome.trim().toUpperCase();
+  if (isClienteConsumidorGenerico(chave)) return null;
+  return chave;
+}
+
+/**
+ * Separa a base de clientes do período atual entre novos e recorrentes,
+ * comparando com o período anterior equivalente. Clientes de balcão
+ * (CONSUMIDOR etc.) ficam de fora por não representarem um cadastro.
+ */
+export function analiseClientesNovosRecorrentes(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+): ClientesNovosRecorrentes {
+  const baseAnterior = new Set<string>();
+  let receitaAnterior = 0;
+  for (const venda of vendasAnteriores) {
+    const chave = chaveClienteCadastrado(venda.cliente_nome);
+    if (!chave) continue;
+    baseAnterior.add(chave);
+    receitaAnterior += valorItem(venda);
+  }
+
+  const ativosAtual = new Set<string>();
+  const novos = new Set<string>();
+  const recorrentes = new Set<string>();
+  let receitaNovos = 0;
+  let receitaRecorrentes = 0;
+
+  for (const venda of vendasAtuais) {
+    const chave = chaveClienteCadastrado(venda.cliente_nome);
+    if (!chave) continue;
+    ativosAtual.add(chave);
+    const totalItem = valorItem(venda);
+    if (baseAnterior.has(chave)) {
+      recorrentes.add(chave);
+      receitaRecorrentes += totalItem;
+    } else {
+      novos.add(chave);
+      receitaNovos += totalItem;
+    }
+  }
+
+  let inativos = 0;
+  if (vendasAnteriores.length > 0) {
+    for (const chave of baseAnterior) {
+      if (!ativosAtual.has(chave)) inativos++;
+    }
+  }
+
+  const receitaCadastrados = receitaNovos + receitaRecorrentes;
+
+  return {
+    ativosAtual: ativosAtual.size,
+    novos: novos.size,
+    recorrentes: recorrentes.size,
+    inativos: receitaAnterior > 0 ? inativos : 0,
+    receitaNovos,
+    receitaRecorrentes,
+    percentualReceitaRecorrentes:
+      receitaCadastrados > 0 ? (receitaRecorrentes / receitaCadastrados) * 100 : 0,
+  };
+}
+
+export interface CrescimentoProduto {
+  id: string;
+  produto: string;
+  totalAtual: number;
+  totalAnterior: number;
+  variacao: VariacaoMetrica;
+}
+
+function agregaReceitaPorProduto(vendas: VendaProduto[]): Map<string, { id: string; produto: string; total: number }> {
+  const mapa = new Map<string, { id: string; produto: string; total: number }>();
+  for (const venda of vendas) {
+    const id = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const produto = venda.produto_descricao?.trim() || "Produto não identificado";
+    const chave = `${id}|${produto}`;
+    const atual = mapa.get(chave) ?? { id, produto, total: 0 };
+    atual.total += valorItem(venda);
+    mapa.set(chave, atual);
+  }
+  return mapa;
+}
+
+/**
+ * Produtos presentes nos dois períodos com maior crescimento de receita
+ * em R$ (período atual vs. anterior). Só considera produtos comparáveis
+ * (venderam nos dois períodos) para não distorcer com lançamentos novos.
+ */
+export function maioresCrescimentosProdutos(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  limite = 5,
+): CrescimentoProduto[] {
+  const atualMap = agregaReceitaPorProduto(vendasAtuais);
+  const anteriorMap = agregaReceitaPorProduto(vendasAnteriores);
+
+  const crescimentos: CrescimentoProduto[] = [];
+  for (const [chave, atual] of atualMap) {
+    const anterior = anteriorMap.get(chave);
+    if (!anterior || anterior.total <= 0) continue;
+    crescimentos.push({
+      id: atual.id,
+      produto: atual.produto,
+      totalAtual: atual.total,
+      totalAnterior: anterior.total,
+      variacao: calcularVariacao(atual.total, anterior.total),
+    });
+  }
+
+  return crescimentos
+    .filter((item) => item.variacao.diferenca > 0)
+    .sort((a, b) => b.variacao.diferenca - a.variacao.diferenca)
+    .slice(0, limite);
+}

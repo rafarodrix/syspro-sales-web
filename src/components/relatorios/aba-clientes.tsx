@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
-import type { ItemClienteAnalise } from "@/lib/vendas";
+import type { ClientesNovosRecorrentes, ConcentracaoTop, ItemClienteAnalise } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { TablePagination } from "@/components/table-pagination";
+import { TermoExplicado } from "@/components/relatorio-guia";
 
 interface AbaClientesProps {
   relatorioClientes: {
@@ -15,9 +16,22 @@ interface AbaClientesProps {
     ticketMedioPorCliente: number;
   };
   clientesFiltrados: ItemClienteAnalise[];
+  concentracaoTop20: ConcentracaoTop | null;
+  novosRecorrentes: ClientesNovosRecorrentes;
+  temPeriodoAnterior: boolean;
+  frequenciaMediaPedidosPorCliente?: number;
+  pedidosNoPeriodo?: number;
 }
 
-export function AbaClientes({ relatorioClientes, clientesFiltrados }: AbaClientesProps) {
+export function AbaClientes({
+  relatorioClientes,
+  clientesFiltrados,
+  concentracaoTop20,
+  novosRecorrentes,
+  temPeriodoAnterior,
+  frequenciaMediaPedidosPorCliente,
+  pedidosNoPeriodo,
+}: AbaClientesProps) {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
 
@@ -29,11 +43,12 @@ export function AbaClientes({ relatorioClientes, clientesFiltrados }: AbaCliente
   return (
     <div className="space-y-4">
       {/* Cards Síntese de Clientes */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         <div className="rounded-lg border bg-muted/20 p-3">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Total de Clientes
-          </span>
+          <TermoExplicado
+            termo="Total de Clientes"
+            definicao="Clientes distintos que compraram no período, incluindo consumidor de balcão."
+          />
           <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
             {formatarNumero(relatorioClientes.totalClientes, 0)}
           </div>
@@ -43,9 +58,10 @@ export function AbaClientes({ relatorioClientes, clientesFiltrados }: AbaCliente
         </div>
 
         <div className="rounded-lg border bg-muted/20 p-3">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Clientes Recorrentes
-          </span>
+          <TermoExplicado
+            termo="Clientes Recorrentes"
+            definicao="% dos clientes cadastrados que compraram 2x ou mais dentro do próprio período."
+          />
           <div className="mt-1 font-mono font-extrabold text-lg text-primary">
             {formatarPercentual(relatorioClientes.taxaRecorrencia, 1)}
           </div>
@@ -55,21 +71,23 @@ export function AbaClientes({ relatorioClientes, clientesFiltrados }: AbaCliente
         </div>
 
         <div className="rounded-lg border bg-muted/20 p-3">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Concentração Top 5
-          </span>
+          <TermoExplicado
+            termo="Concentração Top 5"
+            definicao="% do faturamento concentrado nos 5 maiores clientes. Alto = risco de dependência."
+          />
           <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
             {formatarPercentual(relatorioClientes.concentracaoTop5, 1)}
           </div>
           <span className="text-[11px] text-muted-foreground">
-            do faturamento total da empresa
+            dos 5 maiores compradores
           </span>
         </div>
 
         <div className="rounded-lg border bg-muted/20 p-3">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Concentração Top 10
-          </span>
+          <TermoExplicado
+            termo="Concentração Top 10"
+            definicao="% do faturamento concentrado nos 10 maiores clientes."
+          />
           <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
             {formatarPercentual(relatorioClientes.concentracaoTop10, 1)}
           </div>
@@ -77,6 +95,57 @@ export function AbaClientes({ relatorioClientes, clientesFiltrados }: AbaCliente
             dos 10 maiores compradores
           </span>
         </div>
+
+        <div className="rounded-lg border bg-muted/20 p-3">
+          <TermoExplicado
+            termo="Concentração Top 20"
+            definicao="% do faturamento concentrado nos 20 maiores clientes. Quanto mais perto de 100%, mais a receita depende de poucos clientes."
+          />
+          <div className="mt-1 font-mono font-extrabold text-lg text-foreground">
+            {formatarPercentual(concentracaoTop20?.percentualTop ?? 0, 1)}
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            dos 20 maiores compradores
+          </span>
+        </div>
+      </div>
+
+      {/* Gestão da base: frequência e novos vs. recorrentes */}
+      <div className={`grid gap-3 ${temPeriodoAnterior ? "sm:grid-cols-2" : ""}`}>
+        <div className="rounded-lg border bg-muted/20 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <TermoExplicado
+              termo="Frequência média de compra"
+              definicao="Total de pedidos/NF do período ÷ clientes cadastrados ativos (exclui consumidor de balcão). Mede quantas vezes, em média, cada cliente compra no período."
+            />
+            <span className="font-mono text-2xl font-extrabold text-foreground">
+              {formatarNumero(frequenciaMediaPedidosPorCliente ?? 0, 1)}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            pedidos por cliente ativo
+            {typeof pedidosNoPeriodo === "number" && ` · ${formatarNumero(pedidosNoPeriodo, 0)} pedidos no total`}
+          </p>
+        </div>
+
+        {temPeriodoAnterior ? (
+          <div className="rounded-lg border bg-muted/20 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <TermoExplicado
+                termo="Novos vs. Recorrentes"
+                definicao="Clientes que compraram agora e já compravam no período anterior (recorrentes) vs. os que compraram pela primeira vez (novos). Consumidor de balcão fica fora."
+              />
+              <span className="font-mono text-2xl font-extrabold text-primary">
+                {formatarPercentual(novosRecorrentes.percentualReceitaRecorrentes, 0)}
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              da receita de clientes cadastrados vem de <strong>recorrentes</strong> —{" "}
+              {formatarNumero(novosRecorrentes.recorrentes, 0)} clientes ({formatarMoeda(novosRecorrentes.receitaRecorrentes)}) vs.{" "}
+              {formatarNumero(novosRecorrentes.novos, 0)} novos ({formatarMoeda(novosRecorrentes.receitaNovos)})
+            </p>
+          </div>
+        ) : null}
       </div>
 
       {/* Tabela de Clientes */}

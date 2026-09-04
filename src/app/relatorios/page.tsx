@@ -10,6 +10,7 @@ export default async function RelatoriosPage({
   const ctx = await resolveServerPageContext({
     permissao: "relatorios:visualizar",
     searchParams,
+    carregarPeriodoAnterior: true,
   });
 
   return (
@@ -25,6 +26,8 @@ export default async function RelatoriosPage({
         abaInicial={ctx.abaParam}
         initialPeriod={ctx.periodo}
         initialVendas={ctx.vendas}
+        initialPeriodoAnterior={ctx.periodoAnterior}
+        initialVendasAnteriores={ctx.vendasAnteriores}
         initialError={ctx.erroInicial}
       />
     </NavApp>

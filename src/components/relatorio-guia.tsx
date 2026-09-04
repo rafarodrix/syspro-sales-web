@@ -38,6 +38,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     glossario: [
       { termo: "Curva ABC / Pareto", definicao: "Método 80/20: uma minoria dos produtos concentra a maior parte do faturamento." },
       { termo: "Faturamento líquido", definicao: "Valor final da venda já com desconto abatido (e frete/outros somados)." },
+      { termo: "Dependência do portfólio (Top 10/20)", definicao: "% da receita concentrada nos 10 e nos 20 produtos mais vendidos. Acima de 80% no Top 20, o resultado depende de poucos itens." },
+      { termo: "Produtos em alta", definicao: "Produtos que venderam nos dois períodos (atual e anterior) e tiveram o maior crescimento de receita em R$ no atual." },
     ],
   },
   clientes: {
@@ -52,6 +54,10 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     glossario: [
       { termo: "Cliente recorrente", definicao: "Cliente que comprou em mais de um período/ocasião dentro da amostra." },
       { termo: "Ticket médio por cliente", definicao: "Quanto, em média, o cliente gasta por nota no período." },
+      { termo: "Concentração Top 20", definicao: "% do faturamento concentrado nos 20 maiores clientes — mede a dependência da receita em poucos compradores." },
+      { termo: "Frequência média de compra", definicao: "Pedidos/NF do período ÷ clientes cadastrados ativos (exclui consumidor de balcão). Quantas vezes, em média, cada cliente compra." },
+      { termo: "Clientes novos", definicao: "Compraram no período atual e não haviam comprado no período anterior equivalente." },
+      { termo: "Clientes recorrentes entre períodos", definicao: "Compraram no período atual e também no anterior — a base que garante previsibilidade de receita." },
     ],
   },
   descontos: {
@@ -132,6 +138,24 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     ],
   },
 };
+
+/** Termos exibidos no Panorama do período (comuns a todos os relatórios). */
+const TERMOS_PANORAMA = [
+  { termo: "Faturamento", definicao: "Valor final das vendas do período, com descontos abatidos e frete/seguro/outros somados." },
+  { termo: "Pedidos / NF", definicao: "Quantidade de notas fiscais emitidas no período — cada documento conta como uma venda." },
+  { termo: "Ticket médio", definicao: "Faturamento do período ÷ número de notas. Valor médio de cada venda." },
+  { termo: "Clientes ativos", definicao: "Clientes distintos que compraram no período, incluindo consumidor de balcão." },
+  { termo: "Variação vs. período anterior", definicao: "Comparação com o período de mesma duração imediatamente anterior ao selecionado. Mostra crescimento (+) ou queda (−) em %." },
+];
+
+// Todo relatório usa o Panorama, então todo guia ganha os termos correspondentes.
+for (const guia of Object.values(GUIAS_RELATORIOS)) {
+  const existentes = new Set((guia.glossario ?? []).map((item) => item.termo));
+  guia.glossario = [
+    ...(guia.glossario ?? []),
+    ...TERMOS_PANORAMA.filter((item) => !existentes.has(item.termo)),
+  ];
+}
 
 /** Tooltip inline para explicar termos no cabeçalho de tabelas/cards */
 export function TermoExplicado({
