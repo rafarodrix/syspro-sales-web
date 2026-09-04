@@ -92,7 +92,7 @@ interface Props {
 
 const relatoriosOpcoes = [
   { id: "curva-abc", label: "Curva ABC (Produtos)", icone: Sparkles, cor: "text-amber-500", desc: "Pareto 80/15/5 de faturamento e volume de itens" },
-  { id: "clientes", label: "Clientes & Concentração", icone: UserCheck, cor: "text-emerald-500", desc: "Concentração Top 5/10, recorrência e Pareto de clientes" },
+  { id: "clientes", label: "Clientes", icone: UserCheck, cor: "text-emerald-500", desc: "Recorrência, concentração e Pareto da base de clientes" },
   { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500", desc: "Taxa de desconto por vendedor e por departamento" },
   { id: "sazonalidade", label: "Sazonalidade & Dias", icone: CalendarDays, cor: "text-indigo-500", desc: "Vendas por dia da semana e comparativo quinzenal" },
   { id: "departamentos", label: "Departamentos & Mix", icone: Layers, cor: "text-blue-500", desc: "Faturamento por categoria com itens detalhados" },

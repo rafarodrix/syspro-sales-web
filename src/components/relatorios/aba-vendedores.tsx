@@ -22,10 +22,10 @@ const estiloBotaoVisao = (ativo: boolean) =>
 
 export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVendedoresProps) {
   const [visao, setVisao] = useState<VisaoVendedores>("sintetico");
-  const [vendedorSelecionado, setVendedorSelecionado] = useState<string>("todos");
+  const [vendedoresSelecionados, setVendedoresSelecionados] = useState<string[]>([]);
 
   function abrirAnaliticoDoVendedor(nome: string) {
-    setVendedorSelecionado(nome);
+    setVendedoresSelecionados([nome]);
     setVisao("analitico");
   }
 
@@ -53,7 +53,7 @@ export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVended
             variant="ghost"
             className={estiloBotaoVisao(visao === "analitico")}
             onClick={() => {
-              setVendedorSelecionado("todos");
+              setVendedoresSelecionados([]);
               setVisao("analitico");
             }}
             title="Notas/NF detalhadas, filtráveis por vendedor"
@@ -138,7 +138,8 @@ export function AbaVendedores({ vendedoresFiltrados, notasAgrupadas }: AbaVended
           notas={notasAgrupadas}
           dimensaoChave="vendedor"
           dimensaoRotulo="Vendedor"
-          dimensaoInicial={vendedorSelecionado}
+          selecionados={vendedoresSelecionados}
+          onSelecionadosChange={setVendedoresSelecionados}
           nomeCsvBase="vendas-analitico-vendedor"
           onVoltar={() => setVisao("sintetico")}
         />

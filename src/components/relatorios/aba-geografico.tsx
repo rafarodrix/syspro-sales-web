@@ -21,7 +21,7 @@ const estiloBotaoVisao = (ativo: boolean) =>
 
 export function AbaGeografico({ cidadesFiltradas, notasAgrupadas }: AbaGeograficoProps) {
   const [visao, setVisao] = useState<"sintetico" | "analitico">("sintetico");
-  const [cidadeSelecionada, setCidadeSelecionada] = useState<string>("todos");
+  const [cidadesSelecionadas, setCidadesSelecionadas] = useState<string[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
 
@@ -31,7 +31,7 @@ export function AbaGeografico({ cidadesFiltradas, notasAgrupadas }: AbaGeografic
   }, [cidadesFiltradas, paginaAtual, itensPorPagina]);
 
   function abrirAnaliticoDaCidade(cidade: string) {
-    setCidadeSelecionada(cidade);
+    setCidadesSelecionadas([cidade]);
     setVisao("analitico");
   }
 
@@ -58,7 +58,7 @@ export function AbaGeografico({ cidadesFiltradas, notasAgrupadas }: AbaGeografic
             variant="ghost"
             className={estiloBotaoVisao(visao === "analitico")}
             onClick={() => {
-              setCidadeSelecionada("todos");
+              setCidadesSelecionadas([]);
               setVisao("analitico");
             }}
           >
@@ -138,7 +138,8 @@ export function AbaGeografico({ cidadesFiltradas, notasAgrupadas }: AbaGeografic
           notas={notasAgrupadas}
           dimensaoChave="cidade"
           dimensaoRotulo="Cidade"
-          dimensaoInicial={cidadeSelecionada}
+          selecionados={cidadesSelecionadas}
+          onSelecionadosChange={setCidadesSelecionadas}
           nomeCsvBase="vendas-analitico-cidade"
           onVoltar={() => setVisao("sintetico")}
         />

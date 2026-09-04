@@ -49,7 +49,7 @@ export function AbaClientes({
   notasAgrupadas,
 }: AbaClientesProps) {
   const [visao, setVisao] = useState<"sintetico" | "analitico">("sintetico");
-  const [clienteSelecionado, setClienteSelecionado] = useState<string>("todos");
+  const [clientesSelecionados, setClientesSelecionados] = useState<string[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
 
@@ -59,7 +59,7 @@ export function AbaClientes({
   }, [clientesFiltrados, paginaAtual, itensPorPagina]);
 
   function abrirAnaliticoDoCliente(nome: string) {
-    setClienteSelecionado(nome);
+    setClientesSelecionados([nome]);
     setVisao("analitico");
   }
 
@@ -192,7 +192,7 @@ export function AbaClientes({
             variant="ghost"
             className={estiloBotaoVisao(visao === "analitico")}
             onClick={() => {
-              setClienteSelecionado("todos");
+              setClientesSelecionados([]);
               setVisao("analitico");
             }}
           >
@@ -288,7 +288,9 @@ export function AbaClientes({
           notas={notasAgrupadas}
           dimensaoChave="cliente"
           dimensaoRotulo="Cliente"
-          dimensaoInicial={clienteSelecionado}
+          selecionados={clientesSelecionados}
+          onSelecionadosChange={setClientesSelecionados}
+          dimensaoTemColunaPropria
           nomeCsvBase="vendas-analitico-cliente"
           onVoltar={() => setVisao("sintetico")}
         />

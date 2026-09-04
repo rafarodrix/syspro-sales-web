@@ -42,7 +42,7 @@ const comandos: CommandItem[] = [
   { id: "dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard, permissao: "dashboard:visualizar" },
   { id: "vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart, permissao: "vendas:visualizar" },
   { id: "curva-abc", titulo: "Curva ABC", categoria: "Relatórios", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500", permissao: "relatorios:visualizar" },
-  { id: "clientes", titulo: "Clientes & Concentração", categoria: "Relatórios", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500", permissao: "relatorios:visualizar" },
+  { id: "clientes", titulo: "Clientes", categoria: "Relatórios", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500", permissao: "relatorios:visualizar" },
   { id: "descontos", titulo: "Descontos & Margem", categoria: "Relatórios", href: "/relatorios?aba=descontos", icone: Percent, cor: "text-rose-500", permissao: "relatorios:visualizar" },
   { id: "sazonalidade", titulo: "Sazonalidade & Dias", categoria: "Relatórios", href: "/relatorios?aba=sazonalidade", icone: CalendarDays, cor: "text-indigo-500", permissao: "relatorios:visualizar" },
   { id: "departamentos", titulo: "Departamentos", categoria: "Relatórios", href: "/relatorios?aba=departamentos", icone: Layers, cor: "text-blue-500", permissao: "relatorios:visualizar" },

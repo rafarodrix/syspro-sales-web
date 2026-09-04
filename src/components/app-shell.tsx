@@ -59,7 +59,7 @@ interface AppShellProps {
 const relatoriosVendas = [
   { id: "curva-abc", label: "Curva ABC", icone: Sparkles, cor: "text-amber-500" },
   { id: "departamentos", label: "Departamentos & Mix", icone: Layers, cor: "text-blue-500" },
-  { id: "clientes", label: "Clientes & Concentração", icone: UserCheck, cor: "text-emerald-500" },
+  { id: "clientes", label: "Clientes", icone: UserCheck, cor: "text-emerald-500" },
   { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500" },
   { id: "sazonalidade", label: "Sazonalidade & Dias", icone: CalendarDays, cor: "text-indigo-500" },
   { id: "vendedores", label: "Vendedores", icone: Users, cor: "text-violet-500" },
