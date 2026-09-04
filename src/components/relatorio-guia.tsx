@@ -201,7 +201,7 @@ export function GlossarioRelatorio({
   relatorioLabel: string;
 }) {
   return (
-    <details open className="mt-4 rounded-lg border border-border/60 bg-muted/20 p-3 open:pb-3">
+    <details className="mt-4 rounded-lg border border-border/60 bg-muted/20 p-3 open:pb-3">
       <summary className="flex cursor-pointer select-none items-center gap-2 text-xs font-bold text-muted-foreground">
         <HelpCircle className="size-3.5" />
         Como interpretar e definições — {relatorioLabel}
