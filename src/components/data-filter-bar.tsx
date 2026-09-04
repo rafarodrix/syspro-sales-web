@@ -38,6 +38,7 @@ export function DataFilterBar({
             onClick={() => onBuscaChange("")}
             className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
             title="Limpar busca"
+            aria-label="Limpar busca"
           >
             <X className="size-4" />
           </button>

@@ -63,6 +63,7 @@ export function TablePagination({
           onClick={() => onPaginaChange(1)}
           disabled={paginaAtual <= 1}
           title="Primeira página"
+          aria-label="Primeira página"
           className="size-8"
         >
           <ChevronsLeft className="size-3.5" />
@@ -73,6 +74,7 @@ export function TablePagination({
           onClick={() => onPaginaChange(Math.max(1, paginaAtual - 1))}
           disabled={paginaAtual <= 1}
           title="Página anterior"
+          aria-label="Página anterior"
           className="size-8"
         >
           <ChevronLeft className="size-3.5" />
@@ -88,6 +90,7 @@ export function TablePagination({
           onClick={() => onPaginaChange(Math.min(totalPaginas, paginaAtual + 1))}
           disabled={paginaAtual >= totalPaginas}
           title="Próxima página"
+          aria-label="Próxima página"
           className="size-8"
         >
           <ChevronRight className="size-3.5" />
@@ -98,6 +101,7 @@ export function TablePagination({
           onClick={() => onPaginaChange(totalPaginas)}
           disabled={paginaAtual >= totalPaginas}
           title="Última página"
+          aria-label="Última página"
           className="size-8"
         >
           <ChevronsRight className="size-3.5" />

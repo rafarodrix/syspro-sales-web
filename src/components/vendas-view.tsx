@@ -6,12 +6,10 @@ import {
   BarChart3,
   ChevronDown,
   ChevronRight,
-  Search,
   SearchX,
   FilterX,
   LayoutList,
   AlignJustify,
-  X,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -35,6 +33,8 @@ import { exportarParaCSV } from "@/lib/exportar-csv";
 import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { DataFilterBar } from "@/components/data-filter-bar";
+import { FeedbackState } from "@/components/feedback-state";
 import { TablePagination } from "@/components/table-pagination";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -373,11 +373,12 @@ export function VendasView({
       </Card>
 
       {erro ? (
-        <Card className="border-destructive/50 bg-destructive/5 shadow-xs">
-          <CardContent className="pt-6 text-sm font-medium text-destructive">
-            {erro}
-          </CardContent>
-        </Card>
+        <FeedbackState
+          variant="error"
+          title="Não foi possível consultar as vendas"
+          description={erro}
+          onRetry={() => consultar()}
+        />
       ) : null}
 
       {/* Tabela Principal de Vendas */}
@@ -428,33 +429,16 @@ export function VendasView({
             </div>
 
             {/* Barra de Busca e Filtros Combinados */}
-            <div className="no-print flex flex-wrap items-center gap-2.5 rounded-lg border bg-muted/20 p-3">
-              {/* Campo de Busca com Botão Limpar */}
-              <div className="relative flex-1 min-w-[200px] sm:min-w-[240px]">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Buscar por NF, cliente, cidade ou produto..."
-                  value={buscaVenda}
-                  onChange={(e) => {
-                    setBuscaVenda(e.target.value);
-                    setPaginaAtual(1);
-                  }}
-                  className="h-9 w-full rounded-md border bg-background pl-8 pr-8 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
-                />
-                {buscaVenda && (
-                  <button
-                    onClick={() => {
-                      setBuscaVenda("");
-                      setPaginaAtual(1);
-                    }}
-                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                    title="Limpar busca"
-                  >
-                    <X className="size-4" />
-                  </button>
-                )}
-              </div>
+            <DataFilterBar
+              busca={buscaVenda}
+              onBuscaChange={(valor) => {
+                setBuscaVenda(valor);
+                setPaginaAtual(1);
+              }}
+              placeholder="Buscar por NF, cliente, cidade ou produto..."
+              onLimpar={limparTodosFiltros}
+              temFiltrosAtivos={temFiltrosAtivos}
+            >
 
               {/* Filtro Empresa (quando em modo consolidado) */}
               {opcoesFiltro.empresas.length > 1 && (
@@ -582,17 +566,6 @@ export function VendasView({
                 </div>
               )}
 
-              {temFiltrosAtivos && (
-                <Button
-                  onClick={limparTodosFiltros}
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Limpar filtros
-                </Button>
-              )}
-
               {/* Seletor de Densidade */}
               <div className="flex items-center gap-0.5 rounded-lg border bg-muted/20 p-0.5 ml-auto">
                 <Button
@@ -616,7 +589,7 @@ export function VendasView({
                   <span className="hidden md:inline">Compacto</span>
                 </Button>
               </div>
-            </div>
+            </DataFilterBar>
           </div>
         </CardHeader>
         <CardContent>

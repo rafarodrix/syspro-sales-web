@@ -40,6 +40,8 @@ import {
   formatarPercentual,
 } from "@/lib/formatters";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { FeedbackState } from "@/components/feedback-state";
+import { exportarParaCSV } from "@/lib/exportar-csv";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -109,6 +111,10 @@ export function RelatoriosView({
   );
   const { vendas, erro, loading, consultar: consultarVendas } = useConsultaVendas(initialVendas, initialError);
   const [abaAtiva] = useState(abaInicial || "curva-abc");
+  const relatorioAtivo = useMemo(
+    () => relatoriosOpcoes.find((relatorio) => relatorio.id === abaAtiva),
+    [abaAtiva],
+  );
 
   // Filtros internos
   const [busca, setBusca] = useState("");
@@ -431,21 +437,7 @@ export function RelatoriosView({
       ];
     }
 
-    const csv = [cabecalho, ...linhas]
-      .map((linha) =>
-        linha
-          .map((valor) => `"${String(valor ?? "").replaceAll('"', '""')}"`)
-          .join(";"),
-      )
-      .join("\n");
-
-    const arquivo = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(arquivo);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${nomeArquivo}-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    exportarParaCSV(`${nomeArquivo}-${new Date().toISOString().slice(0, 10)}`, cabecalho, linhas);
     toast.success("Arquivo CSV gerado com sucesso!");
   }
 
@@ -455,8 +447,7 @@ export function RelatoriosView({
       return;
     }
 
-    const op = relatoriosOpcoes.find((r) => r.id === abaAtiva);
-    const titulo = op ? op.label : "Relatório Analítico";
+    const titulo = relatorioAtivo?.label ?? "Relatório Analítico";
 
     const contexto = {
       empresaNome:
@@ -589,11 +580,12 @@ export function RelatoriosView({
       </Card>
 
       {erro ? (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="pt-6 text-sm font-medium text-destructive">
-            {erro}
-          </CardContent>
-        </Card>
+        <FeedbackState
+          variant="error"
+          title="Não foi possível atualizar os relatórios"
+          description={erro}
+          onRetry={consultar}
+        />
       ) : null}
 
       {/* Card Principal do Relatório Executivo */}
@@ -604,21 +596,21 @@ export function RelatoriosView({
             <div className="flex items-center gap-3">
               <div
                 className={`flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted/80 shadow-2xs ${
-                  relatoriosOpcoes.find((r) => r.id === abaAtiva)?.cor ?? "text-primary"
+                  relatorioAtivo?.cor ?? "text-primary"
                 }`}
               >
                 {(() => {
                   const IconeOp =
-                    relatoriosOpcoes.find((r) => r.id === abaAtiva)?.icone ?? Sparkles;
+                    relatorioAtivo?.icone ?? Sparkles;
                   return <IconeOp className="size-4.5" />;
                 })()}
               </div>
               <div className="flex flex-col">
                 <span className="text-base font-extrabold text-foreground tracking-tight">
-                  {relatoriosOpcoes.find((r) => r.id === abaAtiva)?.label ?? "Relatório Analítico"}
+                  {relatorioAtivo?.label ?? "Relatório Analítico"}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {relatoriosOpcoes.find((r) => r.id === abaAtiva)?.desc}
+                  {relatorioAtivo?.desc}
                 </span>
               </div>
             </div>
@@ -637,6 +629,7 @@ export function RelatoriosView({
                 {busca && (
                   <button
                     onClick={() => setBusca("")}
+                    aria-label="Limpar busca"
                     className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="size-3.5" />
@@ -694,9 +687,13 @@ export function RelatoriosView({
               <Skeleton className="h-48 w-full rounded-lg" />
             </div>
           ) : vendas.length === 0 ? (
-            <div className="py-12 text-center text-xs text-muted-foreground">
-              Nenhuma venda encontrada para o período selecionado.
-            </div>
+            <FeedbackState
+              variant="empty"
+              title="Nenhuma venda encontrada"
+              description="Ajuste o período ou selecione outra empresa para consultar os relatórios."
+              onRetry={consultar}
+              retryLabel="Consultar novamente"
+            />
           ) : (
             <>
               {/* Renderização condicional da aba ativa através de componentes modulares */}
@@ -744,7 +741,7 @@ export function RelatoriosView({
                   itens={GUIAS_RELATORIOS[abaAtiva].glossario ?? []}
                   guia={GUIAS_RELATORIOS[abaAtiva]}
                   relatorioLabel={
-                    relatoriosOpcoes.find((r) => r.id === abaAtiva)?.label ?? ""
+                    relatorioAtivo?.label ?? ""
                   }
                 />
               ) : null}

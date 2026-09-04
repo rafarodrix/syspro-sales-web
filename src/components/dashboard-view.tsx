@@ -45,6 +45,7 @@ import { KpiCard } from "@/components/kpi-card";
 import { RankingCard } from "@/components/ranking-card";
 import { PieChartCard } from "@/components/pie-chart-card";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { FeedbackState } from "@/components/feedback-state";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -366,11 +367,12 @@ export function DashboardView({
       </Card>
 
       {erro ? (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="pt-6 text-sm font-medium text-destructive">
-            {erro}
-          </CardContent>
-        </Card>
+        <FeedbackState
+          variant="error"
+          title="Não foi possível atualizar o dashboard"
+          description={erro}
+          onRetry={() => consultar()}
+        />
       ) : null}
 
       {/* Linha de KPIs Executivos */}
