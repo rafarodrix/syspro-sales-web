@@ -10,11 +10,13 @@ export async function requireAuth(minRole?: "admin" | "gerente") {
 
   const userRole = (session.user.role ?? "vendas") as UserRole;
 
-  if (minRole === "admin" && userRole !== "admin") {
+  const roleNormalizada = String(userRole).toLowerCase();
+
+  if (minRole === "admin" && roleNormalizada !== "admin") {
     redirect("/dashboard");
   }
 
-  if (minRole === "gerente" && userRole !== "admin" && userRole !== "gerente") {
+  if (minRole === "gerente" && roleNormalizada !== "admin" && roleNormalizada !== "gerente" && roleNormalizada !== "gerencia") {
     redirect("/dashboard");
   }
 

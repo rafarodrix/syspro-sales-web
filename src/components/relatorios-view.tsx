@@ -574,7 +574,7 @@ export function RelatoriosView({
               <div className="flex flex-wrap items-center gap-2">
                 <BarChart3 className="size-5 text-primary" />
                 <CardTitle className="text-xl font-bold tracking-tight text-foreground">
-                  {empresaId === "todas" ? "Central de Relatórios (Consolidado)" : "Central de Relatórios & Inteligência"}
+                  {empresaId === "todas" ? "Central de Relatórios (Consolidado)" : "Central de Relatórios"}
                 </CardTitle>
                 {empresaId === "todas" && (
                   <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold gap-1 px-2.5 py-0.5">

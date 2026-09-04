@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 interface CommandItem {
   id: string;
   titulo: string;
-  categoria: "Navegação" | "Relatórios & BI" | "Administração";
+  categoria: "Navegação" | "Relatórios" | "Administração";
   href: string;
   icone: React.ElementType;
   cor?: string;
@@ -39,14 +39,14 @@ interface CommandItem {
 const comandos: CommandItem[] = [
   { id: "dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard },
   { id: "vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart },
-  { id: "curva-abc", titulo: "Curva ABC (Produtos)", categoria: "Relatórios & BI", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500" },
-  { id: "clientes", titulo: "Clientes & Concentração", categoria: "Relatórios & BI", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500" },
-  { id: "descontos", titulo: "Descontos & Margem", categoria: "Relatórios & BI", href: "/relatorios?aba=descontos", icone: Percent, cor: "text-rose-500" },
-  { id: "sazonalidade", titulo: "Sazonalidade & Dias", categoria: "Relatórios & BI", href: "/relatorios?aba=sazonalidade", icone: CalendarDays, cor: "text-indigo-500" },
-  { id: "departamentos", titulo: "Departamentos", categoria: "Relatórios & BI", href: "/relatorios?aba=departamentos", icone: Layers, cor: "text-blue-500" },
-  { id: "vendedores", titulo: "Vendedores & Performance", categoria: "Relatórios & BI", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500" },
-  { id: "geografico", titulo: "Cidades / Praças", categoria: "Relatórios & BI", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500" },
-  { id: "financeiro", titulo: "Financeiro & Formas de Pagto", categoria: "Relatórios & BI", href: "/relatorios?aba=financeiro", icone: CreditCard, cor: "text-orange-500" },
+  { id: "curva-abc", titulo: "Curva ABC", categoria: "Relatórios", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500" },
+  { id: "clientes", titulo: "Clientes & Concentração", categoria: "Relatórios", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500" },
+  { id: "descontos", titulo: "Descontos & Margem", categoria: "Relatórios", href: "/relatorios?aba=descontos", icone: Percent, cor: "text-rose-500" },
+  { id: "sazonalidade", titulo: "Sazonalidade & Dias", categoria: "Relatórios", href: "/relatorios?aba=sazonalidade", icone: CalendarDays, cor: "text-indigo-500" },
+  { id: "departamentos", titulo: "Departamentos", categoria: "Relatórios", href: "/relatorios?aba=departamentos", icone: Layers, cor: "text-blue-500" },
+  { id: "vendedores", titulo: "Vendedores & Performance", categoria: "Relatórios", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500" },
+  { id: "geografico", titulo: "Cidades / Praças", categoria: "Relatórios", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500" },
+  { id: "financeiro", titulo: "Financeiro & Formas de Pagto", categoria: "Relatórios", href: "/relatorios?aba=financeiro", icone: CreditCard, cor: "text-orange-500" },
   { id: "usuarios", titulo: "Gestão de Usuários & Acessos", categoria: "Administração", href: "/usuarios", icone: UserCog },
   { id: "configuracoes", titulo: "Configurações da API Syspro", categoria: "Administração", href: "/configuracoes", icone: Settings },
 ];

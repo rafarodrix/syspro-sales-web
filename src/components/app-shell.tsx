@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
+  PackageSearch,
   BarChart3,
   Sparkles,
   UserCheck,
@@ -38,7 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/command-palette";
 
-type UserRole = "admin" | "gerente" | "vendas" | "user" | string;
+type UserRole = "admin" | "gerente" | "gerencia" | "vendas" | "user" | string;
 
 interface Empresa {
   id: string;
@@ -54,16 +55,18 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-const relatoriosSubLinks = [
-  { id: "curva-abc", label: "Curva ABC (Produtos)", icone: Sparkles, cor: "text-amber-500" },
+const relatoriosVendas = [
+  { id: "curva-abc", label: "Curva ABC", icone: Sparkles, cor: "text-amber-500" },
+  { id: "departamentos", label: "Departamentos & Mix", icone: Layers, cor: "text-blue-500" },
   { id: "clientes", label: "Clientes & Concentração", icone: UserCheck, cor: "text-emerald-500" },
   { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500" },
   { id: "sazonalidade", label: "Sazonalidade & Dias", icone: CalendarDays, cor: "text-indigo-500" },
-  { id: "departamentos", label: "Departamentos", icone: Layers, cor: "text-blue-500" },
   { id: "vendedores", label: "Vendedores", icone: Users, cor: "text-violet-500" },
   { id: "geografico", label: "Cidades / Praças", icone: MapPin, cor: "text-teal-500" },
   { id: "financeiro", label: "Financeiro & Fiscal", icone: CreditCard, cor: "text-orange-500" },
 ];
+
+const relatoriosSubLinks = relatoriosVendas;
 
 function extrairIniciais(nome: string): string {
   if (!nome) return "US";
@@ -110,9 +113,10 @@ export function AppShell({
   const breadcrumb = useMemo(() => {
     if (pathname.startsWith("/dashboard")) return { secao: "Visão Geral", pagina: "Dashboard Executivo" };
     if (pathname.startsWith("/vendas")) return { secao: "Comercial", pagina: "Consulta de Vendas" };
+    if (pathname.startsWith("/estoque")) return { secao: "Estoque", pagina: "Movimentações / Kardex" };
     if (pathname.startsWith("/relatorios")) {
       const relatorio = relatoriosSubLinks.find((r) => r.id === abaAtiva);
-      return { secao: "Relatórios & BI", pagina: relatorio ? relatorio.label : "Central de Relatórios" };
+      return { secao: "Relatórios", pagina: relatorio ? relatorio.label : "Central de Relatórios" };
     }
     if (pathname.startsWith("/usuarios")) return { secao: "Administração", pagina: "Gestão de Usuários" };
     if (pathname.startsWith("/configuracoes")) return { secao: "Administração", pagina: "Configurações da API" };
@@ -123,6 +127,7 @@ export function AppShell({
   const isAdmin = roleNormalizada === "admin";
   const isGerencia = roleNormalizada === "gerente" || roleNormalizada === "gerencia";
   const podeVerRelatorios = isAdmin || isGerencia;
+  const podeVerEstoque = isAdmin || isGerencia;
   const podeVerAdmin = isAdmin;
 
   function criarLinkComEmpresa(hrefBase: string) {
@@ -212,6 +217,21 @@ export function AppShell({
               <ShoppingCart className="size-4 shrink-0" />
               {!collapsed && <span>Vendas</span>}
             </Link>
+
+            {podeVerEstoque && (
+              <Link
+                href={criarLinkComEmpresa("/estoque")}
+                title="Estoque / Kardex"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                  pathname === "/estoque"
+                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                } ${collapsed ? "justify-center px-2" : ""}`}
+              >
+                <PackageSearch className="size-4 shrink-0" />
+                {!collapsed && <span>Estoque</span>}
+              </Link>
+            )}
           </div>
 
           {/* Grupo 2: Inteligência & Relatórios */}
@@ -222,7 +242,7 @@ export function AppShell({
                   onClick={() => setRelatoriosOpen(!relatoriosOpen)}
                   className="flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 cursor-pointer hover:text-foreground transition-colors"
                 >
-                  <span>Relatórios & BI</span>
+                  <span>Relatórios</span>
                   <ChevronDown
                     className={`size-3 transition-transform duration-200 ${
                       relatoriosOpen ? "rotate-0" : "-rotate-90"
@@ -249,24 +269,11 @@ export function AppShell({
               ) : (
                 relatoriosOpen && (
                   <div className="space-y-0.5 pl-1 animate-in fade-in duration-150">
-                    {relatoriosSubLinks.map((item) => {
+                    <span className="px-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">Vendas</span>
+                    {relatoriosVendas.map((item) => {
                       const Icone = item.icone;
                       const ativo = pathname === "/relatorios" && abaAtiva === item.id;
-
-                      return (
-                        <Link
-                          key={item.id}
-                          href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)}
-                          className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${
-                            ativo
-                              ? "bg-muted font-bold text-foreground shadow-2xs border-l-2 border-primary"
-                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                          }`}
-                        >
-                          <Icone className={`size-3.5 shrink-0 ${ativo ? item.cor : "text-muted-foreground"}`} />
-                          <span className="truncate">{item.label}</span>
-                        </Link>
-                      );
+                      return <Link key={item.id} href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${ativo ? "bg-muted font-bold text-foreground shadow-2xs border-l-2 border-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}><Icone className={`size-3.5 shrink-0 ${ativo ? item.cor : "text-muted-foreground"}`} /><span className="truncate">{item.label}</span></Link>;
                     })}
                   </div>
                 )
@@ -416,6 +423,17 @@ export function AppShell({
                   <ShoppingCart className="size-4" />
                   Vendas
                 </Link>
+                {podeVerEstoque && (
+                  <Link
+                    href={criarLinkComEmpresa("/estoque")}
+                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
+                      pathname === "/estoque" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    <PackageSearch className="size-4" />
+                    Estoque
+                  </Link>
+                )}
               </div>
 
               {podeVerRelatorios && (
