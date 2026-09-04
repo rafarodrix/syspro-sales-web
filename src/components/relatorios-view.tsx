@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import {
   BarChart3,
   Search,
@@ -658,29 +657,6 @@ export function RelatoriosView({
           />
         </CardContent>
       </Card>
-
-      <section className="no-print rounded-xl border border-border/60 bg-muted/10 p-3" aria-labelledby="outras-visoes">
-        <div className="mb-2 flex items-baseline justify-between gap-3">
-          <div>
-            <h2 id="outras-visoes" className="text-sm font-bold text-foreground">Outras visões de relatório</h2>
-            <p className="text-xs text-muted-foreground">Navegue entre as análises sem perder a empresa e o período selecionados.</p>
-          </div>
-          <span className="hidden text-xs font-medium text-muted-foreground sm:inline">{relatoriosOpcoes.length} visões disponíveis</span>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {relatoriosOpcoes.map((relatorio) => {
-            const Icone = relatorio.icone;
-            const ativo = relatorio.id === abaAtiva;
-            const href = `/relatorios?aba=${relatorio.id}${empresaId ? `&empresa=${encodeURIComponent(empresaId)}` : ""}`;
-            return (
-              <Link key={relatorio.id} href={href} aria-current={ativo ? "page" : undefined} className={`flex min-h-16 items-center gap-2 rounded-lg border p-2.5 transition-colors ${ativo ? "border-primary/50 bg-primary/10" : "bg-background hover:border-primary/40 hover:bg-muted/40"}`}>
-                <Icone className={`size-4 shrink-0 ${relatorio.cor}`} aria-hidden="true" />
-                <span className="min-w-0"><span className="block text-xs font-bold text-foreground">{relatorio.label}</span><span className="line-clamp-2 block text-[11px] leading-snug text-muted-foreground">{relatorio.desc}</span></span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
 
       {erro ? (
         <FeedbackState
