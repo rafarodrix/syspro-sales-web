@@ -33,7 +33,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
   }
 
-  const parsed = empresaCreateSchema.safeParse(body);
+  let parsed: ReturnType<typeof empresaCreateSchema.safeParse>;
+  try {
+    parsed = empresaCreateSchema.safeParse(body);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Dados da empresa inválidos." },
+      { status: 400 },
+    );
+  }
   if (!parsed.success) {
     const errorMsg = parsed.error.issues[0]?.message ?? "Dados da empresa inválidos.";
     return NextResponse.json({ error: errorMsg }, { status: 400 });
@@ -76,7 +84,15 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
   }
 
-  const parsed = empresaUpdateSchema.safeParse(body);
+  let parsed: ReturnType<typeof empresaUpdateSchema.safeParse>;
+  try {
+    parsed = empresaUpdateSchema.safeParse(body);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Dados inválidos para atualização." },
+      { status: 400 },
+    );
+  }
   if (!parsed.success) {
     const errorMsg = parsed.error.issues[0]?.message ?? "Dados inválidos para atualização.";
     return NextResponse.json({ error: errorMsg }, { status: 400 });
