@@ -50,3 +50,10 @@ next-env.d.ts
 /.windsurf/
 /.claude/
 /skills-lock.json
+
+# hermes local
+.hermes/
+
+# status/changelog pessoal do workflow Hermes
+CHANGELOG.md
+STATUS.md
