@@ -513,11 +513,6 @@ export function AppShell({
               </span>
             </div>
 
-            {/* Status da Conexão com Syspro ERP */}
-            <div className="hidden xl:flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Syspro API Online</span>
-            </div>
           </div>
 
           {/* Lado Direito: Command Palette + Seletor Multi-Empresa + Tema + Perfil */}
@@ -566,14 +561,7 @@ export function AppShell({
                   v1.0.0 Enterprise
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-[11px]">
-                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <span className="size-1.5 rounded-full bg-emerald-500" />
-                  <span>Serviço Ativo</span>
-                </div>
-                <span>·</span>
-                <span>Consulta Segura Multi-Filial</span>
-              </div>
+              <span className="text-[11px]">Consulta por filial autorizada</span>
             </div>
           </footer>
         </main>

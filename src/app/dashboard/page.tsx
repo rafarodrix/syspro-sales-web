@@ -26,6 +26,7 @@ export default async function DashboardPage({
         initialPeriod={ctx.periodo}
         initialVendas={ctx.vendas}
         initialVendasAnteriores={ctx.vendasAnteriores ?? []}
+        initialComparacaoDisponivel={ctx.comparacaoDisponivel}
         initialError={ctx.erroInicial}
       />
     </NavApp>

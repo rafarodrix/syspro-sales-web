@@ -93,6 +93,7 @@ export function VendasView({
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
+  const [periodoConsultado, setPeriodoConsultado] = useState<Periodo>(initialPeriod ?? periodoMesAtual());
   const { vendas, erro, loading, consultar: consultarVendas } = useConsultaVendas(initialVendas, initialError);
   const [notasAbertas, setNotasAbertas] = useState<Set<string>>(new Set());
 
@@ -232,12 +233,13 @@ export function VendasView({
       return 0;
     });
   }, [notasFiltradas, campoOrdenacao, direcaoOrdenacao]);
+  const paginaExibida = Math.min(paginaAtual, Math.max(1, Math.ceil(notasOrdenadas.length / itensPorPagina)));
 
   // Paginação
   const notasPaginadas = useMemo(() => {
-    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const inicio = (paginaExibida - 1) * itensPorPagina;
     return notasOrdenadas.slice(inicio, inicio + itensPorPagina);
-  }, [notasOrdenadas, paginaAtual, itensPorPagina]);
+  }, [notasOrdenadas, paginaExibida, itensPorPagina]);
 
   // Resumo dos filtros aplicados
   const resumoBusca = useMemo(() => {
@@ -304,6 +306,7 @@ export function VendasView({
     setNotasAbertas(new Set());
     try {
       await consultarVendas({ empresaId, periodo: periodoDaConsulta });
+      setPeriodoConsultado(periodoDaConsulta);
       setPaginaAtual(1);
       toast.success("Vendas consultadas com sucesso!");
     } catch (causa) {
@@ -322,7 +325,7 @@ export function VendasView({
       contexto: {
         empresaNome: empresaId === "todas" ? "Todas as Empresas (Consolidado)" : (empresaAtual?.razaoSocial ?? "Empresa Selecionada"),
         cnpj: empresaId === "todas" ? undefined : empresaAtual?.cnpj,
-        periodo,
+        periodo: periodoConsultado,
       },
       notas: notasFiltradas,
       modo,
@@ -365,6 +368,10 @@ export function VendasView({
             onConsultar={consultar}
             loading={loading}
           />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Dados exibidos: {periodoConsultado.inicial.split("-").reverse().join("/")} a {periodoConsultado.final.split("-").reverse().join("/")}.
+            {periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final ? " Novo período ainda não consultado." : ""}
+          </p>
         </CardContent>
       </Card>
 
@@ -387,7 +394,7 @@ export function VendasView({
                   Notas Fiscais Emitidas
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  {notasFiltradas.length} nota(s) encontrada(s) no período filtrado.
+                  {notasFiltradas.length} de {notas.length} nota(s) do período consultado. Busca e filtros desta seção alteram indicadores e exportações de Vendas.
                 </CardDescription>
               </div>
 
@@ -416,7 +423,7 @@ export function VendasView({
 
                 <ExportDropdown
                   onExportarPdf={() => handleExportarPdf("download")}
-                  onExportarCsv={() => exportarCsv(vendas)}
+                  onExportarCsv={() => exportarCsv(notasFiltradas.flatMap((nota) => nota.itens))}
                   onImprimir={() => handleExportarPdf("imprimir")}
                   disabled={loading || vendas.length === 0}
                   label="Exportar"
@@ -759,7 +766,7 @@ export function VendasView({
 
               {/* Barra de Paginação Padrão */}
               <TablePagination
-                paginaAtual={paginaAtual}
+                paginaAtual={paginaExibida}
                 totalItens={notasOrdenadas.length}
                 itensPorPagina={itensPorPagina}
                 onPaginaChange={setPaginaAtual}

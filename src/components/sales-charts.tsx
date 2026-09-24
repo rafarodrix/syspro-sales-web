@@ -228,7 +228,22 @@ export function GraficoFaturamento({
             {pontosArray.map((p, idx) => {
               const isHovered = pontoHover?.indice === idx;
               return (
-                <g key={idx} className="cursor-pointer">
+                <g
+                  key={idx}
+                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${formatarDataVisual(p.item.data)}: ${formato === "moeda" ? formatarMoeda(p.item.total) : formatarNumero(p.item.total, 0)}${temComparacao ? `; período anterior: ${formato === "moeda" ? formatarMoeda(p.item.totalAnterior ?? 0) : formatarNumero(p.item.totalAnterior ?? 0, 0)}` : ""}`}
+                  onFocus={() => setPontoHover(p)}
+                  onBlur={() => setPontoHover(null)}
+                  onClick={() => setPontoHover(p)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setPontoHover(p);
+                    }
+                  }}
+                >
                   {/* Ponto externo / anel no hover */}
                   {isHovered && (
                     <circle

@@ -119,7 +119,7 @@ export function KpiCard({
           <div className="mt-2 flex items-baseline justify-between gap-1.5">
             <div className="flex flex-col min-w-0 flex-1">
               <span
-                className={`font-mono font-extrabold tracking-tight tabular-nums whitespace-nowrap leading-tight ${
+                className={`font-mono font-extrabold tracking-tight tabular-nums break-words leading-tight ${
                   destaque
                     ? "text-lg xl:text-xl 2xl:text-2xl text-primary"
                     : "text-base xl:text-lg 2xl:text-xl text-foreground"

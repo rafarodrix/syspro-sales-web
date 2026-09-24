@@ -3,11 +3,9 @@
 import { CalendarDaysIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { erroPeriodo, type Periodo } from "@/lib/periodo";
 
-export interface Periodo {
-  inicial: string;
-  final: string;
-}
+export type { Periodo } from "@/lib/periodo";
 
 function paraInput(data: Date) {
   const ano = data.getFullYear();
@@ -78,6 +76,7 @@ export function DateRangeFilter({
   loading?: boolean;
   compact?: boolean;
 }) {
+  const erro = erroPeriodo(value);
   const presets: { label: string; value: Periodo }[] = [
     { label: "Hoje", value: periodoHoje() },
     { label: "Ontem", value: periodoOntem() },
@@ -100,6 +99,7 @@ export function DateRangeFilter({
             return (
               <Button
                 key={preset.label}
+                disabled={loading}
                 onClick={() => {
                   salvarPeriodoCookie(preset.value);
                   onChange(preset.value);
@@ -130,6 +130,7 @@ export function DateRangeFilter({
             <Input
               id="dt-inicial"
               type="date"
+              aria-label="Data inicial"
               value={value.inicial}
               onChange={(event) =>
                 onChange({ ...value, inicial: event.target.value })
@@ -143,6 +144,7 @@ export function DateRangeFilter({
             <Input
               id="dt-final"
               type="date"
+              aria-label="Data final"
               value={value.final}
               onChange={(event) =>
                 onChange({ ...value, final: event.target.value })
@@ -157,7 +159,7 @@ export function DateRangeFilter({
                 salvarPeriodoCookie(value);
                 onConsultar(value);
               }}
-              disabled={loading}
+              disabled={loading || !!erro}
               size="sm"
               className="h-8 font-semibold gap-1.5 px-3.5 shadow-sm"
             >
@@ -167,6 +169,7 @@ export function DateRangeFilter({
           )}
         </div>
       </div>
+      {erro && <p className="w-full text-xs text-destructive" role="alert">{erro}</p>}
     </div>
   );
 }

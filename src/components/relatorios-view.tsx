@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   Search,
   X,
@@ -91,6 +92,7 @@ interface Props {
   initialVendas?: (VendaProduto | VendaComEmpresa)[];
   initialPeriodoAnterior?: { inicial: string; final: string };
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
+  initialComparacaoDisponivel?: boolean;
   initialError?: string;
 }
 
@@ -104,6 +106,7 @@ const relatoriosOpcoes = [
   { id: "geografico", label: "Cidade e UF", icone: MapPin, cor: "text-teal-500", desc: "Distribuição por cidade ou UF, clientes atendidos e frete rateado" },
   { id: "financeiro", label: "Financeiro & Fiscal", icone: CreditCard, cor: "text-orange-500", desc: "Formas de pagamento declaradas e documentos fiscais" },
 ];
+const abasComBusca = new Set(["curva-abc", "clientes", "departamentos", "vendedores", "geografico"]);
 
 export function RelatoriosView({
   empresas,
@@ -113,6 +116,7 @@ export function RelatoriosView({
   initialVendas = [],
   initialPeriodoAnterior,
   initialVendasAnteriores = [],
+  initialComparacaoDisponivel = true,
   initialError,
 }: Props) {
   const [empresaId] = useState(() => resolverEmpresaSelecionada(empresaInicial, empresas));
@@ -121,12 +125,13 @@ export function RelatoriosView({
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
+  const [periodoConsultado, setPeriodoConsultado] = useState<Periodo>(initialPeriod ?? periodoMesAtual());
   const [periodoAnterior, setPeriodoAnterior] = useState<{ inicial: string; final: string } | null>(
     initialPeriodoAnterior ??
       (initialPeriod ? calcularPeriodoAnterior(initialPeriod.inicial, initialPeriod.final) : null),
   );
-  const { vendas, vendasAnteriores, erro, loading, consultar: consultarVendas } =
-    useConsultaVendas(initialVendas, initialError, initialVendasAnteriores);
+  const { vendas, vendasAnteriores, comparacaoDisponivel, erro, loading, consultar: consultarVendas } =
+    useConsultaVendas(initialVendas, initialError, initialVendasAnteriores, initialComparacaoDisponivel);
   const [abaAtiva] = useState(abaInicial || "curva-abc");
   const relatorioAtivo = useMemo(
     () => relatoriosOpcoes.find((relatorio) => relatorio.id === abaAtiva),
@@ -135,8 +140,8 @@ export function RelatoriosView({
 
   // Comparativo do período (métricas centrais) — infraestrutura já usada no Dashboard.
   const variacoesPeriodo = useMemo(
-    () => calcularVariacoesPeriodo(vendas, vendasAnteriores),
-    [vendas, vendasAnteriores],
+    () => comparacaoDisponivel ? calcularVariacoesPeriodo(vendas, vendasAnteriores) : null,
+    [vendas, vendasAnteriores, comparacaoDisponivel],
   );
   const rotuloPeriodoAnterior = useMemo(() => {
     if (!periodoAnterior?.inicial || !periodoAnterior?.final) return undefined;
@@ -145,8 +150,8 @@ export function RelatoriosView({
 
   // Produtos em alta vs. período anterior (comparáveis nos dois períodos)
   const produtosEmAlta = useMemo(
-    () => maioresCrescimentosProdutos(vendas, vendasAnteriores, 5),
-    [vendas, vendasAnteriores],
+    () => comparacaoDisponivel ? maioresCrescimentosProdutos(vendas, vendasAnteriores, 5) : [],
+    [vendas, vendasAnteriores, comparacaoDisponivel],
   );
 
   // Filtros internos
@@ -337,7 +342,6 @@ export function RelatoriosView({
 
   async function consultar() {
     const proximoAnterior = calcularPeriodoAnterior(periodo.inicial, periodo.final);
-    setPeriodoAnterior(proximoAnterior);
     try {
       await consultarVendas({
         empresaId,
@@ -345,6 +349,8 @@ export function RelatoriosView({
         periodoAnterior: proximoAnterior,
         forcarAtualizacao: true,
       });
+      setPeriodoAnterior(proximoAnterior);
+      setPeriodoConsultado({ ...periodo });
       toast.success("Dados de relatórios atualizados com sucesso!");
     } catch {
       toast.error("Não foi possível carregar os relatórios.");
@@ -517,7 +523,7 @@ export function RelatoriosView({
     const contexto = {
       empresaNome: rotuloEmpresa,
       cnpj: modoConsolidado ? undefined : empresaAtual?.cnpj,
-      periodo,
+      periodo: periodoConsultado,
     };
 
     let colunas: string[] = [];
@@ -606,6 +612,24 @@ export function RelatoriosView({
 
   return (
     <div className="flex flex-col gap-6">
+      <nav aria-label="Análises disponíveis" className="no-print -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {relatoriosOpcoes.map((opcao) => {
+          const Icone = opcao.icone;
+          const href = `/relatorios?${new URLSearchParams({ aba: opcao.id, empresa: empresaId }).toString()}`;
+          return (
+            <Link
+              key={opcao.id}
+              href={href}
+              aria-current={abaAtiva === opcao.id ? "page" : undefined}
+              title={opcao.desc}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-primary ${abaAtiva === opcao.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+            >
+              <Icone className="size-3.5" aria-hidden="true" />
+              {opcao.label}
+            </Link>
+          );
+        })}
+      </nav>
       {/* Cabeçalho único: contexto do relatório, período e ações. */}
       <Card className="no-print border-border/60 shadow-sm backdrop-blur-md">
         <CardHeader className="pb-3">
@@ -643,11 +667,18 @@ export function RelatoriosView({
             onConsultar={consultar}
             loading={loading}
           />
+          <p className="text-xs text-muted-foreground">
+            Dados exibidos: {formatarDataInputParaBR(periodoConsultado.inicial)} a {formatarDataInputParaBR(periodoConsultado.final)}.
+            {periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final ? " Novo período ainda não consultado." : ""}
+          </p>
+          {!comparacaoDisponivel && <p className="text-xs text-amber-700 dark:text-amber-400" role="status">Comparativo indisponível; os dados do período atual seguem disponíveis.</p>}
           <div className="no-print flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-            <div className="relative min-w-[170px] sm:min-w-[210px]">
+            {abasComBusca.has(abaAtiva) && <span className="text-xs text-muted-foreground">Busca filtra os registros abaixo; panorama e cartões mantêm o total do período.</span>}
+            {abasComBusca.has(abaAtiva) && <div className="relative min-w-[170px] sm:min-w-[210px]">
               <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
               <input
                 type="text"
+                aria-label="Buscar registros da análise"
                 placeholder="Pesquisar registros..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
@@ -662,7 +693,7 @@ export function RelatoriosView({
                   <X className="size-3.5" />
                 </button>
               )}
-            </div>
+            </div>}
 
             {abaAtiva === "curva-abc" && (
               <div className="flex items-center gap-1">
@@ -735,10 +766,7 @@ export function RelatoriosView({
           ) : (
             <>
               {/* Panorama do período: variações vs. período anterior (métricas explicadas) */}
-              <PanoramaPeriodo
-                variacoes={variacoesPeriodo}
-                rotuloPeriodoAnterior={rotuloPeriodoAnterior}
-              />
+              {variacoesPeriodo && <PanoramaPeriodo variacoes={variacoesPeriodo} rotuloPeriodoAnterior={rotuloPeriodoAnterior} />}
 
               {modoConsolidado && consolidacaoEmpresas.length > 1 ? (
                 <ConsolidacaoEmpresas empresas={consolidacaoEmpresas} abaAtiva={abaAtiva} />
@@ -754,7 +782,7 @@ export function RelatoriosView({
                   concentracaoTop10={concentracaoProdutosTop20 ? concentracaoTopN(relatorioABC.itens.map((item) => ({ faturamento: item.total })), 10) : null}
                   concentracaoTop20={concentracaoProdutosTop20}
                   produtosEmAlta={produtosEmAlta}
-                  temPeriodoAnterior={vendasAnteriores.length > 0}
+                  temPeriodoAnterior={comparacaoDisponivel}
                 />
               )}
 

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { erroPeriodo } from "@/lib/periodo";
 import { requireAuth } from "@/lib/server-auth";
 import { calcularPeriodoAnterior, dataParaInput } from "@/lib/vendas";
 import { obterVendas, SalesIntegrationError, type EmpresaInfo } from "@/lib/sales-service";
@@ -22,6 +23,7 @@ export interface ServerPageContextResult {
   periodoAnterior?: { inicial: string; final: string };
   vendas: VendaComEmpresa[];
   vendasAnteriores?: VendaComEmpresa[];
+  comparacaoDisponivel?: boolean;
   erroInicial?: string;
   abaParam?: string;
 }
@@ -56,10 +58,8 @@ export async function resolveServerPageContext({
   const cookieDtInicial = cookieStore.get("syspro_periodo_inicial")?.value;
   const cookieDtFinal = cookieStore.get("syspro_periodo_final")?.value;
 
-  const periodo =
-    cookieDtInicial && cookieDtFinal
-      ? { inicial: cookieDtInicial, final: cookieDtFinal }
-      : periodoPadrao;
+  const periodoCookie = { inicial: cookieDtInicial ?? "", final: cookieDtFinal ?? "" };
+  const periodo = erroPeriodo(periodoCookie) ? periodoPadrao : periodoCookie;
 
   let periodoAnterior: { inicial: string; final: string } | undefined;
   if (carregarPeriodoAnterior) {
@@ -68,6 +68,7 @@ export async function resolveServerPageContext({
 
   let vendas: VendaComEmpresa[] = [];
   let vendasAnteriores: VendaComEmpresa[] = [];
+  let comparacaoDisponivel = !carregarPeriodoAnterior;
   let erroInicial: string | undefined;
 
   try {
@@ -86,10 +87,11 @@ export async function resolveServerPageContext({
           empresaSelecionadaId: empresaSelecionada,
           dtInicial: periodoAnterior.inicial,
           dtFinal: periodoAnterior.final,
-        }).catch(() => []),
+        }).then((dados) => ({ dados, disponivel: true }), () => ({ dados: [] as VendaComEmpresa[], disponivel: false })),
       ]);
       vendas = atual;
-      vendasAnteriores = anterior;
+      vendasAnteriores = anterior.dados;
+      comparacaoDisponivel = anterior.disponivel;
     } else {
       vendas = await obterVendas({
         actorId: session.user.id,
@@ -115,6 +117,7 @@ export async function resolveServerPageContext({
     periodoAnterior,
     vendas,
     vendasAnteriores: carregarPeriodoAnterior ? vendasAnteriores : undefined,
+    comparacaoDisponivel,
     erroInicial,
     abaParam,
   };

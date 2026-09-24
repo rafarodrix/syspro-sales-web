@@ -28,6 +28,7 @@ export default async function RelatoriosPage({
         initialVendas={ctx.vendas}
         initialPeriodoAnterior={ctx.periodoAnterior}
         initialVendasAnteriores={ctx.vendasAnteriores}
+        initialComparacaoDisponivel={ctx.comparacaoDisponivel}
         initialError={ctx.erroInicial}
       />
     </NavApp>

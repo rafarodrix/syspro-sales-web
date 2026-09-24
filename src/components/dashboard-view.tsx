@@ -41,6 +41,7 @@ import {
   salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
+import { erroPeriodo } from "@/lib/periodo";
 import { KpiCard } from "@/components/kpi-card";
 import { RankingCard } from "@/components/ranking-card";
 import { PieChartCard } from "@/components/pie-chart-card";
@@ -72,6 +73,7 @@ interface Props {
   initialPeriod?: Periodo;
   initialVendas?: (VendaProduto | VendaComEmpresa)[];
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
+  initialComparacaoDisponivel?: boolean;
   initialError?: string;
 }
 
@@ -87,6 +89,7 @@ export function DashboardView({
   initialPeriod,
   initialVendas = [],
   initialVendasAnteriores = [],
+  initialComparacaoDisponivel = true,
   initialError,
 }: Props) {
   const [empresaId, setEmpresaId] = useState(() => resolverEmpresaSelecionada(empresaInicial, empresas));
@@ -100,6 +103,8 @@ export function DashboardView({
   const [periodo, setPeriodo] = useState<Periodo>(
     initialPeriod ?? periodoMesAtual(),
   );
+  const [periodoConsultado, setPeriodoConsultado] = useState<Periodo>(initialPeriod ?? periodoMesAtual());
+  const [comparacaoDisponivel, setComparacaoDisponivel] = useState(initialComparacaoDisponivel);
   const [loading, setLoading] = useState(false);
   const [vendas, setVendas] = useState<(VendaProduto | VendaComEmpresa)[]>(initialVendas);
   const [vendasAnteriores, setVendasAnteriores] = useState<(VendaProduto | VendaComEmpresa)[]>(
@@ -108,14 +113,12 @@ export function DashboardView({
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
   const [compararPeriodoAnterior, setCompararPeriodoAnterior] = useState(true);
-  const [ultimaAtualizacao, setUltimaAtualizacao] = useState(() =>
-    new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-  );
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<string | null>(null);
 
   const resumo = useMemo(() => resumoVendas(vendas), [vendas]);
   const resumoAnterior = useMemo(
-    () => (compararPeriodoAnterior ? resumoVendas(vendasAnteriores) : null),
-    [vendasAnteriores, compararPeriodoAnterior],
+    () => (compararPeriodoAnterior && comparacaoDisponivel ? resumoVendas(vendasAnteriores) : null),
+    [vendasAnteriores, compararPeriodoAnterior, comparacaoDisponivel],
   );
 
   const variacaoFaturamento = useMemo(
@@ -160,10 +163,10 @@ export function DashboardView({
 
   const serieDaMetrica = useMemo(
     () =>
-      compararPeriodoAnterior
+      compararPeriodoAnterior && comparacaoDisponivel
         ? dadosPorMetricaComparativa(vendas, vendasAnteriores, metrica)
         : dadosPorMetricaComparativa(vendas, [], metrica),
-    [metrica, vendas, vendasAnteriores, compararPeriodoAnterior],
+    [metrica, vendas, vendasAnteriores, compararPeriodoAnterior, comparacaoDisponivel],
   );
 
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
@@ -184,8 +187,8 @@ export function DashboardView({
   const rankingPorEmpresa = useMemo(() => analiseEmpresas(vendas), [vendas]);
 
   const periodoAnteriorCalculado = useMemo(
-    () => calcularPeriodoAnterior(periodo.inicial, periodo.final),
-    [periodo.inicial, periodo.final],
+    () => calcularPeriodoAnterior(periodoConsultado.inicial, periodoConsultado.final),
+    [periodoConsultado.inicial, periodoConsultado.final],
   );
 
   const periodoAnteriorFormatado = useMemo(() => {
@@ -196,11 +199,11 @@ export function DashboardView({
   }, [periodoAnteriorCalculado]);
 
   async function consultar(periodoDaConsulta = periodo) {
-    if (!empresaId || !periodoDaConsulta.inicial || !periodoDaConsulta.final) {
-      toast.error("Preencha o período para atualizar");
+    const erroDatas = erroPeriodo(periodoDaConsulta);
+    if (!empresaId || erroDatas) {
+      toast.error(erroDatas ?? "Selecione uma empresa");
       return;
     }
-    salvarPeriodoCookie(periodoDaConsulta);
     setLoading(true);
     setErro(null);
 
@@ -210,15 +213,19 @@ export function DashboardView({
     );
 
     try {
-      const [dadosAtual, dadosAnt] = await Promise.all([
+      const [dadosAtual, comparacao] = await Promise.all([
         buscarVendasApi(empresaId, periodoDaConsulta),
-        compararPeriodoAnterior
-          ? buscarVendasApi(empresaId, ant)
-          : Promise.resolve([]),
+        buscarVendasApi(empresaId, ant).then(
+          (dados) => ({ dados, disponivel: true }),
+          () => ({ dados: [] as (VendaProduto | VendaComEmpresa)[], disponivel: false }),
+        ),
       ]);
 
       setVendas(dadosAtual);
-      setVendasAnteriores(dadosAnt);
+      setVendasAnteriores(comparacao.dados);
+      setComparacaoDisponivel(comparacao.disponivel);
+      setPeriodoConsultado(periodoDaConsulta);
+      salvarPeriodoCookie(periodoDaConsulta);
 
       const agora = new Date();
       setUltimaAtualizacao(
@@ -244,7 +251,7 @@ export function DashboardView({
       contexto: {
         empresaNome: empresaId === "todas" ? "Todas as Empresas (Consolidado)" : (empresaAtual?.razaoSocial ?? "Empresa Selecionada"),
         cnpj: empresaId === "todas" ? undefined : empresaAtual?.cnpj,
-        periodo,
+        periodo: periodoConsultado,
       },
       resumo,
       topProdutos,
@@ -286,7 +293,7 @@ export function DashboardView({
           <span>•</span>
           <span className="flex items-center gap-1">
             <Calendar className="size-3.5" />
-            {formatarDataInputParaBR(periodo.inicial)} a {formatarDataInputParaBR(periodo.final)}
+            {formatarDataInputParaBR(periodoConsultado.inicial)} a {formatarDataInputParaBR(periodoConsultado.final)}
           </span>
           {compararPeriodoAnterior && periodoAnteriorFormatado && (
             <>
@@ -301,6 +308,9 @@ export function DashboardView({
               <span>•</span>
               <span>Atualizado às {ultimaAtualizacao}</span>
             </>
+          )}
+          {erroPeriodo(periodo) === null && (periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final) && (
+            <span className="font-semibold text-amber-700 dark:text-amber-400">Novo período ainda não consultado</span>
           )}
         </div>
       </div>
@@ -326,6 +336,11 @@ export function DashboardView({
               label="Exportar"
             />
           </div>
+          {compararPeriodoAnterior && !comparacaoDisponivel && (
+            <p className="text-xs text-amber-700 dark:text-amber-400" role="status">
+              Comparação indisponível. Os indicadores atuais seguem disponíveis; tente consultar novamente.
+            </p>
+          )}
 
           {/* Linha 2: Checkbox de Comparar Período Anterior logo abaixo dos botões */}
           <div className="flex items-center gap-2 border-t border-border/40 pt-2">
@@ -552,7 +567,7 @@ export function DashboardView({
             <GraficoFaturamento
               dados={serieDaMetrica}
               formato={metrica === "faturamento" ? "moeda" : "numero"}
-              temComparacao={compararPeriodoAnterior && vendasAnteriores.length > 0}
+              temComparacao={compararPeriodoAnterior && comparacaoDisponivel}
             />
           </CardContent>
         </Card>

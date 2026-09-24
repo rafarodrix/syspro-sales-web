@@ -32,11 +32,12 @@ export function AbaCurvaABC({
 }: AbaCurvaABCProps) {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
+  const paginaExibida = Math.min(paginaAtual, Math.max(1, Math.ceil(itensFiltrados.length / itensPorPagina)));
 
   const itensPaginados = useMemo(() => {
-    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const inicio = (paginaExibida - 1) * itensPorPagina;
     return itensFiltrados.slice(inicio, inicio + itensPorPagina);
-  }, [itensFiltrados, paginaAtual, itensPorPagina]);
+  }, [itensFiltrados, paginaExibida, itensPorPagina]);
 
   return (
     <div className="space-y-4">
@@ -163,7 +164,7 @@ export function AbaCurvaABC({
 
       {/* Paginação Padrão */}
       <TablePagination
-        paginaAtual={paginaAtual}
+        paginaAtual={paginaExibida}
         totalItens={itensFiltrados.length}
         itensPorPagina={itensPorPagina}
         onPaginaChange={setPaginaAtual}

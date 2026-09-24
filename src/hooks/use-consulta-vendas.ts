@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import type { VendaComEmpresa, VendaProduto } from "@/lib/syspro-api";
 import { buscarVendasApi } from "@/lib/vendas-client";
 import { salvarPeriodoCookie, type Periodo } from "@/components/date-range-filter";
+import { erroPeriodo } from "@/lib/periodo";
 
 type Venda = VendaProduto | VendaComEmpresa;
 
@@ -15,11 +16,12 @@ interface ConsultaParams {
   periodoAnterior?: Periodo | null;
 }
 
-export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: string, initialVendasAnteriores: Venda[] = []) {
+export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: string, initialVendasAnteriores: Venda[] = [], initialComparacaoDisponivel = true) {
   const [vendas, setVendas] = useState<Venda[]>(initialVendas);
   const [vendasAnteriores, setVendasAnteriores] = useState<Venda[]>(initialVendasAnteriores);
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [loading, setLoading] = useState(false);
+  const [comparacaoDisponivel, setComparacaoDisponivel] = useState(initialComparacaoDisponivel);
 
   const consultar = useCallback(async ({
     empresaId,
@@ -27,23 +29,28 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
     forcarAtualizacao = false,
     periodoAnterior = null,
   }: ConsultaParams) => {
-    if (!empresaId || !periodo.inicial || !periodo.final) {
-      throw new Error("Empresa e período são obrigatórios para a consulta.");
+    const erroDatas = erroPeriodo(periodo);
+    if (!empresaId || erroDatas) {
+      throw new Error(erroDatas ?? "Empresa é obrigatória para a consulta.");
     }
 
-    salvarPeriodoCookie(periodo);
     setLoading(true);
     setErro(null);
     try {
-      const [dadosAtuais, dadosAnteriores] = await Promise.all([
+      const [dadosAtuais, comparacao] = await Promise.all([
         buscarVendasApi(empresaId, periodo, { forcarAtualizacao }),
         periodoAnterior?.inicial && periodoAnterior?.final
-          ? buscarVendasApi(empresaId, periodoAnterior, { forcarAtualizacao })
-          : Promise.resolve([] as Venda[]),
+          ? buscarVendasApi(empresaId, periodoAnterior, { forcarAtualizacao }).then(
+              (dados) => ({ dados, disponivel: true }),
+              () => ({ dados: [] as Venda[], disponivel: false }),
+            )
+          : Promise.resolve({ dados: [] as Venda[], disponivel: false }),
       ]);
 
       setVendas(dadosAtuais);
-      setVendasAnteriores(dadosAnteriores);
+      setVendasAnteriores(comparacao.dados);
+      setComparacaoDisponivel(comparacao.disponivel);
+      salvarPeriodoCookie(periodo);
       return dadosAtuais;
     } catch (causa) {
       const mensagem = causa instanceof Error ? causa.message : "Erro ao consultar as vendas.";
@@ -54,5 +61,5 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
     }
   }, []);
 
-  return { vendas, vendasAnteriores, erro, loading, consultar };
+  return { vendas, vendasAnteriores, comparacaoDisponivel, erro, loading, consultar };
 }

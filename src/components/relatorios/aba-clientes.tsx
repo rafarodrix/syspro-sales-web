@@ -25,11 +25,12 @@ export function AbaClientes({
   const [clientesSelecionados, setClientesSelecionados] = useState<string[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
+  const paginaExibida = Math.min(paginaAtual, Math.max(1, Math.ceil(clientesFiltrados.length / itensPorPagina)));
 
   const clientesPaginados = useMemo(() => {
-    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const inicio = (paginaExibida - 1) * itensPorPagina;
     return clientesFiltrados.slice(inicio, inicio + itensPorPagina);
-  }, [clientesFiltrados, paginaAtual, itensPorPagina]);
+  }, [clientesFiltrados, paginaExibida, itensPorPagina]);
 
   function abrirAnaliticoDoCliente(nome: string) {
     setClientesSelecionados([nome]);
@@ -122,7 +123,7 @@ export function AbaClientes({
           </div>
 
           <TablePagination
-            paginaAtual={paginaAtual}
+            paginaAtual={paginaExibida}
             totalItens={clientesFiltrados.length}
             itensPorPagina={itensPorPagina}
             onPaginaChange={setPaginaAtual}
