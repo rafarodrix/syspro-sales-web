@@ -164,15 +164,21 @@ export async function obterVendas({
   // Modo consolidado customizado (seleção de múltiplas filiais por vírgula: "id1,id2,id3")
   if (empresaSelecionadaId.includes(",")) {
     const idsAlvo = empresaSelecionadaId.split(",").map((id) => id.trim()).filter(Boolean);
-    const empresasFiltradas = empresasLiberadas.filter((e) => idsAlvo.includes(e.id));
-    if (empresasFiltradas.length > 0) {
-      const resultadosPorEmpresa = await executarComPool(empresasFiltradas, 4, consultarEmpresa);
-      return resultadosPorEmpresa.flat();
+    if (idsAlvo.some((id) => !empresasLiberadas.some((empresa) => empresa.id === id))) {
+      throw new SalesQueryError("Uma ou mais empresas selecionadas não estão liberadas para este usuário.", 400);
     }
+    const empresasFiltradas = empresasLiberadas.filter((e) => idsAlvo.includes(e.id));
+    if (empresasFiltradas.length === 0) {
+      throw new SalesQueryError("Nenhuma das empresas selecionadas está liberada para este usuário.", 400);
+    }
+    const resultadosPorEmpresa = await executarComPool(empresasFiltradas, 4, consultarEmpresa);
+    return resultadosPorEmpresa.flat();
   }
 
-  const empresaAlvo = empresasLiberadas.find((e) => e.id === empresaSelecionadaId) ?? empresasLiberadas[0];
-  if (!empresaAlvo) return [];
+  const empresaAlvo = empresasLiberadas.find((e) => e.id === empresaSelecionadaId);
+  if (!empresaAlvo) {
+    throw new SalesQueryError("A empresa selecionada não está liberada para este usuário.", 400);
+  }
 
   return consultarEmpresa(empresaAlvo);
 }
