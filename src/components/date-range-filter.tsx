@@ -125,6 +125,7 @@ export function DateRangeFilter({
 
         {/* Inputs de Data Inline + Botão de Consulta na mesma linha */}
         <div className="flex flex-wrap items-center gap-2">
+          <CalendarDaysIcon className="hidden size-4 text-primary sm:block" aria-hidden="true" />
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-semibold text-muted-foreground">De:</span>
             <Input
