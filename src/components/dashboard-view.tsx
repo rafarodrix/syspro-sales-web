@@ -290,14 +290,10 @@ export function DashboardView({
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             {empresaId === "todas" ? "Dashboard Consolidado" : "Dashboard de Vendas"}
           </h1>
-          {empresaId === "todas" ? (
+          {empresaId === "todas" && (
             <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold gap-1 px-2.5 py-0.5">
               <Building2Icon className="size-3.5" />
-              <span>Visão Consolidada ({empresas.length} Empresas)</span>
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-xs font-mono">
-              BI Executivo
+              <span>{empresas.length} empresas</span>
             </Badge>
           )}
         </div>
@@ -306,19 +302,10 @@ export function DashboardView({
             <Building2Icon className="size-3.5 text-primary" />
             {empresaId === "todas" ? "Todas as Empresas do Grupo" : (empresaAtual ? empresaAtual.razaoSocial : "Empresa Selecionada")}
           </span>
-          <span>•</span>
           <span className="flex items-center gap-1">
             <Calendar className="size-3.5" />
             {formatarDataInputParaBR(periodoConsultado.inicial)} a {formatarDataInputParaBR(periodoConsultado.final)}
           </span>
-          {compararPeriodoAnterior && periodoAnteriorFormatado && (
-            <>
-              <span>•</span>
-              <span className="text-primary font-semibold">
-                Comparativo: {periodoAnteriorFormatado}
-              </span>
-            </>
-          )}
           {ultimaAtualizacao && (
             <>
               <span>•</span>
@@ -374,9 +361,6 @@ export function DashboardView({
           </div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground" aria-live="polite">
             <span className="font-semibold text-foreground">Filtros ativos:</span>
-            <Badge variant="secondary" className="font-mono text-[10px]">
-              {empresaId === "todas" ? "Todas as empresas" : (empresaAtual?.razaoSocial ?? "Empresa selecionada")}
-            </Badge>
             <Badge variant="outline" className="font-mono text-[10px]">
               {formatarDataInputParaBR(periodo.inicial)} → {formatarDataInputParaBR(periodo.final)}
             </Badge>
