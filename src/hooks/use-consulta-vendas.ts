@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { VendaComEmpresa, VendaProduto } from "@/lib/syspro-api";
 import { buscarVendasApi } from "@/lib/vendas-client";
 import { salvarPeriodoCookie, type Periodo } from "@/components/date-range-filter";
@@ -22,6 +22,8 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [loading, setLoading] = useState(false);
   const [comparacaoDisponivel, setComparacaoDisponivel] = useState(initialComparacaoDisponivel);
+  const consultaId = useRef(0);
+  const abortController = useRef<AbortController | null>(null);
 
   const consultar = useCallback(async ({
     empresaId,
@@ -34,30 +36,36 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
       throw new Error(erroDatas ?? "Empresa é obrigatória para a consulta.");
     }
 
+    const idAtual = ++consultaId.current;
+    abortController.current?.abort();
+    const controller = new AbortController();
+    abortController.current = controller;
     setLoading(true);
     setErro(null);
     try {
       const [dadosAtuais, comparacao] = await Promise.all([
-        buscarVendasApi(empresaId, periodo, { forcarAtualizacao }),
+        buscarVendasApi(empresaId, periodo, { forcarAtualizacao, signal: controller.signal }),
         periodoAnterior?.inicial && periodoAnterior?.final
-          ? buscarVendasApi(empresaId, periodoAnterior, { forcarAtualizacao }).then(
+          ? buscarVendasApi(empresaId, periodoAnterior, { forcarAtualizacao, signal: controller.signal }).then(
               (dados) => ({ dados, disponivel: true }),
               () => ({ dados: [] as Venda[], disponivel: false }),
             )
           : Promise.resolve({ dados: [] as Venda[], disponivel: false }),
       ]);
 
+      if (idAtual !== consultaId.current) return dadosAtuais;
       setVendas(dadosAtuais);
       setVendasAnteriores(comparacao.dados);
       setComparacaoDisponivel(comparacao.disponivel);
       salvarPeriodoCookie(periodo);
       return dadosAtuais;
     } catch (causa) {
+      if (causa instanceof DOMException && causa.name === "AbortError") return [];
       const mensagem = causa instanceof Error ? causa.message : "Erro ao consultar as vendas.";
-      setErro(mensagem);
+      if (idAtual === consultaId.current) setErro(mensagem);
       throw new Error(mensagem, { cause: causa });
     } finally {
-      setLoading(false);
+      if (idAtual === consultaId.current) setLoading(false);
     }
   }, []);
 
