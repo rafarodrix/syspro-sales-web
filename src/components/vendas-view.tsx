@@ -650,7 +650,7 @@ export function VendasView({
                 <div className="min-w-[820px]">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/40 text-xs font-bold">
+                    <TableRow className="sticky top-0 z-10 bg-muted/95 text-xs font-bold backdrop-blur">
                       <TableHead className="w-10" />
                       <TableHead
                         onClick={() => alternarOrdenacao("numero")}
