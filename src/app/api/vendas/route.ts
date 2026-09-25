@@ -106,12 +106,15 @@ async function handleVendas(request: NextRequest) {
 
     const isConsolidado = empresaId === "todas" || empresaId.includes(",");
 
-    return NextResponse.json({
-      vendas,
-      resumo: resumoVendas(vendas),
-      isConsolidado,
-      totalEmpresas: empresasLiberadas.length,
-    });
+    return NextResponse.json(
+      {
+        vendas,
+        resumo: resumoVendas(vendas),
+        isConsolidado,
+        totalEmpresas: empresasLiberadas.length,
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (e) {
     if (e instanceof SalesQueryError) {
       return NextResponse.json({ error: e.message }, { status: e.status });
