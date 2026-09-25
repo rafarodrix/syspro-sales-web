@@ -549,19 +549,11 @@ export function AppShell({
             {children}
           </div>
 
-          {/* Rodapé Corporativo Enterprise */}
+          {/* Rodapé discreto de contexto */}
           <footer className="mt-12 border-t border-border/60 pt-6 pb-2 text-xs text-muted-foreground">
             <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-foreground">SysproERP Reports</span>
-                <span>·</span>
-                <span>Trilink Software</span>
-                <span>·</span>
-                <span className="text-[11px] font-mono bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
-                  v1.0.0 Enterprise
-                </span>
-              </div>
-              <span className="text-[11px]">Consulta por filial autorizada</span>
+              <span>Dados exibidos conforme as permissões do usuário.</span>
+              <span className="text-[11px]">Trilink Software</span>
             </div>
           </footer>
         </main>
