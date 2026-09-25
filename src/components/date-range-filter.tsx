@@ -136,6 +136,12 @@ export function DateRangeFilter({
                 onChange({ ...value, inicial: event.target.value })
               }
               className="h-8 w-[138px] text-xs font-mono font-medium"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && onConsultar && !erro && !loading) {
+                  salvarPeriodoCookie(value);
+                  onConsultar(value);
+                }
+              }}
             />
           </div>
 
@@ -150,6 +156,12 @@ export function DateRangeFilter({
                 onChange({ ...value, final: event.target.value })
               }
               className="h-8 w-[138px] text-xs font-mono font-medium"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && onConsultar && !erro && !loading) {
+                  salvarPeriodoCookie(value);
+                  onConsultar(value);
+                }
+              }}
             />
           </div>
 
