@@ -16,6 +16,8 @@ import {
   Award,
   Calendar,
   Layers,
+  Lightbulb,
+  ArrowUpRight,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
@@ -171,6 +173,20 @@ export function DashboardView({
 
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
   const destaques = useMemo(() => calcularDestaques(vendas, resumo), [vendas, resumo]);
+  const insights = useMemo(() => {
+    if (!vendas.length) return [] as string[];
+    const itens: string[] = [];
+    if (resumo.porDepartamento[0]) {
+      itens.push(`${resumo.porDepartamento[0].nome} lidera o faturamento com ${formatarPercentual(resumo.porDepartamento[0].percentual, 1)} do total.`);
+    }
+    if (destaques.topVendedor) {
+      itens.push(`${destaques.topVendedor.nome} é o principal vendedor, com ${formatarPercentual(destaques.topVendedor.percentual, 1)} da receita.`);
+    }
+    if (resumo.taxaDesconto > 0) {
+      itens.push(`Os descontos representam ${formatarPercentual(resumo.taxaDesconto, 1)} do faturamento bruto.`);
+    }
+    return itens.slice(0, 3);
+  }, [vendas.length, resumo, destaques]);
 
   const sparklineFaturamento = useMemo(() => {
     return dadosPorMetrica(vendas, "faturamento").map((p) => p.total);
@@ -356,6 +372,17 @@ export function DashboardView({
               </span>
             </label>
           </div>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground" aria-live="polite">
+            <span className="font-semibold text-foreground">Filtros ativos:</span>
+            <Badge variant="secondary" className="font-mono text-[10px]">
+              {empresaId === "todas" ? "Todas as empresas" : (empresaAtual?.razaoSocial ?? "Empresa selecionada")}
+            </Badge>
+            <Badge variant="outline" className="font-mono text-[10px]">
+              {formatarDataInputParaBR(periodo.inicial)} → {formatarDataInputParaBR(periodo.final)}
+            </Badge>
+            {compararPeriodoAnterior && <Badge variant="outline" className="text-[10px]">Comparativo ligado</Badge>}
+            {loading && <span className="animate-pulse text-primary">Atualizando dados…</span>}
+          </div>
         </CardContent>
       </Card>
 
@@ -365,6 +392,16 @@ export function DashboardView({
           title="Não foi possível atualizar o dashboard"
           description={erro}
           onRetry={() => consultar()}
+        />
+      ) : null}
+
+      {!loading && !erro && vendas.length === 0 ? (
+        <FeedbackState
+          variant="empty"
+          title="Nenhuma venda encontrada neste período"
+          description="Ajuste as datas ou selecione outra empresa para visualizar os indicadores e gráficos."
+          onRetry={() => consultar()}
+          retryLabel="Consultar novamente"
         />
       ) : null}
 
@@ -466,8 +503,8 @@ export function DashboardView({
 
       {/* Mini-Indicadores de Eficiência Comercial & Operacional */}
       {!loading && vendas.length > 0 && (
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs">
-          <div className="flex flex-col gap-0.5">
+        <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Taxa Média Desconto
             </span>
@@ -481,7 +518,7 @@ export function DashboardView({
             </div>
           </div>
 
-          <div className="flex flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Itens / Pedido (IPF)
             </span>
@@ -495,7 +532,7 @@ export function DashboardView({
             </div>
           </div>
 
-          <div className="flex flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Clientes Recorrentes
             </span>
@@ -509,7 +546,7 @@ export function DashboardView({
             </div>
           </div>
 
-          <div className="flex flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Impacto do Frete
             </span>
@@ -525,6 +562,26 @@ export function DashboardView({
         </section>
       )}
 
+      {!loading && insights.length > 0 && (
+        <section aria-label="Insights do período" className="rounded-xl border border-primary/20 bg-primary/[0.04] p-3.5 sm:p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Lightbulb className="size-4 text-primary" aria-hidden="true" />
+            <div>
+              <h2 className="text-sm font-bold text-foreground">Leitura rápida do período</h2>
+              <p className="text-[11px] text-muted-foreground">Principais sinais calculados a partir dos dados consultados.</p>
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {insights.map((insight) => (
+              <div key={insight} className="flex items-start gap-2 rounded-lg border border-border/60 bg-background/70 p-2.5 text-xs leading-relaxed text-muted-foreground">
+                <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                <span>{insight}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Grid Analítico Principal: Gráfico Temporal (65%) + Insights/Top Produtos (35%) */}
       <section className="grid gap-6 lg:grid-cols-12">
         {/* Gráfico de Evolução Temporal (Bklit UI Gradient Area) */}
@@ -532,12 +589,14 @@ export function DashboardView({
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
             <div>
               <CardTitle className="text-base font-bold text-foreground">
-                Evolução de Vendas
+                Evolução diária
               </CardTitle>
               <CardDescription className="text-xs">
-                {compararPeriodoAnterior
+                {compararPeriodoAnterior && comparacaoDisponivel
                   ? `Comparando com período de ${formatarDataInputParaBR(periodoAnteriorCalculado.inicial)} a ${formatarDataInputParaBR(periodoAnteriorCalculado.final)}`
-                  : "Histórico detalhado da performance no período"}
+                  : compararPeriodoAnterior
+                    ? "Comparação indisponível para este período"
+                    : "Histórico detalhado da performance no período"}
               </CardDescription>
             </div>
 
