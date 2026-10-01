@@ -1,3 +1,4 @@
+import { ReportTableFrame } from "./report-table";
 import { useMemo, useState } from "react";
 import { ArrowLeft, FileText, PackageSearch, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -241,8 +242,7 @@ export function DetalhamentoClientes({
               observacoes={mes ? `Mês filtrado: ${mes}` : undefined}
             />
           </div>
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full text-xs">
+          <ReportTableFrame>
               <thead>
                 <tr className="border-b bg-muted/40 text-left">
                   {colunas.map((coluna) => (
@@ -291,8 +291,7 @@ export function DetalhamentoClientes({
                   </tr>
                 )}
               </tbody>
-            </table>
-          </div>
+            </ReportTableFrame>
           <TablePagination
             paginaAtual={paginaSegura}
             totalItens={produtos.length}

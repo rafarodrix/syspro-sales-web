@@ -1,35 +1,242 @@
+import { DataBarPercent } from "./data-bar-percent";
+import { ReportTable } from "./report-table";
 import { useMemo, useState } from "react";
 import { FileText, LayoutList, Map, MousePointerClick } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
-import type { ItemGeograficoAnalise, ItemUFVendas, VendaAgrupada } from "@/lib/vendas";
-import { TablePagination } from "@/components/table-pagination";
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+} from "@/lib/formatters";
+import type {
+  ItemGeograficoAnalise,
+  ItemUFVendas,
+  VendaAgrupada,
+} from "@/lib/vendas";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
 
-export function AbaGeografico({ cidadesFiltradas, ufsFiltradas, notasAgrupadas }: { cidadesFiltradas: ItemGeograficoAnalise[]; ufsFiltradas: ItemUFVendas[]; notasAgrupadas: VendaAgrupada[] }) {
+export function AbaGeografico({
+  cidadesFiltradas,
+  ufsFiltradas,
+  notasAgrupadas,
+}: {
+  cidadesFiltradas: ItemGeograficoAnalise[];
+  ufsFiltradas: ItemUFVendas[];
+  notasAgrupadas: VendaAgrupada[];
+}) {
   const [visao, setVisao] = useState<"uf" | "cidade" | "analitico">("uf");
-  const [uf, setUf] = useState<string | null>(null); const [selecionadas, setSelecionadas] = useState<string[]>([]);
-  const [pagina, setPagina] = useState(1); const [porPagina, setPorPagina] = useState(25);
-  const cidades = useMemo(() => uf ? cidadesFiltradas.filter((cidade) => cidade.uf === uf) : cidadesFiltradas, [cidadesFiltradas, uf]);
-  const paginadas = cidades.slice((pagina - 1) * porPagina, pagina * porPagina);
-  const abrirCidade = (cidade: string) => { setSelecionadas([cidade]); setVisao("analitico"); };
-  return <div className="space-y-4">
-    <ReportViewSelector
-      view={visao}
-      description="UF consolida estados, Cidade detalha praças e Notas detalhadas permite investigar documentos fiscais."
-      options={[
-        { value: "uf", label: "UF", icon: Map },
-        { value: "cidade", label: "Cidade", icon: LayoutList },
-        { value: "analitico", label: "Notas", icon: FileText },
-      ]}
-      onViewChange={(proximaVisao) => {
-        if (proximaVisao === "uf") setUf(null);
-        if (proximaVisao === "analitico") setSelecionadas([]);
-        setVisao(proximaVisao);
-      }}
-    />
-    {visao === "analitico" ? <VisaoAnaliticaNotas notas={notasAgrupadas} dimensaoChave="cidade" dimensaoRotulo="Cidade" selecionados={selecionadas} onSelecionadosChange={setSelecionadas} nomeCsvBase="vendas-analitico-cidade" onVoltar={() => setVisao(uf ? "cidade" : "uf")} /> : visao === "uf" ? <div className="overflow-x-auto rounded-md border"><table className="w-full min-w-[760px] text-xs"><thead><tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground"><th className="p-3">UF</th><th className="p-3 text-right">Cidades</th><th className="p-3 text-right">Pedidos</th><th className="p-3 text-right">Clientes</th><th className="p-3 text-right">Ticket médio</th><th className="p-3 text-right">Frete</th><th className="p-3 text-right">Faturamento</th><th className="p-3 text-right">Participação</th></tr></thead><tbody>{ufsFiltradas.map((item) => <tr key={item.uf} onClick={() => { setUf(item.uf); setPagina(1); setVisao("cidade"); }} className="cursor-pointer border-b hover:bg-muted/30"><td className="p-3 font-bold"><Badge variant="outline">{item.uf}</Badge> <MousePointerClick className="ml-1 inline size-3" /></td><td className="p-3 text-right font-mono">{item.cidades}</td><td className="p-3 text-right font-mono">{item.pedidos}</td><td className="p-3 text-right font-mono">{item.clientes}</td><td className="p-3 text-right font-mono">{formatarMoeda(item.ticketMedio)}</td><td className="p-3 text-right font-mono">{formatarMoeda(item.frete)}</td><td className="p-3 text-right font-mono font-bold">{formatarMoeda(item.faturamento)}</td><td className="p-3 text-right font-mono text-primary">{formatarPercentual(item.percentual, 1)}</td></tr>)}</tbody></table></div> : <><div className="flex justify-between rounded-lg border bg-muted/20 p-2 text-xs">{uf ? <>Cidades de <Badge variant="outline">{uf}</Badge></> : "Todas as cidades"}{uf ? <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setUf(null); setVisao("uf"); }}>Voltar para UF</Button> : null}</div><div className="overflow-x-auto rounded-md border"><table className="w-full min-w-[680px] text-xs"><thead><tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground"><th className="p-3">Cidade</th><th className="p-3">UF</th><th className="p-3 text-right">Pedidos</th><th className="p-3 text-right">Clientes</th><th className="p-3 text-right">Ticket médio</th><th className="p-3 text-right">Frete</th><th className="p-3 text-right">Faturamento</th><th className="p-3 text-right">Participação</th></tr></thead><tbody>{paginadas.map((cidade) => <tr key={`${cidade.cidade}-${cidade.uf}`} onClick={() => abrirCidade(cidade.cidade)} className="cursor-pointer border-b hover:bg-muted/30"><td className="p-3 font-semibold">{cidade.cidade} <MousePointerClick className="ml-1 inline size-3" /></td><td className="p-3"><Badge variant="outline">{cidade.uf}</Badge></td><td className="p-3 text-right font-mono">{formatarNumero(cidade.pedidos, 0)}</td><td className="p-3 text-right font-mono">{formatarNumero(cidade.clientes, 0)}</td><td className="p-3 text-right font-mono">{formatarMoeda(cidade.ticketMedio)}</td><td className="p-3 text-right font-mono">{formatarMoeda(cidade.frete)}</td><td className="p-3 text-right font-mono font-bold">{formatarMoeda(cidade.faturamento)}</td><td className="p-3 text-right font-mono text-primary">{formatarPercentual(cidade.percentual, 1)}</td></tr>)}</tbody></table></div><TablePagination paginaAtual={pagina} totalItens={cidades.length} itensPorPagina={porPagina} onPaginaChange={setPagina} onItensPorPaginaChange={(valor) => { setPorPagina(valor); setPagina(1); }} labelItens="cidades" /></>}
-  </div>;
+  const [uf, setUf] = useState<string | null>(null);
+  const [selecionadas, setSelecionadas] = useState<string[]>([]);
+  const cidades = useMemo(
+    () =>
+      uf
+        ? cidadesFiltradas.filter((cidade) => cidade.uf === uf)
+        : cidadesFiltradas,
+    [cidadesFiltradas, uf],
+  );
+  const abrirCidade = (cidade: string) => {
+    setSelecionadas([cidade]);
+    setVisao("analitico");
+  };
+  return (
+    <div className="space-y-4">
+      <ReportViewSelector
+        view={visao}
+        options={[
+          { value: "uf", label: "Estados", icon: Map },
+          { value: "cidade", label: "Cidades", icon: LayoutList },
+          { value: "analitico", label: "Detalhamento", icon: FileText },
+        ]}
+        onViewChange={(proximaVisao) => {
+          if (proximaVisao === "uf") setUf(null);
+          if (proximaVisao === "analitico") setSelecionadas([]);
+          setVisao(proximaVisao);
+        }}
+      />
+      {visao === "analitico" ? (
+        <VisaoAnaliticaNotas
+          notas={notasAgrupadas}
+          dimensaoChave="cidade"
+          dimensaoRotulo="Cidade"
+          selecionados={selecionadas}
+          onSelecionadosChange={setSelecionadas}
+          nomeCsvBase="vendas-analitico-cidade"
+          onVoltar={() => setVisao(uf ? "cidade" : "uf")}
+        />
+      ) : visao === "uf" ? (
+        <ReportTable
+          data={ufsFiltradas}
+          rowKey={(item) => item.uf}
+          onRowClick={(item) => {
+            (() => {
+              setUf(item.uf);
+              setVisao("cidade");
+            })();
+          }}
+          columns={[
+            {
+              id: "uf",
+              header: <>UF</>,
+              kind: "name",
+              value: (item) => item.uf,
+              cell: (item) => (
+                <>
+                  <Badge variant="outline">{item.uf}</Badge>{" "}
+                  <MousePointerClick className="ml-1 inline size-3" />
+                </>
+              ),
+            },
+            {
+              id: "cidades",
+              header: <>Cidades</>,
+              kind: "number",
+              value: (item) => item.cidades,
+              cell: (item) => <>{item.cidades}</>,
+            },
+            {
+              id: "pedidos",
+              header: <>Pedidos</>,
+              kind: "number",
+              value: (item) => item.pedidos,
+              cell: (item) => <>{item.pedidos}</>,
+            },
+            {
+              id: "clientes",
+              header: <>Clientes</>,
+              kind: "number",
+              value: (item) => item.clientes,
+              cell: (item) => <>{item.clientes}</>,
+            },
+            {
+              id: "ticketMedio",
+              header: <>Ticket médio</>,
+              kind: "currency",
+              value: (item) => item.ticketMedio,
+              cell: (item) => <>{formatarMoeda(item.ticketMedio)}</>,
+            },
+            {
+              id: "frete",
+              header: <>Frete</>,
+              kind: "currency",
+              value: (item) => item.frete,
+              cell: (item) => <>{formatarMoeda(item.frete)}</>,
+            },
+            {
+              id: "faturamento",
+              header: <>Faturamento</>,
+              kind: "currency",
+              value: (item) => item.faturamento,
+              cell: (item) => <>{formatarMoeda(item.faturamento)}</>,
+            },
+            {
+              id: "percentual",
+              header: <>Participação</>,
+              kind: "number",
+              value: (item) => item.percentual,
+              cell: (item) => (
+                <DataBarPercent
+                  valor={formatarPercentual(item.percentual, 1)}
+                  percentual={item.percentual}
+                />
+              ),
+            },
+          ]}
+        />
+      ) : (
+        <>
+          {uf ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              aria-label="Remover filtro de estado"
+              onClick={() => setUf(null)}
+            >
+              {uf} ×
+            </Button>
+          ) : null}
+          <ReportTable
+            data={cidades}
+            rowKey={(cidade) => `${cidade.cidade}-${cidade.uf}`}
+            onRowClick={(cidade) => {
+              (() => abrirCidade(cidade.cidade))();
+            }}
+            columns={[
+              {
+                id: "cidade",
+                header: <>Cidade</>,
+                kind: "name",
+                value: (cidade) => cidade.cidade,
+                cell: (cidade) => (
+                  <>
+                    {cidade.cidade}{" "}
+                    <MousePointerClick className="ml-1 inline size-3" />
+                  </>
+                ),
+              },
+              {
+                id: "uf",
+                header: <>UF</>,
+                kind: "number",
+                value: (cidade) => cidade.uf,
+                cell: (cidade) => (
+                  <>
+                    <Badge variant="outline">{cidade.uf}</Badge>
+                  </>
+                ),
+              },
+              {
+                id: "pedidos",
+                header: <>Pedidos</>,
+                kind: "number",
+                value: (cidade) => cidade.pedidos,
+                cell: (cidade) => <>{formatarNumero(cidade.pedidos, 0)}</>,
+              },
+              {
+                id: "clientes",
+                header: <>Clientes</>,
+                kind: "number",
+                value: (cidade) => cidade.clientes,
+                cell: (cidade) => <>{formatarNumero(cidade.clientes, 0)}</>,
+              },
+              {
+                id: "ticketMedio",
+                header: <>Ticket médio</>,
+                kind: "currency",
+                value: (cidade) => cidade.ticketMedio,
+                cell: (cidade) => <>{formatarMoeda(cidade.ticketMedio)}</>,
+              },
+              {
+                id: "frete",
+                header: <>Frete</>,
+                kind: "currency",
+                value: (cidade) => cidade.frete,
+                cell: (cidade) => <>{formatarMoeda(cidade.frete)}</>,
+              },
+              {
+                id: "faturamento",
+                header: <>Faturamento</>,
+                kind: "currency",
+                value: (cidade) => cidade.faturamento,
+                cell: (cidade) => <>{formatarMoeda(cidade.faturamento)}</>,
+              },
+              {
+                id: "percentual",
+                header: <>Participação</>,
+                kind: "number",
+                value: (cidade) => cidade.percentual,
+                cell: (cidade) => (
+                  <DataBarPercent
+                    valor={formatarPercentual(cidade.percentual, 1)}
+                    percentual={cidade.percentual}
+                  />
+                ),
+              },
+            ]}
+          />
+        </>
+      )}
+    </div>
+  );
 }

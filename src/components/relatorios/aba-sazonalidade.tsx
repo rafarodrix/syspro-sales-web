@@ -1,6 +1,13 @@
+import type { Periodo } from "@/lib/periodo";
+import { ReportChart } from "./report-chart";
+import { ReportTable } from "./report-table";
 import { useState } from "react";
 import { CalendarDays, CalendarRange, ChartLine } from "lucide-react";
-import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+} from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
 
@@ -14,6 +21,7 @@ interface ItemSazonalidadeBase {
 }
 
 interface AbaSazonalidadeProps {
+  periodo: Periodo;
   relatorioSazonalidade: {
     porDiaSemana: Array<ItemSazonalidadeBase & { dia: string }>;
     porQuinzena: Array<ItemSazonalidadeBase & { quinzena: string }>;
@@ -29,59 +37,181 @@ interface ItemEvolucao extends ItemSazonalidadeBase {
   descontos: number;
 }
 
-function TabelaSazonalidade({ itens, rotulo }: { itens: Array<ItemSazonalidadeBase & { rotulo: string }>; rotulo: string }) {
+function TabelaSazonalidade({
+  itens,
+  rotulo,
+}: {
+  itens: Array<ItemSazonalidadeBase & { rotulo: string }>;
+  rotulo: string;
+}) {
   return (
-    <div className="overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[640px] text-xs">
-        <thead>
-          <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
-            <th className="p-3">{rotulo}</th>
-            <th className="p-3 text-right">Pedidos / NF</th>
-            <th className="p-3 text-right">Ticket médio</th>
-            <th className="p-3 text-right">Faturamento</th>
-            <th className="p-3 text-right">Participação</th>
-          </tr>
-        </thead>
-        <tbody>
-          {itens.map((item) => (
-            <tr key={item.rotulo} className="border-b last:border-0 hover:bg-muted/20">
-              <td className="p-3 font-semibold">{item.rotulo}</td>
-              <td className="p-3 text-right font-mono">{formatarNumero(item.pedidos, 0)}</td>
-              <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(item.ticketMedio)}</td>
-              <td className="p-3 text-right font-mono font-bold">{formatarMoeda(item.faturamento)}</td>
-              <td className="p-3 text-right"><DataBarPercent valor={formatarPercentual(item.percentual, 1)} percentual={item.percentual} cor="bg-indigo-500/20" /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ReportTable
+      data={itens}
+      rowKey={(item) => item.rotulo}
+      columns={[
+        {
+          id: "rotulo",
+          header: <>{rotulo}</>,
+          kind: "name",
+          value: (item) => item.rotulo,
+          cell: (item) => <>{item.rotulo}</>,
+        },
+        {
+          id: "pedidos",
+          header: <>Pedidos / NF</>,
+          kind: "number",
+          value: (item) => item.pedidos,
+          cell: (item) => <>{formatarNumero(item.pedidos, 0)}</>,
+        },
+        {
+          id: "ticketMedio",
+          header: <>Ticket médio</>,
+          kind: "currency",
+          value: (item) => item.ticketMedio,
+          cell: (item) => <>{formatarMoeda(item.ticketMedio)}</>,
+        },
+        {
+          id: "faturamento",
+          header: <>Faturamento</>,
+          kind: "currency",
+          value: (item) => item.faturamento,
+          cell: (item) => <>{formatarMoeda(item.faturamento)}</>,
+        },
+        {
+          id: "percentual",
+          header: <>Participação</>,
+          kind: "number",
+          value: (item) => item.percentual,
+          cell: (item) => (
+            <>
+              <DataBarPercent
+                valor={formatarPercentual(item.percentual, 1)}
+                percentual={item.percentual}
+                cor="bg-indigo-500/20"
+              />
+            </>
+          ),
+        },
+      ]}
+    />
   );
 }
 
-function TabelaEvolucao({ itens, rotulo, mensal }: { itens: ItemEvolucao[]; rotulo: string; mensal: boolean }) {
+function TabelaEvolucao({
+  itens,
+  rotulo,
+  mensal,
+}: {
+  itens: ItemEvolucao[];
+  rotulo: string;
+  mensal: boolean;
+}) {
   return (
-    <div className="overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[700px] text-xs">
-        <thead><tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground"><th className="p-3">{rotulo}</th><th className="p-3 text-right">Pedidos / NF</th><th className="p-3 text-right">Ticket médio</th><th className="p-3 text-right">Descontos</th><th className="p-3 text-right">Faturamento</th><th className="p-3 text-right">Participação</th></tr></thead>
-        <tbody>{itens.map((item) => <tr key={item.periodo} className="border-b last:border-0 hover:bg-muted/20"><td className="p-3 font-semibold">{mensal ? `${item.periodo.slice(5, 7)}/${item.periodo.slice(0, 4)}` : item.periodo.split("-").reverse().join("/")}</td><td className="p-3 text-right font-mono">{formatarNumero(item.pedidos, 0)}</td><td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(item.ticketMedio)}</td><td className="p-3 text-right font-mono text-rose-600 dark:text-rose-400">{formatarMoeda(item.descontos)}</td><td className="p-3 text-right font-mono font-bold">{formatarMoeda(item.faturamento)}</td><td className="p-3 text-right"><DataBarPercent valor={formatarPercentual(item.percentual, 1)} percentual={item.percentual} cor="bg-indigo-500/20" /></td></tr>)}</tbody>
-      </table>
-    </div>
+    <ReportTable
+      data={itens}
+      rowKey={(item) => item.periodo}
+      columns={[
+        {
+          id: "periodo",
+          header: <>{rotulo}</>,
+          kind: "name",
+          value: (item) => item.periodo,
+          cell: (item) => (
+            <>
+              {mensal
+                ? `${item.periodo.slice(5, 7)}/${item.periodo.slice(0, 4)}`
+                : item.periodo.split("-").reverse().join("/")}
+            </>
+          ),
+        },
+        {
+          id: "pedidos",
+          header: <>Pedidos / NF</>,
+          kind: "number",
+          value: (item) => item.pedidos,
+          cell: (item) => <>{formatarNumero(item.pedidos, 0)}</>,
+        },
+        {
+          id: "ticketMedio",
+          header: <>Ticket médio</>,
+          kind: "currency",
+          value: (item) => item.ticketMedio,
+          cell: (item) => <>{formatarMoeda(item.ticketMedio)}</>,
+        },
+        {
+          id: "descontos",
+          header: <>Descontos</>,
+          kind: "number",
+          value: (item) => item.descontos,
+          cell: (item) => <>{formatarMoeda(item.descontos)}</>,
+        },
+        {
+          id: "faturamento",
+          header: <>Faturamento</>,
+          kind: "currency",
+          value: (item) => item.faturamento,
+          cell: (item) => <>{formatarMoeda(item.faturamento)}</>,
+        },
+        {
+          id: "percentual",
+          header: <>Participação</>,
+          kind: "number",
+          value: (item) => item.percentual,
+          cell: (item) => (
+            <>
+              <DataBarPercent
+                valor={formatarPercentual(item.percentual, 1)}
+                percentual={item.percentual}
+                cor="bg-indigo-500/20"
+              />
+            </>
+          ),
+        },
+      ]}
+    />
   );
 }
 
-export function AbaSazonalidade({ relatorioSazonalidade, relatorioEvolucao }: AbaSazonalidadeProps) {
-  const [visao, setVisao] = useState<VisaoSazonalidade>("dia-semana");
-  const porDiaSemana = relatorioSazonalidade.porDiaSemana.map(({ dia, ...item }) => ({ ...item, rotulo: dia }));
-  const porQuinzena = relatorioSazonalidade.porQuinzena.map(({ quinzena, ...item }) => ({ ...item, rotulo: quinzena }));
+export function AbaSazonalidade({
+  relatorioSazonalidade,
+  relatorioEvolucao,
+  periodo,
+}: AbaSazonalidadeProps) {
+  const [visao, setVisao] = useState<VisaoSazonalidade>("diario");
+  const porDiaSemana = relatorioSazonalidade.porDiaSemana.map(
+    ({ dia, ...item }) => ({ ...item, rotulo: dia }),
+  );
+  const porQuinzena = relatorioSazonalidade.porQuinzena.map(
+    ({ quinzena, ...item }) => ({ ...item, rotulo: quinzena }),
+  );
   const exibeDiaSemana = visao === "dia-semana";
   const exibeEvolucao = visao === "diario" || visao === "mensal";
 
+  const serie = [];
+  const mensal = visao === "mensal";
+  const valores = new Map(
+    (mensal ? relatorioEvolucao.mensal : relatorioEvolucao.diario).map(
+      (item) => [item.periodo, item.faturamento],
+    ),
+  );
+  const cursor = new Date(`${periodo.inicial}T00:00:00Z`);
+  if (mensal) cursor.setUTCDate(1);
+  while (cursor.toISOString().slice(0, 10) <= periodo.final) {
+    const iso = cursor.toISOString().slice(0, mensal ? 7 : 10);
+    serie.push({
+      label: mensal
+        ? `${iso.slice(5)}/${iso.slice(0, 4)}`
+        : iso.split("-").reverse().join("/"),
+      value: valores.get(iso) ?? 0,
+    });
+    if (mensal) cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    else cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
   return (
     <div className="space-y-4">
       <ReportViewSelector
         view={visao}
         onViewChange={setVisao}
-        description="Evolução acompanha faturamento no tempo; dia da semana e quinzena mostram a distribuição operacional do período."
         options={[
           { value: "diario", label: "Diário", icon: ChartLine },
           { value: "mensal", label: "Mensal", icon: CalendarRange },
@@ -89,10 +219,34 @@ export function AbaSazonalidade({ relatorioSazonalidade, relatorioEvolucao }: Ab
           { value: "quinzena", label: "Quinzena", icon: CalendarRange },
         ]}
       />
+      <ReportChart
+        key={visao}
+        temporal={exibeEvolucao}
+        points={
+          exibeEvolucao
+            ? serie
+            : (exibeDiaSemana ? porDiaSemana : porQuinzena).map((item) => ({
+                label: item.rotulo,
+                value: item.faturamento,
+                percentual: item.percentual,
+              }))
+        }
+      />
       {exibeEvolucao ? (
-        <TabelaEvolucao itens={visao === "diario" ? relatorioEvolucao.diario : relatorioEvolucao.mensal} rotulo={visao === "diario" ? "Emissão" : "Mês"} mensal={visao === "mensal"} />
+        <TabelaEvolucao
+          itens={
+            visao === "diario"
+              ? relatorioEvolucao.diario
+              : relatorioEvolucao.mensal
+          }
+          rotulo={visao === "diario" ? "Emissão" : "Mês"}
+          mensal={visao === "mensal"}
+        />
       ) : (
-        <TabelaSazonalidade itens={exibeDiaSemana ? porDiaSemana : porQuinzena} rotulo={exibeDiaSemana ? "Dia da semana" : "Quinzena"} />
+        <TabelaSazonalidade
+          itens={exibeDiaSemana ? porDiaSemana : porQuinzena}
+          rotulo={exibeDiaSemana ? "Dia da semana" : "Quinzena"}
+        />
       )}
     </div>
   );

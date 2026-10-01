@@ -19,17 +19,16 @@ interface ReportViewSelectorProps<T extends string> {
 export function ReportViewSelector<T extends string>({
   view,
   onViewChange,
-  description,
   options,
   ariaLabel = "Visão do relatório",
 }: ReportViewSelectorProps<T>) {
   return (
-    <section className="rounded-lg border bg-muted/20 p-2 sm:flex sm:items-center sm:justify-between">
-      {description ? <div className="mb-2 sm:mb-0">
-        <p className="text-xs font-bold text-foreground">Escolha como analisar</p>
-        <p className="text-[11px] text-muted-foreground">{description}</p>
-      </div> : null}
-      <div className="flex w-full flex-wrap items-center gap-1 rounded-md border bg-background p-0.5 sm:w-auto" role="group" aria-label={ariaLabel}>
+    <section className="flex flex-wrap items-center">
+      <div
+        className="flex w-full flex-wrap items-center gap-1 rounded-md border bg-background p-0.5 sm:w-auto"
+        role="group"
+        aria-label={ariaLabel}
+      >
         {options.map(({ value, label, icon: Icon }) => {
           const active = view === value;
           return (

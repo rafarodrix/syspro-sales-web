@@ -1,10 +1,24 @@
+import { ReportTable } from "./report-table";
 import { useState } from "react";
-import { FileText, LayoutList, MousePointerClick, PackageSearch } from "lucide-react";
-import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import {
+  FileText,
+  LayoutList,
+  MousePointerClick,
+  PackageSearch,
+} from "lucide-react";
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+} from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
-import type { ItemProdutoPorDimensao, ItemVendedorAnalise, VendaAgrupada } from "@/lib/vendas";
+import type {
+  ItemProdutoPorDimensao,
+  ItemVendedorAnalise,
+  VendaAgrupada,
+} from "@/lib/vendas";
 import { VisaoProdutosPorDimensao } from "./visao-produtos-por-dimensao";
 
 type VisaoVendedores = "sintetico" | "produtos" | "analitico";
@@ -16,9 +30,15 @@ interface AbaVendedoresProps {
   notasAgrupadas: VendaAgrupada[];
 }
 
-export function AbaVendedores({ vendedoresFiltrados, produtosPorVendedor, notasAgrupadas }: AbaVendedoresProps) {
+export function AbaVendedores({
+  vendedoresFiltrados,
+  produtosPorVendedor,
+  notasAgrupadas,
+}: AbaVendedoresProps) {
   const [visao, setVisao] = useState<VisaoVendedores>("sintetico");
-  const [vendedoresSelecionados, setVendedoresSelecionados] = useState<string[]>([]);
+  const [vendedoresSelecionados, setVendedoresSelecionados] = useState<
+    string[]
+  >([]);
 
   function abrirAnaliticoDoVendedor(nome: string) {
     setVendedoresSelecionados([nome]);
@@ -29,11 +49,10 @@ export function AbaVendedores({ vendedoresFiltrados, produtosPorVendedor, notasA
     <div className="space-y-4">
       <ReportViewSelector
         view={visao}
-        description="Síntese compara a equipe; produtos mostram o mix vendido; notas detalhadas explicam os resultados de cada vendedor."
         options={[
-          { value: "sintetico", label: "Síntese", icon: LayoutList },
+          { value: "sintetico", label: "Resumo", icon: LayoutList },
           { value: "produtos", label: "Produtos", icon: PackageSearch },
-          { value: "analitico", label: "Notas detalhadas", icon: FileText },
+          { value: "analitico", label: "Detalhamento", icon: FileText },
         ]}
         onViewChange={(proximaVisao) => {
           setVendedoresSelecionados([]);
@@ -44,74 +63,113 @@ export function AbaVendedores({ vendedoresFiltrados, produtosPorVendedor, notasA
       {visao === "sintetico" ? (
         <>
           {/* Tabela de Ranking Sintético */}
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full min-w-[720px] text-xs">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
-                  <th className="p-3">Vendedor</th>
-                  <th className="p-3 text-right">Pedidos / NF</th>
-                  <th className="p-3 text-right">Clientes Únicos</th>
-                  <th className="p-3 text-right">Qtd Itens</th>
-                  <th className="p-3 text-right">Ticket Médio</th>
-                  <th className="p-3 text-right">Desconto (R$)</th>
-                  <th className="p-3 text-right">% Desconto</th>
-                  <th className="p-3 text-right">Faturamento Total</th>
-                  <th className="p-3 text-right">% Participação</th>
-                  <th className="p-3">Principal Produto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vendedoresFiltrados.map((vendedor) => (
-                  <tr
-                    key={vendedor.nome}
-                    onClick={() => abrirAnaliticoDoVendedor(vendedor.nome)}
-                    className="cursor-pointer border-b last:border-0 hover:bg-muted/30"
-                    title="Clique para ver o analítico (notas) deste vendedor"
-                  >
-                    <td className="p-3 text-sm font-bold text-foreground">
-                      <span className="inline-flex items-center gap-1.5">
-                        {vendedor.nome}
-                        <MousePointerClick className="size-3 text-muted-foreground/60" />
-                      </span>
-                    </td>
-                    <td className="p-3 text-right font-mono">{formatarNumero(vendedor.pedidos, 0)}</td>
-                    <td className="p-3 text-right font-mono">{formatarNumero(vendedor.clientes, 0)}</td>
-                    <td className="p-3 text-right font-mono text-muted-foreground">
-                      {formatarNumero(vendedor.quantidadeItens, 2)}
-                    </td>
-                    <td className="p-3 text-right font-mono text-muted-foreground">
-                      {formatarMoeda(vendedor.ticketMedio)}
-                    </td>
-                    <td className="p-3 text-right font-mono text-rose-600 dark:text-rose-400">
-                      {formatarMoeda(vendedor.descontoConcedido)}
-                    </td>
-                    <td className="p-3 text-right font-mono">
-                      {formatarPercentual(vendedor.taxaDesconto, 1)}
-                    </td>
-                    <td className="p-3 text-right font-mono font-bold text-foreground">
-                      {formatarMoeda(vendedor.faturamento)}
-                    </td>
-                    <td className="p-3 text-right">
-                      <DataBarPercent
-                        valor={formatarPercentual(vendedor.percentual, 1)}
-                        percentual={vendedor.percentual}
-                        cor="bg-violet-500/20"
-                      />
-                    </td>
-                    <td className="max-w-[180px] truncate p-3 text-muted-foreground" title={vendedor.principalProduto}>
-                      {vendedor.principalProduto ?? "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            💡 Clique em um vendedor para alternar para a visão analítica com as notas dele.
-          </p>
+          <ReportTable
+            data={vendedoresFiltrados}
+            rowKey={(vendedor) => vendedor.nome}
+            onRowClick={(vendedor) => {
+              (() => abrirAnaliticoDoVendedor(vendedor.nome))();
+            }}
+            columns={[
+              {
+                id: "nome",
+                header: <>Vendedor</>,
+                kind: "name",
+                value: (vendedor) => vendedor.nome,
+                cell: (vendedor) => (
+                  <>
+                    <span className="inline-flex items-center gap-1.5">
+                      {vendedor.nome}
+                      <MousePointerClick className="size-3 text-muted-foreground/60" />
+                    </span>
+                  </>
+                ),
+              },
+              {
+                id: "pedidos",
+                header: <>Pedidos / NF</>,
+                kind: "number",
+                value: (vendedor) => vendedor.pedidos,
+                cell: (vendedor) => <>{formatarNumero(vendedor.pedidos, 0)}</>,
+              },
+              {
+                id: "clientes",
+                header: <>Clientes Únicos</>,
+                kind: "number",
+                value: (vendedor) => vendedor.clientes,
+                cell: (vendedor) => <>{formatarNumero(vendedor.clientes, 0)}</>,
+              },
+              {
+                id: "quantidadeItens",
+                header: <>Qtd Itens</>,
+                kind: "number",
+                value: (vendedor) => vendedor.quantidadeItens,
+                cell: (vendedor) => (
+                  <>{formatarNumero(vendedor.quantidadeItens, 2)}</>
+                ),
+              },
+              {
+                id: "ticketMedio",
+                header: <>Ticket Médio</>,
+                kind: "currency",
+                value: (vendedor) => vendedor.ticketMedio,
+                cell: (vendedor) => <>{formatarMoeda(vendedor.ticketMedio)}</>,
+              },
+              {
+                id: "descontoConcedido",
+                header: <>Desconto (R$)</>,
+                kind: "currency",
+                value: (vendedor) => vendedor.descontoConcedido,
+                cell: (vendedor) => (
+                  <>{formatarMoeda(vendedor.descontoConcedido)}</>
+                ),
+              },
+              {
+                id: "taxaDesconto",
+                header: <>% Desconto</>,
+                kind: "number",
+                value: (vendedor) => vendedor.taxaDesconto,
+                cell: (vendedor) => (
+                  <>{formatarPercentual(vendedor.taxaDesconto, 1)}</>
+                ),
+              },
+              {
+                id: "faturamento",
+                header: <>Faturamento Total</>,
+                kind: "currency",
+                value: (vendedor) => vendedor.faturamento,
+                cell: (vendedor) => <>{formatarMoeda(vendedor.faturamento)}</>,
+              },
+              {
+                id: "percentual",
+                header: <>% Participação</>,
+                kind: "number",
+                value: (vendedor) => vendedor.percentual,
+                cell: (vendedor) => (
+                  <>
+                    <DataBarPercent
+                      valor={formatarPercentual(vendedor.percentual, 1)}
+                      percentual={vendedor.percentual}
+                      cor="bg-violet-500/20"
+                    />
+                  </>
+                ),
+              },
+              {
+                id: "principalProduto",
+                header: <>Principal Produto</>,
+                kind: "name",
+                value: (vendedor) => vendedor.principalProduto,
+                cell: (vendedor) => <>{vendedor.principalProduto ?? "—"}</>,
+              },
+            ]}
+          />
         </>
       ) : visao === "produtos" ? (
-        <VisaoProdutosPorDimensao itens={produtosPorVendedor} dimensaoRotulo="Vendedor" dimensaoPlural="vendedores" />
+        <VisaoProdutosPorDimensao
+          itens={produtosPorVendedor}
+          dimensaoRotulo="Vendedor"
+          dimensaoPlural="vendedores"
+        />
       ) : (
         <VisaoAnaliticaNotas
           notas={notasAgrupadas}

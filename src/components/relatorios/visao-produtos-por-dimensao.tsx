@@ -1,3 +1,5 @@
+import { ReportTableFrame } from "./report-table";
+import { useReportContext } from "./report-context";
 import { useMemo, useState } from "react";
 import { PackageSearch } from "lucide-react";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
@@ -12,7 +14,9 @@ interface VisaoProdutosPorDimensaoProps {
   contextoExportacao?: ContextoExportacao;
 }
 
-export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural, contextoExportacao }: VisaoProdutosPorDimensaoProps) {
+export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural, contextoExportacao: contextoRecebido }: VisaoProdutosPorDimensaoProps) {
+  const contextoRelatorio = useReportContext();
+  const contextoExportacao = contextoRecebido ?? contextoRelatorio?.contexto;
   const [dimensaoSelecionada, setDimensaoSelecionada] = useState("");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
@@ -51,8 +55,7 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
         /> : null}
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
-        <table className="w-full min-w-[820px] text-xs">
+      <ReportTableFrame>
           <thead>
             <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
               {!dimensaoSelecionada && <th className="p-3">{dimensaoRotulo}</th>}
@@ -81,8 +84,7 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </ReportTableFrame>
 
       <TablePagination
         paginaAtual={paginaSegura}

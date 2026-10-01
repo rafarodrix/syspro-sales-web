@@ -1,15 +1,13 @@
 import { useMemo, useState } from "react";
+import { ReportTable } from "./report-table";
+import {
+  ReportToolbar,
+  ReportFilters,
+  ReportMetricStrip,
+} from "./report-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
 import { TablePagination } from "@/components/table-pagination";
-import { FeedbackState } from "@/components/feedback-state";
 import {
   formatarMoeda,
   formatarNumero,
@@ -139,56 +137,66 @@ export function VisaoFrequenciaClientes({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
+      <ReportMetricStrip
+        items={[
           {
-            titulo: "Clientes identificados",
-            valor: formatarNumero(relatorio.ativos, 0),
-            descricao: "Com compra no período",
+            label: "Clientes com compra",
+            value: formatarNumero(relatorio.ativos, 0),
           },
           {
-            titulo: "Frequência média",
-            valor: formatarNumero(relatorio.media, 2),
-            descricao: relatorio.unidade,
+            label: "Frequência média",
+            value: formatarNumero(relatorio.media, 2),
+          },
+          { label: "Mediana", value: formatarNumero(relatorio.mediana, 2) },
+          {
+            label: "Sem compra no atual",
+            value: relatorio.comparar
+              ? relatorio.itens.filter((item) => item.situacao === "sem-compra")
+                  .length
+              : "—",
+            attention: relatorio.itens.some(
+              (item) => item.situacao === "sem-compra",
+            ),
           },
           {
-            titulo: "Mediana",
-            valor: formatarNumero(relatorio.mediana, 2),
-            descricao: relatorio.unidade,
+            label: "Queda de frequência",
+            value: relatorio.comparar
+              ? relatorio.itens.filter(
+                  (item) =>
+                    item.variacaoFrequencia !== null &&
+                    item.variacaoFrequencia < 0,
+                ).length
+              : "—",
           },
-        ].map((card) => (
-          <Card key={card.titulo}>
-            <CardHeader>
-              <CardTitle>{card.titulo}</CardTitle>
-              <CardDescription>{card.descricao}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold tabular-nums">
-                {card.valor}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <FiltroRelatorio
-          rotulo="Filtrar frequência"
-          valor={segmento}
-          onChange={(valor) => {
-            setSegmento(valor as SegmentoFrequencia);
+        ]}
+      />
+      <ReportToolbar>
+        <ReportFilters
+          count={segmento === "todos" ? 0 : 1}
+          onClear={() => {
+            setSegmento("todos");
             setPagina(1);
           }}
-          opcoes={[
-            { valor: "todos", rotulo: "Todos os clientes" },
-            { valor: "regulares", rotulo: "Todos os meses" },
-            { valor: "unico-dia", rotulo: "Compra em um dia" },
-            {
-              valor: "sem-compra",
-              rotulo: "Sem compra no atual",
-              disabled: !relatorio.comparar,
-            },
-          ]}
-        />
+        >
+          <FiltroRelatorio
+            rotulo="Filtrar frequência"
+            valor={segmento}
+            onChange={(valor) => {
+              setSegmento(valor as SegmentoFrequencia);
+              setPagina(1);
+            }}
+            opcoes={[
+              { valor: "todos", rotulo: "Todos os clientes" },
+              { valor: "regulares", rotulo: "Todos os meses" },
+              { valor: "unico-dia", rotulo: "Compra em um dia" },
+              {
+                valor: "sem-compra",
+                rotulo: "Sem compra no atual",
+                disabled: !relatorio.comparar,
+              },
+            ]}
+          />
+        </ReportFilters>
         <FiltroRelatorio
           rotulo="Ordenar frequência"
           valor={ordem}
@@ -210,7 +218,7 @@ export function VisaoFrequenciaClientes({
           linhas={linhas}
           observacoes={observacoes}
         />
-      </div>
+      </ReportToolbar>
       <p className="text-xs text-muted-foreground">
         Referência: carteira inteira, antes dos filtros. Frequência em{" "}
         {relatorio.unidade}.{" "}
@@ -224,165 +232,121 @@ export function VisaoFrequenciaClientes({
           pode estar subestimada.
         </p>
       ) : null}
-      {itens.length === 0 ? (
-        <FeedbackState
-          variant="empty"
-          title="Nenhum cliente neste recorte"
-          description="Revise a busca e os filtros."
-        />
-      ) : (
-        <>
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full text-xs">
-              <caption className="p-3 text-left font-semibold">
-                Dias com compra por mês
-              </caption>
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th scope="col" className="p-3">
-                    Cliente
-                  </th>
-                  {meses.map((mes) => (
-                    <th scope="col" key={mes} className="p-3 text-center">
-                      {mes}
-                    </th>
-                  ))}
-                  <th scope="col" className="p-3 text-center">
-                    Regularidade
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {exibidos.map((item) => (
-                  <tr key={item.nome} className="border-b last:border-0">
-                    <th scope="row" className="min-w-44 p-3 text-left">
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => onAbrirNotas(item.nome)}
-                      >
-                        {item.nome}
-                      </Button>
-                    </th>
-                    {item.porMes.map((dias, i) => (
-                      <td key={meses[i]} className="p-2 text-center">
-                        <button
-                          type="button"
-                          aria-label={`Compras de ${item.nome} em ${meses[i]}`}
-                          onClick={() =>
-                            onAbrirNotas(item.nome, relatorio.meses[i])
-                          }
-                          className={cn(
-                            "min-w-10 cursor-pointer rounded p-2 tabular-nums focus-visible:outline-2 focus-visible:outline-primary",
-                            dias === 0
-                              ? "bg-muted/30 text-muted-foreground"
-                              : dias <= 2
-                                ? "bg-primary/10"
-                                : dias <= 5
-                                  ? "bg-primary/25"
-                                  : "bg-primary text-primary-foreground",
-                          )}
-                        >
-                          {dias}
-                        </button>
-                      </td>
-                    ))}
-                    <td className="p-3 text-center">
-                      {item.mesesComCompra}/{meses.length}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full text-xs">
-              <caption className="p-3 text-left font-semibold">
-                Frequência por cliente
-              </caption>
-              <thead>
-                <tr className="border-b bg-muted/40 text-left text-muted-foreground">
-                  {[
-                    "Cliente",
-                    "Frequência",
-                    "Vs. média",
-                    "Intervalo médio",
-                    "Última compra",
-                    "Dias sem compra",
-                    "Faturamento",
-                  ].map((titulo) => (
-                    <th
-                      key={titulo}
-                      scope="col"
-                      className="whitespace-nowrap p-3"
-                    >
-                      {titulo}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {exibidos.map((item) => (
-                  <tr
-                    key={item.nome}
-                    className="border-b last:border-0 hover:bg-muted/20"
-                  >
-                    <td className="min-w-44 p-3">
-                      <div className="flex flex-col items-start gap-1">
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => onAbrirNotas(item.nome)}
-                        >
-                          {item.nome}
-                        </Button>
-                        <Badge variant="outline">
-                          {situacoes[item.situacao]}
-                        </Badge>
-                      </div>
-                    </td>
-                    <td className="p-3 text-right tabular-nums">
-                      <span className="font-semibold">
-                        {formatarNumero(item.frequencia, 2)}
-                      </span>
-                      <span
-                        className="block text-[11px] text-muted-foreground"
-                        title="Variação em relação ao período comparado; taxas normalizadas por 30 dias"
-                      >
-                        {variacao(item.variacaoFrequencia)}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right tabular-nums">
-                      {relatorio.ativos
-                        ? `${item.frequencia >= relatorio.media ? "+" : ""}${formatarNumero(item.frequencia - relatorio.media, 2)}`
-                        : "—"}
-                    </td>
-                    <td className="whitespace-nowrap p-3 text-right">
-                      {item.intervaloMedio === null
-                        ? "—"
-                        : `${formatarNumero(item.intervaloMedio, 1)} dias`}
-                    </td>
-                    <td className="p-3">
-                      {item.ultimaCompra
-                        ? formatarDataInputParaBR(item.ultimaCompra)
-                        : "—"}
-                    </td>
-                    <td className="p-3 text-right">
-                      {item.diasSemCompra ?? "—"}
-                    </td>
-                    <td className="whitespace-nowrap p-3 text-right">
-                      {formatarMoeda(item.faturamento)}
-                      <span className="block text-[11px] text-muted-foreground">
-                        {variacao(item.variacaoFaturamento)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+      <ReportTable
+        caption="Frequência por cliente"
+        data={exibidos}
+        rowKey={(item) => item.nome}
+        pagination={false}
+        stickyFirst
+        columns={[
+          {
+            id: "cliente",
+            header: "Cliente",
+            kind: "name",
+            cell: (item) => (
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => onAbrirNotas(item.nome)}
+              >
+                {item.nome}
+              </Button>
+            ),
+          },
+          {
+            id: "classe",
+            header: "Classe",
+            cell: (item) => item.classe ?? "—",
+          },
+          {
+            id: "situacao",
+            header: "Situação",
+            kind: "name",
+            cell: (item) => (
+              <Badge variant="outline">{situacoes[item.situacao]}</Badge>
+            ),
+          },
+          {
+            id: "frequencia",
+            header: "Frequência",
+            cell: (item) => (
+              <span
+                title={`Média da carteira: ${formatarNumero(relatorio.media, 2)} ${relatorio.unidade}`}
+                className="font-semibold"
+              >
+                {formatarNumero(item.frequencia, 2)}
+              </span>
+            ),
+          },
+          {
+            id: "regularidade",
+            header: "Regularidade",
+            cell: (item) => `${item.mesesComCompra}/${meses.length}`,
+          },
+          {
+            id: "intervalo",
+            header: "Intervalo médio",
+            cell: (item) =>
+              item.intervaloMedio === null
+                ? "—"
+                : `${formatarNumero(item.intervaloMedio, 1)} d`,
+          },
+          ...relatorio.meses.map((mes, i) => ({
+            id: mes,
+            header: meses[i],
+            kind: "month" as const,
+            cell: (item: RelatorioFrequencia["itens"][number]) => (
+              <button
+                type="button"
+                aria-label={`Compras de ${item.nome} em ${meses[i]}`}
+                onClick={() => onAbrirNotas(item.nome, mes)}
+                className={cn(
+                  "h-7 min-w-8 cursor-pointer rounded px-1.5 tabular-nums focus-visible:outline-2 focus-visible:outline-primary",
+                  item.porMes[i] === 0
+                    ? "bg-muted text-muted-foreground"
+                    : item.porMes[i] <= 2
+                      ? "bg-primary/10"
+                      : item.porMes[i] <= 5
+                        ? "bg-primary/25"
+                        : "bg-primary text-primary-foreground",
+                )}
+              >
+                {item.porMes[i]}
+              </button>
+            ),
+          })),
+          {
+            id: "ultima",
+            header: "Última compra",
+            kind: "date",
+            cell: (item) =>
+              item.ultimaCompra
+                ? formatarDataInputParaBR(item.ultimaCompra)
+                : "—",
+          },
+          {
+            id: "ausencia",
+            header: "Dias sem compra",
+            cell: (item) => item.diasSemCompra ?? "—",
+          },
+          {
+            id: "faturamento",
+            header: "Faturamento",
+            kind: "currency",
+            cell: (item) => formatarMoeda(item.faturamento),
+          },
+          {
+            id: "variacao-frequencia",
+            header: "Δ Frequência",
+            cell: (item) => variacao(item.variacaoFrequencia),
+          },
+          {
+            id: "variacao-faturamento",
+            header: "Δ Faturamento",
+            cell: (item) => variacao(item.variacaoFaturamento),
+          },
+        ]}
+      />
       <TablePagination
         paginaAtual={paginaSegura}
         totalItens={itens.length}
@@ -407,9 +371,9 @@ export function VisaoFrequenciaClientes({
             visitas físicas.
           </p>
           <p>
-            Percentuais sob frequência e faturamento comparam as janelas
-            completas. A variação de frequência usa taxas por 30 dias. — indica
-            comparação sem base ou dado indisponível.
+            Variações de frequência e faturamento comparam as janelas completas.
+            A variação de frequência usa taxas por 30 dias. — indica comparação
+            sem base ou dado indisponível.
           </p>
           <p>
             Intervalo médio exige duas datas de compra. Dias sem compra são

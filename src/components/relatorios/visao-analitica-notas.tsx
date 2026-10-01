@@ -1,3 +1,5 @@
+import { ReportTableFrame } from "./report-table";
+import { useReportContext } from "./report-context";
 import { Fragment, useMemo, useState } from "react";
 import { ArrowLeft, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -63,10 +65,12 @@ export function VisaoAnaliticaNotas({
   dimensaoTemColunaPropria = false,
   nomeCsvBase = "notas-analitico",
   onVoltar,
-  contextoExportacao,
+  contextoExportacao: contextoRecebido,
   ocultarNavegacao = false,
   expandirItens = false,
 }: VisaoAnaliticaNotasProps) {
+  const contextoRelatorio = useReportContext();
+  const contextoExportacao = contextoRecebido ?? contextoRelatorio?.contexto;
   const [notaAberta, setNotaAberta] = useState<string | null>(null);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
@@ -190,8 +194,7 @@ export function VisaoAnaliticaNotas({
       </div>
 
       {/* Grade analítica: uma linha por nota */}
-      <div className="overflow-x-auto rounded-md border">
-        <table className="w-full min-w-[820px] text-xs">
+      <ReportTableFrame>
           <thead>
             <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
               <th className="p-3">NF</th>
@@ -243,8 +246,7 @@ export function VisaoAnaliticaNotas({
               })
             )}
           </tbody>
-        </table>
-      </div>
+        </ReportTableFrame>
 
       <TablePagination
         paginaAtual={paginaAtualSegura}

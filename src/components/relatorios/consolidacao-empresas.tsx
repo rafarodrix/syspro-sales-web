@@ -1,3 +1,4 @@
+import { ReportTableFrame } from "./report-table";
 import Link from "next/link";
 import { Building2, ExternalLink, Layers } from "lucide-react";
 import type { ItemEmpresaAnalise } from "@/lib/vendas";
@@ -24,8 +25,7 @@ export function ConsolidacaoEmpresas({ empresas, abaAtiva }: ConsolidacaoEmpresa
         <span className="rounded-full border bg-background px-2 py-1 text-[10px] font-bold text-muted-foreground">{empresas.length} empresas</span>
       </div>
 
-      <div className="overflow-x-auto rounded-md border bg-background">
-        <table className="w-full min-w-[800px] text-xs">
+      <ReportTableFrame>
           <thead><tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground"><th className="p-3">Empresa</th><th className="p-3 text-right">Pedidos / NF</th><th className="p-3 text-right">Itens</th><th className="p-3 text-right">Descontos</th><th className="p-3 text-right">Ticket médio</th><th className="p-3 text-right">Faturamento</th><th className="p-3 text-right">Participação</th><th className="w-10 p-3" aria-label="Ação" /></tr></thead>
           <tbody>{empresas.map((empresa) => (
             <tr key={empresa.id} className="border-b last:border-0 hover:bg-muted/20">
@@ -39,8 +39,7 @@ export function ConsolidacaoEmpresas({ empresas, abaAtiva }: ConsolidacaoEmpresa
               <td className="p-3 text-right"><Link href={`/relatorios?aba=${encodeURIComponent(abaAtiva)}&empresa=${encodeURIComponent(empresa.id)}`} title={`Analisar somente ${empresa.nome}`} className="inline-flex rounded p-1 text-muted-foreground hover:bg-muted hover:text-primary"><ExternalLink className="size-3.5" /></Link></td>
             </tr>
           ))}</tbody>
-        </table>
-      </div>
+        </ReportTableFrame>
     </section>
   );
 }

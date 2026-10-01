@@ -545,13 +545,13 @@ export function AppShell({
 
         {/* Área de Visualização do Conteúdo */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
-          <div className="mx-auto max-w-7xl w-full flex-1">
+          <div className="w-full min-w-0 flex-1">
             {children}
           </div>
 
           {/* Rodapé discreto de contexto */}
           <footer className="mt-12 border-t border-border/60 pt-6 pb-2 text-xs text-muted-foreground">
-            <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
               <span>Dados exibidos conforme as permissões do usuário.</span>
               <span className="text-[11px]">Trilink Software</span>
             </div>
