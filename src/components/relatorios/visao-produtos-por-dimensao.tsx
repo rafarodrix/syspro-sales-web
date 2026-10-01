@@ -3,14 +3,16 @@ import { PackageSearch } from "lucide-react";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import type { ItemProdutoPorDimensao } from "@/lib/vendas";
 import { TablePagination } from "@/components/table-pagination";
+import { ExportarVisao, type ContextoExportacao } from "./exportar-visao";
 
 interface VisaoProdutosPorDimensaoProps {
   itens: ItemProdutoPorDimensao[];
   dimensaoRotulo: string;
   dimensaoPlural: string;
+  contextoExportacao?: ContextoExportacao;
 }
 
-export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural }: VisaoProdutosPorDimensaoProps) {
+export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural, contextoExportacao }: VisaoProdutosPorDimensaoProps) {
   const [dimensaoSelecionada, setDimensaoSelecionada] = useState("");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
@@ -21,7 +23,8 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
   const itensFiltrados = dimensaoSelecionada
     ? itens.filter((item) => item.dimensao === dimensaoSelecionada)
     : itens;
-  const itensPaginados = itensFiltrados.slice((paginaAtual - 1) * itensPorPagina, paginaAtual * itensPorPagina);
+  const paginaSegura = Math.min(paginaAtual, Math.max(1, Math.ceil(itensFiltrados.length / itensPorPagina)));
+  const itensPaginados = itensFiltrados.slice((paginaSegura - 1) * itensPorPagina, paginaSegura * itensPorPagina);
 
   return (
     <div className="space-y-4">
@@ -42,6 +45,10 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
           <option value="">Todos os {dimensaoPlural}</option>
           {dimensoes.map((dimensao) => <option key={dimensao} value={dimensao}>{dimensao}</option>)}
         </select>
+        {contextoExportacao ? <ExportarVisao titulo={`${dimensaoPlural} - Produtos`} contexto={contextoExportacao}
+          colunas={[dimensaoRotulo, "Código", "Produto", "Departamento", "Notas", "Quantidade", "Unidade", "Desconto", "Faturamento"]}
+          linhas={itensFiltrados.map((item) => [item.dimensao, item.produtoId, item.produto, item.departamento, item.pedidos, formatarNumero(item.quantidade, 2), item.un, formatarMoeda(item.descontos), formatarMoeda(item.faturamento)])}
+        /> : null}
       </div>
 
       <div className="overflow-x-auto rounded-md border">
@@ -78,7 +85,7 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
       </div>
 
       <TablePagination
-        paginaAtual={paginaAtual}
+        paginaAtual={paginaSegura}
         totalItens={itensFiltrados.length}
         itensPorPagina={itensPorPagina}
         onPaginaChange={setPaginaAtual}

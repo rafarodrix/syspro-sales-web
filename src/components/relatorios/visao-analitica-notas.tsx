@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { SeletorMultiplo } from "./seletor-multiplo";
 import type { VendaAgrupada } from "@/lib/vendas";
 import { paraNumero } from "@/lib/vendas";
+import { ExportarVisao, type ContextoExportacao } from "./exportar-visao";
 
 type DimensaoNota = "vendedor" | "cliente" | "cidade";
 
@@ -27,6 +28,7 @@ interface VisaoAnaliticaNotasProps {
   /** Nome do arquivo CSV gerado. */
   nomeCsvBase?: string;
   onVoltar: () => void;
+  contextoExportacao?: ContextoExportacao;
 }
 
 interface ValoresNota {
@@ -59,6 +61,7 @@ export function VisaoAnaliticaNotas({
   dimensaoTemColunaPropria = false,
   nomeCsvBase = "notas-analitico",
   onVoltar,
+  contextoExportacao,
 }: VisaoAnaliticaNotasProps) {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
@@ -164,7 +167,10 @@ export function VisaoAnaliticaNotas({
             <span className="text-rose-500">· Desc. {formatarMoeda(totais.desconto)}</span>
             <span className="font-bold text-foreground">· Líq. {formatarMoeda(totais.liquido)}</span>
           </Badge>
-          <Button
+          {contextoExportacao ? <ExportarVisao titulo={`${dimensaoRotulo} - Notas detalhadas`} contexto={contextoExportacao}
+            colunas={["Cliente", "NF", "Modelo", "Emissão", "Empresa", "Cidade", "Qtd itens", "Bruto", "Desconto", "Líquido"]}
+            linhas={notasFiltradas.map((nota) => { const valores = valoresDaNota(nota); return [nota.cliente, nota.numero, nota.modelo, nota.emissao, nota.empresaNome ?? "—", nota.cidade, formatarNumero(nota.quantidadeItens, 2), formatarMoeda(valores.bruto), formatarMoeda(valores.desconto), formatarMoeda(valores.liquido)]; })}
+          /> : <Button
             type="button"
             variant="outline"
             size="sm"
@@ -174,7 +180,7 @@ export function VisaoAnaliticaNotas({
           >
             <Download className="size-3.5" />
             CSV
-          </Button>
+          </Button>}
         </div>
       </div>
 

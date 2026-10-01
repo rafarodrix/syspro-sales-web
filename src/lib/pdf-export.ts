@@ -380,6 +380,8 @@ export async function exportarPdfAnalitico({
   linhas,
   kpis,
   modo = "download",
+  orientacao = "portrait",
+  observacoes,
 }: {
   titulo: string;
   contexto: ContextoRelatorio;
@@ -387,12 +389,22 @@ export async function exportarPdfAnalitico({
   linhas: (string | number)[][];
   kpis?: { label: string; valor: string }[];
   modo?: "download" | "imprimir";
+  orientacao?: "portrait" | "landscape";
+  observacoes?: string;
 }) {
   const { jsPDF, autoTable } = await carregarPdfLibs();
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: orientacao, unit: "mm", format: "a4" });
   adicionarCabecalho(doc, titulo, contexto);
 
   let currentY = 40;
+
+  if (observacoes) {
+    doc.setFontSize(8);
+    doc.setTextColor(...CORES.muted);
+    const texto = doc.splitTextToSize(observacoes, doc.internal.pageSize.getWidth() - 28);
+    doc.text(texto, 14, currentY);
+    currentY += texto.length * 4 + 4;
+  }
 
   if (kpis && kpis.length > 0) {
     const cardWidth = Math.min(58, (doc.internal.pageSize.getWidth() - 28 - (kpis.length - 1) * 4) / kpis.length);
@@ -416,6 +428,8 @@ export async function exportarPdfAnalitico({
 
   autoTable(doc, {
     startY: currentY,
+    horizontalPageBreak: orientacao === "landscape",
+    horizontalPageBreakRepeat: 0,
     head: [colunas],
     body: linhas,
     theme: "striped",

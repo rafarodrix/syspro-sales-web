@@ -44,16 +44,22 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
   },
   clientes: {
     resumo:
-      "Ordena os clientes por faturamento, mostra sua participação na receita e permite investigar as notas que compõem cada resultado.",
+      "Compara faturamento, frequência e regularidade dos clientes; permite consultar o mix e as notas de cada resultado.",
     comoLer: [
       "Se poucos clientes representam grande parte do faturamento, a operação depende muito deles — a perda de um único cliente seria sentida.",
       "Na base PDV, o cliente 'CONSUMIDOR' concentra o balcão — a análise de concentração ganha sentido principalmente nas vendas faturadas (convênio/NF-e).",
+      "Compare a frequência com a média e a mediana da carteira. A grade mensal distingue compras regulares de compras concentradas em um único mês.",
+      "Clientes sem compra no período atual aparecem no comparativo quando compraram no anterior. Isso não comprova perda do cliente; compra só no atual não comprova aquisição.",
     ],
     dica: "Para os clientes Top, avalie criar condições específicas (prazo, tabela) — são os que mais garantem previsibilidade de receita.",
     glossario: [
       { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por cliente com totais do período." },
       { termo: "Produtos por cliente", definicao: "Mostra os produtos comprados por cada cliente, com quantidade, notas, descontos e faturamento no período." },
       { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por cliente — mostra o que compõe os números do ranking." },
+      { termo: "Dias com compra", definicao: "Datas distintas de emissão por cliente, contando várias notas no mesmo dia uma vez. Não mede visitas físicas. Consumidor genérico é excluído." },
+      { termo: "Frequência", definicao: "Dias com compra divididos pelos meses completos selecionados, incluindo meses sem compra. Em janelas parciais, a taxa é normalizada por 30 dias. Comparações entre períodos usam taxas por 30 dias." },
+      { termo: "Intervalo médio", definicao: "Média dos intervalos entre dias consecutivos de compra dentro do período atual; exige pelo menos duas datas distintas." },
+      { termo: "Identificação e recência", definicao: "Agrupamento por nome padronizado, sujeito a homônimos. Última compra observada nas janelas consultadas; dias sem compra medidos até o final do período atual." },
     ],
   },
   descontos: {
