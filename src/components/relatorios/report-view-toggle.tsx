@@ -10,7 +10,7 @@ export interface ReportViewOption<T extends string> {
 interface ReportViewSelectorProps<T extends string> {
   view: T;
   onViewChange: (view: T) => void;
-  description: string;
+  description?: string;
   options: readonly ReportViewOption<T>[];
   ariaLabel?: string;
 }
@@ -25,10 +25,10 @@ export function ReportViewSelector<T extends string>({
 }: ReportViewSelectorProps<T>) {
   return (
     <section className="rounded-lg border bg-muted/20 p-2 sm:flex sm:items-center sm:justify-between">
-      <div className="mb-2 sm:mb-0">
+      {description ? <div className="mb-2 sm:mb-0">
         <p className="text-xs font-bold text-foreground">Escolha como analisar</p>
         <p className="text-[11px] text-muted-foreground">{description}</p>
-      </div>
+      </div> : null}
       <div className="flex w-full flex-wrap items-center gap-1 rounded-md border bg-background p-0.5 sm:w-auto" role="group" aria-label={ariaLabel}>
         {options.map(({ value, label, icon: Icon }) => {
           const active = view === value;

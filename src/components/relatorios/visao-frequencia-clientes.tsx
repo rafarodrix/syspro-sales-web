@@ -49,7 +49,7 @@ export function VisaoFrequenciaClientes({
   classe: string;
   contexto: ContextoExportacao;
   periodoAnterior: string | undefined;
-  onAbrirNotas: (nome: string) => void;
+  onAbrirNotas: (nome: string, mes?: string) => void;
 }) {
   const [segmento, setSegmento] = useState<SegmentoFrequencia>("todos");
   const [ordem, setOrdem] = useState("frequencia");
@@ -138,23 +138,23 @@ export function VisaoFrequenciaClientes({
   ]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <div className="grid gap-3 sm:grid-cols-3">
         {[
           {
-            titulo: "Clientes identificados ativos",
+            titulo: "Clientes identificados",
             valor: formatarNumero(relatorio.ativos, 0),
-            descricao: "Com ao menos um dia de compra válido",
+            descricao: "Com compra no período",
           },
           {
-            titulo: "Frequência média da carteira",
+            titulo: "Frequência média",
             valor: formatarNumero(relatorio.media, 2),
             descricao: relatorio.unidade,
           },
           {
-            titulo: "Mediana da carteira",
+            titulo: "Mediana",
             valor: formatarNumero(relatorio.mediana, 2),
-            descricao: "Valor central; menos sensível a grandes compradores",
+            descricao: relatorio.unidade,
           },
         ].map((card) => (
           <Card key={card.titulo}>
@@ -170,26 +170,6 @@ export function VisaoFrequenciaClientes({
           </Card>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Referências da carteira inteira no período, antes da busca e dos
-        filtros. Consumidor genérico excluído:{" "}
-        {formatarMoeda(relatorio.faturamentoNaoIdentificado)} em vendas,
-        mantidas na Síntese.
-      </p>
-      <p className="text-xs text-muted-foreground">
-        {relatorio.mesesCompletos
-          ? `Média mensal = dias com compra ÷ ${meses.length} mês(es), incluindo meses zerados.`
-          : "Período com meses incompletos: frequência = dias com compra ÷ dias corridos do período × 30. A grade mensal mostra somente os dias selecionados."}{" "}
-        Várias notas no mesmo dia contam uma vez. Mede compras pela emissão, sem
-        comprovar visita física.
-      </p>
-      {relatorio.registrosSemData > 0 ? (
-        <p role="status" className="text-sm text-destructive">
-          {relatorio.registrosSemData} registro(s) sem data válida nas janelas
-          consultadas. Seus valores permanecem no faturamento, mas não entram na
-          contagem de dias; a frequência pode estar subestimada.
-        </p>
-      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <FiltroRelatorio
           rotulo="Filtrar frequência"
@@ -199,12 +179,12 @@ export function VisaoFrequenciaClientes({
             setPagina(1);
           }}
           opcoes={[
-            { valor: "todos", rotulo: "Todos os clientes identificados" },
-            { valor: "regulares", rotulo: "Comprou em todos os meses" },
-            { valor: "unico-dia", rotulo: "Compra em apenas um dia" },
+            { valor: "todos", rotulo: "Todos os clientes" },
+            { valor: "regulares", rotulo: "Todos os meses" },
+            { valor: "unico-dia", rotulo: "Compra em um dia" },
             {
               valor: "sem-compra",
-              rotulo: "Sem compra no período atual",
+              rotulo: "Sem compra no atual",
               disabled: !relatorio.comparar,
             },
           ]}
@@ -224,7 +204,7 @@ export function VisaoFrequenciaClientes({
           ]}
         />
         <ExportarVisao
-          titulo="Clientes - Frequência e comparativo"
+          titulo="Clientes - Frequência"
           contexto={contexto}
           colunas={colunas}
           linhas={linhas}
@@ -232,41 +212,104 @@ export function VisaoFrequenciaClientes({
         />
       </div>
       <p className="text-xs text-muted-foreground">
+        Referência: carteira inteira, antes dos filtros. Frequência em{" "}
+        {relatorio.unidade}.{" "}
         {relatorio.comparar
-          ? `Comparação com ${periodoAnterior}. As duas frequências do comparativo são normalizadas por 30 dias. “Compra só no atual” não significa cliente novo; “sem compra” não significa cliente perdido.`
-          : "Comparativo indisponível. Frequência e distribuição do período atual continuam disponíveis."}{" "}
-        A classe ABC é a do período atual; clientes sem compra nele não têm
-        classe. — indica dado indisponível ou base anterior zero.
+          ? `Comparado: ${periodoAnterior}.`
+          : "Comparativo indisponível."}
       </p>
+      {relatorio.registrosSemData > 0 ? (
+        <p role="status" className="text-sm text-destructive">
+          {relatorio.registrosSemData} registro(s) sem data válida; frequência
+          pode estar subestimada.
+        </p>
+      ) : null}
       {itens.length === 0 ? (
         <FeedbackState
           variant="empty"
           title="Nenhum cliente neste recorte"
-          description="Revise a busca, a classe ABC ou o filtro de frequência. Vendas de consumidor genérico aparecem na Síntese."
+          description="Revise a busca e os filtros."
         />
       ) : (
         <>
           <div className="overflow-x-auto rounded-md border">
             <table className="w-full text-xs">
               <caption className="p-3 text-left font-semibold">
-                Frequência por cliente · {relatorio.unidade}
+                Dias com compra por mês
+              </caption>
+              <thead>
+                <tr className="border-b bg-muted/40 text-left">
+                  <th scope="col" className="p-3">
+                    Cliente
+                  </th>
+                  {meses.map((mes) => (
+                    <th scope="col" key={mes} className="p-3 text-center">
+                      {mes}
+                    </th>
+                  ))}
+                  <th scope="col" className="p-3 text-center">
+                    Regularidade
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {exibidos.map((item) => (
+                  <tr key={item.nome} className="border-b last:border-0">
+                    <th scope="row" className="min-w-44 p-3 text-left">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => onAbrirNotas(item.nome)}
+                      >
+                        {item.nome}
+                      </Button>
+                    </th>
+                    {item.porMes.map((dias, i) => (
+                      <td key={meses[i]} className="p-2 text-center">
+                        <button
+                          type="button"
+                          aria-label={`Compras de ${item.nome} em ${meses[i]}`}
+                          onClick={() =>
+                            onAbrirNotas(item.nome, relatorio.meses[i])
+                          }
+                          className={cn(
+                            "min-w-10 cursor-pointer rounded p-2 tabular-nums focus-visible:outline-2 focus-visible:outline-primary",
+                            dias === 0
+                              ? "bg-muted/30 text-muted-foreground"
+                              : dias <= 2
+                                ? "bg-primary/10"
+                                : dias <= 5
+                                  ? "bg-primary/25"
+                                  : "bg-primary text-primary-foreground",
+                          )}
+                        >
+                          {dias}
+                        </button>
+                      </td>
+                    ))}
+                    <td className="p-3 text-center">
+                      {item.mesesComCompra}/{meses.length}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full text-xs">
+              <caption className="p-3 text-left font-semibold">
+                Frequência por cliente
               </caption>
               <thead>
                 <tr className="border-b bg-muted/40 text-left text-muted-foreground">
                   {[
-                    "Cliente / situação",
-                    "Dias com compra",
+                    "Cliente",
                     "Frequência",
-                    "Vs. média carteira",
+                    "Vs. média",
                     "Intervalo médio",
-                    "Última compra observada",
+                    "Última compra",
                     "Dias sem compra",
-                    "Anterior / 30 dias",
-                    "Atual / 30 dias",
-                    "Variação frequência",
-                    "Faturamento anterior",
-                    "Faturamento atual",
-                    "Variação faturamento",
+                    "Faturamento",
                   ].map((titulo) => (
                     <th
                       key={titulo}
@@ -284,29 +327,30 @@ export function VisaoFrequenciaClientes({
                     key={item.nome}
                     className="border-b last:border-0 hover:bg-muted/20"
                   >
-                    <td className="min-w-52 p-3">
+                    <td className="min-w-44 p-3">
                       <div className="flex flex-col items-start gap-1">
-                        {item.diasComCompra > 0 ? (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => onAbrirNotas(item.nome)}
-                          >
-                            {item.nome}
-                          </Button>
-                        ) : (
-                          <span className="font-semibold">{item.nome}</span>
-                        )}
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => onAbrirNotas(item.nome)}
+                        >
+                          {item.nome}
+                        </Button>
                         <Badge variant="outline">
                           {situacoes[item.situacao]}
                         </Badge>
                       </div>
                     </td>
                     <td className="p-3 text-right tabular-nums">
-                      {item.diasComCompra}
-                    </td>
-                    <td className="p-3 text-right font-semibold tabular-nums">
-                      {formatarNumero(item.frequencia, 2)}
+                      <span className="font-semibold">
+                        {formatarNumero(item.frequencia, 2)}
+                      </span>
+                      <span
+                        className="block text-[11px] text-muted-foreground"
+                        title="Variação em relação ao período comparado; taxas normalizadas por 30 dias"
+                      >
+                        {variacao(item.variacaoFrequencia)}
+                      </span>
                     </td>
                     <td className="p-3 text-right tabular-nums">
                       {relatorio.ativos
@@ -326,99 +370,17 @@ export function VisaoFrequenciaClientes({
                     <td className="p-3 text-right">
                       {item.diasSemCompra ?? "—"}
                     </td>
-                    <td className="p-3 text-right">
-                      {item.frequenciaAnterior30 === null
-                        ? "—"
-                        : formatarNumero(item.frequenciaAnterior30, 2)}
-                    </td>
-                    <td className="p-3 text-right">
-                      {formatarNumero(item.frequenciaAtual30, 2)}
-                    </td>
-                    <td className="p-3 text-right">
-                      {variacao(item.variacaoFrequencia)}
-                    </td>
-                    <td className="whitespace-nowrap p-3 text-right">
-                      {item.faturamentoAnterior === null
-                        ? "—"
-                        : formatarMoeda(item.faturamentoAnterior)}
-                    </td>
                     <td className="whitespace-nowrap p-3 text-right">
                       {formatarMoeda(item.faturamento)}
-                    </td>
-                    <td className="p-3 text-right">
-                      {variacao(item.variacaoFaturamento)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Última compra observada somente nas janelas consultadas. Dias sem
-            compra contados até{" "}
-            {formatarDataInputParaBR(contexto.periodo.final)}. Intervalo exige
-            pelo menos dois dias de compra no período atual.
-          </p>
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full text-xs">
-              <caption className="p-3 text-left font-semibold">
-                Regularidade mensal · mesmos clientes e página da tabela acima
-              </caption>
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th scope="col" className="p-3">
-                    Cliente
-                  </th>
-                  {meses.map((mes) => (
-                    <th scope="col" key={mes} className="p-3 text-center">
-                      {mes}
-                    </th>
-                  ))}
-                  <th scope="col" className="p-3 text-center">
-                    Meses com compra
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {exibidos.map((item) => (
-                  <tr key={item.nome} className="border-b last:border-0">
-                    <th
-                      scope="row"
-                      className="min-w-48 p-3 text-left font-medium"
-                    >
-                      {item.nome}
-                    </th>
-                    {item.porMes.map((dias, i) => (
-                      <td key={meses[i]} className="p-2 text-center">
-                        <span
-                          title={`${item.nome}: ${dias} dia(s) com compra em ${meses[i]}`}
-                          className={cn(
-                            "inline-block min-w-10 rounded p-2 tabular-nums",
-                            dias === 0
-                              ? "bg-muted/30 text-muted-foreground"
-                              : dias <= 2
-                                ? "bg-primary/10"
-                                : dias <= 5
-                                  ? "bg-primary/25"
-                                  : "bg-primary text-primary-foreground",
-                          )}
-                        >
-                          {dias}
-                        </span>
-                      </td>
-                    ))}
-                    <td className="p-3 text-center">
-                      {item.mesesComCompra} de {meses.length}
+                      <span className="block text-[11px] text-muted-foreground">
+                        {variacao(item.variacaoFaturamento)}
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Células: quantidade de dias com compra. Intensidade: 0 · 1–2 · 3–5 ·
-            6 ou mais.
-          </p>
         </>
       )}
       <TablePagination
@@ -432,6 +394,40 @@ export function VisaoFrequenciaClientes({
         }}
         labelItens="clientes"
       />
+      <details className="rounded-md border p-3 text-xs text-muted-foreground">
+        <summary className="cursor-pointer font-medium">
+          Como calculamos
+        </summary>
+        <div className="mt-2 flex flex-col gap-2">
+          <p>
+            {relatorio.mesesCompletos
+              ? `Dias distintos com compra ÷ ${meses.length} mês(es), incluindo meses zerados.`
+              : "Dias distintos com compra ÷ dias corridos do período × 30. Meses parciais incluem somente as datas selecionadas."}{" "}
+            Várias notas no mesmo dia contam uma vez; compras não comprovam
+            visitas físicas.
+          </p>
+          <p>
+            Percentuais sob frequência e faturamento comparam as janelas
+            completas. A variação de frequência usa taxas por 30 dias. — indica
+            comparação sem base ou dado indisponível.
+          </p>
+          <p>
+            Intervalo médio exige duas datas de compra. Dias sem compra são
+            contados até {formatarDataInputParaBR(contexto.periodo.final)}; a
+            última compra é a observada nas janelas consultadas.
+          </p>
+          <p>
+            A classe ABC é a do período atual. “Compra só no atual” não comprova
+            aquisição; “sem compra” não comprova perda. Consumidor genérico
+            excluído: {formatarMoeda(relatorio.faturamentoNaoIdentificado)},
+            mantido no Resumo.
+          </p>
+          <p>
+            Intensidade da grade: 0 · 1–2 · 3–5 · 6 ou mais dias com compra.
+            Clique no mês para abrir o detalhe.
+          </p>
+        </div>
+      </details>
     </div>
   );
 }

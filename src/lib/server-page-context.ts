@@ -6,11 +6,13 @@ import { obterVendas, SalesIntegrationError, type EmpresaInfo } from "@/lib/sale
 import type { VendaComEmpresa } from "@/lib/syspro-api";
 import type { UserRole } from "@/lib/validations";
 import type { Permissao } from "@/lib/role-permissions";
+import { resolverComparacao } from "@/lib/periodo-comparacao";
 
 export interface ServerPageContextOptions {
   permissao?: Permissao;
   searchParams: Promise<{ empresa?: string; aba?: string }>;
   carregarPeriodoAnterior?: boolean;
+  comparacaoCalendarioClientes?: boolean;
 }
 
 export interface ServerPageContextResult {
@@ -32,6 +34,7 @@ export async function resolveServerPageContext({
   permissao,
   searchParams,
   carregarPeriodoAnterior = false,
+  comparacaoCalendarioClientes = false,
 }: ServerPageContextOptions): Promise<ServerPageContextResult> {
   const { session, userRole, isAdmin, empresas } = await requireAuth(permissao);
   const { empresa: empresaParam, aba: abaParam } = await searchParams;
@@ -63,7 +66,9 @@ export async function resolveServerPageContext({
 
   let periodoAnterior: { inicial: string; final: string } | undefined;
   if (carregarPeriodoAnterior) {
-    periodoAnterior = calcularPeriodoAnterior(periodo.inicial, periodo.final);
+    periodoAnterior = comparacaoCalendarioClientes && abaParam === "clientes"
+      ? resolverComparacao(periodo)
+      : calcularPeriodoAnterior(periodo.inicial, periodo.final);
   }
 
   let vendas: VendaComEmpresa[] = [];

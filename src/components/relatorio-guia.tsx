@@ -53,9 +53,9 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     ],
     dica: "Para os clientes Top, avalie criar condições específicas (prazo, tabela) — são os que mais garantem previsibilidade de receita.",
     glossario: [
-      { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por cliente com totais do período." },
-      { termo: "Produtos por cliente", definicao: "Mostra os produtos comprados por cada cliente, com quantidade, notas, descontos e faturamento no período." },
-      { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por cliente — mostra o que compõe os números do ranking." },
+      { termo: "Resumo", definicao: "Uma linha por cliente. Classe ABC, participação e acumulado usam o ranking completo por faturamento, mesmo ao filtrar ou reordenar. Ticket médio por nota." },
+      { termo: "Detalhamento", definicao: "Notas, produtos consolidados ou produtos por mês dos clientes selecionados. Clique na nota para abrir seus itens; clique no mês da grade de frequência para detalhar aquele mês." },
+      { termo: "Comparação automática", definicao: "Meses completos usam o mesmo número de meses completos anteriores. Outros intervalos usam os dias imediatamente anteriores. O seletor também permite mês anterior, ano anterior ou datas personalizadas; os limites ficam visíveis antes de consultar." },
       { termo: "Dias com compra", definicao: "Datas distintas de emissão por cliente, contando várias notas no mesmo dia uma vez. Não mede visitas físicas. Consumidor genérico é excluído." },
       { termo: "Frequência", definicao: "Dias com compra divididos pelos meses completos selecionados, incluindo meses sem compra. Em janelas parciais, a taxa é normalizada por 30 dias. Comparações entre períodos usam taxas por 30 dias." },
       { termo: "Intervalo médio", definicao: "Média dos intervalos entre dias consecutivos de compra dentro do período atual; exige pelo menos duas datas distintas." },

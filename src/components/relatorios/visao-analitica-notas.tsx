@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { ArrowLeft, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { TablePagination } from "@/components/table-pagination";
 import { toast } from "sonner";
 import { SeletorMultiplo } from "./seletor-multiplo";
 import type { VendaAgrupada } from "@/lib/vendas";
-import { paraNumero } from "@/lib/vendas";
+import { paraNumero, valorItem } from "@/lib/vendas";
 import { ExportarVisao, type ContextoExportacao } from "./exportar-visao";
 
 type DimensaoNota = "vendedor" | "cliente" | "cidade";
@@ -29,6 +29,8 @@ interface VisaoAnaliticaNotasProps {
   nomeCsvBase?: string;
   onVoltar: () => void;
   contextoExportacao?: ContextoExportacao;
+  ocultarNavegacao?: boolean;
+  expandirItens?: boolean;
 }
 
 interface ValoresNota {
@@ -62,7 +64,10 @@ export function VisaoAnaliticaNotas({
   nomeCsvBase = "notas-analitico",
   onVoltar,
   contextoExportacao,
+  ocultarNavegacao = false,
+  expandirItens = false,
 }: VisaoAnaliticaNotasProps) {
+  const [notaAberta, setNotaAberta] = useState<string | null>(null);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [itensPorPagina, setItensPorPagina] = useState(25);
 
@@ -138,7 +143,7 @@ export function VisaoAnaliticaNotas({
     <div className="space-y-4">
       {/* Cabeçalho da visão analítica */}
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-2.5">
-        <div className="flex flex-wrap items-center gap-2">
+        {!ocultarNavegacao ? <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -159,7 +164,7 @@ export function VisaoAnaliticaNotas({
             }}
             rotulo={dimensaoRotulo}
           />
-        </div>
+        </div> : null}
 
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="gap-1.5 px-2.5 py-1 font-mono text-[11px]">
@@ -211,8 +216,8 @@ export function VisaoAnaliticaNotas({
               notasPaginadas.map((nota) => {
                 const valores = valoresDaNota(nota);
                 return (
-                  <tr key={nota.id} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="p-3 font-mono font-semibold text-foreground">{nota.numero}</td>
+                  <Fragment key={nota.id}><tr className="border-b last:border-0 hover:bg-muted/20">
+                    <td className="p-3 font-mono font-semibold text-foreground">{expandirItens ? <Button variant="link" size="sm" aria-label={`Itens da nota ${nota.numero}`} aria-expanded={notaAberta === nota.id} onClick={() => setNotaAberta(notaAberta === nota.id ? null : nota.id)}>{nota.numero}</Button> : nota.numero}</td>
                     <td className="whitespace-nowrap p-3 text-muted-foreground">{nota.emissao}</td>
                     {exibirColunaDimensao && (
                       <td className="p-3 font-medium">{String(nota[dimensaoChave])}</td>
@@ -228,6 +233,12 @@ export function VisaoAnaliticaNotas({
                     </td>
                     <td className="p-3 text-right font-mono font-bold">{formatarMoeda(valores.liquido)}</td>
                   </tr>
+                  {expandirItens && notaAberta === nota.id ? <tr><td colSpan={colSpan} className="bg-muted/20 p-3">
+                    <table className="w-full text-xs" aria-label={`Produtos da nota ${nota.numero}`}>
+                      <thead><tr className="text-left"><th className="p-2">Código</th><th className="p-2">Produto</th><th className="p-2 text-right">Quantidade</th><th className="p-2">Unidade</th><th className="p-2 text-right">Desconto</th><th className="p-2 text-right">Total</th></tr></thead>
+                      <tbody>{nota.itens.map((item, indice) => <tr key={indice}><td className="p-2">{item.produto_id}</td><td className="p-2">{item.produto_descricao}</td><td className="p-2 text-right">{formatarNumero(paraNumero(item.produto_qtde), 2)}</td><td className="p-2">{item.produto_un}</td><td className="p-2 text-right">{formatarMoeda(paraNumero(item.produto_vlr_desconto))}</td><td className="p-2 text-right">{formatarMoeda(valorItem(item))}</td></tr>)}</tbody>
+                    </table>
+                  </td></tr> : null}</Fragment>
                 );
               })
             )}

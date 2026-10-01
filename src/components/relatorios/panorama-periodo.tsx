@@ -8,6 +8,7 @@ import { MetricaCard } from "@/components/metrica-card";
 interface PanoramaPeriodoProps {
   variacoes: VariacoesPeriodoVendas;
   rotuloPeriodoAnterior?: string;
+  compacto?: boolean;
 }
 
 function BadgeVariacao({ variacao }: { variacao: VariacaoMetrica }) {
@@ -36,17 +37,17 @@ function BadgeVariacao({ variacao }: { variacao: VariacaoMetrica }) {
  * Panorama do período: variação das métricas centrais vs. o período
  * anterior equivalente. Cada métrica tem tooltip explicando o que mede.
  */
-export function PanoramaPeriodo({ variacoes, rotuloPeriodoAnterior }: PanoramaPeriodoProps) {
+export function PanoramaPeriodo({ variacoes, rotuloPeriodoAnterior, compacto = false }: PanoramaPeriodoProps) {
   const semComparativo = !variacoes.temAnterior;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
         <ArrowLeftRight className="size-3.5" />
-        Variação vs. período anterior
+        Comparação
         {semComparativo ? (
           <span className="normal-case font-semibold text-muted-foreground/70">
-            — clique em consultar para carregar também o período anterior equivalente
+            — sem vendas no período comparado {rotuloPeriodoAnterior}
           </span>
         ) : (
           <span className="normal-case font-semibold text-muted-foreground/70">
@@ -56,10 +57,10 @@ export function PanoramaPeriodo({ variacoes, rotuloPeriodoAnterior }: PanoramaPe
       </div>
 
       <section className="rounded-xl border border-border/60 bg-muted/[0.12] p-2.5 sm:p-3">
-        <div className="mb-2 flex items-center justify-between gap-2 px-1">
+        {!compacto ? <div className="mb-2 flex items-center justify-between gap-2 px-1">
           <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Resumo executivo</span>
           <span className="text-[10px] text-muted-foreground/70">4 indicadores comparáveis</span>
-        </div>
+        </div> : null}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricaCard
           rotulo="Faturamento"

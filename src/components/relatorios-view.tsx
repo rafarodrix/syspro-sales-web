@@ -77,6 +77,8 @@ import { AbaFinanceiro } from "./relatorios/aba-financeiro";
 import { PanoramaPeriodo } from "./relatorios/panorama-periodo";
 import { ConsolidacaoEmpresas } from "./relatorios/consolidacao-empresas";
 import { analisarFrequenciaClientes, normalizarClientes } from "@/lib/clientes-frequencia";
+import { resolverComparacao, type ModoComparacao } from "@/lib/periodo-comparacao";
+import { ComparacaoPeriodo } from "./relatorios/comparacao-periodo";
 
 interface EmpresaOption {
   id: string;
@@ -126,9 +128,12 @@ export function RelatoriosView({
     initialPeriod ?? periodoMesAtual(),
   );
   const [periodoConsultado, setPeriodoConsultado] = useState<Periodo>(initialPeriod ?? periodoMesAtual());
+  const [modoComparacao, setModoComparacao] = useState<ModoComparacao>("automatico");
+  const [modoConsultado, setModoConsultado] = useState<ModoComparacao>("automatico");
+  const [comparacaoPersonalizada, setComparacaoPersonalizada] = useState<Periodo>(initialPeriodoAnterior ?? resolverComparacao(initialPeriod ?? periodoMesAtual()));
   const [periodoAnterior, setPeriodoAnterior] = useState<{ inicial: string; final: string } | null>(
     initialPeriodoAnterior ??
-      (initialPeriod ? calcularPeriodoAnterior(initialPeriod.inicial, initialPeriod.final) : null),
+      (initialPeriod ? abaInicial === "clientes" ? resolverComparacao(initialPeriod) : calcularPeriodoAnterior(initialPeriod.inicial, initialPeriod.final) : null),
   );
   const { vendas, vendasAnteriores, comparacaoDisponivel, erro, loading, consultar: consultarVendas } =
     useConsultaVendas(initialVendas, initialError, initialVendasAnteriores, initialComparacaoDisponivel);
@@ -211,6 +216,7 @@ export function RelatoriosView({
     if (abaAtiva !== "vendedores" && abaAtiva !== "clientes" && abaAtiva !== "geografico") return [];
     return agruparVendasPorNota(abaAtiva === "clientes" ? vendasClientes : vendas);
   }, [vendas, vendasClientes, abaAtiva]);
+  const notasClientesAnteriores = useMemo(() => abaAtiva === "clientes" && comparacaoDisponivel ? agruparVendasPorNota(vendasClientesAnteriores) : [], [abaAtiva, comparacaoDisponivel, vendasClientesAnteriores]);
 
   const relatorioClientes = useMemo(() => {
     if (abaAtiva !== "clientes") {
@@ -250,11 +256,6 @@ export function RelatoriosView({
     if (abaAtiva !== "sazonalidade") return { diario: [], mensal: [] };
     return analiseEvolucaoVendas(vendas);
   }, [vendas, abaAtiva]);
-
-  const produtosPorCliente = useMemo(() => {
-    if (abaAtiva !== "clientes") return [];
-    return analiseProdutosPorDimensao(vendasClientes, "cliente");
-  }, [vendasClientes, abaAtiva]);
 
   const produtosPorVendedor = useMemo(() => {
     if (abaAtiva !== "vendedores") return [];
@@ -347,8 +348,8 @@ export function RelatoriosView({
   }, [relatorioGeografico, busca]);
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
-    const proximoAnterior = calcularPeriodoAnterior(proximoPeriodo.inicial, proximoPeriodo.final);
     try {
+      const proximoAnterior = abaAtiva === "clientes" ? resolverComparacao(proximoPeriodo, modoComparacao, comparacaoPersonalizada) : calcularPeriodoAnterior(proximoPeriodo.inicial, proximoPeriodo.final);
       await consultarVendas({
         empresaId,
         periodo: proximoPeriodo,
@@ -357,9 +358,10 @@ export function RelatoriosView({
       });
       setPeriodoAnterior(proximoAnterior);
       setPeriodoConsultado({ ...proximoPeriodo });
+      setModoConsultado(modoComparacao);
       toast.success("Dados de relatórios atualizados com sucesso!");
-    } catch {
-      toast.error("Não foi possível carregar os relatórios.");
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível carregar os relatórios.");
     }
   }
 
@@ -638,9 +640,13 @@ export function RelatoriosView({
             Dados exibidos: {formatarDataInputParaBR(periodoConsultado.inicial)} a {formatarDataInputParaBR(periodoConsultado.final)}.
             {periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final ? " Novo período ainda não consultado." : ""}
           </p>
+          {abaAtiva === "clientes" ? <>
+            <ComparacaoPeriodo periodo={periodo} modo={modoComparacao} personalizado={comparacaoPersonalizada} onModo={setModoComparacao} onPersonalizado={setComparacaoPersonalizada} loading={loading} />
+            {(modoComparacao !== modoConsultado || (modoComparacao === "personalizado" && (comparacaoPersonalizada.inicial !== periodoAnterior?.inicial || comparacaoPersonalizada.final !== periodoAnterior?.final))) ? <p className="text-xs text-muted-foreground" role="status">Clique em Consultar para aplicar a comparação.</p> : null}
+          </> : null}
           {!comparacaoDisponivel && <p className="text-xs text-amber-700 dark:text-amber-400" role="status">Comparativo indisponível; os dados do período atual seguem disponíveis.</p>}
           <div className="no-print flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-            {abasComBusca.has(abaAtiva) && <span className="text-xs text-muted-foreground">Busca filtra os registros abaixo; panorama e cartões mantêm o total do período.</span>}
+            {abasComBusca.has(abaAtiva) && abaAtiva !== "clientes" && <span className="text-xs text-muted-foreground">Busca filtra os registros abaixo; panorama e cartões mantêm o total do período.</span>}
             {abasComBusca.has(abaAtiva) && <div className="relative min-w-[170px] sm:min-w-[210px]">
               <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
               <input
@@ -700,7 +706,7 @@ export function RelatoriosView({
               onImprimir={() => handleExportarPdf("imprimir")}
               disabled={loading || vendas.length === 0}
               label="Exportar"
-            /> : <span className="text-xs text-muted-foreground">Exporte CSV, PDF ou impressão na visão aberta abaixo.</span>}
+            /> : null}
           </div>
         </CardContent>
       </Card>
@@ -733,7 +739,7 @@ export function RelatoriosView({
           ) : (
             <>
               {/* Panorama do período: variações vs. período anterior (métricas explicadas) */}
-              {variacoesPeriodo && <PanoramaPeriodo variacoes={variacoesPeriodo} rotuloPeriodoAnterior={rotuloPeriodoAnterior} />}
+              {variacoesPeriodo && <PanoramaPeriodo variacoes={variacoesPeriodo} rotuloPeriodoAnterior={rotuloPeriodoAnterior} compacto={abaAtiva === "clientes"} />}
 
               {modoConsolidado && consolidacaoEmpresas.length > 1 ? (
                 <ConsolidacaoEmpresas empresas={consolidacaoEmpresas} abaAtiva={abaAtiva} />
@@ -757,8 +763,9 @@ export function RelatoriosView({
                 <AbaClientes
                   key={`${periodoConsultado.inicial}-${periodoConsultado.final}`}
                   clientesFiltrados={clientesFiltrados}
-                  produtosPorCliente={produtosPorCliente}
                   notasAgrupadas={notasAgrupadasRelatorio}
+                  notasAnteriores={notasClientesAnteriores}
+                  intervaloAnterior={periodoAnterior}
                   frequencia={frequenciaClientes}
                   busca={busca}
                   classe={filtroClasseCli}

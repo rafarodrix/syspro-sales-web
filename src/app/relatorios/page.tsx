@@ -11,6 +11,7 @@ export default async function RelatoriosPage({
     permissao: "relatorios:visualizar",
     searchParams,
     carregarPeriodoAnterior: true,
+    comparacaoCalendarioClientes: true,
   });
 
   return (

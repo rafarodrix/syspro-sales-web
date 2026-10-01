@@ -1,10 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  CalendarDays,
-  FileText,
-  LayoutList,
-  PackageSearch,
-} from "lucide-react";
+import { CalendarDays, FileText, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,16 +7,12 @@ import {
   formatarNumero,
   formatarPercentual,
 } from "@/lib/formatters";
-import type {
-  ItemClienteAnalise,
-  ItemProdutoPorDimensao,
-  VendaAgrupada,
-} from "@/lib/vendas";
+import type { ItemClienteAnalise, VendaAgrupada } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { TablePagination } from "@/components/table-pagination";
-import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
-import { VisaoProdutosPorDimensao } from "./visao-produtos-por-dimensao";
+import { DetalhamentoClientes } from "./detalhamento-clientes";
+import type { Periodo } from "@/lib/periodo";
 import { formatarDataInputParaBR } from "@/lib/vendas";
 import type { RelatorioFrequencia } from "@/lib/clientes-frequencia";
 import { VisaoFrequenciaClientes } from "./visao-frequencia-clientes";
@@ -30,7 +21,8 @@ import { FiltroRelatorio } from "./filtro-relatorio";
 
 interface AbaClientesProps {
   clientesFiltrados: ItemClienteAnalise[];
-  produtosPorCliente: ItemProdutoPorDimensao[];
+  notasAnteriores: VendaAgrupada[];
+  intervaloAnterior: Periodo | null;
   /** Notas do período (agrupadas por NF), usadas na visão analítica. */
   notasAgrupadas: VendaAgrupada[];
   frequencia: RelatorioFrequencia;
@@ -42,7 +34,8 @@ interface AbaClientesProps {
 
 export function AbaClientes({
   clientesFiltrados,
-  produtosPorCliente,
+  notasAnteriores,
+  intervaloAnterior,
   notasAgrupadas,
   frequencia,
   busca,
@@ -50,9 +43,14 @@ export function AbaClientes({
   contexto,
   periodoAnterior,
 }: AbaClientesProps) {
-  const [visao, setVisao] = useState<
-    "sintetico" | "produtos" | "analitico" | "frequencia"
-  >("sintetico");
+  const [visao, setVisao] = useState<"sintetico" | "analitico" | "frequencia">(
+    "sintetico",
+  );
+  const [origem, setOrigem] = useState<"sintetico" | "frequencia">("sintetico");
+  const [mesDetalhe, setMesDetalhe] = useState("");
+  const [janelaDetalhe, setJanelaDetalhe] = useState<"atual" | "anterior">(
+    "atual",
+  );
   const [ordem, setOrdem] = useState("faturamento");
   const [clientesSelecionados, setClientesSelecionados] = useState<string[]>(
     [],
@@ -89,11 +87,17 @@ export function AbaClientes({
     () => new Set(clientesFiltrados.map((item) => item.nome)),
     [clientesFiltrados],
   );
-  const produtosFiltrados = useMemo(
-    () =>
-      produtosPorCliente.filter((item) => nomesFiltrados.has(item.dimensao)),
-    [produtosPorCliente, nomesFiltrados],
-  );
+  const notasAnterioresFiltradas = useMemo(() => {
+    const termo = busca.toLocaleUpperCase("pt-BR").trim();
+    return notasAnteriores.filter(
+      (nota) =>
+        (classe === "todas" || nomesFiltrados.has(nota.cliente)) &&
+        (!termo ||
+          [nota.cliente, nota.cidade, nota.uf].some((valor) =>
+            valor.toLocaleUpperCase("pt-BR").includes(termo),
+          )),
+    );
+  }, [notasAnteriores, nomesFiltrados, classe, busca]);
   const notasFiltradas = useMemo(
     () => notasAgrupadas.filter((item) => nomesFiltrados.has(item.cliente)),
     [notasAgrupadas, nomesFiltrados],
@@ -103,41 +107,44 @@ export function AbaClientes({
     return clientesOrdenados.slice(inicio, inicio + itensPorPagina);
   }, [clientesOrdenados, paginaExibida, itensPorPagina]);
 
-  function abrirAnaliticoDoCliente(nome: string) {
+  function abrirAnaliticoDoCliente(nome: string, mes?: string) {
     setClientesSelecionados([nome]);
+    setOrigem(visao === "frequencia" ? "frequencia" : "sintetico");
+    setMesDetalhe(mes ?? "");
+    setJanelaDetalhe(
+      !mes && frequenciaPorNome.get(nome)?.situacao === "sem-compra"
+        ? "anterior"
+        : "atual",
+    );
     setVisao("analitico");
   }
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xs text-muted-foreground">
-        Clientes agrupados pelo nome, padronizando maiúsculas e espaços. A
-        integração atual não fornece identificação estável nesta análise:
-        homônimos podem ser agrupados, inclusive entre empresas. Consumidor
-        genérico permanece no faturamento, mas não representa uma pessoa na
-        frequência.
+        Identificação por nome, sujeita a homônimos. Consumidor genérico não
+        entra na frequência.
       </p>
       <ReportViewSelector
         view={visao}
-        description="Ranking, frequência de compra, mix e documentos da carteira."
         options={[
-          { value: "sintetico", label: "Síntese", icon: LayoutList },
+          { value: "sintetico", label: "Resumo", icon: LayoutList },
           {
             value: "frequencia",
-            label: "Frequência e comparativo",
+            label: "Frequência",
             icon: CalendarDays,
           },
-          { value: "produtos", label: "Produtos", icon: PackageSearch },
-          { value: "analitico", label: "Notas detalhadas", icon: FileText },
+          { value: "analitico", label: "Detalhamento", icon: FileText },
         ]}
         onViewChange={(proximaVisao) => {
-          setClientesSelecionados([]);
+          if (proximaVisao === "analitico" && visao !== "analitico")
+            setOrigem(visao);
           setVisao(proximaVisao);
         }}
       />
 
-      {visao === "sintetico" ? (
-        <>
+      <div hidden={visao !== "sintetico"}>
+        <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <FiltroRelatorio
               rotulo="Ordenar clientes"
@@ -154,7 +161,7 @@ export function AbaClientes({
               ]}
             />
             <ExportarVisao
-              titulo="Clientes - Síntese"
+              titulo="Clientes - Resumo"
               contexto={contexto}
               observacoes="Classe e participação calculadas sobre toda a carteira do período. Dias com compra excluem consumidor genérico. Clientes agrupados pelo nome. Acumulado segue o ranking original de faturamento."
               colunas={[
@@ -192,11 +199,6 @@ export function AbaClientes({
               })}
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Classe ABC, participação e acumulado usam o ranking completo por
-            faturamento, mesmo após filtrar ou reordenar. Ticket médio por nota.
-            — na frequência indica consumidor genérico ou data indisponível.
-          </p>
           {/* Tabela de Ranking de Clientes */}
           <div className="overflow-x-auto rounded-md border">
             <table className="w-full min-w-[680px] text-xs">
@@ -322,12 +324,9 @@ export function AbaClientes({
             }}
             labelItens="clientes"
           />
-          <p className="text-[11px] text-muted-foreground">
-            💡 Clique em um cliente para abrir a visão analítica com as notas
-            dele.
-          </p>
-        </>
-      ) : visao === "frequencia" ? (
+        </div>
+      </div>
+      <div hidden={visao !== "frequencia"}>
         <VisaoFrequenciaClientes
           relatorio={frequencia}
           busca={busca}
@@ -336,28 +335,27 @@ export function AbaClientes({
           periodoAnterior={periodoAnterior}
           onAbrirNotas={abrirAnaliticoDoCliente}
         />
-      ) : visao === "produtos" ? (
-        <VisaoProdutosPorDimensao
-          key={`${busca}-${classe}`}
-          itens={produtosFiltrados}
-          dimensaoRotulo="Cliente"
-          dimensaoPlural="clientes"
-          contextoExportacao={contexto}
-        />
-      ) : (
-        <VisaoAnaliticaNotas
-          key={`${busca}-${classe}`}
+      </div>
+      <div hidden={visao !== "analitico"}>
+        <DetalhamentoClientes
           notas={notasFiltradas}
-          contextoExportacao={contexto}
-          dimensaoChave="cliente"
-          dimensaoRotulo="Cliente"
+          anteriores={notasAnterioresFiltradas}
+          clientes={frequencia.itens}
+          contexto={contexto}
+          periodoAnterior={intervaloAnterior}
+          comparacaoDisponivel={frequencia.comparar}
           selecionados={clientesSelecionados}
-          onSelecionadosChange={setClientesSelecionados}
-          dimensaoTemColunaPropria
-          nomeCsvBase="vendas-analitico-cliente"
-          onVoltar={() => setVisao("sintetico")}
+          onSelecionados={setClientesSelecionados}
+          mes={mesDetalhe}
+          onMes={setMesDetalhe}
+          janela={janelaDetalhe}
+          onJanela={setJanelaDetalhe}
+          onVoltar={() => setVisao(origem)}
+          rotuloVoltar={
+            origem === "frequencia" ? "Voltar à frequência" : "Voltar ao resumo"
+          }
         />
-      )}
+      </div>
     </div>
   );
 }
