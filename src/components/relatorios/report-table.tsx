@@ -64,6 +64,7 @@ export function ReportTable<T>({
   stickyFirst = false,
   pagination = true,
   onRowClick,
+  showExport = true,
 }: {
   data: T[];
   columns: ReportColumn<T>[];
@@ -73,6 +74,7 @@ export function ReportTable<T>({
   stickyFirst?: boolean;
   pagination?: boolean;
   onRowClick?: (row: T) => void;
+  showExport?: boolean;
 }) {
   const report = useReportContext();
   const [sort, setSort] = useState<{ id: string; descending: boolean } | null>(
@@ -99,7 +101,11 @@ export function ReportTable<T>({
   const rows = pagination
     ? sorted.slice((safePage - 1) * size, safePage * size)
     : sorted;
-  function classes(column: ReportColumn<T>, index: number) {
+  function classes(
+    column: ReportColumn<T>,
+    index: number,
+    header = false,
+  ) {
     return cn(
       "px-3 py-2 tabular-nums",
       column.kind === "name"
@@ -114,12 +120,14 @@ export function ReportTable<T>({
       column.className,
       stickyFirst &&
         index === 0 &&
-        "sticky left-0 z-10 bg-background shadow-sm",
+        (header
+          ? "sticky left-0 z-30 bg-background shadow-sm"
+          : "sticky left-0 z-10 bg-background shadow-sm"),
     );
   }
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      {report && columns.every((column) => column.value) ? (
+      {showExport && report && columns.every((column) => column.value) ? (
         <ReportToolbar>
           <ExportarVisao
             titulo={`${report.titulo} - ${caption ?? headerText(columns[0]?.header)}`}
@@ -147,7 +155,7 @@ export function ReportTable<T>({
               <TableHead
                 key={column.id}
                 scope="col"
-                className={classes(column, index)}
+                className={classes(column, index, true)}
                 aria-sort={
                   sort?.id === column.id
                     ? sort.descending
