@@ -1,6 +1,7 @@
 import { ReportTable } from "./report-table";
 
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
 import {
   formatarMoeda,
@@ -44,6 +45,39 @@ interface AbaCurvaABCProps {
   temPeriodoAnterior: boolean;
 }
 
+export function ResumoCurvaAbcCard({
+  relatorioABC,
+}: {
+  relatorioABC: AbaCurvaABCProps["relatorioABC"];
+}) {
+  const classes = [
+    { label: "A", resumo: relatorioABC.resumoA, tone: "text-emerald-700 dark:text-emerald-400" },
+    { label: "B", resumo: relatorioABC.resumoB, tone: "text-blue-700 dark:text-blue-400" },
+    { label: "C", resumo: relatorioABC.resumoC, tone: "text-amber-700 dark:text-amber-400" },
+  ];
+
+  return (
+    <Card className="border-border/60 bg-card/90 shadow-2xs">
+      <CardContent className="flex h-full flex-col gap-2 p-3.5 sm:p-4">
+        <div className="text-xs font-semibold text-muted-foreground">Curva ABC</div>
+        <div className="grid grid-cols-3 gap-2">
+          {classes.map(({ label, resumo, tone }) => (
+            <div key={label} className="min-w-0">
+              <div className={`text-xs font-bold ${tone}`}>Classe {label}</div>
+              <div className="truncate font-mono text-base font-extrabold tabular-nums text-foreground">
+                {formatarMoeda(resumo.faturamento)}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {formatarPercentual(resumo.percentualFaturamento, 1)} · {resumo.itens} itens
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AbaCurvaABC({
   relatorioABC,
   itensFiltrados,
@@ -54,76 +88,6 @@ export function AbaCurvaABC({
 }: AbaCurvaABCProps) {
   return (
     <div className="space-y-4">
-      {/* Cards Síntese ABC (Pareto) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5">
-          <div className="flex items-center justify-between">
-            <Badge className="bg-emerald-600 font-bold text-white">
-              Classe A
-            </Badge>
-            <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">
-              {formatarPercentual(
-                relatorioABC.resumoA.percentualFaturamento,
-                1,
-              )}{" "}
-              Faturamento
-            </span>
-          </div>
-          <div className="mt-2 font-mono font-extrabold text-lg text-emerald-950 dark:text-emerald-200">
-            {formatarMoeda(relatorioABC.resumoA.faturamento)}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            {relatorioABC.resumoA.itens} itens (
-            {formatarPercentual(relatorioABC.resumoA.percentualItens, 1)} do
-            catálogo)
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3.5">
-          <div className="flex items-center justify-between">
-            <Badge className="bg-blue-600 font-bold text-white">Classe B</Badge>
-            <span className="font-mono text-xs font-bold text-blue-800 dark:text-blue-300">
-              {formatarPercentual(
-                relatorioABC.resumoB.percentualFaturamento,
-                1,
-              )}{" "}
-              Faturamento
-            </span>
-          </div>
-          <div className="mt-2 font-mono font-extrabold text-lg text-blue-950 dark:text-blue-200">
-            {formatarMoeda(relatorioABC.resumoB.faturamento)}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            {relatorioABC.resumoB.itens} itens (
-            {formatarPercentual(relatorioABC.resumoB.percentualItens, 1)} do
-            catálogo)
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5">
-          <div className="flex items-center justify-between">
-            <Badge className="bg-amber-600 font-bold text-white">
-              Classe C
-            </Badge>
-            <span className="font-mono text-xs font-bold text-amber-800 dark:text-amber-300">
-              {formatarPercentual(
-                relatorioABC.resumoC.percentualFaturamento,
-                1,
-              )}{" "}
-              Faturamento
-            </span>
-          </div>
-          <div className="mt-2 font-mono font-extrabold text-lg text-amber-950 dark:text-amber-200">
-            {formatarMoeda(relatorioABC.resumoC.faturamento)}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            {relatorioABC.resumoC.itens} itens (
-            {formatarPercentual(relatorioABC.resumoC.percentualItens, 1)} do
-            catálogo)
-          </div>
-        </div>
-      </div>
-
       {/* Tabela Curva ABC */}
       <ReportTable
         data={itensFiltrados}
