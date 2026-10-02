@@ -271,12 +271,11 @@ export function AbaClientes({
                 },
               },
               {
-                id: "itens",
-                header: "Qtd Itens",
+                id: "produtosDistintos",
+                header: "SKUs distintos",
                 kind: "number",
-                value: (cli) => cli.quantidadeItens,
-                exportValue: (cli) => formatarNumero(cli.quantidadeItens, 2),
-                cell: (cli) => <>{formatarNumero(cli.quantidadeItens, 2)}</>,
+                value: (cli) => cli.produtosDistintos,
+                cell: (cli) => <>{formatarNumero(cli.produtosDistintos, 0)}</>,
               },
               {
                 id: "ticket",
