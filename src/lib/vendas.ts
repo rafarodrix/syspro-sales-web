@@ -31,6 +31,7 @@ export interface ProdutoRankeado {
   id: string;
   produto: string;
   departamento?: string;
+  un: string;
   quantidade: number;
   total: number;
   percentual: number;
@@ -467,7 +468,7 @@ export function produtosMaisVendidos(
 ): ProdutoRankeado[] {
   const produtosMap = new Map<
     string,
-    { id: string; produto: string; total: number; quantidade: number; departamento?: string }
+    { id: string; produto: string; total: number; quantidade: number; departamento?: string; un: string }
   >();
 
   let faturamentoTotal = 0;
@@ -491,6 +492,7 @@ export function produtosMaisVendidos(
         total,
         quantidade: qtd,
         departamento: venda.produto_departamento?.trim(),
+        un: venda.produto_un?.trim() || "UN",
       });
     }
   }
