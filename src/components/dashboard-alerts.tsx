@@ -3,13 +3,21 @@
 import Link from "next/link";
 import { BellRing, ChevronDown, CircleAlert, Info } from "lucide-react";
 import type { AlertaGerencial } from "@/lib/alertas-gerenciais";
+import type { Periodo } from "@/lib/periodo";
+import type { ModoComparacao } from "@/lib/periodo-comparacao";
 
 export function DashboardAlerts({
   alertas,
   empresaId,
+  periodo,
+  periodoComparacao,
+  modoComparacao,
 }: {
   alertas: AlertaGerencial[];
   empresaId: string;
+  periodo: Periodo;
+  periodoComparacao?: Periodo;
+  modoComparacao: ModoComparacao;
 }) {
   if (!alertas.length) return null;
 
@@ -38,10 +46,23 @@ export function DashboardAlerts({
       <div className="divide-y divide-border/60 border-t border-border/60">
         {alertas.map((alerta) => {
           const Icon = alerta.nivel === "atencao" ? CircleAlert : Info;
+          const params = new URLSearchParams({
+            aba: alerta.relatorio,
+            empresa: empresaId,
+            periodoInicial: periodo.inicial,
+            periodoFinal: periodo.final,
+            comparacao: modoComparacao,
+            ...(modoComparacao === "personalizado" && periodoComparacao
+              ? {
+                  comparacaoInicial: periodoComparacao.inicial,
+                  comparacaoFinal: periodoComparacao.final,
+                }
+              : {}),
+          });
           return (
             <Link
               key={alerta.id}
-              href={`/relatorios?aba=${alerta.relatorio}&empresa=${encodeURIComponent(empresaId)}`}
+              href={`/relatorios?${params.toString()}`}
               className="flex items-start gap-2.5 px-3.5 py-3 transition-colors hover:bg-muted/40"
             >
               <Icon
