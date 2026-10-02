@@ -40,6 +40,7 @@ import {
   analiseClientesNovosRecorrentes,
   analiseContribuicaoVariacao,
   analiseDescontoSemRetorno,
+  analiseDriversVendedores,
   classeAPerdendoParticipacao,
   mudancaMixTopProdutos,
   formatarDataInputParaBR,
@@ -285,6 +286,14 @@ export function RelatoriosView({
     vendasClientes,
     vendasClientesAnteriores,
   ]);
+
+  const driversVendedores = useMemo(
+    () =>
+      abaAtiva === "vendedores" && comparacaoDisponivel
+        ? analiseDriversVendedores(vendas, vendasAnteriores)
+        : [],
+    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
+  );
 
   const alertasDesconto = useMemo(
     () =>
@@ -663,6 +672,7 @@ export function RelatoriosView({
     abaAtiva,
     relatorioABC,
     relatorioVendedores,
+    driversVendedores,
     relatorioDeptos,
     relatorioDescontos,
     relatorioGeografico,
@@ -682,9 +692,9 @@ export function RelatoriosView({
             ...(cicloClientes
               ? [
                   {
-                    label: "Clientes novos",
+                    label: "Só no período atual",
                     value: formatarNumero(cicloClientes.novos, 0),
-                    detail: formatarMoeda(cicloClientes.receitaNovos),
+                    detail: `${formatarMoeda(cicloClientes.receitaNovos)} · não comprova aquisição`,
                   },
                   {
                     label: "Clientes recorrentes",
@@ -720,6 +730,15 @@ export function RelatoriosView({
     if (abaAtiva === "vendedores") {
       const top3 = concentracaoTopN(relatorioVendedores, 3);
       const top5 = concentracaoTopN(relatorioVendedores, 5);
+      const porVolume = driversVendedores.filter(
+        (item) => item.driver === "volume",
+      ).length;
+      const porTicket = driversVendedores.filter(
+        (item) => item.driver === "ticket",
+      ).length;
+      const ticketEmQueda = driversVendedores.filter(
+        (item) => item.ticketEmQueda,
+      );
       return (
         <ReportDiagnostics
           titulo="Diagnóstico da equipe"
@@ -731,6 +750,24 @@ export function RelatoriosView({
                 1,
               )} / ${formatarPercentual(top5.percentualTop, 1)}`,
               detail: "Participação no faturamento",
+            },
+            {
+              label: "Crescimento por volume",
+              value: formatarNumero(porVolume, 0),
+              detail: "Receita cresceu com mais pedidos e sem alta de ticket",
+            },
+            {
+              label: "Crescimento por ticket",
+              value: formatarNumero(porTicket, 0),
+              detail: "Receita cresceu com ticket maior e sem alta de pedidos",
+            },
+            {
+              label: "Receita ↑ com ticket ↓",
+              value: formatarNumero(ticketEmQueda.length, 0),
+              detail: ticketEmQueda[0]
+                ? ticketEmQueda[0].vendedor
+                : "Nenhum vendedor sinalizado",
+              attention: ticketEmQueda.length > 0,
             },
           ]}
           crescimento={contribuicaoAtiva?.crescimento ?? []}
@@ -797,7 +834,7 @@ export function RelatoriosView({
               value: formatarNumero(classeAEmQueda.length, 0),
               detail:
                 classeAEmQueda[0]
-                  ? `${classeAEmQueda[0].produto}: ${formatarPercentual(
+                  ? `${classeAEmQueda[0].produto}: ${formatarNumero(
                       classeAEmQueda[0].diferencaPp,
                       1,
                     )} p.p.`
@@ -821,7 +858,7 @@ export function RelatoriosView({
               label: "Desconto maior sem crescimento",
               value: formatarNumero(alertasDesconto.length, 0),
               detail: principal
-                ? `${principal.vendedor}: +${formatarPercentual(
+                ? `${principal.vendedor}: +${formatarNumero(
                     principal.aumentoPp,
                     1,
                   )} p.p. de desconto e ${formatarMoeda(
