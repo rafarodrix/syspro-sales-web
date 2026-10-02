@@ -1856,7 +1856,12 @@ export function analiseUFs(vendas: VendaProduto[]): ItemUFVendas[] {
     atual.faturamento += total;
     atual.frete += paraNumero(venda.produto_vlr_frete);
     atual.notas.add(chaveDaNota(venda));
-    if (venda.cliente_nome?.trim()) atual.clientes.add(venda.cliente_nome.trim().toUpperCase());
+    if (
+      venda.cliente_nome?.trim() &&
+      !isClienteConsumidorGenerico(venda.cliente_nome)
+    ) {
+      atual.clientes.add(venda.cliente_nome.trim().toUpperCase());
+    }
     if (venda.cliente_cidade?.trim()) atual.cidades.add(venda.cliente_cidade.trim());
     porUf.set(uf, atual);
   }
