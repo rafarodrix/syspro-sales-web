@@ -35,6 +35,7 @@ function TabelaFinanceira({
 }) {
   return (
     <ReportTable
+      caption={rotulo}
       data={itens}
       rowKey={(item) => item.nome}
       columns={[
@@ -69,7 +70,7 @@ function TabelaFinanceira({
         {
           id: "percentual",
           header: <>Participação</>,
-          kind: "number",
+          kind: "percent",
           value: (item) => item.percentual,
           cell: (item) => (
             <>
