@@ -663,6 +663,7 @@ export function RelatoriosView({
     abaAtiva,
     relatorioABC,
     relatorioVendedores,
+    driversVendedores,
     relatorioDeptos,
     relatorioDescontos,
     relatorioGeografico,
@@ -744,24 +745,30 @@ export function RelatoriosView({
               )} / ${formatarPercentual(top5.percentualTop, 1)}`,
               detail: "Participação no faturamento",
             },
-            {
-              label: "Crescimento por volume",
-              value: formatarNumero(porVolume, 0),
-              detail: "Receita cresceu com mais pedidos e sem alta de ticket",
-            },
-            {
-              label: "Crescimento por ticket",
-              value: formatarNumero(porTicket, 0),
-              detail: "Receita cresceu com ticket maior e sem alta de pedidos",
-            },
-            {
-              label: "Receita ↑ com ticket ↓",
-              value: formatarNumero(ticketEmQueda.length, 0),
-              detail: ticketEmQueda[0]
-                ? ticketEmQueda[0].vendedor
-                : "Nenhum vendedor sinalizado",
-              attention: ticketEmQueda.length > 0,
-            },
+            ...(comparacaoDisponivel
+              ? [
+                  {
+                    label: "Crescimento por volume",
+                    value: formatarNumero(porVolume, 0),
+                    detail:
+                      "Receita cresceu com mais pedidos e sem alta de ticket",
+                  },
+                  {
+                    label: "Crescimento por ticket",
+                    value: formatarNumero(porTicket, 0),
+                    detail:
+                      "Receita cresceu com ticket maior e sem alta de pedidos",
+                  },
+                  {
+                    label: "Receita ↑ com ticket ↓",
+                    value: formatarNumero(ticketEmQueda.length, 0),
+                    detail: ticketEmQueda[0]
+                      ? ticketEmQueda[0].vendedor
+                      : "Nenhum vendedor sinalizado",
+                    attention: ticketEmQueda.length > 0,
+                  },
+                ]
+              : []),
           ]}
           crescimento={contribuicaoAtiva?.crescimento ?? []}
           queda={contribuicaoAtiva?.queda ?? []}
@@ -805,7 +812,7 @@ export function RelatoriosView({
       );
     }
 
-    if (abaAtiva === "curva-abc") {
+    if (abaAtiva === "curva-abc" && comparacaoDisponivel) {
       return (
         <ReportDiagnostics
           titulo="Mudança de mix e contribuição"
