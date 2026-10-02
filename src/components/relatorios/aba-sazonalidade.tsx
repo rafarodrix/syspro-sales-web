@@ -233,6 +233,10 @@ export function AbaSazonalidade({
   );
   const exibeDiaSemana = visao === "dia-semana";
   const exibeEvolucao = visao === "diario" || visao === "mensal";
+  const somaMediasDiaSemana = porDiaSemana.reduce(
+    (total, item) => total + (item.faturamentoMedioPorOcorrencia ?? 0),
+    0,
+  );
 
   const serie = [];
   const mensal = visao === "mensal";
@@ -278,7 +282,12 @@ export function AbaSazonalidade({
                   exibeDiaSemana
                     ? item.faturamentoMedioPorOcorrencia ?? 0
                     : item.faturamento,
-                percentual: item.percentual,
+                percentual:
+                  exibeDiaSemana && somaMediasDiaSemana > 0
+                    ? ((item.faturamentoMedioPorOcorrencia ?? 0) /
+                        somaMediasDiaSemana) *
+                      100
+                    : item.percentual,
               }))
         }
       />
