@@ -1779,6 +1779,243 @@ export interface CrescimentoProduto {
   variacao: VariacaoMetrica;
 }
 
+export type DimensaoContribuicao =
+  | "cliente"
+  | "produto"
+  | "vendedor"
+  | "departamento"
+  | "cidade";
+
+export interface ItemContribuicaoVariacao {
+  chave: string;
+  nome: string;
+  atual: number;
+  anterior: number;
+  diferenca: number;
+  variacao: VariacaoMetrica;
+}
+
+export interface DiagnosticoContribuicao {
+  variacaoTotal: number;
+  crescimento: ItemContribuicaoVariacao[];
+  queda: ItemContribuicaoVariacao[];
+}
+
+function dimensaoReceita(
+  venda: VendaProduto,
+  dimensao: DimensaoContribuicao,
+): { chave: string; nome: string } | null {
+  if (dimensao === "cliente") {
+    const nome = venda.cliente_nome?.trim();
+    if (!nome || isClienteConsumidorGenerico(nome)) return null;
+    const chave = nome.toUpperCase();
+    return { chave, nome };
+  }
+  if (dimensao === "produto") {
+    const id = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const nome = venda.produto_descricao?.trim() || "Produto não identificado";
+    return { chave: `${id}|${nome}`, nome: `${id} · ${nome}` };
+  }
+  if (dimensao === "vendedor") {
+    const nome = venda.vendedor_nome?.trim() || "Sem vendedor";
+    return { chave: nome.toUpperCase(), nome };
+  }
+  if (dimensao === "departamento") {
+    const nome = venda.produto_departamento?.trim() || "Sem departamento";
+    return { chave: nome.toUpperCase(), nome };
+  }
+  const cidade = venda.cliente_cidade?.trim() || "Não informada";
+  const uf = venda.cliente_uf?.trim().toUpperCase() || "—";
+  return { chave: `${cidade.toUpperCase()}|${uf}`, nome: `${cidade} / ${uf}` };
+}
+
+function receitaPorDimensao(
+  vendas: VendaProduto[],
+  dimensao: DimensaoContribuicao,
+): Map<string, { nome: string; total: number }> {
+  const mapa = new Map<string, { nome: string; total: number }>();
+  for (const venda of vendas) {
+    const dimensaoItem = dimensaoReceita(venda, dimensao);
+    if (!dimensaoItem) continue;
+    const atual = mapa.get(dimensaoItem.chave) ?? {
+      nome: dimensaoItem.nome,
+      total: 0,
+    };
+    atual.total += valorItem(venda);
+    mapa.set(dimensaoItem.chave, atual);
+  }
+  return mapa;
+}
+
+/**
+ * Explica a variação total de faturamento mostrando quais dimensões
+ * adicionaram ou retiraram mais receita entre os períodos comparados.
+ */
+export function analiseContribuicaoVariacao(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  dimensao: DimensaoContribuicao,
+  limite = 5,
+): DiagnosticoContribuicao {
+  const atual = receitaPorDimensao(vendasAtuais, dimensao);
+  const anterior = receitaPorDimensao(vendasAnteriores, dimensao);
+  const chaves = new Set([...atual.keys(), ...anterior.keys()]);
+  const itens: ItemContribuicaoVariacao[] = [];
+
+  for (const chave of chaves) {
+    const a = atual.get(chave);
+    const b = anterior.get(chave);
+    const atualTotal = a?.total ?? 0;
+    const anteriorTotal = b?.total ?? 0;
+    const diferenca = atualTotal - anteriorTotal;
+    itens.push({
+      chave,
+      nome: a?.nome ?? b?.nome ?? chave,
+      atual: atualTotal,
+      anterior: anteriorTotal,
+      diferenca,
+      variacao: calcularVariacao(atualTotal, anteriorTotal),
+    });
+  }
+
+  const variacaoTotal = itens.reduce((total, item) => total + item.diferenca, 0);
+  return {
+    variacaoTotal,
+    crescimento: itens
+      .filter((item) => item.diferenca > 0)
+      .sort((a, b) => b.diferenca - a.diferenca)
+      .slice(0, limite),
+    queda: itens
+      .filter((item) => item.diferenca < 0)
+      .sort((a, b) => a.diferenca - b.diferenca)
+      .slice(0, limite),
+  };
+}
+
+export interface AlertaDescontoSemRetorno {
+  vendedor: string;
+  taxaAtual: number;
+  taxaAnterior: number;
+  aumentoPp: number;
+  faturamentoAtual: number;
+  faturamentoAnterior: number;
+  variacaoFaturamento: number;
+}
+
+/**
+ * Sinaliza vendedor cuja taxa de desconto subiu pelo menos 1 p.p. sem
+ * crescimento de faturamento. É um indício para investigação, não causalidade.
+ */
+export function analiseDescontoSemRetorno(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  limite = 5,
+): AlertaDescontoSemRetorno[] {
+  const atual = new Map(
+    analiseDescontos(vendasAtuais).porVendedor.map((item) => [item.nome, item]),
+  );
+  const anterior = new Map(
+    analiseDescontos(vendasAnteriores).porVendedor.map((item) => [
+      item.nome,
+      item,
+    ]),
+  );
+
+  return [...atual.entries()]
+    .flatMap(([vendedor, itemAtual]) => {
+      const itemAnterior = anterior.get(vendedor);
+      if (!itemAnterior) return [];
+      const aumentoPp = itemAtual.taxaDesconto - itemAnterior.taxaDesconto;
+      const variacaoFaturamento =
+        itemAtual.faturamentoLiquido - itemAnterior.faturamentoLiquido;
+      if (aumentoPp < 1 || variacaoFaturamento > 0) return [];
+      return [{
+        vendedor,
+        taxaAtual: itemAtual.taxaDesconto,
+        taxaAnterior: itemAnterior.taxaDesconto,
+        aumentoPp,
+        faturamentoAtual: itemAtual.faturamentoLiquido,
+        faturamentoAnterior: itemAnterior.faturamentoLiquido,
+        variacaoFaturamento,
+      }];
+    })
+    .sort((a, b) => b.aumentoPp - a.aumentoPp)
+    .slice(0, limite);
+}
+
+export interface QuedaParticipacaoClasseA {
+  id: string;
+  produto: string;
+  participacaoAtual: number;
+  participacaoAnterior: number;
+  diferencaPp: number;
+}
+
+/** Produtos que seguem na classe A, mas perderam participação de receita. */
+export function classeAPerdendoParticipacao(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  limite = 5,
+): QuedaParticipacaoClasseA[] {
+  const atual = calcularCurvaABC(vendasAtuais);
+  const anterior = calcularCurvaABC(vendasAnteriores);
+  const anteriorMap = new Map(
+    anterior.itens.map((item) => [`${item.id}|${item.produto}`, item]),
+  );
+
+  return atual.itens
+    .filter((item) => item.classe === "A")
+    .flatMap((item) => {
+      const ant = anteriorMap.get(`${item.id}|${item.produto}`);
+      if (!ant) return [];
+      const diferencaPp = item.percentual - ant.percentual;
+      if (diferencaPp >= 0) return [];
+      return [{
+        id: item.id,
+        produto: item.produto,
+        participacaoAtual: item.percentual,
+        participacaoAnterior: ant.percentual,
+        diferencaPp,
+      }];
+    })
+    .sort((a, b) => a.diferencaPp - b.diferencaPp)
+    .slice(0, limite);
+}
+
+export interface MudancaMixTop {
+  topN: number;
+  itensAtuais: number;
+  itensMantidos: number;
+  itensNovosNoTop: number;
+  renovacaoPercentual: number;
+}
+
+/** Mede quanto o Top N de produtos mudou entre os períodos. */
+export function mudancaMixTopProdutos(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  topN = 10,
+): MudancaMixTop {
+  const atual = calcularCurvaABC(vendasAtuais).itens.slice(0, topN);
+  const anterior = calcularCurvaABC(vendasAnteriores).itens.slice(0, topN);
+  const chavesAnterior = new Set(
+    anterior.map((item) => `${item.id}|${item.produto}`),
+  );
+  const itensMantidos = atual.filter((item) =>
+    chavesAnterior.has(`${item.id}|${item.produto}`),
+  ).length;
+  const itensAtuais = atual.length;
+  const itensNovosNoTop = Math.max(0, itensAtuais - itensMantidos);
+  return {
+    topN,
+    itensAtuais,
+    itensMantidos,
+    itensNovosNoTop,
+    renovacaoPercentual:
+      itensAtuais > 0 ? (itensNovosNoTop / itensAtuais) * 100 : 0,
+  };
+}
+
 function agregaReceitaPorProduto(vendas: VendaProduto[]): Map<string, { id: string; produto: string; total: number }> {
   const mapa = new Map<string, { id: string; produto: string; total: number }>();
   for (const venda of vendas) {
