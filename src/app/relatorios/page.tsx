@@ -10,6 +10,9 @@ export default async function RelatoriosPage({
     aba?: string;
     periodoInicial?: string;
     periodoFinal?: string;
+    comparacao?: string;
+    comparacaoInicial?: string;
+    comparacaoFinal?: string;
   }>;
 }) {
   const ctx = await resolveServerPageContext({
@@ -34,6 +37,8 @@ export default async function RelatoriosPage({
         initialPeriod={ctx.periodo}
         initialVendas={ctx.vendas}
         initialPeriodoAnterior={ctx.periodoAnterior}
+        initialModoComparacao={ctx.modoComparacao}
+        initialComparacaoPersonalizada={ctx.comparacaoPersonalizada}
         initialVendasAnteriores={ctx.vendasAnteriores}
         initialComparacaoDisponivel={ctx.comparacaoDisponivel}
         initialError={ctx.erroInicial}
