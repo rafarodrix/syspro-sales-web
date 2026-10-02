@@ -7,6 +7,8 @@ interface ContextoRelatorio {
   empresaNome: string;
   cnpj?: string;
   periodo: Periodo;
+  periodoComparacao?: Periodo;
+  modoComparacao?: string;
 }
 
 // Cores do Padrão Corporativo Trilink Syspro
@@ -397,6 +399,19 @@ export async function exportarPdfAnalitico({
   adicionarCabecalho(doc, titulo, contexto);
 
   let currentY = 40;
+
+  if (contexto.periodoComparacao) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...CORES.muted);
+    const modo = contexto.modoComparacao ? ` · ${contexto.modoComparacao}` : "";
+    doc.text(
+      `Comparação: ${formatarDataBR(contexto.periodoComparacao.inicial)} a ${formatarDataBR(contexto.periodoComparacao.final)}${modo}`,
+      14,
+      currentY,
+    );
+    currentY += 5;
+  }
 
   if (observacoes) {
     doc.setFontSize(8);
