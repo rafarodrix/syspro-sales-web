@@ -88,6 +88,8 @@ interface Props {
   initialPeriod?: Periodo;
   initialVendas?: (VendaProduto | VendaComEmpresa)[];
   initialPeriodoAnterior?: { inicial: string; final: string };
+  initialModoComparacao?: ModoComparacao;
+  initialComparacaoPersonalizada?: Periodo;
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialComparacaoDisponivel?: boolean;
   initialError?: string;
@@ -109,6 +111,8 @@ export function RelatoriosView({
   initialPeriod,
   initialVendas = [],
   initialPeriodoAnterior,
+  initialModoComparacao = "mes-anterior",
+  initialComparacaoPersonalizada,
   initialVendasAnteriores = [],
   initialComparacaoDisponivel = true,
   initialError,
@@ -125,12 +129,13 @@ export function RelatoriosView({
     initialPeriod ?? periodoMesAtual(),
   );
   const [modoComparacao, setModoComparacao] =
-    useState<ModoComparacao>("mes-anterior");
+    useState<ModoComparacao>(initialModoComparacao);
   const [modoConsultado, setModoConsultado] =
-    useState<ModoComparacao>("mes-anterior");
+    useState<ModoComparacao>(initialModoComparacao);
   const [comparacaoPersonalizada, setComparacaoPersonalizada] =
     useState<Periodo>(
-      initialPeriodoAnterior ??
+      initialComparacaoPersonalizada ??
+        initialPeriodoAnterior ??
         resolverComparacao(initialPeriod ?? periodoMesAtual(), "mes-anterior"),
     );
   const [periodoAnterior, setPeriodoAnterior] = useState<{
@@ -466,6 +471,14 @@ export function RelatoriosView({
       const params = new URLSearchParams(window.location.search);
       params.set("periodoInicial", proximoPeriodo.inicial);
       params.set("periodoFinal", proximoPeriodo.final);
+      params.set("comparacao", modoComparacao);
+      if (modoComparacao === "personalizado") {
+        params.set("comparacaoInicial", comparacaoPersonalizada.inicial);
+        params.set("comparacaoFinal", comparacaoPersonalizada.final);
+      } else {
+        params.delete("comparacaoInicial");
+        params.delete("comparacaoFinal");
+      }
       window.history.replaceState(
         null,
         "",
@@ -508,6 +521,13 @@ export function RelatoriosView({
                   empresa: empresaId,
                   periodoInicial: periodoConsultado.inicial,
                   periodoFinal: periodoConsultado.final,
+                  comparacao: modoConsultado,
+                  ...(modoConsultado === "personalizado"
+                    ? {
+                        comparacaoInicial: comparacaoPersonalizada.inicial,
+                        comparacaoFinal: comparacaoPersonalizada.final,
+                      }
+                    : {}),
                 })}`,
               )
             }
