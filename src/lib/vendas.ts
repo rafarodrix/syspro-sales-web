@@ -235,6 +235,7 @@ export interface ItemEmpresaAnalise {
   faturamento: number;
   pedidos: number;
   quantidadeItens: number;
+  produtosDistintos: number;
   descontos: number;
   ticketMedio: number;
   percentual: number;
@@ -862,7 +863,13 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
  * de NF emitidos por filiais diferentes.
  */
 export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): ItemEmpresaAnalise[] {
-  const empresas = new Map<string, Omit<ItemEmpresaAnalise, "pedidos" | "ticketMedio" | "percentual"> & { notas: Set<string> }>();
+  const empresas = new Map<
+    string,
+    Omit<
+      ItemEmpresaAnalise,
+      "pedidos" | "ticketMedio" | "percentual" | "produtosDistintos"
+    > & { notas: Set<string>; produtos: Set<string> }
+  >();
 
   for (const venda of vendas) {
     const vendaEmpresa = venda as VendaComEmpresa;
@@ -875,20 +882,25 @@ export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): Ite
       quantidadeItens: 0,
       descontos: 0,
       notas: new Set<string>(),
+      produtos: new Set<string>(),
     };
 
     atual.faturamento += valorItem(venda);
     atual.quantidadeItens += paraNumero(venda.produto_qtde);
     atual.descontos += paraNumero(venda.produto_vlr_desconto);
     atual.notas.add(chaveDaNota(venda));
+    atual.produtos.add(
+      `${String(venda.produto_id ?? "").trim()}|${venda.produto_descricao?.trim() ?? ""}`,
+    );
     empresas.set(id, atual);
   }
 
   const faturamentoTotal = [...empresas.values()].reduce((total, empresa) => total + empresa.faturamento, 0);
   return [...empresas.values()]
-    .map(({ notas, ...empresa }) => ({
+    .map(({ notas, produtos, ...empresa }) => ({
       ...empresa,
       pedidos: notas.size,
+      produtosDistintos: produtos.size,
       ticketMedio: notas.size > 0 ? empresa.faturamento / notas.size : 0,
       percentual: faturamentoTotal > 0 ? (empresa.faturamento / faturamentoTotal) * 100 : 0,
     }))
