@@ -32,7 +32,6 @@ import {
 import {
   DateRangeFilter,
   periodoMesAtual,
-  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
 import { useConsultaVendas } from "@/hooks/use-consulta-vendas";
@@ -451,9 +450,6 @@ export function RelatoriosView({
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
     try {
-      // O mês atual é apenas o padrão inicial. Após uma consulta, preserva o
-      // período escolhido ao navegar entre os relatórios da central.
-      salvarPeriodoCookie(proximoPeriodo);
       const proximoAnterior =
         abaAtiva === "clientes"
           ? resolverComparacao(
@@ -461,10 +457,7 @@ export function RelatoriosView({
               modoComparacao,
               comparacaoPersonalizada,
             )
-          : calcularPeriodoAnterior(
-              proximoPeriodo.inicial,
-              proximoPeriodo.final,
-            );
+          : resolverComparacao(proximoPeriodo, "mes-anterior");
       await consultarVendas({
         empresaId,
         periodo: proximoPeriodo,
@@ -474,6 +467,16 @@ export function RelatoriosView({
       setPeriodoAnterior(proximoAnterior);
       setPeriodoConsultado({ ...proximoPeriodo });
       setModoConsultado(modoComparacao);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set("periodoInicial", proximoPeriodo.inicial);
+      params.set("periodoFinal", proximoPeriodo.final);
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
+
       toast.success("Dados de relatórios atualizados com sucesso!");
     } catch (erro) {
       toast.error(
@@ -503,7 +506,12 @@ export function RelatoriosView({
             value={abaAtiva}
             onChange={(event) =>
               router.push(
-                `/relatorios?${new URLSearchParams({ aba: event.target.value, empresa: empresaId })}`,
+                `/relatorios?${new URLSearchParams({
+                  aba: event.target.value,
+                  empresa: empresaId,
+                  periodoInicial: periodoConsultado.inicial,
+                  periodoFinal: periodoConsultado.final,
+                })}`,
               )
             }
             className="min-w-0 flex-1 rounded-md border bg-background p-2"
@@ -563,6 +571,7 @@ export function RelatoriosView({
                     onConsultar={consultar}
                     loading={loading}
                     compact
+                    persistirCookie={false}
                   />
               </section>
               {abaAtiva === "clientes" ? (
