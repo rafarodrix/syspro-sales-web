@@ -7,7 +7,18 @@ import { ReportToolbar, ReportFilters } from "./relatorios/report-toolbar";
 import { FiltroRelatorio } from "./relatorios/filtro-relatorio";
 import { erroPeriodo } from "@/lib/periodo";
 import { REPORT_DEFINITIONS } from "./relatorios/report-definitions";
-import { Search, X, Sparkles, Building2 } from "lucide-react";
+import {
+  Search,
+  X,
+  Sparkles,
+  Building2,
+  Users,
+  Percent,
+  Layers,
+  MapPin,
+  CreditCard,
+  CalendarDays,
+} from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
   calcularCurvaABC,
@@ -52,6 +63,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MetricaCard } from "@/components/metrica-card";
 
 // Subcomponentes modulares de abas
 import { AbaCurvaABC, ResumoCurvaAbcCard } from "./relatorios/aba-curva-abc";
@@ -451,6 +463,118 @@ export function RelatoriosView({
     );
   }, [relatorioGeografico, busca]);
 
+  const metricaContextual = useMemo(() => {
+    if (abaAtiva === "curva-abc") {
+      return <ResumoCurvaAbcCard relatorioABC={relatorioABC} />;
+    }
+
+    if (abaAtiva === "clientes") {
+      return null;
+    }
+
+    if (abaAtiva === "vendedores") {
+      const ativos = relatorioVendedores.filter((item) => item.faturamento > 0).length;
+      return (
+        <MetricaCard
+          rotulo="Vendedores ativos"
+          definicao="Quantidade de vendedores com faturamento no período consultado."
+          valor={formatarNumero(ativos, 0)}
+          icone={Users}
+        />
+      );
+    }
+
+    if (abaAtiva === "departamentos") {
+      const ativos = relatorioDeptos.filter((item) => item.faturamento > 0).length;
+      return (
+        <MetricaCard
+          rotulo="Departamentos ativos"
+          definicao="Quantidade de departamentos com faturamento no período consultado."
+          valor={formatarNumero(ativos, 0)}
+          icone={Layers}
+        />
+      );
+    }
+
+    if (abaAtiva === "descontos") {
+      const itens = relatorioDescontos.porVendedor;
+      const faturamentoLiquido = itens.reduce(
+        (total, item) => total + item.faturamentoLiquido,
+        0,
+      );
+      const descontos = itens.reduce((total, item) => total + item.desconto, 0);
+      const bruto = faturamentoLiquido + descontos;
+      const taxa = bruto > 0 ? (descontos / bruto) * 100 : 0;
+      return (
+        <MetricaCard
+          rotulo="Taxa média de desconto"
+          definicao="Desconto total dividido pelo faturamento bruto estimado do período."
+          valor={formatarPercentual(taxa, 1)}
+          rodape={descontos > 0 ? formatarMoeda(descontos) : undefined}
+          icone={Percent}
+        />
+      );
+    }
+
+    if (abaAtiva === "geografico") {
+      const cidades = relatorioGeografico.filter((item) => item.faturamento > 0).length;
+      const ufs = relatorioUFs.filter((item) => item.faturamento > 0).length;
+      return (
+        <MetricaCard
+          rotulo="Cobertura geográfica"
+          definicao="Quantidade de cidades e UFs com vendas no período consultado."
+          valor={formatarNumero(cidades, 0)}
+          rodape={`${formatarNumero(ufs, 0)} UFs atendidas`}
+          icone={MapPin}
+        />
+      );
+    }
+
+    if (abaAtiva === "financeiro") {
+      const principal = relatorioFinanceiro.formasPagamento[0];
+      return (
+        <MetricaCard
+          rotulo="Forma predominante"
+          definicao="Forma de pagamento com maior faturamento no período consultado."
+          valor={principal?.nome ?? "—"}
+          rodape={
+            principal ? formatarPercentual(principal.percentual, 1) : undefined
+          }
+          icone={CreditCard}
+        />
+      );
+    }
+
+    if (abaAtiva === "sazonalidade") {
+      const melhorDia = [...relatorioSazonalidade.porDiaSemana].sort(
+        (a, b) => b.faturamento - a.faturamento,
+      )[0];
+      return (
+        <MetricaCard
+          rotulo="Melhor dia"
+          definicao="Dia da semana com maior faturamento acumulado no período consultado."
+          valor={melhorDia?.rotulo ?? "—"}
+          rodape={
+            melhorDia ? formatarMoeda(melhorDia.faturamento) : undefined
+          }
+          icone={CalendarDays}
+        />
+      );
+    }
+
+    return null;
+  }, [
+    abaAtiva,
+    relatorioABC,
+    relatorioVendedores,
+    relatorioDeptos,
+    relatorioDescontos,
+    relatorioGeografico,
+    relatorioUFs,
+    relatorioFinanceiro,
+    relatorioSazonalidade,
+  ]);
+
   async function consultar(proximoPeriodo: Periodo = periodo) {
     try {
       const proximoAnterior = resolverComparacao(
@@ -758,12 +882,8 @@ export function RelatoriosView({
                     variacoes={variacoesPeriodo}
                     rotuloPeriodoAnterior={rotuloPeriodoAnterior}
                     compacto
-                    mostrarClientes={abaAtiva !== "curva-abc"}
-                    metricaExtra={
-                      abaAtiva === "curva-abc" ? (
-                        <ResumoCurvaAbcCard relatorioABC={relatorioABC} />
-                      ) : undefined
-                    }
+                    mostrarClientes={abaAtiva === "clientes"}
+                    metricaExtra={metricaContextual}
                   />
                 )}
 
