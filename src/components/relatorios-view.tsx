@@ -37,6 +37,11 @@ import {
   calcularVariacoesPeriodo,
   concentracaoTopN,
   maioresCrescimentosProdutos,
+  analiseClientesNovosRecorrentes,
+  analiseContribuicaoVariacao,
+  analiseDescontoSemRetorno,
+  classeAPerdendoParticipacao,
+  mudancaMixTopProdutos,
   formatarDataInputParaBR,
 } from "@/lib/vendas";
 import {
@@ -64,6 +69,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricaCard } from "@/components/metrica-card";
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+} from "@/lib/formatters";
 
 // Subcomponentes modulares de abas
 import { AbaCurvaABC, ResumoCurvaAbcCard } from "./relatorios/aba-curva-abc";
@@ -86,6 +96,7 @@ import {
   type ModoComparacao,
 } from "@/lib/periodo-comparacao";
 import { ComparacaoPeriodo } from "./relatorios/comparacao-periodo";
+import { ReportDiagnostics } from "./relatorios/report-diagnostics";
 
 interface EmpresaOption {
   id: string;
@@ -218,6 +229,85 @@ export function RelatoriosView({
         ? maioresCrescimentosProdutos(vendas, vendasAnteriores, 5)
         : [],
     [vendas, vendasAnteriores, comparacaoDisponivel],
+  );
+
+  const cicloClientes = useMemo(
+    () =>
+      abaAtiva === "clientes" && comparacaoDisponivel
+        ? analiseClientesNovosRecorrentes(
+            vendasClientes,
+            vendasClientesAnteriores,
+          )
+        : null,
+    [
+      abaAtiva,
+      comparacaoDisponivel,
+      vendasClientes,
+      vendasClientesAnteriores,
+    ],
+  );
+
+  const contribuicaoAtiva = useMemo(() => {
+    if (!comparacaoDisponivel) return null;
+    if (abaAtiva === "clientes") {
+      return analiseContribuicaoVariacao(
+        vendasClientes,
+        vendasClientesAnteriores,
+        "cliente",
+      );
+    }
+    if (abaAtiva === "vendedores") {
+      return analiseContribuicaoVariacao(
+        vendas,
+        vendasAnteriores,
+        "vendedor",
+      );
+    }
+    if (abaAtiva === "departamentos") {
+      return analiseContribuicaoVariacao(
+        vendas,
+        vendasAnteriores,
+        "departamento",
+      );
+    }
+    if (abaAtiva === "geografico") {
+      return analiseContribuicaoVariacao(vendas, vendasAnteriores, "cidade");
+    }
+    if (abaAtiva === "curva-abc") {
+      return analiseContribuicaoVariacao(vendas, vendasAnteriores, "produto");
+    }
+    return null;
+  }, [
+    abaAtiva,
+    comparacaoDisponivel,
+    vendas,
+    vendasAnteriores,
+    vendasClientes,
+    vendasClientesAnteriores,
+  ]);
+
+  const alertasDesconto = useMemo(
+    () =>
+      abaAtiva === "descontos" && comparacaoDisponivel
+        ? analiseDescontoSemRetorno(vendas, vendasAnteriores)
+        : [],
+    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
+  );
+
+  const classeAEmQueda = useMemo(
+    () =>
+      abaAtiva === "curva-abc" && comparacaoDisponivel
+        ? classeAPerdendoParticipacao(vendas, vendasAnteriores)
+        : [],
+    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
+  );
+
+  const mudancaMix = useMemo(
+    () =>
+      abaAtiva === "curva-abc" && comparacaoDisponivel
+        ? mudancaMixTopProdutos(vendas, vendasAnteriores, 10)
+        : null,
+    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
   );
 
   // Filtros internos
@@ -554,7 +644,7 @@ export function RelatoriosView({
       return (
         <MetricaCard
           rotulo="Melhor dia"
-          definicao="Dia da semana com maior faturamento acumulado no período consultado."
+          definicao="Dia da semana com maior faturamento médio por ocorrência no calendário consultado."
           valor={melhorDia?.dia ?? "—"}
           rodape={
             melhorDia
@@ -579,6 +669,185 @@ export function RelatoriosView({
     relatorioUFs,
     relatorioFinanceiro,
     relatorioSazonalidade,
+  ]);
+
+  const diagnosticoRelatorio = useMemo(() => {
+    if (abaAtiva === "clientes") {
+      const top5 = concentracaoTopN(relatorioClientes.itens, 5);
+      const top10 = concentracaoTopN(relatorioClientes.itens, 10);
+      return (
+        <ReportDiagnostics
+          titulo="Saúde da carteira"
+          metricas={[
+            ...(cicloClientes
+              ? [
+                  {
+                    label: "Clientes novos",
+                    value: formatarNumero(cicloClientes.novos, 0),
+                    detail: formatarMoeda(cicloClientes.receitaNovos),
+                  },
+                  {
+                    label: "Clientes recorrentes",
+                    value: formatarNumero(cicloClientes.recorrentes, 0),
+                    detail: `${formatarPercentual(
+                      cicloClientes.percentualReceitaRecorrentes,
+                      1,
+                    )} da receita identificada`,
+                  },
+                  {
+                    label: "Sem compra no atual",
+                    value: formatarNumero(cicloClientes.inativos, 0),
+                    detail: "Compraram no período comparado",
+                    attention: cicloClientes.inativos > 0,
+                  },
+                ]
+              : []),
+            {
+              label: "Concentração Top 5 / 10",
+              value: `${formatarPercentual(
+                top5.percentualTop,
+                1,
+              )} / ${formatarPercentual(top10.percentualTop, 1)}`,
+              detail: "Participação na receita identificada",
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "vendedores") {
+      const top3 = concentracaoTopN(relatorioVendedores, 3);
+      const top5 = concentracaoTopN(relatorioVendedores, 5);
+      return (
+        <ReportDiagnostics
+          titulo="Diagnóstico da equipe"
+          metricas={[
+            {
+              label: "Concentração Top 3 / 5",
+              value: `${formatarPercentual(
+                top3.percentualTop,
+                1,
+              )} / ${formatarPercentual(top5.percentualTop, 1)}`,
+              detail: "Participação no faturamento",
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "departamentos") {
+      const top3 = concentracaoTopN(relatorioDeptos, 3);
+      return (
+        <ReportDiagnostics
+          titulo="Diagnóstico do mix por departamento"
+          metricas={[
+            {
+              label: "Concentração Top 3",
+              value: formatarPercentual(top3.percentualTop, 1),
+              detail: "Receita concentrada nos três maiores departamentos",
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "geografico") {
+      const top5 = concentracaoTopN(relatorioGeografico, 5);
+      return (
+        <ReportDiagnostics
+          titulo="Diagnóstico geográfico"
+          metricas={[
+            {
+              label: "Concentração Top 5 cidades",
+              value: formatarPercentual(top5.percentualTop, 1),
+              detail: "Participação das cinco maiores praças",
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "curva-abc") {
+      return (
+        <ReportDiagnostics
+          titulo="Mudança de mix e contribuição"
+          metricas={[
+            ...(mudancaMix
+              ? [
+                  {
+                    label: "Renovação do Top 10",
+                    value: formatarPercentual(
+                      mudancaMix.renovacaoPercentual,
+                      1,
+                    ),
+                    detail: `${mudancaMix.itensNovosNoTop} novos entre os ${mudancaMix.itensAtuais} atuais`,
+                  },
+                ]
+              : []),
+            {
+              label: "Classe A perdendo participação",
+              value: formatarNumero(classeAEmQueda.length, 0),
+              detail:
+                classeAEmQueda[0]
+                  ? `${classeAEmQueda[0].produto}: ${formatarPercentual(
+                      classeAEmQueda[0].diferencaPp,
+                      1,
+                    )} p.p.`
+                  : "Nenhuma perda comparável",
+              attention: classeAEmQueda.length > 0,
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "descontos" && comparacaoDisponivel) {
+      const principal = alertasDesconto[0];
+      return (
+        <ReportDiagnostics
+          titulo="Eficiência do desconto"
+          metricas={[
+            {
+              label: "Desconto maior sem crescimento",
+              value: formatarNumero(alertasDesconto.length, 0),
+              detail: principal
+                ? `${principal.vendedor}: +${formatarPercentual(
+                    principal.aumentoPp,
+                    1,
+                  )} p.p. de desconto e ${formatarMoeda(
+                    principal.variacaoFaturamento,
+                  )} de receita`
+                : "Nenhum vendedor sinalizado",
+              attention: alertasDesconto.length > 0,
+            },
+          ]}
+        />
+      );
+    }
+
+    return null;
+  }, [
+    abaAtiva,
+    comparacaoDisponivel,
+    cicloClientes,
+    contribuicaoAtiva,
+    relatorioClientes,
+    relatorioVendedores,
+    relatorioDeptos,
+    relatorioGeografico,
+    mudancaMix,
+    classeAEmQueda,
+    alertasDesconto,
   ]);
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
@@ -892,6 +1161,8 @@ export function RelatoriosView({
                     metricaExtra={metricaContextual}
                   />
                 )}
+
+                {diagnosticoRelatorio}
 
                 {modoConsolidado && consolidacaoEmpresas.length > 1 ? (
                   <ConsolidacaoEmpresas
