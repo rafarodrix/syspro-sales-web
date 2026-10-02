@@ -24,7 +24,7 @@ import { FiltroRelatorio } from "./filtro-relatorio";
 
 const situacoes = {
   ambos: "Comprou nos dois períodos",
-  "so-atual": "Compra só no atual",
+  "so-atual": "Sem compra no comparativo",
   "sem-compra": "Sem compra no atual",
   "sem-comparativo": "Comparativo indisponível",
 };
@@ -205,6 +205,15 @@ export function VisaoFrequenciaClientes({
             ),
           },
           {
+            id: "dias-comparativo",
+            header: "Dias no comparativo",
+            kind: "number",
+            value: (item) => item.diasAnteriores,
+            exportValue: (item) =>
+              item.diasAnteriores === null ? "—" : String(item.diasAnteriores),
+            cell: (item) => item.diasAnteriores ?? "—",
+          },
+          {
             id: "frequencia",
             header: "Frequência",
             kind: "number",
@@ -323,7 +332,7 @@ export function VisaoFrequenciaClientes({
             visitas físicas.
           </p>
           <p>
-            Variações de frequência e faturamento comparam as janelas completas.
+            A coluna "Dias no comparativo" mostra quantos dias distintos tiveram compra na janela comparada. Variações de frequência e faturamento comparam as janelas completas.
             A variação de frequência usa taxas por 30 dias. — indica comparação
             sem base ou dado indisponível.
           </p>
