@@ -6,19 +6,8 @@ import { useRouter } from "next/navigation";
 import { ReportToolbar, ReportFilters } from "./relatorios/report-toolbar";
 import { FiltroRelatorio } from "./relatorios/filtro-relatorio";
 import { erroPeriodo } from "@/lib/periodo";
-import {
-  Search,
-  X,
-  Layers,
-  Users,
-  MapPin,
-  CreditCard,
-  Sparkles,
-  Percent,
-  CalendarDays,
-  UserCheck,
-  Building2,
-} from "lucide-react";
+import { REPORT_DEFINITIONS } from "./relatorios/report-definitions";
+import { Search, X, Sparkles, Building2 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
   calcularCurvaABC,
@@ -104,64 +93,7 @@ interface Props {
   initialError?: string;
 }
 
-const relatoriosOpcoes = [
-  {
-    id: "curva-abc",
-    label: "Curva ABC (Produtos)",
-    icone: Sparkles,
-    cor: "text-amber-500",
-    desc: "Pareto 80/15/5 de faturamento e volume de itens",
-  },
-  {
-    id: "clientes",
-    label: "Clientes",
-    icone: UserCheck,
-    cor: "text-emerald-500",
-    desc: "Recorrência, concentração e Pareto da base de clientes",
-  },
-  {
-    id: "descontos",
-    label: "Descontos & Margem",
-    icone: Percent,
-    cor: "text-rose-500",
-    desc: "Descontos por vendedor, departamento e forma de pagamento",
-  },
-  {
-    id: "sazonalidade",
-    label: "Sazonalidade & Evolução",
-    icone: CalendarDays,
-    cor: "text-indigo-500",
-    desc: "Evolução diária e mensal, dias da semana e quinzenas",
-  },
-  {
-    id: "departamentos",
-    label: "Departamentos",
-    icone: Layers,
-    cor: "text-blue-500",
-    desc: "Faturamento por categoria com itens detalhados",
-  },
-  {
-    id: "vendedores",
-    label: "Equipe de Vendedores",
-    icone: Users,
-    cor: "text-violet-500",
-    desc: "Ranking de consultores, ticket médio e descontos",
-  },
-  {
-    id: "geografico",
-    label: "Cidade e UF",
-    icone: MapPin,
-    cor: "text-teal-500",
-    desc: "Distribuição por cidade ou UF, clientes atendidos e frete rateado",
-  },
-  {
-    id: "financeiro",
-    label: "Financeiro & Fiscal",
-    icone: CreditCard,
-    cor: "text-orange-500",
-    desc: "Formas de pagamento declaradas e documentos fiscais",
-  },
-];
+const relatoriosOpcoes = REPORT_DEFINITIONS;
 const abasComBusca = new Set([
   "curva-abc",
   "clientes",
@@ -193,13 +125,13 @@ export function RelatoriosView({
     initialPeriod ?? periodoMesAtual(),
   );
   const [modoComparacao, setModoComparacao] =
-    useState<ModoComparacao>("automatico");
+    useState<ModoComparacao>("mes-anterior");
   const [modoConsultado, setModoConsultado] =
-    useState<ModoComparacao>("automatico");
+    useState<ModoComparacao>("mes-anterior");
   const [comparacaoPersonalizada, setComparacaoPersonalizada] =
     useState<Periodo>(
       initialPeriodoAnterior ??
-        resolverComparacao(initialPeriod ?? periodoMesAtual()),
+        resolverComparacao(initialPeriod ?? periodoMesAtual(), "mes-anterior"),
     );
   const [periodoAnterior, setPeriodoAnterior] = useState<{
     inicial: string;
@@ -618,28 +550,21 @@ export function RelatoriosView({
             </div>
           </CardHeader>
           <CardContent className="space-y-3 border-t border-border/60 pt-4">
-            <ReportToolbar>
-              <details className="rounded-md border p-2 text-xs">
-                <summary className="cursor-pointer font-medium">
-                  Período
-                </summary>
-                <div className="mt-3">
-                  <DateRangeFilter
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+              <section className="min-w-0 flex-1 rounded-md border p-2.5" aria-label="Período">
+                <div className="mb-2 text-xs font-semibold">Período</div>
+                <DateRangeFilter
                     value={periodo}
                     onChange={setPeriodo}
                     onConsultar={consultar}
                     loading={loading}
                     compact
                   />
-                </div>
-              </details>
+              </section>
               {abaAtiva === "clientes" ? (
-                <details className="rounded-md border p-2 text-xs">
-                  <summary className="cursor-pointer font-medium">
-                    Comparação
-                  </summary>
-                  <div className="mt-3">
-                    <ComparacaoPeriodo
+                <section className="min-w-0 rounded-md border p-2.5" aria-label="Comparação">
+                  <div className="mb-2 text-xs font-semibold">Comparação</div>
+                  <ComparacaoPeriodo
                       periodo={periodo}
                       modo={modoComparacao}
                       personalizado={comparacaoPersonalizada}
@@ -647,8 +572,7 @@ export function RelatoriosView({
                       onPersonalizado={setComparacaoPersonalizada}
                       loading={loading}
                     />
-                  </div>
-                </details>
+                </section>
               ) : null}
               <Button
                 size="sm"
@@ -657,7 +581,7 @@ export function RelatoriosView({
               >
                 {loading ? "Consultando..." : "Consultar"}
               </Button>
-            </ReportToolbar>
+            </div>
             {periodo.inicial !== periodoConsultado.inicial ||
             periodo.final !== periodoConsultado.final ||
             (abaAtiva === "clientes" &&
