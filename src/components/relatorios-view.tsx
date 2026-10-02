@@ -277,7 +277,7 @@ export function RelatoriosView({
       };
     }
     return calcularCurvaABC(vendas);
-  }, [vendas, abaAtiva, periodoConsultado]);
+  }, [vendas, abaAtiva]);
 
   const relatorioDeptos = useMemo(() => {
     if (abaAtiva !== "departamentos") return [];
@@ -365,7 +365,7 @@ export function RelatoriosView({
       return { porDiaSemana: [], porQuinzena: [] };
     }
     return analiseSazonalidade(vendas, periodoConsultado);
-  }, [vendas, abaAtiva]);
+  }, [vendas, abaAtiva, periodoConsultado]);
 
   const relatorioEvolucao = useMemo(() => {
     if (abaAtiva !== "sazonalidade") return { diario: [], mensal: [] };
