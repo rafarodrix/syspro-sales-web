@@ -740,7 +740,9 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
     vend.desconto += desc;
     vend.quantidadeItens += qtd;
     vend.notas.add(chaveNota);
-    if (cliente) vend.clientes.add(cliente);
+    if (cliente && !isClienteConsumidorGenerico(cliente)) {
+      vend.clientes.add(cliente);
+    }
     vend.produtosMap.set(nomeProd, (vend.produtosMap.get(nomeProd) ?? 0) + total);
   }
 
@@ -1257,7 +1259,9 @@ export function analiseGeografica(vendas: VendaProduto[]): ItemGeograficoAnalise
     praca.faturamento += total;
     praca.frete += freteItem;
     praca.notas.add(chaveNota);
-    if (cliente) praca.clientes.add(cliente);
+    if (cliente && !isClienteConsumidorGenerico(cliente)) {
+      praca.clientes.add(cliente);
+    }
   }
 
   return [...pracaMap.values()]
