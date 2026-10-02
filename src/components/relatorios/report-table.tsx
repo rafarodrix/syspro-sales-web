@@ -64,7 +64,6 @@ export function ReportTable<T>({
   caption,
   stickyFirst = false,
   pagination = true,
-  onRowClick,
   showExport = true,
 }: {
   data: T[];
@@ -74,7 +73,6 @@ export function ReportTable<T>({
   caption?: string;
   stickyFirst?: boolean;
   pagination?: boolean;
-  onRowClick?: (row: T) => void;
   showExport?: boolean;
 }) {
   const report = useReportContext();
@@ -213,17 +211,7 @@ export function ReportTable<T>({
               <TableRow key={rowKey(row, rowIndex)}>
                 {columns.map((column, index) => (
                   <TableCell key={column.id} className={classes(column, index)}>
-                    {onRowClick && index === 0 ? (
-                      <button
-                        type="button"
-                        className="cursor-pointer text-left hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
-                        onClick={() => onRowClick(row)}
-                      >
-                        {column.cell(row, rowIndex)}
-                      </button>
-                    ) : (
-                      column.cell(row, rowIndex)
-                    )}
+                    {column.cell(row, rowIndex)}
                   </TableCell>
                 ))}
               </TableRow>
