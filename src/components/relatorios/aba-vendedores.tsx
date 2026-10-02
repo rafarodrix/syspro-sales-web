@@ -64,6 +64,7 @@ export function AbaVendedores({
         <>
           {/* Tabela de Ranking Sintético */}
           <ReportTable
+            caption="Resumo por vendedor"
             data={vendedoresFiltrados}
             rowKey={(vendedor) => vendedor.nome}
             onRowClick={(vendedor) => {
@@ -126,7 +127,7 @@ export function AbaVendedores({
               {
                 id: "taxaDesconto",
                 header: <>% Desconto</>,
-                kind: "number",
+                kind: "percent",
                 value: (vendedor) => vendedor.taxaDesconto,
                 cell: (vendedor) => (
                   <>{formatarPercentual(vendedor.taxaDesconto, 1)}</>
@@ -142,7 +143,7 @@ export function AbaVendedores({
               {
                 id: "percentual",
                 header: <>% Participação</>,
-                kind: "number",
+                kind: "percent",
                 value: (vendedor) => vendedor.percentual,
                 cell: (vendedor) => (
                   <>
