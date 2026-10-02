@@ -8,8 +8,12 @@ import {
   analiseProdutosPorDimensao,
   analiseClientesNovosRecorrentes,
   analiseUFs,
+  analiseSazonalidade,
+  calcularVariacao,
   calcularVariacoesPeriodo,
+  dadosPorMetricaComparativa,
   concentracaoTopN,
+  resumoVendas,
   maioresCrescimentosProdutos,
   valorItem,
 } from "@/lib/vendas";
@@ -211,5 +215,119 @@ describe("métricas de gestão (comparativo e concentração)", () => {
     expect(mg?.cidades).toBe(2);
     expect(sp?.faturamento).toBe(200);
     expect(sp?.percentual).toBeCloseTo(57.14, 1);
+  });
+
+
+  it("não representa base zero como crescimento de 100%", () => {
+    const variacao = calcularVariacao(500, 0);
+    expect(variacao.texto).toBe("Sem base");
+    expect(variacao.semBase).toBe(true);
+    expect(variacao.percentual).toBe(0);
+  });
+
+  it("calcula SKUs por pedido sem somar unidades físicas incompatíveis", () => {
+    const vendas = [
+      vendaBase({
+        nf_numero: "1",
+        produto_id: "P1",
+        produto_un: "UN",
+        produto_qtde: 10,
+      }),
+      vendaBase({
+        nf_numero: "1",
+        produto_id: "P2",
+        produto_un: "KG",
+        produto_qtde: 25,
+      }),
+      vendaBase({
+        nf_numero: "2",
+        produto_id: "P1",
+        produto_un: "UN",
+        produto_qtde: 5,
+      }),
+    ];
+
+    const resumo = resumoVendas(vendas);
+    expect(resumo.notas).toBe(2);
+    expect(resumo.skusPorNota).toBe(1.5);
+  });
+
+  it("normaliza sazonalidade por quantidade de ocorrências no calendário", () => {
+    const vendas = [
+      vendaBase({
+        nf_numero: "1",
+        nf_dt_emissao: "2026-09-07",
+        produto_vlr_total_liquido: 100,
+      }),
+      vendaBase({
+        nf_numero: "2",
+        nf_dt_emissao: "2026-09-14",
+        produto_vlr_total_liquido: 300,
+      }),
+      vendaBase({
+        nf_numero: "3",
+        nf_dt_emissao: "2026-09-01",
+        produto_vlr_total_liquido: 500,
+      }),
+    ];
+
+    const resultado = analiseSazonalidade(vendas, {
+      inicial: "2026-09-01",
+      final: "2026-09-30",
+    });
+    const segunda = resultado.porDiaSemana.find(
+      (item) => item.dia === "Segunda-feira",
+    );
+    const terca = resultado.porDiaSemana.find(
+      (item) => item.dia === "Terça-feira",
+    );
+
+    expect(segunda?.ocorrencias).toBe(4);
+    expect(segunda?.faturamentoMedioPorOcorrencia).toBe(100);
+    expect(terca?.ocorrencias).toBe(5);
+    expect(terca?.faturamentoMedioPorOcorrencia).toBe(100);
+  });
+
+  it("preenche dias sem venda antes de alinhar séries comparativas", () => {
+    const atual = [
+      vendaBase({
+        nf_numero: "1",
+        nf_dt_emissao: "2026-10-01",
+        produto_vlr_total_liquido: 100,
+      }),
+      vendaBase({
+        nf_numero: "2",
+        nf_dt_emissao: "2026-10-03",
+        produto_vlr_total_liquido: 300,
+      }),
+    ];
+    const anterior = [
+      vendaBase({
+        nf_numero: "3",
+        nf_dt_emissao: "2026-09-01",
+        produto_vlr_total_liquido: 50,
+      }),
+      vendaBase({
+        nf_numero: "4",
+        nf_dt_emissao: "2026-09-02",
+        produto_vlr_total_liquido: 60,
+      }),
+      vendaBase({
+        nf_numero: "5",
+        nf_dt_emissao: "2026-09-03",
+        produto_vlr_total_liquido: 70,
+      }),
+    ];
+
+    const serie = dadosPorMetricaComparativa(
+      atual,
+      anterior,
+      "faturamento",
+      { inicial: "2026-10-01", final: "2026-10-03" },
+      { inicial: "2026-09-01", final: "2026-09-03" },
+    );
+
+    expect(serie.map((item) => item.total)).toEqual([100, 0, 300]);
+    expect(serie.map((item) => item.totalAnterior)).toEqual([50, 60, 70]);
   });
 });
