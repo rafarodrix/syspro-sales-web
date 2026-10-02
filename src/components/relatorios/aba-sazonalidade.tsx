@@ -18,6 +18,9 @@ interface ItemSazonalidadeBase {
   ticketMedio: number;
   faturamento: number;
   percentual: number;
+  ocorrencias?: number;
+  faturamentoMedioPorOcorrencia?: number;
+  pedidosMediosPorOcorrencia?: number;
 }
 
 interface AbaSazonalidadeProps {
@@ -40,9 +43,11 @@ interface ItemEvolucao extends ItemSazonalidadeBase {
 function TabelaSazonalidade({
   itens,
   rotulo,
+  normalizarOcorrencia = false,
 }: {
   itens: Array<ItemSazonalidadeBase & { rotulo: string }>;
   rotulo: string;
+  normalizarOcorrencia?: boolean;
 }) {
   return (
     <ReportTable
@@ -57,13 +62,53 @@ function TabelaSazonalidade({
           value: (item) => item.rotulo,
           cell: (item) => <>{item.rotulo}</>,
         },
-        {
-          id: "pedidos",
-          header: <>Pedidos / NF</>,
-          kind: "number",
-          value: (item) => item.pedidos,
-          cell: (item) => <>{formatarNumero(item.pedidos, 0)}</>,
-        },
+        ...(normalizarOcorrencia
+          ? [
+              {
+                id: "ocorrencias",
+                header: <>Ocorrências</>,
+                kind: "number" as const,
+                value: (item: ItemSazonalidadeBase & { rotulo: string }) =>
+                  item.ocorrencias ?? 0,
+                cell: (item: ItemSazonalidadeBase & { rotulo: string }) => (
+                  <>{formatarNumero(item.ocorrencias ?? 0, 0)}</>
+                ),
+              },
+              {
+                id: "faturamentoMedio",
+                header: <>Média / ocorrência</>,
+                kind: "currency" as const,
+                value: (item: ItemSazonalidadeBase & { rotulo: string }) =>
+                  item.faturamentoMedioPorOcorrencia ?? 0,
+                cell: (item: ItemSazonalidadeBase & { rotulo: string }) => (
+                  <>{formatarMoeda(item.faturamentoMedioPorOcorrencia ?? 0)}</>
+                ),
+              },
+              {
+                id: "pedidosMedios",
+                header: <>Pedidos / ocorrência</>,
+                kind: "number" as const,
+                value: (item: ItemSazonalidadeBase & { rotulo: string }) =>
+                  item.pedidosMediosPorOcorrencia ?? 0,
+                exportValue: (item: ItemSazonalidadeBase & { rotulo: string }) =>
+                  formatarNumero(item.pedidosMediosPorOcorrencia ?? 0, 2),
+                cell: (item: ItemSazonalidadeBase & { rotulo: string }) => (
+                  <>{formatarNumero(item.pedidosMediosPorOcorrencia ?? 0, 2)}</>
+                ),
+              },
+            ]
+          : [
+              {
+                id: "pedidos",
+                header: <>Pedidos / NF</>,
+                kind: "number" as const,
+                value: (item: ItemSazonalidadeBase & { rotulo: string }) =>
+                  item.pedidos,
+                cell: (item: ItemSazonalidadeBase & { rotulo: string }) => (
+                  <>{formatarNumero(item.pedidos, 0)}</>
+                ),
+              },
+            ]),
         {
           id: "ticketMedio",
           header: <>Ticket médio</>,
@@ -229,7 +274,10 @@ export function AbaSazonalidade({
             ? serie
             : (exibeDiaSemana ? porDiaSemana : porQuinzena).map((item) => ({
                 label: item.rotulo,
-                value: item.faturamento,
+                value:
+                  exibeDiaSemana
+                    ? item.faturamentoMedioPorOcorrencia ?? 0
+                    : item.faturamento,
                 percentual: item.percentual,
               }))
         }
@@ -248,6 +296,7 @@ export function AbaSazonalidade({
         <TabelaSazonalidade
           itens={exibeDiaSemana ? porDiaSemana : porQuinzena}
           rotulo={exibeDiaSemana ? "Dia da semana" : "Quinzena"}
+          normalizarOcorrencia={exibeDiaSemana}
         />
       )}
     </div>
