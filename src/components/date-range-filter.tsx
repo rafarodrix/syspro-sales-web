@@ -69,12 +69,14 @@ export function DateRangeFilter({
   onConsultar,
   loading = false,
   compact = false,
+  persistirCookie = true,
 }: {
   value: Periodo;
   onChange: (periodo: Periodo) => void;
   onConsultar?: (periodo: Periodo) => void;
   loading?: boolean;
   compact?: boolean;
+  persistirCookie?: boolean;
 }) {
   const erro = erroPeriodo(value);
   const presets: { label: string; value: Periodo }[] = [
@@ -101,7 +103,7 @@ export function DateRangeFilter({
                 key={preset.label}
                 disabled={loading}
                 onClick={() => {
-                  salvarPeriodoCookie(preset.value);
+                  if (persistirCookie) salvarPeriodoCookie(preset.value);
                   onChange(preset.value);
                   onConsultar?.(preset.value);
                 }}
@@ -139,7 +141,7 @@ export function DateRangeFilter({
               className="h-8 w-[138px] text-xs font-mono font-medium"
               onKeyDown={(event) => {
                 if (event.key === "Enter" && onConsultar && !erro && !loading) {
-                  salvarPeriodoCookie(value);
+                  if (persistirCookie) salvarPeriodoCookie(value);
                   onConsultar(value);
                 }
               }}
@@ -159,7 +161,7 @@ export function DateRangeFilter({
               className="h-8 w-[138px] text-xs font-mono font-medium"
               onKeyDown={(event) => {
                 if (event.key === "Enter" && onConsultar && !erro && !loading) {
-                  salvarPeriodoCookie(value);
+                  if (persistirCookie) salvarPeriodoCookie(value);
                   onConsultar(value);
                 }
               }}
@@ -169,7 +171,7 @@ export function DateRangeFilter({
           {!compact && onConsultar && (
             <Button
               onClick={() => {
-                salvarPeriodoCookie(value);
+                if (persistirCookie) salvarPeriodoCookie(value);
                 onConsultar(value);
               }}
               disabled={loading || !!erro}
