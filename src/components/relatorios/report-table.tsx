@@ -65,6 +65,7 @@ export function ReportTable<T>({
   stickyFirst = false,
   pagination = true,
   showExport = true,
+  exportObservacoes,
 }: {
   data: T[];
   columns: ReportColumn<T>[];
@@ -74,6 +75,7 @@ export function ReportTable<T>({
   stickyFirst?: boolean;
   pagination?: boolean;
   showExport?: boolean;
+  exportObservacoes?: string;
 }) {
   const report = useReportContext();
   const [sort, setSort] = useState<{ id: string; descending: boolean } | null>(
@@ -134,6 +136,7 @@ export function ReportTable<T>({
             titulo={`${report.titulo} - ${caption ?? headerText(columns[0]?.header)}`}
             contexto={report.contexto}
             colunas={columns.map((column) => headerText(column.header))}
+            observacoes={exportObservacoes}
             linhas={sorted.map((row) =>
               columns.map((column) => {
                 if (column.exportValue) return column.exportValue(row);
