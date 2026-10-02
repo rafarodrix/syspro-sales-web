@@ -57,6 +57,7 @@ export function AbaDepartamentos({
             </Button>
           ) : null}
           <ReportTable
+            caption="Produtos por departamento"
             data={itensVisiveis}
             rowKey={(item) => `${item.departamento}-${item.id}`}
             columns={[
@@ -112,6 +113,7 @@ export function AbaDepartamentos({
         </>
       ) : (
         <ReportTable
+          caption="Resumo por departamento"
           data={deptosFiltrados}
           rowKey={(dep) => dep.nome}
           columns={[
@@ -164,7 +166,7 @@ export function AbaDepartamentos({
             {
               id: "percentual",
               header: <>Participação</>,
-              kind: "number",
+              kind: "percent",
               value: (dep) => dep.percentual,
               cell: (dep) => (
                 <>
