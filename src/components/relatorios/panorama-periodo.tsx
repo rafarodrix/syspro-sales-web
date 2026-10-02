@@ -57,12 +57,14 @@ export function PanoramaPeriodo({
         </p>
       ) : null}
 
-      <section className="rounded-xl border border-border/60 bg-muted/[0.12] p-2.5 sm:p-3">
-        {!compacto ? <div className="mb-2 flex items-center justify-between gap-2 px-1">
-          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Resumo executivo</span>
-          <span className="text-[10px] text-muted-foreground/70">4 indicadores comparáveis</span>
-        </div> : null}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {!compacto ? (
+        <div className="flex items-center justify-between gap-2 px-1">
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            Resumo executivo
+          </span>
+        </div>
+      ) : null}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricaCard
           rotulo="Faturamento"
           definicao="Valor final de todas as vendas do período, com descontos abatidos e frete/seguro/outros somados."
@@ -99,8 +101,7 @@ export function PanoramaPeriodo({
           />
         ) : null}
         {metricaExtra}
-        </div>
-      </section>
+      </div>
     </div>
   );
 }
