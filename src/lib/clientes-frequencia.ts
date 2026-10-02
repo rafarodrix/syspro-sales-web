@@ -15,6 +15,23 @@ export function normalizarNomeCliente(nome: string | null | undefined): string {
   );
 }
 
+/**
+ * Chave estável para cruzar o mesmo cliente entre períodos quando a origem
+ * traz pequenas diferenças de acento/pontuação no nome.
+ *
+ * Não tenta inferir abreviações nem remover palavras para reduzir o risco de
+ * juntar clientes diferentes. ID de participante continua sendo a solução
+ * ideal quando a API passar a disponibilizá-lo.
+ */
+export function chaveClienteFrequencia(
+  nome: string | null | undefined,
+): string {
+  return normalizarNomeCliente(nome)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]/g, "");
+}
+
 export function normalizarClientes<T extends VendaProduto>(vendas: T[]): T[] {
   return vendas.map((venda) => ({
     ...venda,
@@ -113,7 +130,10 @@ export function analisarFrequenciaClientes(
   const atuais = normalizarClientes(vendas);
   const passadas = comparar ? normalizarClientes(anteriores) : [];
   const classes = new Map(
-    analiseClientes(atuais).itens.map((item) => [item.nome, item.classe]),
+    analiseClientes(atuais).itens.map((item) => [
+      chaveClienteFrequencia(item.nome),
+      item.classe,
+    ]),
   );
   type Base = {
     nome: string;
@@ -134,7 +154,8 @@ export function analisarFrequenciaClientes(
       const data = dataCompraIso(venda.nf_dt_emissao);
       if (!data) registrosSemData++;
       if (data && (data < janela.inicial || data > janela.final)) continue;
-      const item = mapa.get(venda.cliente_nome) ?? {
+      const chave = chaveClienteFrequencia(venda.cliente_nome);
+      const item = mapa.get(chave) ?? {
         nome: venda.cliente_nome,
         cidade: venda.cliente_cidade,
         uf: venda.cliente_uf,
@@ -143,7 +164,7 @@ export function analisarFrequenciaClientes(
       };
       if (data) item.datas.add(data);
       item.faturamento += valorItem(venda);
-      mapa.set(item.nome, item);
+      mapa.set(chave, item);
     }
     return mapa;
   }
@@ -155,10 +176,11 @@ export function analisarFrequenciaClientes(
     b > 0 ? ((a - b) / b) * 100 : null;
   const itens: FrequenciaCliente[] = [
     ...new Set([...atual.keys(), ...anterior.keys()]),
-  ].map((nome) => {
-    const a = atual.get(nome);
-    const b = anterior.get(nome);
+  ].map((chave) => {
+    const a = atual.get(chave);
+    const b = anterior.get(chave);
     const base = a ?? b!;
+    const nome = a?.nome ?? b?.nome ?? base.nome;
     const datas = [...(a?.datas ?? [])].sort();
     const datasAnteriores = [...(b?.datas ?? [])].sort();
     const ultimaCompra = datas.at(-1) ?? datasAnteriores.at(-1) ?? null;
@@ -173,7 +195,7 @@ export function analisarFrequenciaClientes(
       nome,
       cidade: base.cidade,
       uf: base.uf,
-      classe: classes.get(nome) ?? null,
+      classe: classes.get(chave) ?? null,
       diasComCompra: datas.length,
       porMes,
       mesesComCompra: porMes.filter(Boolean).length,
