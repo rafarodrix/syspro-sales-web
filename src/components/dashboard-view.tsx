@@ -458,7 +458,13 @@ export function DashboardView({
       ) : null}
 
       {!loading && !erro && alertasGerenciais.length > 0 ? (
-        <DashboardAlerts alertas={alertasGerenciais} empresaId={empresaId} />
+        <DashboardAlerts
+          alertas={alertasGerenciais}
+          empresaId={empresaId}
+          periodo={periodoConsultado}
+          periodoComparacao={periodoAnterior}
+          modoComparacao={modoConsultado}
+        />
       ) : null}
 
       {/* Linha de KPIs Executivos */}
