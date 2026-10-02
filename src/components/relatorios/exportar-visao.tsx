@@ -45,12 +45,23 @@ export function ExportarVisao({
       onExportarCsv={() => {
         exportarParaCSV(
           `${titulo}-${contexto.periodo.inicial}-a-${contexto.periodo.final}`,
-          [...colunas, "Empresa / escopo", "Período inicial", "Período final"],
+          [
+            ...colunas,
+            "Empresa / escopo",
+            "Período inicial",
+            "Período final",
+            "Comparação inicial",
+            "Comparação final",
+            "Modo de comparação",
+          ],
           linhas.map((linha) => [
             ...linha,
             contexto.empresaNome,
             contexto.periodo.inicial,
             contexto.periodo.final,
+            contexto.periodoComparacao?.inicial ?? "",
+            contexto.periodoComparacao?.final ?? "",
+            contexto.modoComparacao ?? "",
           ]),
         );
         toast.success("CSV da visão filtrada gerado.");
