@@ -172,9 +172,12 @@ export function DashboardView({
   const variacaoClientes = useMemo(
     () =>
       resumoAnterior
-        ? calcularVariacao(resumo.clientes, resumoAnterior.clientes)
+        ? calcularVariacao(
+            resumo.clientesIdentificados,
+            resumoAnterior.clientesIdentificados,
+          )
         : null,
-    [resumo.clientes, resumoAnterior],
+    [resumo.clientesIdentificados, resumoAnterior],
   );
 
   const variacaoSkusPorNota = useMemo(
@@ -456,7 +459,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoFaturamento?.positivo}
-              neutro={variacaoFaturamento?.neutro}
+              neutro={variacaoFaturamento?.neutro || variacaoFaturamento?.semBase}
               destaque={true}
               icone={DollarSignIcon}
               sparklineData={sparklineFaturamento}
@@ -471,7 +474,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoPedidos?.positivo}
-              neutro={variacaoPedidos?.neutro}
+              neutro={variacaoPedidos?.neutro || variacaoPedidos?.semBase}
               icone={ShoppingCart}
               sparklineData={sparklinePedidos}
             />
@@ -485,7 +488,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoTicket?.positivo}
-              neutro={variacaoTicket?.neutro}
+              neutro={variacaoTicket?.neutro || variacaoTicket?.semBase}
               icone={FileText}
               sparklineData={sparklineFaturamento}
             />
@@ -501,7 +504,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoClientes?.positivo}
-              neutro={variacaoClientes?.neutro}
+              neutro={variacaoClientes?.neutro || variacaoClientes?.semBase}
               icone={UsersRound}
               sparklineData={sparklinePedidos}
             />
@@ -518,7 +521,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoSkusPorNota?.positivo}
-              neutro={variacaoSkusPorNota?.neutro}
+              neutro={variacaoSkusPorNota?.neutro || variacaoSkusPorNota?.semBase}
               icone={Package}
             />
           </>
@@ -633,6 +636,13 @@ export function DashboardView({
                 metrica === "faturamento" || metrica === "ticket"
                   ? "moeda"
                   : "numero"
+              }
+              rotuloMetrica={
+                metrica === "faturamento"
+                  ? "Faturamento realizado"
+                  : metrica === "ticket"
+                    ? "Ticket médio"
+                    : "Pedidos / NF"
               }
               temComparacao={comparacaoDisponivel}
             />
