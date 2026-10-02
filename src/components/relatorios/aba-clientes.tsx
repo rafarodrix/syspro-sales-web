@@ -158,7 +158,7 @@ export function AbaClientes({
                 "Notas",
                 "Dias com compra",
                 "Última compra",
-                "Qtd itens",
+                "SKUs distintos",
                 "Ticket médio",
                 "Descontos",
                 "Faturamento",
@@ -176,7 +176,7 @@ export function AbaClientes({
                   freq?.ultimaCompra
                     ? formatarDataInputParaBR(freq.ultimaCompra)
                     : "—",
-                  formatarNumero(cli.quantidadeItens, 2),
+                  formatarNumero(cli.produtosDistintos, 0),
                   formatarMoeda(cli.ticketMedio),
                   formatarMoeda(cli.descontos),
                   formatarMoeda(cli.faturamento),
