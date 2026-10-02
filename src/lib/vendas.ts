@@ -1690,7 +1690,7 @@ export function concentracaoTopN<T extends { faturamento: number }>(
 export interface ClientesNovosRecorrentes {
   /** Clientes ativos no período atual (exclui consumidor/balcão genérico) */
   ativosAtual: number;
-  /** Clientes que não compraram no período anterior (base nova) */
+  /** Clientes presentes apenas no período atual frente à janela comparada; não comprova aquisição */
   novos: number;
   /** Clientes que compraram nos dois períodos */
   recorrentes: number;
@@ -1713,8 +1713,9 @@ function chaveClienteCadastrado(nome: string | null | undefined): string | null 
 }
 
 /**
- * Separa a base de clientes do período atual entre novos e recorrentes,
- * comparando com o período anterior equivalente. Clientes de balcão
+ * Separa a base do período atual entre clientes presentes só no atual e
+ * recorrentes nas duas janelas. "Só no atual" não comprova aquisição, pois
+ * a comparação não consulta todo o histórico. Clientes de balcão
  * (CONSUMIDOR etc.) ficam de fora por não representarem um cadastro.
  */
 export function analiseClientesNovosRecorrentes(
@@ -1890,6 +1891,66 @@ export function analiseContribuicaoVariacao(
       .sort((a, b) => a.diferenca - b.diferenca)
       .slice(0, limite),
   };
+}
+
+export interface DiagnosticoVendedorComparativo {
+  vendedor: string;
+  faturamentoAtual: number;
+  faturamentoAnterior: number;
+  diferencaFaturamento: number;
+  pedidosAtual: number;
+  pedidosAnterior: number;
+  ticketAtual: number;
+  ticketAnterior: number;
+  driver: "volume" | "ticket" | "ambos" | "misto";
+  ticketEmQueda: boolean;
+}
+
+/**
+ * Identifica como os vendedores que cresceram chegaram ao resultado:
+ * mais pedidos, maior ticket ou ambos. Não atribui causalidade.
+ */
+export function analiseDriversVendedores(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+): DiagnosticoVendedorComparativo[] {
+  const atual = new Map(
+    analiseVendedores(vendasAtuais).map((item) => [item.nome, item]),
+  );
+  const anterior = new Map(
+    analiseVendedores(vendasAnteriores).map((item) => [item.nome, item]),
+  );
+
+  return [...atual.entries()]
+    .flatMap(([vendedor, a]) => {
+      const b = anterior.get(vendedor);
+      if (!b) return [];
+      const diferencaFaturamento = a.faturamento - b.faturamento;
+      if (diferencaFaturamento <= 0) return [];
+      const pedidosSubiram = a.pedidos > b.pedidos;
+      const ticketSubiu = a.ticketMedio > b.ticketMedio;
+      const driver: DiagnosticoVendedorComparativo["driver"] =
+        pedidosSubiram && ticketSubiu
+          ? "ambos"
+          : pedidosSubiram
+            ? "volume"
+            : ticketSubiu
+              ? "ticket"
+              : "misto";
+      return [{
+        vendedor,
+        faturamentoAtual: a.faturamento,
+        faturamentoAnterior: b.faturamento,
+        diferencaFaturamento,
+        pedidosAtual: a.pedidos,
+        pedidosAnterior: b.pedidos,
+        ticketAtual: a.ticketMedio,
+        ticketAnterior: b.ticketMedio,
+        driver,
+        ticketEmQueda: a.ticketMedio < b.ticketMedio,
+      }];
+    })
+    .sort((a, b) => b.diferencaFaturamento - a.diferencaFaturamento);
 }
 
 export interface AlertaDescontoSemRetorno {
