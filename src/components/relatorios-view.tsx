@@ -36,13 +36,13 @@ import {
   agruparVendasPorNota,
   calcularVariacoesPeriodo,
   concentracaoTopN,
-  maioresCrescimentosProdutos,
   analiseClientesNovosRecorrentes,
   analiseContribuicaoVariacao,
   analiseDescontoSemRetorno,
   analiseDriversVendedores,
   classeAPerdendoParticipacao,
   mudancaMixTopProdutos,
+  isClienteConsumidorGenerico,
   formatarDataInputParaBR,
 } from "@/lib/vendas";
 import {
@@ -222,15 +222,6 @@ export function RelatoriosView({
     if (!periodoAnterior?.inicial || !periodoAnterior?.final) return undefined;
     return `${formatarDataInputParaBR(periodoAnterior.inicial)} a ${formatarDataInputParaBR(periodoAnterior.final)}`;
   }, [periodoAnterior]);
-
-  // Produtos em alta vs. período anterior (comparáveis nos dois períodos)
-  const produtosEmAlta = useMemo(
-    () =>
-      comparacaoDisponivel
-        ? maioresCrescimentosProdutos(vendas, vendasAnteriores, 5)
-        : [],
-    [vendas, vendasAnteriores, comparacaoDisponivel],
-  );
 
   const cicloClientes = useMemo(
     () =>
@@ -672,7 +663,6 @@ export function RelatoriosView({
     abaAtiva,
     relatorioABC,
     relatorioVendedores,
-    driversVendedores,
     relatorioDeptos,
     relatorioDescontos,
     relatorioGeografico,
@@ -683,8 +673,11 @@ export function RelatoriosView({
 
   const diagnosticoRelatorio = useMemo(() => {
     if (abaAtiva === "clientes") {
-      const top5 = concentracaoTopN(relatorioClientes.itens, 5);
-      const top10 = concentracaoTopN(relatorioClientes.itens, 10);
+      const clientesIdentificados = relatorioClientes.itens.filter(
+        (item) => !isClienteConsumidorGenerico(item.nome),
+      );
+      const top5 = concentracaoTopN(clientesIdentificados, 5);
+      const top10 = concentracaoTopN(clientesIdentificados, 10);
       return (
         <ReportDiagnostics
           titulo="Saúde da carteira"
@@ -1226,8 +1219,6 @@ export function RelatoriosView({
                         : null
                     }
                     concentracaoTop20={concentracaoProdutosTop20}
-                    produtosEmAlta={produtosEmAlta}
-                    temPeriodoAnterior={comparacaoDisponivel}
                   />
                 )}
 
