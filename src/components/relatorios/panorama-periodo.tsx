@@ -1,6 +1,7 @@
 "use client";
 
-import { TrendingUp, TrendingDown, Minus, ArrowLeftRight, DollarSign, FileText, Receipt, Users } from "lucide-react";
+import type { ReactNode } from "react";
+import { TrendingUp, TrendingDown, Minus, DollarSign, FileText, Receipt, Users } from "lucide-react";
 import type { VariacoesPeriodoVendas, VariacaoMetrica } from "@/lib/vendas";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import { MetricaCard } from "@/components/metrica-card";
@@ -9,6 +10,8 @@ interface PanoramaPeriodoProps {
   variacoes: VariacoesPeriodoVendas;
   rotuloPeriodoAnterior?: string;
   compacto?: boolean;
+  mostrarClientes?: boolean;
+  metricaExtra?: ReactNode;
 }
 
 function BadgeVariacao({ variacao }: { variacao: VariacaoMetrica }) {
@@ -37,24 +40,22 @@ function BadgeVariacao({ variacao }: { variacao: VariacaoMetrica }) {
  * Panorama do período: variação das métricas centrais vs. o período
  * anterior equivalente. Cada métrica tem tooltip explicando o que mede.
  */
-export function PanoramaPeriodo({ variacoes, rotuloPeriodoAnterior, compacto = false }: PanoramaPeriodoProps) {
+export function PanoramaPeriodo({
+  variacoes,
+  rotuloPeriodoAnterior,
+  compacto = false,
+  mostrarClientes = true,
+  metricaExtra,
+}: PanoramaPeriodoProps) {
   const semComparativo = !variacoes.temAnterior;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-        <ArrowLeftRight className="size-3.5" />
-        Comparação
-        {semComparativo ? (
-          <span className="normal-case font-semibold text-muted-foreground/70">
-            — sem vendas no período comparado {rotuloPeriodoAnterior}
-          </span>
-        ) : (
-          <span className="normal-case font-semibold text-muted-foreground/70">
-            {rotuloPeriodoAnterior ? `(base: ${rotuloPeriodoAnterior})` : "(período de mesma duração imediatamente anterior)"}
-          </span>
-        )}
-      </div>
+      {semComparativo ? (
+        <p className="text-xs text-muted-foreground">
+          Sem vendas no período comparado{rotuloPeriodoAnterior ? ` (${rotuloPeriodoAnterior})` : ""}.
+        </p>
+      ) : null}
 
       <section className="rounded-xl border border-border/60 bg-muted/[0.12] p-2.5 sm:p-3">
         {!compacto ? <div className="mb-2 flex items-center justify-between gap-2 px-1">
@@ -87,14 +88,17 @@ export function PanoramaPeriodo({ variacoes, rotuloPeriodoAnterior, compacto = f
           suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.ticketMedio} />}
           rodape={semComparativo ? null : `antes: ${formatarMoeda(variacoes.ticketMedio.anterior)}`}
         />
-        <MetricaCard
-          rotulo="Clientes ativos"
-          definicao="Número de clientes distintos que compraram no período (inclui consumidor de balcão)."
-          valor={formatarNumero(variacoes.clientes.atual, 0)}
-          icone={Users}
-          suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.clientes} />}
-          rodape={semComparativo ? null : `antes: ${formatarNumero(variacoes.clientes.anterior, 0)}`}
-        />
+        {mostrarClientes ? (
+          <MetricaCard
+            rotulo="Clientes ativos"
+            definicao="Número de clientes distintos que compraram no período (inclui consumidor de balcão)."
+            valor={formatarNumero(variacoes.clientes.atual, 0)}
+            icone={Users}
+            suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.clientes} />}
+            rodape={semComparativo ? null : `antes: ${formatarNumero(variacoes.clientes.anterior, 0)}`}
+          />
+        ) : null}
+        {metricaExtra}
         </div>
       </section>
     </div>
