@@ -109,6 +109,7 @@ function TabelaEvolucao({
 }) {
   return (
     <ReportTable
+      caption={mensal ? "Evolução mensal" : "Evolução diária"}
       data={itens}
       rowKey={(item) => item.periodo}
       columns={[
@@ -142,7 +143,7 @@ function TabelaEvolucao({
         {
           id: "descontos",
           header: <>Descontos</>,
-          kind: "number",
+          kind: "currency",
           value: (item) => item.descontos,
           cell: (item) => <>{formatarMoeda(item.descontos)}</>,
         },
