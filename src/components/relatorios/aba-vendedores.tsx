@@ -99,12 +99,12 @@ export function AbaVendedores({
                 cell: (vendedor) => <>{formatarNumero(vendedor.clientes, 0)}</>,
               },
               {
-                id: "quantidadeItens",
-                header: <>Qtd Itens</>,
+                id: "produtosDistintos",
+                header: <>SKUs distintos</>,
                 kind: "number",
-                value: (vendedor) => vendedor.quantidadeItens,
+                value: (vendedor) => vendedor.produtosDistintos,
                 cell: (vendedor) => (
-                  <>{formatarNumero(vendedor.quantidadeItens, 2)}</>
+                  <>{formatarNumero(vendedor.produtosDistintos, 0)}</>
                 ),
               },
               {
