@@ -277,7 +277,7 @@ export function RelatoriosView({
       };
     }
     return calcularCurvaABC(vendas);
-  }, [vendas, abaAtiva]);
+  }, [vendas, abaAtiva, periodoConsultado]);
 
   const relatorioDeptos = useMemo(() => {
     if (abaAtiva !== "departamentos") return [];
@@ -364,7 +364,7 @@ export function RelatoriosView({
     if (abaAtiva !== "sazonalidade") {
       return { porDiaSemana: [], porQuinzena: [] };
     }
-    return analiseSazonalidade(vendas);
+    return analiseSazonalidade(vendas, periodoConsultado);
   }, [vendas, abaAtiva]);
 
   const relatorioEvolucao = useMemo(() => {
@@ -547,7 +547,9 @@ export function RelatoriosView({
 
     if (abaAtiva === "sazonalidade") {
       const melhorDia = [...relatorioSazonalidade.porDiaSemana].sort(
-        (a, b) => b.faturamento - a.faturamento,
+        (a, b) =>
+          b.faturamentoMedioPorOcorrencia -
+          a.faturamentoMedioPorOcorrencia,
       )[0];
       return (
         <MetricaCard
@@ -555,7 +557,11 @@ export function RelatoriosView({
           definicao="Dia da semana com maior faturamento acumulado no período consultado."
           valor={melhorDia?.dia ?? "—"}
           rodape={
-            melhorDia ? formatarMoeda(melhorDia.faturamento) : undefined
+            melhorDia
+              ? `${formatarMoeda(
+                  melhorDia.faturamentoMedioPorOcorrencia,
+                )} por ocorrência`
+              : undefined
           }
           icone={CalendarDays}
         />
