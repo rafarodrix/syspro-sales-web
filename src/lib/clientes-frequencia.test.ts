@@ -256,4 +256,34 @@ describe("frequência de clientes", () => {
     ).toHaveLength(2);
     expect(resultado.media).toBeCloseTo(2 / 3);
   });
+
+
+  it("reconhece o mesmo cliente entre períodos apesar de acento e pontuação", () => {
+    const atual = [
+      venda({
+        nf_numero: "100",
+        cliente_nome: "PAOLA EMANUELE PEREIRA DE SOUZA",
+        nf_dt_emissao: "2026-09-10",
+      }),
+    ];
+    const anterior = [
+      venda({
+        nf_numero: "90",
+        cliente_nome: "Paola Emanuèle Pereira de Souza.",
+        nf_dt_emissao: "2026-06-10",
+      }),
+    ];
+
+    const resultado = analisarFrequenciaClientes(
+      atual,
+      anterior,
+      { inicial: "2026-07-01", final: "2026-09-30" },
+      { inicial: "2026-04-01", final: "2026-06-30" },
+      true,
+    );
+
+    expect(resultado.itens).toHaveLength(1);
+    expect(resultado.itens[0].situacao).toBe("ambos");
+    expect(resultado.itens[0].diasAnteriores).toBe(1);
+  });
 });
