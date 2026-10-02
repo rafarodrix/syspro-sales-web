@@ -217,7 +217,7 @@ export async function exportarPdfDashboard({
       String(idx + 1),
       p.id,
       p.produto,
-      formatarNumero(p.quantidade, 2),
+      `${formatarNumero(p.quantidade, 2)} ${p.un}`,
       formatarMoeda(p.total),
       formatarPercentual(p.percentual, 1),
     ]),
