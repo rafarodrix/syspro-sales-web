@@ -241,13 +241,12 @@ export function DashboardView({
     setLoading(true);
     setErro(null);
 
-    const ant = resolverComparacao(
-      periodoDaConsulta,
-      modoComparacao,
-      comparacaoPersonalizada,
-    );
-
     try {
+      const ant = resolverComparacao(
+        periodoDaConsulta,
+        modoComparacao,
+        comparacaoPersonalizada,
+      );
       const [dadosAtual, comparacao] = await Promise.all([
         buscarVendasApi(empresaId, periodoDaConsulta),
         buscarVendasApi(empresaId, ant).then(
@@ -334,9 +333,6 @@ export function DashboardView({
               <span>•</span>
               <span>Atualizado às {ultimaAtualizacao}</span>
             </>
-          )}
-          {erroPeriodo(periodo) === null && (periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final) && (
-            <span className="font-semibold text-amber-700 dark:text-amber-400">Novo período ainda não consultado</span>
           )}
         </div>
       </div>
