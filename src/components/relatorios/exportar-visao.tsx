@@ -32,7 +32,7 @@ export function ExportarVisao({
         linhas,
         observacoes,
         modo,
-        orientacao: "landscape",
+        orientacao: colunas.length > 6 ? "landscape" : "portrait",
       });
     } catch {
       toast.error("Não foi possível gerar o PDF. Tente novamente.");
