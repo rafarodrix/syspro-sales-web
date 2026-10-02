@@ -553,7 +553,7 @@ export function RelatoriosView({
         <MetricaCard
           rotulo="Melhor dia"
           definicao="Dia da semana com maior faturamento acumulado no período consultado."
-          valor={melhorDia?.rotulo ?? "—"}
+          valor={melhorDia?.dia ?? "—"}
           rodape={
             melhorDia ? formatarMoeda(melhorDia.faturamento) : undefined
           }
