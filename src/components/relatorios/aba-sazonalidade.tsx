@@ -46,6 +46,7 @@ function TabelaSazonalidade({
 }) {
   return (
     <ReportTable
+      caption={`Sazonalidade por ${rotulo.toLowerCase()}`}
       data={itens}
       rowKey={(item) => item.rotulo}
       columns={[
@@ -80,7 +81,7 @@ function TabelaSazonalidade({
         {
           id: "percentual",
           header: <>Participação</>,
-          kind: "number",
+          kind: "percent",
           value: (item) => item.percentual,
           cell: (item) => (
             <>
@@ -155,7 +156,7 @@ function TabelaEvolucao({
         {
           id: "percentual",
           header: <>Participação</>,
-          kind: "number",
+          kind: "percent",
           value: (item) => item.percentual,
           cell: (item) => (
             <>
