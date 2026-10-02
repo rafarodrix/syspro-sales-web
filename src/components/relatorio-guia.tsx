@@ -80,7 +80,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     resumo:
       "Revela a evolução diária e mensal das vendas, além da distribuição por dia da semana e quinzena.",
     comoLer: [
-      "Dias da semana com pico indicam quando reforçar equipe e estoque; dias fracos indicam onde caberia uma ação de ativação.",
+      "Na visão por dia da semana, compare a média de faturamento por ocorrência (ex.: média de cada segunda-feira). Isso evita favorecer um dia apenas porque apareceu mais vezes no intervalo.",
       "A visão por quinzena divide o período entre os dias 1–15 e 16–fim do mês; ela mostra distribuição interna, não comparação com um período anterior.",
     ],
     dica: "Escale a operação (caixa, reposição) pelos dias de maior movimento e reserve ações promocionais para os dias fracos.",
@@ -88,7 +88,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "Sazonalidade", definicao: "Padrão de variação das vendas por dia da semana, quinzena ou época." },
       { termo: "Evolução diária", definicao: "Consolida faturamento, notas, ticket médio e descontos por data de emissão da NF. Registros sem data válida não entram nesta visão." },
       { termo: "Evolução mensal", definicao: "Consolida os mesmos indicadores por mês de emissão, facilitando a comparação da tendência no período selecionado." },
-      { termo: "Visão por dia da semana", definicao: "Consolida faturamento, pedidos e ticket médio de todas as segundas, terças e demais dias presentes no período." },
+      { termo: "Visão por dia da semana", definicao: "Mostra a média de faturamento e de pedidos por ocorrência de cada dia da semana no calendário selecionado, além dos totais. Normaliza diferenças na quantidade de segundas, terças etc. dentro do período." },
       { termo: "Visão por quinzena", definicao: "Agrupa as vendas emitidas entre os dias 1–15 e 16–fim de cada mês do período selecionado." },
     ],
   },
@@ -102,7 +102,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     dica: "Use o mix para decidir onde concentrar estoque, espaço e verba de compra.",
     glossario: [
       { termo: "Mix de vendas", definicao: "Proporção da receita vinda de cada departamento/categoria." },
-      { termo: "Visão sintética", definicao: "Uma linha por departamento, com quantidade de produtos, volume e faturamento." },
+      { termo: "Visão sintética", definicao: "Uma linha por departamento com SKUs distintos, pedidos/NF, ticket médio, faturamento e participação. Quantidades físicas agregadas não são usadas porque podem misturar UN, KG, CX e outras unidades." },
       { termo: "Visão analítica", definicao: "Uma linha por produto dentro dos departamentos, para identificar quais itens compõem o resultado." },
     ],
   },
@@ -116,7 +116,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     dica: "Metas individuais fazem mais sentido quando consideram o perfil de cada um (balcão vs. venda direta).",
     glossario: [
       { termo: "Ticket médio", definicao: "Faturamento ÷ número de notas (vendas) do vendedor no período." },
-      { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por vendedor com totais do período." },
+      { termo: "Visão sintética", definicao: "Ranking consolidado por vendedor com pedidos, clientes identificados, SKUs distintos, ticket, desconto e faturamento. Consumidores genéricos não entram em clientes únicos." },
       { termo: "Produtos por vendedor", definicao: "Mostra o mix de produtos vendido por cada vendedor, com quantidade, notas, descontos e faturamento no período." },
       { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por vendedor — mostra o que compõe os números do ranking." },
     ],
@@ -160,8 +160,8 @@ const TERMOS_PANORAMA = [
   { termo: "Faturamento", definicao: "Valor final das vendas do período, com descontos abatidos e frete/seguro/outros somados." },
   { termo: "Pedidos / NF", definicao: "Quantidade de notas fiscais emitidas no período — cada documento conta como uma venda." },
   { termo: "Ticket médio", definicao: "Faturamento do período ÷ número de notas. Valor médio de cada venda." },
-  { termo: "Clientes ativos", definicao: "Clientes distintos que compraram no período, incluindo consumidor de balcão." },
-  { termo: "Variação vs. período anterior", definicao: "Comparação com o período de mesma duração imediatamente anterior ao selecionado. Mostra crescimento (+) ou queda (−) em %." },
+  { termo: "Clientes identificados", definicao: "Clientes distintos identificados que compraram no período. Consumidores genéricos de balcão são excluídos para tornar a comparação comercial mais representativa." },
+  { termo: "Variação vs. período anterior", definicao: "Compara o valor atual com o período escolhido no seletor. Quando a base anterior é zero, o sistema mostra 'Sem base' em vez de atribuir artificialmente +100%." },
   { termo: "Consolidação por empresa", definicao: "Exibida quando duas ou mais empresas são selecionadas. Mantém os totais de cada unidade separados para explicar a participação no resultado consolidado; os rankings abaixo continuam representando o grupo selecionado." },
 ];
 
