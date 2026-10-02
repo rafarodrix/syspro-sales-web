@@ -177,20 +177,39 @@ export function DashboardView({
     [resumo.clientes, resumoAnterior],
   );
 
-  const variacaoItens = useMemo(
+  const variacaoSkusPorNota = useMemo(
     () =>
       resumoAnterior
-        ? calcularVariacao(resumo.quantidadeItens, resumoAnterior.quantidadeItens)
+        ? calcularVariacao(resumo.skusPorNota, resumoAnterior.skusPorNota)
         : null,
-    [resumo.quantidadeItens, resumoAnterior],
+    [resumo.skusPorNota, resumoAnterior],
   );
 
   const serieDaMetrica = useMemo(
     () =>
       comparacaoDisponivel
-        ? dadosPorMetricaComparativa(vendas, vendasAnteriores, metrica)
-        : dadosPorMetricaComparativa(vendas, [], metrica),
-    [metrica, vendas, vendasAnteriores, comparacaoDisponivel],
+        ? dadosPorMetricaComparativa(
+            vendas,
+            vendasAnteriores,
+            metrica,
+            periodoConsultado,
+            periodoAnterior,
+          )
+        : dadosPorMetricaComparativa(
+            vendas,
+            [],
+            metrica,
+            periodoConsultado,
+            periodoAnterior,
+          ),
+    [
+      metrica,
+      vendas,
+      vendasAnteriores,
+      comparacaoDisponivel,
+      periodoConsultado,
+      periodoAnterior,
+    ],
   );
 
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
@@ -201,10 +220,6 @@ export function DashboardView({
 
   const sparklinePedidos = useMemo(() => {
     return dadosPorMetrica(vendas, "notas").map((p) => p.total);
-  }, [vendas]);
-
-  const sparklineItens = useMemo(() => {
-    return dadosPorMetrica(vendas, "itens").map((p) => p.total);
   }, [vendas]);
 
   const rankingPorEmpresa = useMemo(() => analiseEmpresas(vendas), [vendas]);
@@ -476,11 +491,13 @@ export function DashboardView({
             />
 
             <KpiCard
-              titulo="Clientes Ativos"
-              valor={formatarNumero(resumo.clientes, 0)}
+              titulo="Clientes Identificados"
+              valor={formatarNumero(resumo.clientesIdentificados, 0)}
               variacao={variacaoClientes?.texto}
               valorAnterior={
-                resumoAnterior ? formatarNumero(resumoAnterior.clientes, 0) : undefined
+                resumoAnterior
+                  ? formatarNumero(resumoAnterior.clientesIdentificados, 0)
+                  : undefined
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoClientes?.positivo}
@@ -490,19 +507,19 @@ export function DashboardView({
             />
 
             <KpiCard
-              titulo="Itens Vendidos"
-              valor={formatarNumero(resumo.quantidadeItens, 0)}
-              variacao={variacaoItens?.texto}
+              titulo="SKUs por Pedido"
+              valor={formatarNumero(resumo.skusPorNota, 1)}
+              subtitulo="Média de produtos distintos por NF"
+              variacao={variacaoSkusPorNota?.texto}
               valorAnterior={
                 resumoAnterior
-                  ? formatarNumero(resumoAnterior.quantidadeItens, 0)
+                  ? formatarNumero(resumoAnterior.skusPorNota, 1)
                   : undefined
               }
               periodoComparado={periodoAnteriorFormatado}
-              tendenciaPositiva={variacaoItens?.positivo}
-              neutro={variacaoItens?.neutro}
+              tendenciaPositiva={variacaoSkusPorNota?.positivo}
+              neutro={variacaoSkusPorNota?.neutro}
               icone={Package}
-              sparklineData={sparklineItens}
             />
           </>
         )}
@@ -527,14 +544,14 @@ export function DashboardView({
 
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Itens / Pedido (IPF)
+              SKUs / Pedido
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="font-mono text-base font-extrabold text-foreground">
-                {formatarNumero(resumo.itensPorNota, 1)}
+                {formatarNumero(resumo.skusPorNota, 1)}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                unidades/nota
+                produtos distintos/NF
               </span>
             </div>
           </div>
@@ -592,7 +609,7 @@ export function DashboardView({
               {[
                 { id: "faturamento", label: "Faturamento (R$)" },
                 { id: "notas", label: "Pedidos / NF" },
-                { id: "itens", label: "Itens Vendidos" },
+                { id: "ticket", label: "Ticket Médio" },
               ].map((m) => (
                 <button
                   key={m.id}
@@ -612,7 +629,11 @@ export function DashboardView({
           <CardContent className="pt-4">
             <GraficoFaturamento
               dados={serieDaMetrica}
-              formato={metrica === "faturamento" ? "moeda" : "numero"}
+              formato={
+                metrica === "faturamento" || metrica === "ticket"
+                  ? "moeda"
+                  : "numero"
+              }
               temComparacao={comparacaoDisponivel}
             />
           </CardContent>
