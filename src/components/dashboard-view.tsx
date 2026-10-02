@@ -29,7 +29,6 @@ import {
   analiseEmpresas,
   resumoVendas,
   calcularVariacao,
-  calcularPeriodoAnterior,
   calcularDestaques,
   formatarDataInputParaBR,
   paraNumero,
@@ -62,6 +61,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ComparacaoPeriodo } from "@/components/relatorios/comparacao-periodo";
+import {
+  resolverComparacao,
+  rotuloModoComparacao,
+  type ModoComparacao,
+} from "@/lib/periodo-comparacao";
 
 interface EmpresaOption {
   id: string;
@@ -74,6 +79,9 @@ interface Props {
   empresaInicial?: string;
   initialPeriod?: Periodo;
   initialVendas?: (VendaProduto | VendaComEmpresa)[];
+  initialPeriodoAnterior?: Periodo;
+  initialModoComparacao?: ModoComparacao;
+  initialComparacaoPersonalizada?: Periodo;
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialComparacaoDisponivel?: boolean;
   initialError?: string;
@@ -90,6 +98,9 @@ export function DashboardView({
   empresaInicial,
   initialPeriod,
   initialVendas = [],
+  initialPeriodoAnterior,
+  initialModoComparacao = "mes-anterior",
+  initialComparacaoPersonalizada,
   initialVendasAnteriores = [],
   initialComparacaoDisponivel = true,
   initialError,
@@ -114,13 +125,26 @@ export function DashboardView({
   );
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
-  const [compararPeriodoAnterior, setCompararPeriodoAnterior] = useState(true);
+  const [modoComparacao, setModoComparacao] =
+    useState<ModoComparacao>(initialModoComparacao);
+  const [modoConsultado, setModoConsultado] =
+    useState<ModoComparacao>(initialModoComparacao);
+  const [comparacaoPersonalizada, setComparacaoPersonalizada] =
+    useState<Periodo>(
+      initialComparacaoPersonalizada ??
+        initialPeriodoAnterior ??
+        resolverComparacao(initialPeriod ?? periodoMesAtual(), "mes-anterior"),
+    );
+  const [periodoAnterior, setPeriodoAnterior] = useState<Periodo>(
+    initialPeriodoAnterior ??
+      resolverComparacao(initialPeriod ?? periodoMesAtual(), "mes-anterior"),
+  );
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<string | null>(null);
 
   const resumo = useMemo(() => resumoVendas(vendas), [vendas]);
   const resumoAnterior = useMemo(
-    () => (compararPeriodoAnterior && comparacaoDisponivel ? resumoVendas(vendasAnteriores) : null),
-    [vendasAnteriores, compararPeriodoAnterior, comparacaoDisponivel],
+    () => (comparacaoDisponivel ? resumoVendas(vendasAnteriores) : null),
+    [vendasAnteriores, comparacaoDisponivel],
   );
 
   const variacaoFaturamento = useMemo(
@@ -165,10 +189,10 @@ export function DashboardView({
 
   const serieDaMetrica = useMemo(
     () =>
-      compararPeriodoAnterior && comparacaoDisponivel
+      comparacaoDisponivel
         ? dadosPorMetricaComparativa(vendas, vendasAnteriores, metrica)
         : dadosPorMetricaComparativa(vendas, [], metrica),
-    [metrica, vendas, vendasAnteriores, compararPeriodoAnterior, comparacaoDisponivel],
+    [metrica, vendas, vendasAnteriores, comparacaoDisponivel],
   );
 
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
@@ -202,17 +226,11 @@ export function DashboardView({
 
   const rankingPorEmpresa = useMemo(() => analiseEmpresas(vendas), [vendas]);
 
-  const periodoAnteriorCalculado = useMemo(
-    () => calcularPeriodoAnterior(periodoConsultado.inicial, periodoConsultado.final),
-    [periodoConsultado.inicial, periodoConsultado.final],
-  );
-
   const periodoAnteriorFormatado = useMemo(() => {
-    if (!periodoAnteriorCalculado.inicial || !periodoAnteriorCalculado.final) return "";
-    const ini = formatarDataInputParaBR(periodoAnteriorCalculado.inicial);
-    const fim = formatarDataInputParaBR(periodoAnteriorCalculado.final);
+    const ini = formatarDataInputParaBR(periodoAnterior.inicial);
+    const fim = formatarDataInputParaBR(periodoAnterior.final);
     return ini === fim ? ini : `${ini} a ${fim}`;
-  }, [periodoAnteriorCalculado]);
+  }, [periodoAnterior]);
 
   async function consultar(periodoDaConsulta = periodo) {
     const erroDatas = erroPeriodo(periodoDaConsulta);
@@ -223,9 +241,10 @@ export function DashboardView({
     setLoading(true);
     setErro(null);
 
-    const ant = calcularPeriodoAnterior(
-      periodoDaConsulta.inicial,
-      periodoDaConsulta.final,
+    const ant = resolverComparacao(
+      periodoDaConsulta,
+      modoComparacao,
+      comparacaoPersonalizada,
     );
 
     try {
@@ -241,6 +260,8 @@ export function DashboardView({
       setVendasAnteriores(comparacao.dados);
       setComparacaoDisponivel(comparacao.disponivel);
       setPeriodoConsultado(periodoDaConsulta);
+      setPeriodoAnterior(ant);
+      setModoConsultado(modoComparacao);
       salvarPeriodoCookie(periodoDaConsulta);
 
       const agora = new Date();
@@ -268,6 +289,8 @@ export function DashboardView({
         empresaNome: empresaId === "todas" ? "Todas as Empresas (Consolidado)" : (empresaAtual?.razaoSocial ?? "Empresa Selecionada"),
         cnpj: empresaId === "todas" ? undefined : empresaAtual?.cnpj,
         periodo: periodoConsultado,
+        periodoComparacao: periodoAnterior,
+        modoComparacao: rotuloModoComparacao(modoConsultado),
       },
       resumo,
       topProdutos,
@@ -339,34 +362,39 @@ export function DashboardView({
               label="Exportar"
             />
           </div>
-          {compararPeriodoAnterior && !comparacaoDisponivel && (
+          <div className="border-t border-border/40 pt-2">
+            <div className="mb-2 text-xs font-semibold text-foreground">
+              Comparação
+            </div>
+            <ComparacaoPeriodo
+              periodo={periodo}
+              modo={modoComparacao}
+              personalizado={comparacaoPersonalizada}
+              onModo={setModoComparacao}
+              onPersonalizado={setComparacaoPersonalizada}
+              loading={loading}
+            />
+          </div>
+          {periodo.inicial !== periodoConsultado.inicial ||
+          periodo.final !== periodoConsultado.final ||
+          modoComparacao !== modoConsultado ||
+          (modoComparacao === "personalizado" &&
+            (comparacaoPersonalizada.inicial !== periodoAnterior.inicial ||
+              comparacaoPersonalizada.final !== periodoAnterior.final)) ? (
+            <p role="status" className="text-xs text-muted-foreground">
+              Alterações pendentes. Clique em Consultar para aplicar.
+            </p>
+          ) : null}
+          {!comparacaoDisponivel && (
             <p className="text-xs text-amber-700 dark:text-amber-400" role="status">
               Comparação indisponível. Os indicadores atuais seguem disponíveis; tente consultar novamente.
             </p>
           )}
-
-          {/* Linha 2: Checkbox de Comparar Período Anterior logo abaixo dos botões */}
-          <div className="flex items-center gap-2 border-t border-border/40 pt-2">
-            <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={compararPeriodoAnterior}
-                onChange={(e) => setCompararPeriodoAnterior(e.target.checked)}
-                className="rounded border-border text-primary focus:ring-primary size-3.5 cursor-pointer"
-              />
-              <span>
-                Comparar com período anterior {periodoAnteriorFormatado ? `(${periodoAnteriorFormatado})` : ""}
-              </span>
-            </label>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground" aria-live="polite">
-            <span className="font-semibold text-foreground">Filtros ativos:</span>
-            <Badge variant="outline" className="font-mono text-[10px]">
-              {formatarDataInputParaBR(periodo.inicial)} → {formatarDataInputParaBR(periodo.final)}
-            </Badge>
-            {compararPeriodoAnterior && <Badge variant="outline" className="text-[10px]">Comparativo ligado</Badge>}
-            {loading && <span className="animate-pulse text-primary">Atualizando dados…</span>}
-          </div>
+          {loading && (
+            <p className="text-[11px] text-primary" aria-live="polite">
+              Atualizando dados…
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -576,11 +604,9 @@ export function DashboardView({
                 Evolução diária
               </CardTitle>
               <CardDescription className="text-xs">
-                {compararPeriodoAnterior && comparacaoDisponivel
-                  ? `Comparando com período de ${formatarDataInputParaBR(periodoAnteriorCalculado.inicial)} a ${formatarDataInputParaBR(periodoAnteriorCalculado.final)}`
-                  : compararPeriodoAnterior
-                    ? "Comparação indisponível para este período"
-                    : "Histórico detalhado da performance no período"}
+                {comparacaoDisponivel
+                  ? `Comparando com ${periodoAnteriorFormatado}`
+                  : "Comparação indisponível para este período"}
               </CardDescription>
             </div>
 
@@ -610,7 +636,7 @@ export function DashboardView({
             <GraficoFaturamento
               dados={serieDaMetrica}
               formato={metrica === "faturamento" ? "moeda" : "numero"}
-              temComparacao={compararPeriodoAnterior && comparacaoDisponivel}
+              temComparacao={comparacaoDisponivel}
             />
           </CardContent>
         </Card>
