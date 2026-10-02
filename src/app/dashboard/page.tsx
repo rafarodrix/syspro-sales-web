@@ -7,6 +7,8 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{
     empresa?: string;
+    periodoInicial?: string;
+    periodoFinal?: string;
     comparacao?: string;
     comparacaoInicial?: string;
     comparacaoFinal?: string;
@@ -17,6 +19,7 @@ export default async function DashboardPage({
     searchParams,
     carregarPeriodoAnterior: true,
     comparacaoMesAnteriorPadrao: true,
+    ignorarPeriodoCookie: true,
   });
 
   return (
