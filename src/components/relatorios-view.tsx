@@ -32,6 +32,7 @@ import {
 import {
   DateRangeFilter,
   periodoMesAtual,
+  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
 import { useConsultaVendas } from "@/hooks/use-consulta-vendas";
@@ -450,6 +451,9 @@ export function RelatoriosView({
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
     try {
+      // O mês atual é apenas o padrão inicial. Após uma consulta, preserva o
+      // período escolhido ao navegar entre os relatórios da central.
+      salvarPeriodoCookie(proximoPeriodo);
       const proximoAnterior =
         abaAtiva === "clientes"
           ? resolverComparacao(
