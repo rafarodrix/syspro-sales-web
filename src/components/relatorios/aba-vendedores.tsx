@@ -67,9 +67,6 @@ export function AbaVendedores({
             caption="Resumo por vendedor"
             data={vendedoresFiltrados}
             rowKey={(vendedor) => vendedor.nome}
-            onRowClick={(vendedor) => {
-              (() => abrirAnaliticoDoVendedor(vendedor.nome))();
-            }}
             columns={[
               {
                 id: "nome",
@@ -77,12 +74,14 @@ export function AbaVendedores({
                 kind: "name",
                 value: (vendedor) => vendedor.nome,
                 cell: (vendedor) => (
-                  <>
-                    <span className="inline-flex items-center gap-1.5">
-                      {vendedor.nome}
-                      <MousePointerClick className="size-3 text-muted-foreground/60" />
-                    </span>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => abrirAnaliticoDoVendedor(vendedor.nome)}
+                    className="inline-flex items-center gap-1.5 text-left hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                  >
+                    {vendedor.nome}
+                    <MousePointerClick className="size-3 text-muted-foreground/60" />
+                  </button>
                 ),
               },
               {
