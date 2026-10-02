@@ -6,6 +6,18 @@ export type ModoComparacao =
   | "mes-anterior"
   | "ano-anterior"
   | "personalizado";
+
+export const ROTULOS_MODO_COMPARACAO: Record<ModoComparacao, string> = {
+  automatico: "Automático",
+  "dias-anteriores": "Dias anteriores",
+  "mes-anterior": "Mesmo intervalo do mês anterior",
+  "ano-anterior": "Mesmo período do ano anterior",
+  personalizado: "Personalizado",
+};
+
+export function rotuloModoComparacao(modo: ModoComparacao): string {
+  return ROTULOS_MODO_COMPARACAO[modo];
+}
 const DIA = 86_400_000;
 const iso = (data: Date) => data.toISOString().slice(0, 10);
 const dataUtc = (valor: string) => new Date(`${valor}T00:00:00Z`);
