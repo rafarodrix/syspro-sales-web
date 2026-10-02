@@ -807,6 +807,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
         descontos: 0,
         quantidadeItens: 0,
         notas: new Set(),
+        produtos: new Set(),
       };
       clientesMap.set(nome, cli);
     }
