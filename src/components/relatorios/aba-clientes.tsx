@@ -16,7 +16,7 @@ import type { Periodo } from "@/lib/periodo";
 import { formatarDataInputParaBR } from "@/lib/vendas";
 import type { RelatorioFrequencia } from "@/lib/clientes-frequencia";
 import { VisaoFrequenciaClientes } from "./visao-frequencia-clientes";
-import { ExportarVisao, type ContextoExportacao } from "./exportar-visao";
+import type { ContextoExportacao } from "./exportar-visao";
 import { FiltroRelatorio } from "./filtro-relatorio";
 
 interface AbaClientesProps {
@@ -146,53 +146,14 @@ export function AbaClientes({
                 { valor: "frequencia", rotulo: "Mais dias com compra" },
                 { valor: "ultima", rotulo: "Compra mais recente" },
               ]}
-            />
-            <ExportarVisao
-              titulo="Clientes - Resumo"
-              contexto={contexto}
-              observacoes="Classe e participação calculadas sobre toda a carteira do período. Dias com compra excluem consumidor genérico. Clientes agrupados pelo nome. Acumulado segue o ranking original de faturamento."
-              colunas={[
-                "Cliente",
-                "Classe",
-                "Cidade/UF",
-                "Notas",
-                "Dias com compra",
-                "Última compra",
-                "SKUs distintos",
-                "Ticket médio",
-                "Descontos",
-                "Faturamento",
-                "% faturamento",
-                "% acumulado",
-              ]}
-              linhas={clientesOrdenados.map((cli) => {
-                const freq = frequenciaPorNome.get(cli.nome);
-                return [
-                  cli.nome,
-                  cli.classe,
-                  `${cli.cidade}/${cli.uf}`,
-                  cli.pedidos,
-                  freq?.diasComCompra ?? "—",
-                  freq?.ultimaCompra
-                    ? formatarDataInputParaBR(freq.ultimaCompra)
-                    : "—",
-                  formatarNumero(cli.produtosDistintos, 0),
-                  formatarMoeda(cli.ticketMedio),
-                  formatarMoeda(cli.descontos),
-                  formatarMoeda(cli.faturamento),
-                  formatarPercentual(cli.percentual, 2),
-                  formatarPercentual(cli.percentualAcumulado, 1),
-                ];
-              })}
-            />
-          </div>
+            />          </div>
           {/* Ranking de clientes no padrão único de relatórios */}
           <ReportTable
             data={clientesOrdenados}
             rowKey={(cli) => cli.nome}
             label="clientes"
             caption="Ranking de clientes"
-            showExport={false}
+            exportObservacoes="Classe e participação calculadas sobre toda a carteira do período. Dias com compra excluem consumidor genérico. Clientes agrupados pelo nome. Acumulado segue o ranking original de faturamento."
             columns={[
               {
                 id: "classe",
@@ -301,7 +262,7 @@ export function AbaClientes({
               {
                 id: "percentual",
                 header: "% Fat.",
-                kind: "number",
+                kind: "percent",
                 value: (cli) => cli.percentual,
                 exportValue: (cli) => formatarPercentual(cli.percentual, 2),
                 cell: (cli) => (
@@ -321,7 +282,7 @@ export function AbaClientes({
               {
                 id: "acumulado",
                 header: "% Acum.",
-                kind: "number",
+                kind: "percent",
                 value: (cli) => cli.percentualAcumulado,
                 exportValue: (cli) => formatarPercentual(cli.percentualAcumulado, 1),
                 cell: (cli) => (
