@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { ExportarVisao } from "./exportar-visao";
 import { useReportContext } from "./report-context";
 import { ReportToolbar } from "./report-toolbar";
-import { formatarMoeda } from "@/lib/formatters";
+import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
 
 function headerText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -35,7 +35,7 @@ export function ReportTableFrame({
       tabIndex={0}
       role="region"
       aria-label={label}
-      className="max-h-[65vh] overflow-auto rounded-md border focus-visible:outline-2 focus-visible:outline-primary print:max-h-none print:overflow-visible [&>table>thead]:sticky [&>table>thead]:top-0 [&>table>thead]:z-20 [&>table>thead]:bg-background [&>table>thead]:shadow-sm"
+      className="overflow-x-auto rounded-md border focus-visible:outline-2 focus-visible:outline-primary print:overflow-visible"
     >
       <table className="w-full border-separate border-spacing-0 text-xs">
         {children}
@@ -50,7 +50,7 @@ export interface ReportColumn<T> {
   cell: (row: T, index: number) => ReactNode;
   value?: (row: T) => string | number | null | undefined;
   exportValue?: (row: T) => string | number;
-  kind?: "name" | "number" | "currency" | "date" | "month";
+  kind?: "name" | "number" | "currency" | "percent" | "date" | "month";
   className?: string;
 }
 
@@ -114,14 +114,16 @@ export function ReportTable<T>({
           ? "min-w-14 text-center"
           : column.kind === "currency"
             ? "min-w-36 text-right whitespace-nowrap"
-            : column.kind === "date"
+            : column.kind === "percent"
+              ? "min-w-28 text-right whitespace-nowrap"
+              : column.kind === "date"
               ? "min-w-28 whitespace-nowrap"
               : "min-w-24 text-right",
       column.className,
       stickyFirst &&
         index === 0 &&
         (header
-          ? "sticky left-0 z-30 bg-background shadow-sm"
+          ? "sticky left-0 z-20 bg-background shadow-sm"
           : "sticky left-0 z-10 bg-background shadow-sm"),
     );
   }
@@ -141,7 +143,9 @@ export function ReportTable<T>({
                   ? "—"
                   : column.kind === "currency" && typeof value === "number"
                     ? formatarMoeda(value)
-                    : value;
+                    : column.kind === "percent" && typeof value === "number"
+                      ? formatarPercentual(value, 2)
+                      : value;
               }),
             )}
           />
@@ -149,7 +153,7 @@ export function ReportTable<T>({
       ) : null}
       <ReportTableFrame label={caption ?? `Tabela de ${label}`}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
-        <TableHeader className="sticky top-0 z-20 bg-background shadow-sm">
+        <TableHeader className="bg-background">
           <TableRow>
             {columns.map((column, index) => (
               <TableHead
