@@ -426,10 +426,14 @@ export async function exportarPdfAnalitico({
     currentY += 18;
   }
 
+  const tabelaLarga = colunas.length > 10;
+
   autoTable(doc, {
     startY: currentY,
     horizontalPageBreak: orientacao === "landscape",
     horizontalPageBreakRepeat: 0,
+    showHead: "everyPage",
+    rowPageBreak: "avoid",
     head: [colunas],
     body: linhas,
     theme: "striped",
@@ -437,11 +441,11 @@ export async function exportarPdfAnalitico({
       fillColor: CORES.primary,
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 8,
+      fontSize: tabelaLarga ? 6.5 : 8,
     },
     styles: {
-      fontSize: 7.5,
-      cellPadding: 2,
+      fontSize: tabelaLarga ? 6.2 : 7.5,
+      cellPadding: tabelaLarga ? 1.2 : 2,
       textColor: CORES.dark,
     },
     margin: { left: 14, right: 14 },
