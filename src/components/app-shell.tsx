@@ -119,11 +119,27 @@ export function AppShell({
   const podeVerAdmin = temPermissao(userRole, "usuarios:gerenciar");
 
   function criarLinkComEmpresa(hrefBase: string) {
-    if (!empresaSelecionada) return hrefBase;
     const [path, query] = hrefBase.split("?");
     const params = new URLSearchParams(query || "");
-    params.set("empresa", empresaSelecionada);
-    return `${path}?${params.toString()}`;
+
+    if (empresaSelecionada) {
+      params.set("empresa", empresaSelecionada);
+    }
+
+    // Dentro da central de relatórios, carrega o período consultado para o
+    // próximo relatório. Ao entrar em /relatorios vindo de outra área, esses
+    // parâmetros não existem e o servidor usa o mês atual como padrão.
+    if (pathname.startsWith("/relatorios") && path === "/relatorios") {
+      const periodoInicial = searchParams.get("periodoInicial");
+      const periodoFinal = searchParams.get("periodoFinal");
+      if (periodoInicial && periodoFinal) {
+        params.set("periodoInicial", periodoInicial);
+        params.set("periodoFinal", periodoFinal);
+      }
+    }
+
+    const queryString = params.toString();
+    return queryString ? `${path}?${queryString}` : path;
   }
 
   return (
