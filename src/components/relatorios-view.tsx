@@ -70,6 +70,7 @@ import {
 } from "@/lib/clientes-frequencia";
 import {
   resolverComparacao,
+  rotuloModoComparacao,
   type ModoComparacao,
 } from "@/lib/periodo-comparacao";
 import { ComparacaoPeriodo } from "./relatorios/comparacao-periodo";
@@ -489,6 +490,8 @@ export function RelatoriosView({
           empresaNome: rotuloEmpresa,
           cnpj: modoConsolidado ? undefined : empresaAtual?.cnpj,
           periodo: periodoConsultado,
+          periodoComparacao: periodoAnterior ?? undefined,
+          modoComparacao: rotuloModoComparacao(modoConsultado),
         },
       }}
     >
@@ -788,6 +791,8 @@ export function RelatoriosView({
                       empresaNome: rotuloEmpresa,
                       cnpj: modoConsolidado ? undefined : empresaAtual?.cnpj,
                       periodo: periodoConsultado,
+                      periodoComparacao: periodoAnterior ?? undefined,
+                      modoComparacao: rotuloModoComparacao(modoConsultado),
                     }}
                     periodoAnterior={rotuloPeriodoAnterior}
                   />
