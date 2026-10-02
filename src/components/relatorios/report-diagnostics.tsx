@@ -25,14 +25,15 @@ export function ReportDiagnostics({
 }) {
   if (!metricas.length && !crescimento.length && !queda.length) return null;
 
-  const sinais = metricas.length + crescimento.length + queda.length;
+  const grupos =
+    metricas.length + (crescimento.length ? 1 : 0) + (queda.length ? 1 : 0);
 
   return (
     <details className="group rounded-lg border border-border/60 bg-muted/[0.06]">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-foreground marker:hidden">
         <span>{titulo}</span>
         <span className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
-          {sinais} sinal{sinais === 1 ? "" : "is"}
+          Ver detalhes · {grupos} grupo{grupos === 1 ? "" : "s"}
           <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
         </span>
       </summary>
