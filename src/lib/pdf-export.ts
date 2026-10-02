@@ -173,8 +173,8 @@ export async function exportarPdfDashboard({
     { label: "FATURAMENTO TOTAL", valor: formatarMoeda(resumo.faturamento) },
     { label: "PEDIDOS / NOTAS", valor: formatarNumero(resumo.notas, 0) },
     { label: "TICKET MÉDIO", valor: formatarMoeda(resumo.ticketMedio) },
-    { label: "TOTAL DE ITENS", valor: formatarNumero(resumo.quantidadeItens, 2) },
-    { label: "TOTAL DE CLIENTES", valor: formatarNumero(resumo.clientes, 0) },
+    { label: "SKUS / PEDIDO", valor: formatarNumero(resumo.skusPorNota, 1) },
+    { label: "CLIENTES IDENTIFICADOS", valor: formatarNumero(resumo.clientesIdentificados, 0) },
     { label: "TAXA MÉDIA DESCONTO", valor: `${formatarPercentual(resumo.taxaDesconto, 1)} (${formatarMoeda(resumo.descontos)})` },
   ];
 
