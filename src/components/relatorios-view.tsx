@@ -140,7 +140,7 @@ export function RelatoriosView({
     initialPeriodoAnterior ??
       (initialPeriod
         ? abaInicial === "clientes"
-          ? resolverComparacao(initialPeriod)
+          ? resolverComparacao(initialPeriod, "mes-anterior")
           : calcularPeriodoAnterior(initialPeriod.inicial, initialPeriod.final)
         : null),
   );
