@@ -24,7 +24,6 @@ import {
   analiseFinanceira,
   agruparVendasPorNota,
   calcularVariacoesPeriodo,
-  calcularPeriodoAnterior,
   concentracaoTopN,
   maioresCrescimentosProdutos,
   formatarDataInputParaBR,
@@ -139,9 +138,7 @@ export function RelatoriosView({
   } | null>(
     initialPeriodoAnterior ??
       (initialPeriod
-        ? abaInicial === "clientes"
-          ? resolverComparacao(initialPeriod, "mes-anterior")
-          : calcularPeriodoAnterior(initialPeriod.inicial, initialPeriod.final)
+        ? resolverComparacao(initialPeriod, "mes-anterior")
         : null),
   );
   const {
