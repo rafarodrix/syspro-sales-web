@@ -37,7 +37,6 @@ import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
 import {
   DateRangeFilter,
   periodoMesAtual,
-  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
 import { erroPeriodo } from "@/lib/periodo";
@@ -60,6 +59,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ComparacaoPeriodo } from "@/components/relatorios/comparacao-periodo";
+import { DashboardAlerts } from "@/components/dashboard-alerts";
+import { gerarAlertasGerenciais } from "@/lib/alertas-gerenciais";
 import {
   resolverComparacao,
   rotuloModoComparacao,
@@ -227,6 +228,14 @@ export function DashboardView({
 
   const rankingPorEmpresa = useMemo(() => analiseEmpresas(vendas), [vendas]);
 
+  const alertasGerenciais = useMemo(
+    () =>
+      comparacaoDisponivel
+        ? gerarAlertasGerenciais(vendas, vendasAnteriores)
+        : [],
+    [vendas, vendasAnteriores, comparacaoDisponivel],
+  );
+
   const periodoAnteriorFormatado = useMemo(() => {
     const ini = formatarDataInputParaBR(periodoAnterior.inicial);
     const fim = formatarDataInputParaBR(periodoAnterior.final);
@@ -262,7 +271,23 @@ export function DashboardView({
       setPeriodoConsultado(periodoDaConsulta);
       setPeriodoAnterior(ant);
       setModoConsultado(modoComparacao);
-      salvarPeriodoCookie(periodoDaConsulta);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set("periodoInicial", periodoDaConsulta.inicial);
+      params.set("periodoFinal", periodoDaConsulta.final);
+      params.set("comparacao", modoComparacao);
+      if (modoComparacao === "personalizado") {
+        params.set("comparacaoInicial", comparacaoPersonalizada.inicial);
+        params.set("comparacaoFinal", comparacaoPersonalizada.final);
+      } else {
+        params.delete("comparacaoInicial");
+        params.delete("comparacaoFinal");
+      }
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
 
       const agora = new Date();
       setUltimaAtualizacao(
@@ -309,7 +334,8 @@ export function DashboardView({
     <div className="flex flex-col gap-4">
       {/* Header Executivo de BI */}
       <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             {empresaId === "todas" ? "Dashboard Consolidado" : "Dashboard de Vendas"}
           </h1>
@@ -319,6 +345,13 @@ export function DashboardView({
               <span>{empresas.length} empresas</span>
             </Badge>
           )}
+          </div>
+          <ExportDropdown
+            onExportarPdf={() => handleExportarPdf("download")}
+            onImprimir={() => handleExportarPdf("imprimir")}
+            disabled={loading || vendas.length === 0}
+            label="Exportar"
+          />
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-0.5">
           <span className="flex items-center gap-1 font-semibold text-foreground">
@@ -353,6 +386,7 @@ export function DashboardView({
                 onConsultar={consultar}
                 loading={loading}
                 compact
+                persistirCookie={false}
               />
             </section>
 
@@ -371,21 +405,14 @@ export function DashboardView({
               />
             </section>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <Button
-                size="sm"
-                disabled={loading || !!erroPeriodo(periodo)}
-                onClick={() => consultar()}
-              >
-                {loading ? "Consultando..." : "Consultar"}
-              </Button>
-              <ExportDropdown
-                onExportarPdf={() => handleExportarPdf("download")}
-                onImprimir={() => handleExportarPdf("imprimir")}
-                disabled={loading || vendas.length === 0}
-                label="Exportar"
-              />
-            </div>
+            <Button
+              size="sm"
+              className="shrink-0"
+              disabled={loading || !!erroPeriodo(periodo)}
+              onClick={() => consultar()}
+            >
+              {loading ? "Consultando..." : "Consultar"}
+            </Button>
           </div>
 
           {periodo.inicial !== periodoConsultado.inicial ||
@@ -428,6 +455,10 @@ export function DashboardView({
           onRetry={() => consultar()}
           retryLabel="Consultar novamente"
         />
+      ) : null}
+
+      {!loading && !erro && alertasGerenciais.length > 0 ? (
+        <DashboardAlerts alertas={alertasGerenciais} empresaId={empresaId} />
       ) : null}
 
       {/* Linha de KPIs Executivos */}
