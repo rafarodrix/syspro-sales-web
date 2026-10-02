@@ -54,7 +54,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Subcomponentes modulares de abas
-import { AbaCurvaABC } from "./relatorios/aba-curva-abc";
+import { AbaCurvaABC, ResumoCurvaAbcCard } from "./relatorios/aba-curva-abc";
 import { AbaClientes } from "./relatorios/aba-clientes";
 import { AbaDescontos } from "./relatorios/aba-descontos";
 import { AbaSazonalidade } from "./relatorios/aba-sazonalidade";
@@ -447,14 +447,11 @@ export function RelatoriosView({
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
     try {
-      const proximoAnterior =
-        abaAtiva === "clientes"
-          ? resolverComparacao(
-              proximoPeriodo,
-              modoComparacao,
-              comparacaoPersonalizada,
-            )
-          : resolverComparacao(proximoPeriodo, "mes-anterior");
+      const proximoAnterior = resolverComparacao(
+        proximoPeriodo,
+        modoComparacao,
+        comparacaoPersonalizada,
+      );
       await consultarVendas({
         empresaId,
         periodo: proximoPeriodo,
@@ -571,19 +568,17 @@ export function RelatoriosView({
                     persistirCookie={false}
                   />
               </section>
-              {abaAtiva === "clientes" ? (
-                <section className="min-w-0 rounded-md border p-2.5" aria-label="Comparação">
-                  <div className="mb-2 text-xs font-semibold">Comparação</div>
-                  <ComparacaoPeriodo
-                      periodo={periodo}
-                      modo={modoComparacao}
-                      personalizado={comparacaoPersonalizada}
-                      onModo={setModoComparacao}
-                      onPersonalizado={setComparacaoPersonalizada}
-                      loading={loading}
-                    />
-                </section>
-              ) : null}
+              <section className="min-w-0 rounded-md border p-2.5" aria-label="Comparação">
+                <div className="mb-2 text-xs font-semibold">Comparação</div>
+                <ComparacaoPeriodo
+                  periodo={periodo}
+                  modo={modoComparacao}
+                  personalizado={comparacaoPersonalizada}
+                  onModo={setModoComparacao}
+                  onPersonalizado={setComparacaoPersonalizada}
+                  loading={loading}
+                />
+              </section>
               <Button
                 size="sm"
                 disabled={loading || !!erroPeriodo(periodo)}
@@ -594,13 +589,10 @@ export function RelatoriosView({
             </div>
             {periodo.inicial !== periodoConsultado.inicial ||
             periodo.final !== periodoConsultado.final ||
-            (abaAtiva === "clientes" &&
-              (modoComparacao !== modoConsultado ||
-                (modoComparacao === "personalizado" &&
-                  (comparacaoPersonalizada.inicial !==
-                    periodoAnterior?.inicial ||
-                    comparacaoPersonalizada.final !==
-                      periodoAnterior?.final)))) ? (
+            modoComparacao !== modoConsultado ||
+            (modoComparacao === "personalizado" &&
+              (comparacaoPersonalizada.inicial !== periodoAnterior?.inicial ||
+                comparacaoPersonalizada.final !== periodoAnterior?.final)) ? (
               <p role="status" className="text-xs text-muted-foreground">
                 Alterações pendentes. Clique em Consultar para aplicar.
               </p>
@@ -743,6 +735,12 @@ export function RelatoriosView({
                     variacoes={variacoesPeriodo}
                     rotuloPeriodoAnterior={rotuloPeriodoAnterior}
                     compacto
+                    mostrarClientes={abaAtiva !== "curva-abc"}
+                    metricaExtra={
+                      abaAtiva === "curva-abc" ? (
+                        <ResumoCurvaAbcCard relatorioABC={relatorioABC} />
+                      ) : undefined
+                    }
                   />
                 )}
 
