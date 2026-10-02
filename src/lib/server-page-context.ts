@@ -10,9 +10,16 @@ import { resolverComparacao } from "@/lib/periodo-comparacao";
 
 export interface ServerPageContextOptions {
   permissao?: Permissao;
-  searchParams: Promise<{ empresa?: string; aba?: string }>;
+  searchParams: Promise<{
+    empresa?: string;
+    aba?: string;
+    periodoInicial?: string;
+    periodoFinal?: string;
+  }>;
   carregarPeriodoAnterior?: boolean;
   comparacaoCalendarioClientes?: boolean;
+  comparacaoMesAnteriorPadrao?: boolean;
+  ignorarPeriodoCookie?: boolean;
 }
 
 export interface ServerPageContextResult {
@@ -35,9 +42,16 @@ export async function resolveServerPageContext({
   searchParams,
   carregarPeriodoAnterior = false,
   comparacaoCalendarioClientes = false,
+  comparacaoMesAnteriorPadrao = false,
+  ignorarPeriodoCookie = false,
 }: ServerPageContextOptions): Promise<ServerPageContextResult> {
   const { session, userRole, isAdmin, empresas } = await requireAuth(permissao);
-  const { empresa: empresaParam, aba: abaParam } = await searchParams;
+  const {
+    empresa: empresaParam,
+    aba: abaParam,
+    periodoInicial,
+    periodoFinal,
+  } = await searchParams;
   const cookieStore = await cookies();
   const cookieEmpresa = cookieStore.get("syspro_empresa_ativa")?.value;
 
@@ -61,14 +75,29 @@ export async function resolveServerPageContext({
   const cookieDtInicial = cookieStore.get("syspro_periodo_inicial")?.value;
   const cookieDtFinal = cookieStore.get("syspro_periodo_final")?.value;
 
-  const periodoCookie = { inicial: cookieDtInicial ?? "", final: cookieDtFinal ?? "" };
-  const periodo = erroPeriodo(periodoCookie) ? periodoPadrao : periodoCookie;
+  const periodoQuery = {
+    inicial: periodoInicial ?? "",
+    final: periodoFinal ?? "",
+  };
+  const periodoCookie = {
+    inicial: cookieDtInicial ?? "",
+    final: cookieDtFinal ?? "",
+  };
+  const periodo = !erroPeriodo(periodoQuery)
+    ? periodoQuery
+    : ignorarPeriodoCookie
+      ? periodoPadrao
+      : erroPeriodo(periodoCookie)
+        ? periodoPadrao
+        : periodoCookie;
 
   let periodoAnterior: { inicial: string; final: string } | undefined;
   if (carregarPeriodoAnterior) {
-    periodoAnterior = comparacaoCalendarioClientes && abaParam === "clientes"
+    periodoAnterior = comparacaoMesAnteriorPadrao
       ? resolverComparacao(periodo, "mes-anterior")
-      : calcularPeriodoAnterior(periodo.inicial, periodo.final);
+      : comparacaoCalendarioClientes && abaParam === "clientes"
+        ? resolverComparacao(periodo, "mes-anterior")
+        : calcularPeriodoAnterior(periodo.inicial, periodo.final);
   }
 
   let vendas: VendaComEmpresa[] = [];
