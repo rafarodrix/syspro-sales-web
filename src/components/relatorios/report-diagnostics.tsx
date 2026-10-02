@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, CircleAlert } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ChevronDown, CircleAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatarMoeda } from "@/lib/formatters";
 import type { ItemContribuicaoVariacao } from "@/lib/vendas";
@@ -25,11 +25,18 @@ export function ReportDiagnostics({
 }) {
   if (!metricas.length && !crescimento.length && !queda.length) return null;
 
+  const sinais = metricas.length + crescimento.length + queda.length;
+
   return (
-    <section className="space-y-2" aria-label={titulo}>
-      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-        {titulo}
-      </div>
+    <details className="group rounded-lg border border-border/60 bg-muted/[0.06]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-foreground marker:hidden">
+        <span>{titulo}</span>
+        <span className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
+          {sinais} sinal{sinais === 1 ? "" : "is"}
+          <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+        </span>
+      </summary>
+      <section className="space-y-2 border-t border-border/60 p-3" aria-label={titulo}>
 
       {metricas.length ? (
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -71,7 +78,8 @@ export function ReportDiagnostics({
           <DriverList titulo="Quem mais retirou receita" itens={queda} />
         </div>
       ) : null}
-    </section>
+      </section>
+    </details>
   );
 }
 
