@@ -64,11 +64,9 @@ export function AbaVendedores({
         <>
           {/* Tabela de Ranking Sintético */}
           <ReportTable
+            caption="Resumo por vendedor"
             data={vendedoresFiltrados}
             rowKey={(vendedor) => vendedor.nome}
-            onRowClick={(vendedor) => {
-              (() => abrirAnaliticoDoVendedor(vendedor.nome))();
-            }}
             columns={[
               {
                 id: "nome",
@@ -76,12 +74,14 @@ export function AbaVendedores({
                 kind: "name",
                 value: (vendedor) => vendedor.nome,
                 cell: (vendedor) => (
-                  <>
-                    <span className="inline-flex items-center gap-1.5">
-                      {vendedor.nome}
-                      <MousePointerClick className="size-3 text-muted-foreground/60" />
-                    </span>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => abrirAnaliticoDoVendedor(vendedor.nome)}
+                    className="inline-flex items-center gap-1.5 text-left hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                  >
+                    {vendedor.nome}
+                    <MousePointerClick className="size-3 text-muted-foreground/60" />
+                  </button>
                 ),
               },
               {
@@ -99,12 +99,12 @@ export function AbaVendedores({
                 cell: (vendedor) => <>{formatarNumero(vendedor.clientes, 0)}</>,
               },
               {
-                id: "quantidadeItens",
-                header: <>Qtd Itens</>,
+                id: "produtosDistintos",
+                header: <>SKUs distintos</>,
                 kind: "number",
-                value: (vendedor) => vendedor.quantidadeItens,
+                value: (vendedor) => vendedor.produtosDistintos,
                 cell: (vendedor) => (
-                  <>{formatarNumero(vendedor.quantidadeItens, 2)}</>
+                  <>{formatarNumero(vendedor.produtosDistintos, 0)}</>
                 ),
               },
               {
@@ -126,7 +126,7 @@ export function AbaVendedores({
               {
                 id: "taxaDesconto",
                 header: <>% Desconto</>,
-                kind: "number",
+                kind: "percent",
                 value: (vendedor) => vendedor.taxaDesconto,
                 cell: (vendedor) => (
                   <>{formatarPercentual(vendedor.taxaDesconto, 1)}</>
@@ -142,7 +142,7 @@ export function AbaVendedores({
               {
                 id: "percentual",
                 header: <>% Participação</>,
-                kind: "number",
+                kind: "percent",
                 value: (vendedor) => vendedor.percentual,
                 cell: (vendedor) => (
                   <>

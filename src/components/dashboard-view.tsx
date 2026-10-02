@@ -16,8 +16,6 @@ import {
   Award,
   Calendar,
   Layers,
-  Lightbulb,
-  ArrowUpRight,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
@@ -29,7 +27,6 @@ import {
   analiseEmpresas,
   resumoVendas,
   calcularVariacao,
-  calcularPeriodoAnterior,
   calcularDestaques,
   formatarDataInputParaBR,
   paraNumero,
@@ -40,7 +37,6 @@ import { GraficoFaturamento, GraficoProdutos } from "@/components/sales-charts";
 import {
   DateRangeFilter,
   periodoMesAtual,
-  salvarPeriodoCookie,
   type Periodo,
 } from "@/components/date-range-filter";
 import { erroPeriodo } from "@/lib/periodo";
@@ -62,6 +58,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ComparacaoPeriodo } from "@/components/relatorios/comparacao-periodo";
+import { DashboardAlerts } from "@/components/dashboard-alerts";
+import { gerarAlertasGerenciais } from "@/lib/alertas-gerenciais";
+import {
+  resolverComparacao,
+  rotuloModoComparacao,
+  type ModoComparacao,
+} from "@/lib/periodo-comparacao";
 
 interface EmpresaOption {
   id: string;
@@ -74,6 +78,9 @@ interface Props {
   empresaInicial?: string;
   initialPeriod?: Periodo;
   initialVendas?: (VendaProduto | VendaComEmpresa)[];
+  initialPeriodoAnterior?: Periodo;
+  initialModoComparacao?: ModoComparacao;
+  initialComparacaoPersonalizada?: Periodo;
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialComparacaoDisponivel?: boolean;
   initialError?: string;
@@ -90,6 +97,9 @@ export function DashboardView({
   empresaInicial,
   initialPeriod,
   initialVendas = [],
+  initialPeriodoAnterior,
+  initialModoComparacao = "mes-anterior",
+  initialComparacaoPersonalizada,
   initialVendasAnteriores = [],
   initialComparacaoDisponivel = true,
   initialError,
@@ -114,13 +124,26 @@ export function DashboardView({
   );
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
-  const [compararPeriodoAnterior, setCompararPeriodoAnterior] = useState(true);
+  const [modoComparacao, setModoComparacao] =
+    useState<ModoComparacao>(initialModoComparacao);
+  const [modoConsultado, setModoConsultado] =
+    useState<ModoComparacao>(initialModoComparacao);
+  const [comparacaoPersonalizada, setComparacaoPersonalizada] =
+    useState<Periodo>(
+      initialComparacaoPersonalizada ??
+        initialPeriodoAnterior ??
+        resolverComparacao(initialPeriod ?? periodoMesAtual(), "mes-anterior"),
+    );
+  const [periodoAnterior, setPeriodoAnterior] = useState<Periodo>(
+    initialPeriodoAnterior ??
+      resolverComparacao(initialPeriod ?? periodoMesAtual(), "mes-anterior"),
+  );
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<string | null>(null);
 
   const resumo = useMemo(() => resumoVendas(vendas), [vendas]);
   const resumoAnterior = useMemo(
-    () => (compararPeriodoAnterior && comparacaoDisponivel ? resumoVendas(vendasAnteriores) : null),
-    [vendasAnteriores, compararPeriodoAnterior, comparacaoDisponivel],
+    () => (comparacaoDisponivel ? resumoVendas(vendasAnteriores) : null),
+    [vendasAnteriores, comparacaoDisponivel],
   );
 
   const variacaoFaturamento = useMemo(
@@ -150,44 +173,51 @@ export function DashboardView({
   const variacaoClientes = useMemo(
     () =>
       resumoAnterior
-        ? calcularVariacao(resumo.clientes, resumoAnterior.clientes)
+        ? calcularVariacao(
+            resumo.clientesIdentificados,
+            resumoAnterior.clientesIdentificados,
+          )
         : null,
-    [resumo.clientes, resumoAnterior],
+    [resumo.clientesIdentificados, resumoAnterior],
   );
 
-  const variacaoItens = useMemo(
+  const variacaoSkusPorNota = useMemo(
     () =>
       resumoAnterior
-        ? calcularVariacao(resumo.quantidadeItens, resumoAnterior.quantidadeItens)
+        ? calcularVariacao(resumo.skusPorNota, resumoAnterior.skusPorNota)
         : null,
-    [resumo.quantidadeItens, resumoAnterior],
+    [resumo.skusPorNota, resumoAnterior],
   );
 
   const serieDaMetrica = useMemo(
     () =>
-      compararPeriodoAnterior && comparacaoDisponivel
-        ? dadosPorMetricaComparativa(vendas, vendasAnteriores, metrica)
-        : dadosPorMetricaComparativa(vendas, [], metrica),
-    [metrica, vendas, vendasAnteriores, compararPeriodoAnterior, comparacaoDisponivel],
+      comparacaoDisponivel
+        ? dadosPorMetricaComparativa(
+            vendas,
+            vendasAnteriores,
+            metrica,
+            periodoConsultado,
+            periodoAnterior,
+          )
+        : dadosPorMetricaComparativa(
+            vendas,
+            [],
+            metrica,
+            periodoConsultado,
+            periodoAnterior,
+          ),
+    [
+      metrica,
+      vendas,
+      vendasAnteriores,
+      comparacaoDisponivel,
+      periodoConsultado,
+      periodoAnterior,
+    ],
   );
 
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
   const destaques = useMemo(() => calcularDestaques(vendas, resumo), [vendas, resumo]);
-  const insights = useMemo(() => {
-    if (!vendas.length) return [] as string[];
-    const itens: string[] = [];
-    if (resumo.porDepartamento[0]) {
-      itens.push(`${resumo.porDepartamento[0].nome} lidera o faturamento com ${formatarPercentual(resumo.porDepartamento[0].percentual, 1)} do total.`);
-    }
-    if (destaques.topVendedor) {
-      itens.push(`${destaques.topVendedor.nome} é o principal vendedor, com ${formatarPercentual(destaques.topVendedor.percentual, 1)} da receita.`);
-    }
-    if (resumo.taxaDesconto > 0) {
-      itens.push(`Os descontos representam ${formatarPercentual(resumo.taxaDesconto, 1)} do faturamento bruto.`);
-    }
-    return itens.slice(0, 3);
-  }, [vendas.length, resumo, destaques]);
-
   const sparklineFaturamento = useMemo(() => {
     return dadosPorMetrica(vendas, "faturamento").map((p) => p.total);
   }, [vendas]);
@@ -196,23 +226,21 @@ export function DashboardView({
     return dadosPorMetrica(vendas, "notas").map((p) => p.total);
   }, [vendas]);
 
-  const sparklineItens = useMemo(() => {
-    return dadosPorMetrica(vendas, "itens").map((p) => p.total);
-  }, [vendas]);
-
   const rankingPorEmpresa = useMemo(() => analiseEmpresas(vendas), [vendas]);
 
-  const periodoAnteriorCalculado = useMemo(
-    () => calcularPeriodoAnterior(periodoConsultado.inicial, periodoConsultado.final),
-    [periodoConsultado.inicial, periodoConsultado.final],
+  const alertasGerenciais = useMemo(
+    () =>
+      comparacaoDisponivel
+        ? gerarAlertasGerenciais(vendas, vendasAnteriores)
+        : [],
+    [vendas, vendasAnteriores, comparacaoDisponivel],
   );
 
   const periodoAnteriorFormatado = useMemo(() => {
-    if (!periodoAnteriorCalculado.inicial || !periodoAnteriorCalculado.final) return "";
-    const ini = formatarDataInputParaBR(periodoAnteriorCalculado.inicial);
-    const fim = formatarDataInputParaBR(periodoAnteriorCalculado.final);
+    const ini = formatarDataInputParaBR(periodoAnterior.inicial);
+    const fim = formatarDataInputParaBR(periodoAnterior.final);
     return ini === fim ? ini : `${ini} a ${fim}`;
-  }, [periodoAnteriorCalculado]);
+  }, [periodoAnterior]);
 
   async function consultar(periodoDaConsulta = periodo) {
     const erroDatas = erroPeriodo(periodoDaConsulta);
@@ -223,12 +251,12 @@ export function DashboardView({
     setLoading(true);
     setErro(null);
 
-    const ant = calcularPeriodoAnterior(
-      periodoDaConsulta.inicial,
-      periodoDaConsulta.final,
-    );
-
     try {
+      const ant = resolverComparacao(
+        periodoDaConsulta,
+        modoComparacao,
+        comparacaoPersonalizada,
+      );
       const [dadosAtual, comparacao] = await Promise.all([
         buscarVendasApi(empresaId, periodoDaConsulta),
         buscarVendasApi(empresaId, ant).then(
@@ -241,7 +269,25 @@ export function DashboardView({
       setVendasAnteriores(comparacao.dados);
       setComparacaoDisponivel(comparacao.disponivel);
       setPeriodoConsultado(periodoDaConsulta);
-      salvarPeriodoCookie(periodoDaConsulta);
+      setPeriodoAnterior(ant);
+      setModoConsultado(modoComparacao);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set("periodoInicial", periodoDaConsulta.inicial);
+      params.set("periodoFinal", periodoDaConsulta.final);
+      params.set("comparacao", modoComparacao);
+      if (modoComparacao === "personalizado") {
+        params.set("comparacaoInicial", comparacaoPersonalizada.inicial);
+        params.set("comparacaoFinal", comparacaoPersonalizada.final);
+      } else {
+        params.delete("comparacaoInicial");
+        params.delete("comparacaoFinal");
+      }
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
 
       const agora = new Date();
       setUltimaAtualizacao(
@@ -268,6 +314,8 @@ export function DashboardView({
         empresaNome: empresaId === "todas" ? "Todas as Empresas (Consolidado)" : (empresaAtual?.razaoSocial ?? "Empresa Selecionada"),
         cnpj: empresaId === "todas" ? undefined : empresaAtual?.cnpj,
         periodo: periodoConsultado,
+        periodoComparacao: periodoAnterior,
+        modoComparacao: rotuloModoComparacao(modoConsultado),
       },
       resumo,
       topProdutos,
@@ -286,7 +334,8 @@ export function DashboardView({
     <div className="flex flex-col gap-4">
       {/* Header Executivo de BI */}
       <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             {empresaId === "todas" ? "Dashboard Consolidado" : "Dashboard de Vendas"}
           </h1>
@@ -296,6 +345,13 @@ export function DashboardView({
               <span>{empresas.length} empresas</span>
             </Badge>
           )}
+          </div>
+          <ExportDropdown
+            onExportarPdf={() => handleExportarPdf("download")}
+            onImprimir={() => handleExportarPdf("imprimir")}
+            disabled={loading || vendas.length === 0}
+            label="Exportar"
+          />
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-0.5">
           <span className="flex items-center gap-1 font-semibold text-foreground">
@@ -312,61 +368,73 @@ export function DashboardView({
               <span>Atualizado às {ultimaAtualizacao}</span>
             </>
           )}
-          {erroPeriodo(periodo) === null && (periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final) && (
-            <span className="font-semibold text-amber-700 dark:text-amber-400">Novo período ainda não consultado</span>
-          )}
         </div>
       </div>
 
-      {/* Barra de Filtro de Período Executiva */}
+      {/* Filtros executivos: mesmo padrão visual da Central de Relatórios. */}
       <Card className="no-print border-border/60 shadow-xs">
-        <CardContent className="p-3 sm:p-3.5 space-y-2.5">
-          {/* Linha 1: Presets de data + Inputs de data inline + Botão Consultar + Botão Exportar PDF */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex-1 min-w-[280px]">
+        <CardContent className="space-y-3 p-3 sm:p-3.5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+            <section
+              className="min-w-0 flex-1 rounded-md border p-2.5"
+              aria-label="Período"
+            >
+              <div className="mb-2 text-xs font-semibold">Período</div>
               <DateRangeFilter
                 value={periodo}
                 onChange={setPeriodo}
                 onConsultar={consultar}
                 loading={loading}
+                compact
+                persistirCookie={false}
               />
-            </div>
+            </section>
 
-            <ExportDropdown
-              onExportarPdf={() => handleExportarPdf("download")}
-              onImprimir={() => handleExportarPdf("imprimir")}
-              disabled={loading || vendas.length === 0}
-              label="Exportar"
-            />
+            <section
+              className="min-w-0 rounded-md border p-2.5"
+              aria-label="Comparação"
+            >
+              <div className="mb-2 text-xs font-semibold">Comparação</div>
+              <ComparacaoPeriodo
+                periodo={periodo}
+                modo={modoComparacao}
+                personalizado={comparacaoPersonalizada}
+                onModo={setModoComparacao}
+                onPersonalizado={setComparacaoPersonalizada}
+                loading={loading}
+              />
+            </section>
+
+            <Button
+              size="sm"
+              className="shrink-0"
+              disabled={loading || !!erroPeriodo(periodo)}
+              onClick={() => consultar()}
+            >
+              {loading ? "Consultando..." : "Consultar"}
+            </Button>
           </div>
-          {compararPeriodoAnterior && !comparacaoDisponivel && (
-            <p className="text-xs text-amber-700 dark:text-amber-400" role="status">
-              Comparação indisponível. Os indicadores atuais seguem disponíveis; tente consultar novamente.
+
+          {periodo.inicial !== periodoConsultado.inicial ||
+          periodo.final !== periodoConsultado.final ||
+          modoComparacao !== modoConsultado ||
+          (modoComparacao === "personalizado" &&
+            (comparacaoPersonalizada.inicial !== periodoAnterior.inicial ||
+              comparacaoPersonalizada.final !== periodoAnterior.final)) ? (
+            <p role="status" className="text-xs text-muted-foreground">
+              Alterações pendentes. Clique em Consultar para aplicar.
+            </p>
+          ) : null}
+
+          {!comparacaoDisponivel && (
+            <p
+              className="text-xs text-amber-700 dark:text-amber-400"
+              role="status"
+            >
+              Comparação indisponível. Os indicadores atuais seguem disponíveis;
+              tente consultar novamente.
             </p>
           )}
-
-          {/* Linha 2: Checkbox de Comparar Período Anterior logo abaixo dos botões */}
-          <div className="flex items-center gap-2 border-t border-border/40 pt-2">
-            <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={compararPeriodoAnterior}
-                onChange={(e) => setCompararPeriodoAnterior(e.target.checked)}
-                className="rounded border-border text-primary focus:ring-primary size-3.5 cursor-pointer"
-              />
-              <span>
-                Comparar com período anterior {periodoAnteriorFormatado ? `(${periodoAnteriorFormatado})` : ""}
-              </span>
-            </label>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground" aria-live="polite">
-            <span className="font-semibold text-foreground">Filtros ativos:</span>
-            <Badge variant="outline" className="font-mono text-[10px]">
-              {formatarDataInputParaBR(periodo.inicial)} → {formatarDataInputParaBR(periodo.final)}
-            </Badge>
-            {compararPeriodoAnterior && <Badge variant="outline" className="text-[10px]">Comparativo ligado</Badge>}
-            {loading && <span className="animate-pulse text-primary">Atualizando dados…</span>}
-          </div>
         </CardContent>
       </Card>
 
@@ -389,9 +457,19 @@ export function DashboardView({
         />
       ) : null}
 
+      {!loading && !erro && alertasGerenciais.length > 0 ? (
+        <DashboardAlerts
+          alertas={alertasGerenciais}
+          empresaId={empresaId}
+          periodo={periodoConsultado}
+          periodoComparacao={periodoAnterior}
+          modoComparacao={modoConsultado}
+        />
+      ) : null}
+
       {/* Linha de KPIs Executivos */}
       <section
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5"
         aria-label="Indicadores principais"
       >
         {loading ? (
@@ -418,7 +496,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoFaturamento?.positivo}
-              neutro={variacaoFaturamento?.neutro}
+              neutro={variacaoFaturamento?.neutro || variacaoFaturamento?.semBase}
               destaque={true}
               icone={DollarSignIcon}
               sparklineData={sparklineFaturamento}
@@ -433,7 +511,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoPedidos?.positivo}
-              neutro={variacaoPedidos?.neutro}
+              neutro={variacaoPedidos?.neutro || variacaoPedidos?.semBase}
               icone={ShoppingCart}
               sparklineData={sparklinePedidos}
             />
@@ -447,39 +525,41 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoTicket?.positivo}
-              neutro={variacaoTicket?.neutro}
+              neutro={variacaoTicket?.neutro || variacaoTicket?.semBase}
               icone={FileText}
               sparklineData={sparklineFaturamento}
             />
 
             <KpiCard
-              titulo="Clientes Ativos"
-              valor={formatarNumero(resumo.clientes, 0)}
+              titulo="Clientes Identificados"
+              valor={formatarNumero(resumo.clientesIdentificados, 0)}
               variacao={variacaoClientes?.texto}
               valorAnterior={
-                resumoAnterior ? formatarNumero(resumoAnterior.clientes, 0) : undefined
+                resumoAnterior
+                  ? formatarNumero(resumoAnterior.clientesIdentificados, 0)
+                  : undefined
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoClientes?.positivo}
-              neutro={variacaoClientes?.neutro}
+              neutro={variacaoClientes?.neutro || variacaoClientes?.semBase}
               icone={UsersRound}
               sparklineData={sparklinePedidos}
             />
 
             <KpiCard
-              titulo="Itens Vendidos"
-              valor={formatarNumero(resumo.quantidadeItens, 0)}
-              variacao={variacaoItens?.texto}
+              titulo="SKUs por Pedido"
+              valor={formatarNumero(resumo.skusPorNota, 1)}
+              subtitulo="Média de produtos distintos por NF"
+              variacao={variacaoSkusPorNota?.texto}
               valorAnterior={
                 resumoAnterior
-                  ? formatarNumero(resumoAnterior.quantidadeItens, 0)
+                  ? formatarNumero(resumoAnterior.skusPorNota, 1)
                   : undefined
               }
               periodoComparado={periodoAnteriorFormatado}
-              tendenciaPositiva={variacaoItens?.positivo}
-              neutro={variacaoItens?.neutro}
+              tendenciaPositiva={variacaoSkusPorNota?.positivo}
+              neutro={variacaoSkusPorNota?.neutro || variacaoSkusPorNota?.semBase}
               icone={Package}
-              sparklineData={sparklineItens}
             />
           </>
         )}
@@ -489,7 +569,7 @@ export function DashboardView({
       {!loading && vendas.length > 0 && (
         <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Taxa Média Desconto
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -503,21 +583,21 @@ export function DashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Itens / Pedido (IPF)
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              SKUs / Pedido
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="font-mono text-base font-extrabold text-foreground">
-                {formatarNumero(resumo.itensPorNota, 1)}
+                {formatarNumero(resumo.skusPorNota, 1)}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                unidades/nota
+                produtos distintos/NF
               </span>
             </div>
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Clientes Recorrentes
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -531,7 +611,7 @@ export function DashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Impacto do Frete
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -546,41 +626,21 @@ export function DashboardView({
         </section>
       )}
 
-      {!loading && insights.length > 0 && (
-        <section aria-label="Insights do período" className="rounded-xl border border-primary/20 bg-primary/[0.04] p-3.5 sm:p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Lightbulb className="size-4 text-primary" aria-hidden="true" />
-            <div>
-              <h2 className="text-sm font-bold text-foreground">Leitura rápida do período</h2>
-              <p className="text-[11px] text-muted-foreground">Principais sinais calculados a partir dos dados consultados.</p>
-            </div>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {insights.map((insight) => (
-              <div key={insight} className="flex items-start gap-2 rounded-lg border border-border/60 bg-background/70 p-2.5 text-xs leading-relaxed text-muted-foreground">
-                <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                <span>{insight}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+
 
       {/* Grid Analítico Principal: Gráfico Temporal (65%) + Insights/Top Produtos (35%) */}
-      <section className="grid gap-6 lg:grid-cols-12">
+      <section className="grid gap-4 xl:grid-cols-12">
         {/* Gráfico de Evolução Temporal (Bklit UI Gradient Area) */}
-        <Card className="border-border/60 shadow-xs lg:col-span-8 flex flex-col justify-between">
+        <Card className="border-border/60 shadow-xs xl:col-span-8 flex flex-col justify-between">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
             <div>
               <CardTitle className="text-base font-bold text-foreground">
                 Evolução diária
               </CardTitle>
               <CardDescription className="text-xs">
-                {compararPeriodoAnterior && comparacaoDisponivel
-                  ? `Comparando com período de ${formatarDataInputParaBR(periodoAnteriorCalculado.inicial)} a ${formatarDataInputParaBR(periodoAnteriorCalculado.final)}`
-                  : compararPeriodoAnterior
-                    ? "Comparação indisponível para este período"
-                    : "Histórico detalhado da performance no período"}
+                {comparacaoDisponivel
+                  ? `Comparando com ${periodoAnteriorFormatado}`
+                  : "Comparação indisponível para este período"}
               </CardDescription>
             </div>
 
@@ -589,7 +649,7 @@ export function DashboardView({
               {[
                 { id: "faturamento", label: "Faturamento (R$)" },
                 { id: "notas", label: "Pedidos / NF" },
-                { id: "itens", label: "Itens Vendidos" },
+                { id: "ticket", label: "Ticket Médio" },
               ].map((m) => (
                 <button
                   key={m.id}
@@ -609,14 +669,25 @@ export function DashboardView({
           <CardContent className="pt-4">
             <GraficoFaturamento
               dados={serieDaMetrica}
-              formato={metrica === "faturamento" ? "moeda" : "numero"}
-              temComparacao={compararPeriodoAnterior && comparacaoDisponivel}
+              formato={
+                metrica === "faturamento" || metrica === "ticket"
+                  ? "moeda"
+                  : "numero"
+              }
+              rotuloMetrica={
+                metrica === "faturamento"
+                  ? "Faturamento realizado"
+                  : metrica === "ticket"
+                    ? "Ticket médio"
+                    : "Pedidos / NF"
+              }
+              temComparacao={comparacaoDisponivel}
             />
           </CardContent>
         </Card>
 
         {/* Destaques do Período & Performance */}
-        <Card className="border-border/60 shadow-xs lg:col-span-4 flex flex-col">
+        <Card className="border-border/60 shadow-xs xl:col-span-4 flex flex-col">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Award className="size-4 text-primary" />
@@ -628,10 +699,10 @@ export function DashboardView({
               Síntese executiva dos principais motores de venda.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3.5 flex-1 justify-around">
+          <CardContent className="flex flex-1 flex-col divide-y divide-border/60 rounded-lg border border-border/60 p-0">
             {destaques.melhorDia ? (
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="px-3 py-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Melhor Dia de Vendas
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
@@ -649,8 +720,8 @@ export function DashboardView({
             ) : null}
 
             {destaques.maiorVenda ? (
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="px-3 py-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Maior Pedido / NF
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
@@ -668,8 +739,8 @@ export function DashboardView({
             ) : null}
 
             {destaques.topVendedor ? (
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="px-3 py-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Top Vendedor
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">

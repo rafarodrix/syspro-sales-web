@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
 import { ExportarVisao } from "./exportar-visao";
 import { useReportContext } from "./report-context";
 import { ReportToolbar } from "./report-toolbar";
-import { formatarMoeda } from "@/lib/formatters";
+import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
+import { formatarDataInputParaBR } from "@/lib/vendas";
 
 function headerText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -35,7 +36,7 @@ export function ReportTableFrame({
       tabIndex={0}
       role="region"
       aria-label={label}
-      className="max-h-[65vh] overflow-auto rounded-md border focus-visible:outline-2 focus-visible:outline-primary print:max-h-none print:overflow-visible [&>table>thead]:sticky [&>table>thead]:top-0 [&>table>thead]:z-20 [&>table>thead]:bg-background [&>table>thead]:shadow-sm"
+      className="overflow-x-auto rounded-md border focus-visible:outline-2 focus-visible:outline-primary print:overflow-visible"
     >
       <table className="w-full border-separate border-spacing-0 text-xs">
         {children}
@@ -50,7 +51,7 @@ export interface ReportColumn<T> {
   cell: (row: T, index: number) => ReactNode;
   value?: (row: T) => string | number | null | undefined;
   exportValue?: (row: T) => string | number;
-  kind?: "name" | "number" | "currency" | "date" | "month";
+  kind?: "name" | "number" | "currency" | "percent" | "date" | "month";
   className?: string;
 }
 
@@ -63,7 +64,8 @@ export function ReportTable<T>({
   caption,
   stickyFirst = false,
   pagination = true,
-  onRowClick,
+  showExport = true,
+  exportObservacoes,
 }: {
   data: T[];
   columns: ReportColumn<T>[];
@@ -72,7 +74,8 @@ export function ReportTable<T>({
   caption?: string;
   stickyFirst?: boolean;
   pagination?: boolean;
-  onRowClick?: (row: T) => void;
+  showExport?: boolean;
+  exportObservacoes?: string;
 }) {
   const report = useReportContext();
   const [sort, setSort] = useState<{ id: string; descending: boolean } | null>(
@@ -99,7 +102,11 @@ export function ReportTable<T>({
   const rows = pagination
     ? sorted.slice((safePage - 1) * size, safePage * size)
     : sorted;
-  function classes(column: ReportColumn<T>, index: number) {
+  function classes(
+    column: ReportColumn<T>,
+    index: number,
+    header = false,
+  ) {
     return cn(
       "px-3 py-2 tabular-nums",
       column.kind === "name"
@@ -108,23 +115,28 @@ export function ReportTable<T>({
           ? "min-w-14 text-center"
           : column.kind === "currency"
             ? "min-w-36 text-right whitespace-nowrap"
-            : column.kind === "date"
+            : column.kind === "percent"
+              ? "min-w-28 text-right whitespace-nowrap"
+              : column.kind === "date"
               ? "min-w-28 whitespace-nowrap"
               : "min-w-24 text-right",
       column.className,
       stickyFirst &&
         index === 0 &&
-        "sticky left-0 z-10 bg-background shadow-sm",
+        (header
+          ? "sticky left-0 z-20 bg-background shadow-sm"
+          : "sticky left-0 z-10 bg-background shadow-sm"),
     );
   }
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      {report && columns.every((column) => column.value) ? (
+      {showExport && report && columns.every((column) => column.value) ? (
         <ReportToolbar>
           <ExportarVisao
             titulo={`${report.titulo} - ${caption ?? headerText(columns[0]?.header)}`}
             contexto={report.contexto}
             colunas={columns.map((column) => headerText(column.header))}
+            observacoes={exportObservacoes}
             linhas={sorted.map((row) =>
               columns.map((column) => {
                 if (column.exportValue) return column.exportValue(row);
@@ -133,7 +145,13 @@ export function ReportTable<T>({
                   ? "—"
                   : column.kind === "currency" && typeof value === "number"
                     ? formatarMoeda(value)
-                    : value;
+                    : column.kind === "percent" && typeof value === "number"
+                      ? formatarPercentual(value, 2)
+                      : column.kind === "date" &&
+                          typeof value === "string" &&
+                          /^\d{4}-\d{2}-\d{2}$/.test(value)
+                        ? formatarDataInputParaBR(value)
+                        : value;
               }),
             )}
           />
@@ -141,13 +159,13 @@ export function ReportTable<T>({
       ) : null}
       <ReportTableFrame label={caption ?? `Tabela de ${label}`}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
-        <TableHeader className="sticky top-0 z-20 bg-background shadow-sm">
+        <TableHeader className="bg-background">
           <TableRow>
             {columns.map((column, index) => (
               <TableHead
                 key={column.id}
                 scope="col"
-                className={classes(column, index)}
+                className={classes(column, index, true)}
                 aria-sort={
                   sort?.id === column.id
                     ? sort.descending
@@ -196,17 +214,7 @@ export function ReportTable<T>({
               <TableRow key={rowKey(row, rowIndex)}>
                 {columns.map((column, index) => (
                   <TableCell key={column.id} className={classes(column, index)}>
-                    {onRowClick && index === 0 ? (
-                      <button
-                        type="button"
-                        className="cursor-pointer text-left hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
-                        onClick={() => onRowClick(row)}
-                      >
-                        {column.cell(row, rowIndex)}
-                      </button>
-                    ) : (
-                      column.cell(row, rowIndex)
-                    )}
+                    {column.cell(row, rowIndex)}
                   </TableCell>
                 ))}
               </TableRow>

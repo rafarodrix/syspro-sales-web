@@ -1,17 +1,13 @@
 import { ReportTable } from "./report-table";
 
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   formatarMoeda,
   formatarNumero,
   formatarPercentual,
 } from "@/lib/formatters";
-import type {
-  ConcentracaoTop,
-  CrescimentoProduto,
-  ItemCurvaABC,
-} from "@/lib/vendas";
+import type { ConcentracaoTop, ItemCurvaABC } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { TermoExplicado } from "@/components/relatorio-guia";
 
@@ -40,8 +36,39 @@ interface AbaCurvaABCProps {
   itensFiltrados: ItemCurvaABC[];
   concentracaoTop10: ConcentracaoTop | null;
   concentracaoTop20: ConcentracaoTop | null;
-  produtosEmAlta: CrescimentoProduto[];
-  temPeriodoAnterior: boolean;
+}
+
+export function ResumoCurvaAbcCard({
+  relatorioABC,
+}: {
+  relatorioABC: AbaCurvaABCProps["relatorioABC"];
+}) {
+  const classes = [
+    { label: "A", resumo: relatorioABC.resumoA, tone: "text-emerald-700 dark:text-emerald-400" },
+    { label: "B", resumo: relatorioABC.resumoB, tone: "text-blue-700 dark:text-blue-400" },
+    { label: "C", resumo: relatorioABC.resumoC, tone: "text-amber-700 dark:text-amber-400" },
+  ];
+
+  return (
+    <Card className="border-border/60 bg-card/90 shadow-2xs">
+      <CardContent className="flex h-full flex-col gap-2 p-3.5 sm:p-4">
+        <div className="text-xs font-semibold text-muted-foreground">Curva ABC</div>
+        <div className="grid grid-cols-3 gap-2">
+          {classes.map(({ label, resumo, tone }) => (
+            <div key={label} className="min-w-0">
+              <div className={`text-xs font-bold ${tone}`}>Classe {label}</div>
+              <div className="truncate font-mono text-base font-extrabold tabular-nums text-foreground">
+                {formatarMoeda(resumo.faturamento)}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {formatarPercentual(resumo.percentualFaturamento, 1)} · {resumo.itens} itens
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function AbaCurvaABC({
@@ -49,83 +76,12 @@ export function AbaCurvaABC({
   itensFiltrados,
   concentracaoTop10,
   concentracaoTop20,
-  produtosEmAlta,
-  temPeriodoAnterior,
 }: AbaCurvaABCProps) {
   return (
     <div className="space-y-4">
-      {/* Cards Síntese ABC (Pareto) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5">
-          <div className="flex items-center justify-between">
-            <Badge className="bg-emerald-600 font-bold text-white">
-              Classe A
-            </Badge>
-            <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300">
-              {formatarPercentual(
-                relatorioABC.resumoA.percentualFaturamento,
-                1,
-              )}{" "}
-              Faturamento
-            </span>
-          </div>
-          <div className="mt-2 font-mono font-extrabold text-lg text-emerald-950 dark:text-emerald-200">
-            {formatarMoeda(relatorioABC.resumoA.faturamento)}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            {relatorioABC.resumoA.itens} itens (
-            {formatarPercentual(relatorioABC.resumoA.percentualItens, 1)} do
-            catálogo)
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3.5">
-          <div className="flex items-center justify-between">
-            <Badge className="bg-blue-600 font-bold text-white">Classe B</Badge>
-            <span className="font-mono text-xs font-bold text-blue-800 dark:text-blue-300">
-              {formatarPercentual(
-                relatorioABC.resumoB.percentualFaturamento,
-                1,
-              )}{" "}
-              Faturamento
-            </span>
-          </div>
-          <div className="mt-2 font-mono font-extrabold text-lg text-blue-950 dark:text-blue-200">
-            {formatarMoeda(relatorioABC.resumoB.faturamento)}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            {relatorioABC.resumoB.itens} itens (
-            {formatarPercentual(relatorioABC.resumoB.percentualItens, 1)} do
-            catálogo)
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5">
-          <div className="flex items-center justify-between">
-            <Badge className="bg-amber-600 font-bold text-white">
-              Classe C
-            </Badge>
-            <span className="font-mono text-xs font-bold text-amber-800 dark:text-amber-300">
-              {formatarPercentual(
-                relatorioABC.resumoC.percentualFaturamento,
-                1,
-              )}{" "}
-              Faturamento
-            </span>
-          </div>
-          <div className="mt-2 font-mono font-extrabold text-lg text-amber-950 dark:text-amber-200">
-            {formatarMoeda(relatorioABC.resumoC.faturamento)}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            {relatorioABC.resumoC.itens} itens (
-            {formatarPercentual(relatorioABC.resumoC.percentualItens, 1)} do
-            catálogo)
-          </div>
-        </div>
-      </div>
-
       {/* Tabela Curva ABC */}
       <ReportTable
+        caption="Curva ABC de produtos"
         data={itensFiltrados}
         rowKey={(item) => `${item.id}-${item.produto}-${item.un}`}
         columns={[
@@ -207,7 +163,7 @@ export function AbaCurvaABC({
           {
             id: "percentual",
             header: <>% Fat.</>,
-            kind: "number",
+            kind: "percent",
             value: (item) => item.percentual,
             cell: (item) => (
               <>
@@ -228,7 +184,7 @@ export function AbaCurvaABC({
           {
             id: "percentualAcumulado",
             header: <>% Acumulado</>,
-            kind: "number",
+            kind: "percent",
             value: (item) => item.percentualAcumulado,
             cell: (item) => (
               <>{formatarPercentual(item.percentualAcumulado, 1)}</>
@@ -239,73 +195,28 @@ export function AbaCurvaABC({
 
       {/* Paginação Padrão */}
 
-      {/* Dependência do portfólio e produtos em alta */}
-      <div
-        className={`grid gap-3 ${temPeriodoAnterior ? "sm:grid-cols-2" : ""}`}
-      >
-        <div className="rounded-lg border bg-muted/20 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <TermoExplicado
-              termo="Dependência do portfólio"
-              definicao="% do faturamento concentrado nos 10 e nos 20 produtos mais vendidos. Acima de 80% no Top 20 indica portfólio concentrado — variação nesses itens afeta a receita toda."
-            />
-            <div className="text-right">
-              <div className="font-mono text-lg font-extrabold text-foreground">
-                {formatarPercentual(concentracaoTop10?.percentualTop ?? 0, 1)}
-                <span className="text-xs font-semibold text-muted-foreground">
-                  {" "}
-                  /{" "}
-                </span>
-                {formatarPercentual(concentracaoTop20?.percentualTop ?? 0, 1)}
-              </div>
-              <div className="text-[10px] text-muted-foreground">
-                Top 10 / Top 20
-              </div>
+      {/* Dependência estrutural do portfólio; variações ficam no diagnóstico comum. */}
+      <div className="rounded-lg border bg-muted/20 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <TermoExplicado
+            termo="Dependência do portfólio"
+            definicao="% do faturamento concentrado nos 10 e nos 20 produtos mais vendidos. Acima de 80% no Top 20 indica portfólio concentrado — variação nesses itens afeta a receita toda."
+          />
+          <div className="text-right">
+            <div className="font-mono text-lg font-extrabold text-foreground">
+              {formatarPercentual(concentracaoTop10?.percentualTop ?? 0, 1)}
+              <span className="text-xs font-semibold text-muted-foreground">
+                {" / "}
+              </span>
+              {formatarPercentual(concentracaoTop20?.percentualTop ?? 0, 1)}
             </div>
+            <div className="text-[10px] text-muted-foreground">Top 10 / Top 20</div>
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {concentracaoTop10?.itensNoTop ?? 0} produtos respondem por{" "}
-            {formatarPercentual(concentracaoTop10?.percentualTop ?? 0, 1)} da
-            receita
-          </p>
         </div>
-
-        {temPeriodoAnterior ? (
-          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-              <TrendingUp className="size-3.5" />
-              Produtos em alta vs. período anterior
-            </div>
-            {produtosEmAlta.length === 0 ? (
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Nenhum produto com crescimento comparável entre os dois
-                períodos.
-              </p>
-            ) : (
-              <ul className="mt-2 space-y-1.5">
-                {produtosEmAlta.map((produto) => (
-                  <li
-                    key={`${produto.id}|${produto.produto}`}
-                    className="flex items-center justify-between gap-2 text-xs"
-                  >
-                    <span
-                      className="truncate text-muted-foreground"
-                      title={produto.produto}
-                    >
-                      <span className="font-mono text-[10px] text-muted-foreground/70">
-                        {produto.id}
-                      </span>{" "}
-                      {produto.produto}
-                    </span>
-                    <span className="shrink-0 font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                      {formatarPercentual(produto.variacao.percentual, 0)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : null}
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {concentracaoTop10?.itensNoTop ?? 0} produtos respondem por{" "}
+          {formatarPercentual(concentracaoTop10?.percentualTop ?? 0, 1)} da receita
+        </p>
       </div>
     </div>
   );

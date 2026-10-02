@@ -5,13 +5,22 @@ import { resolveServerPageContext } from "@/lib/server-page-context";
 export default async function RelatoriosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ empresa?: string; aba?: string }>;
+  searchParams: Promise<{
+    empresa?: string;
+    aba?: string;
+    periodoInicial?: string;
+    periodoFinal?: string;
+    comparacao?: string;
+    comparacaoInicial?: string;
+    comparacaoFinal?: string;
+  }>;
 }) {
   const ctx = await resolveServerPageContext({
     permissao: "relatorios:visualizar",
     searchParams,
     carregarPeriodoAnterior: true,
-    comparacaoCalendarioClientes: true,
+    comparacaoMesAnteriorPadrao: true,
+    ignorarPeriodoCookie: true,
   });
 
   return (
@@ -28,6 +37,8 @@ export default async function RelatoriosPage({
         initialPeriod={ctx.periodo}
         initialVendas={ctx.vendas}
         initialPeriodoAnterior={ctx.periodoAnterior}
+        initialModoComparacao={ctx.modoComparacao}
+        initialComparacaoPersonalizada={ctx.comparacaoPersonalizada}
         initialVendasAnteriores={ctx.vendasAnteriores}
         initialComparacaoDisponivel={ctx.comparacaoDisponivel}
         initialError={ctx.erroInicial}

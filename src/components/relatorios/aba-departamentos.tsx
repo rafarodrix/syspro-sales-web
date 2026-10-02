@@ -57,6 +57,7 @@ export function AbaDepartamentos({
             </Button>
           ) : null}
           <ReportTable
+            caption="Produtos por departamento"
             data={itensVisiveis}
             rowKey={(item) => `${item.departamento}-${item.id}`}
             columns={[
@@ -112,6 +113,7 @@ export function AbaDepartamentos({
         </>
       ) : (
         <ReportTable
+          caption="Resumo por departamento"
           data={deptosFiltrados}
           rowKey={(dep) => dep.nome}
           columns={[
@@ -141,18 +143,18 @@ export function AbaDepartamentos({
               cell: (dep) => <>{dep.quantidadeProdutosDistintos}</>,
             },
             {
-              id: "quantidadeItens",
-              header: <>Itens</>,
+              id: "pedidos",
+              header: <>Pedidos / NF</>,
               kind: "number",
-              value: (dep) => dep.quantidadeItens,
-              cell: (dep) => <>{formatarNumero(dep.quantidadeItens, 2)}</>,
+              value: (dep) => dep.pedidos,
+              cell: (dep) => <>{formatarNumero(dep.pedidos, 0)}</>,
             },
             {
-              id: "ticketMedioPorItem",
-              header: <>Preço médio</>,
+              id: "ticketMedio",
+              header: <>Ticket médio</>,
               kind: "currency",
-              value: (dep) => dep.ticketMedioPorItem,
-              cell: (dep) => <>{formatarMoeda(dep.ticketMedioPorItem)}</>,
+              value: (dep) => dep.ticketMedio,
+              cell: (dep) => <>{formatarMoeda(dep.ticketMedio)}</>,
             },
             {
               id: "faturamento",
@@ -164,7 +166,7 @@ export function AbaDepartamentos({
             {
               id: "percentual",
               header: <>Participação</>,
-              kind: "number",
+              kind: "percent",
               value: (dep) => dep.percentual,
               cell: (dep) => (
                 <>

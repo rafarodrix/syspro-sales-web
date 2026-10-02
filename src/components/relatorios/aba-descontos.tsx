@@ -60,6 +60,7 @@ function TabelaDescontos({
 }) {
   return (
     <ReportTable
+      caption={`Descontos por ${rotulo.toLowerCase()}`}
       data={itens}
       rowKey={(item) => item.nome}
       columns={[
@@ -94,7 +95,7 @@ function TabelaDescontos({
         {
           id: "taxaDesconto",
           header: <>% desconto</>,
-          kind: "number",
+          kind: "percent",
           value: (item) => item.taxaDesconto,
           cell: (item) => (
             <>

@@ -7,6 +7,8 @@ interface ContextoRelatorio {
   empresaNome: string;
   cnpj?: string;
   periodo: Periodo;
+  periodoComparacao?: Periodo;
+  modoComparacao?: string;
 }
 
 // Cores do Padrão Corporativo Trilink Syspro
@@ -171,8 +173,8 @@ export async function exportarPdfDashboard({
     { label: "FATURAMENTO TOTAL", valor: formatarMoeda(resumo.faturamento) },
     { label: "PEDIDOS / NOTAS", valor: formatarNumero(resumo.notas, 0) },
     { label: "TICKET MÉDIO", valor: formatarMoeda(resumo.ticketMedio) },
-    { label: "TOTAL DE ITENS", valor: formatarNumero(resumo.quantidadeItens, 2) },
-    { label: "TOTAL DE CLIENTES", valor: formatarNumero(resumo.clientes, 0) },
+    { label: "SKUS / PEDIDO", valor: formatarNumero(resumo.skusPorNota, 1) },
+    { label: "CLIENTES IDENTIFICADOS", valor: formatarNumero(resumo.clientesIdentificados, 0) },
     { label: "TAXA MÉDIA DESCONTO", valor: `${formatarPercentual(resumo.taxaDesconto, 1)} (${formatarMoeda(resumo.descontos)})` },
   ];
 
@@ -215,7 +217,7 @@ export async function exportarPdfDashboard({
       String(idx + 1),
       p.id,
       p.produto,
-      formatarNumero(p.quantidade, 2),
+      `${formatarNumero(p.quantidade, 2)} ${p.un}`,
       formatarMoeda(p.total),
       formatarPercentual(p.percentual, 1),
     ]),
@@ -398,6 +400,19 @@ export async function exportarPdfAnalitico({
 
   let currentY = 40;
 
+  if (contexto.periodoComparacao) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...CORES.muted);
+    const modo = contexto.modoComparacao ? ` · ${contexto.modoComparacao}` : "";
+    doc.text(
+      `Comparação: ${formatarDataBR(contexto.periodoComparacao.inicial)} a ${formatarDataBR(contexto.periodoComparacao.final)}${modo}`,
+      14,
+      currentY,
+    );
+    currentY += 5;
+  }
+
   if (observacoes) {
     doc.setFontSize(8);
     doc.setTextColor(...CORES.muted);
@@ -426,10 +441,14 @@ export async function exportarPdfAnalitico({
     currentY += 18;
   }
 
+  const tabelaLarga = colunas.length > 10;
+
   autoTable(doc, {
     startY: currentY,
     horizontalPageBreak: orientacao === "landscape",
     horizontalPageBreakRepeat: 0,
+    showHead: "everyPage",
+    rowPageBreak: "avoid",
     head: [colunas],
     body: linhas,
     theme: "striped",
@@ -437,11 +456,11 @@ export async function exportarPdfAnalitico({
       fillColor: CORES.primary,
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 8,
+      fontSize: tabelaLarga ? 6.5 : 8,
     },
     styles: {
-      fontSize: 7.5,
-      cellPadding: 2,
+      fontSize: tabelaLarga ? 6.2 : 7.5,
+      cellPadding: tabelaLarga ? 1.2 : 2,
       textColor: CORES.dark,
     },
     margin: { left: 14, right: 14 },

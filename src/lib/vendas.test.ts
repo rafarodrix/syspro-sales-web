@@ -7,9 +7,18 @@ import {
   analiseEvolucaoVendas,
   analiseProdutosPorDimensao,
   analiseClientesNovosRecorrentes,
+  analiseContribuicaoVariacao,
+  analiseDescontoSemRetorno,
+  analiseDriversVendedores,
+  classeAPerdendoParticipacao,
+  mudancaMixTopProdutos,
   analiseUFs,
+  analiseSazonalidade,
+  calcularVariacao,
   calcularVariacoesPeriodo,
+  dadosPorMetricaComparativa,
   concentracaoTopN,
+  resumoVendas,
   maioresCrescimentosProdutos,
   valorItem,
 } from "@/lib/vendas";
@@ -211,5 +220,217 @@ describe("métricas de gestão (comparativo e concentração)", () => {
     expect(mg?.cidades).toBe(2);
     expect(sp?.faturamento).toBe(200);
     expect(sp?.percentual).toBeCloseTo(57.14, 1);
+  });
+
+
+  it("não representa base zero como crescimento de 100%", () => {
+    const variacao = calcularVariacao(500, 0);
+    expect(variacao.texto).toBe("Sem base");
+    expect(variacao.semBase).toBe(true);
+    expect(variacao.percentual).toBe(0);
+  });
+
+  it("calcula SKUs por pedido sem somar unidades físicas incompatíveis", () => {
+    const vendas = [
+      vendaBase({
+        nf_numero: "1",
+        produto_id: "P1",
+        produto_un: "UN",
+        produto_qtde: 10,
+      }),
+      vendaBase({
+        nf_numero: "1",
+        produto_id: "P2",
+        produto_un: "KG",
+        produto_qtde: 25,
+      }),
+      vendaBase({
+        nf_numero: "2",
+        produto_id: "P1",
+        produto_un: "UN",
+        produto_qtde: 5,
+      }),
+    ];
+
+    const resumo = resumoVendas(vendas);
+    expect(resumo.notas).toBe(2);
+    expect(resumo.skusPorNota).toBe(1.5);
+  });
+
+  it("normaliza sazonalidade por quantidade de ocorrências no calendário", () => {
+    const vendas = [
+      vendaBase({
+        nf_numero: "1",
+        nf_dt_emissao: "2026-09-07",
+        produto_vlr_total_liquido: 100,
+      }),
+      vendaBase({
+        nf_numero: "2",
+        nf_dt_emissao: "2026-09-14",
+        produto_vlr_total_liquido: 300,
+      }),
+      vendaBase({
+        nf_numero: "3",
+        nf_dt_emissao: "2026-09-01",
+        produto_vlr_total_liquido: 500,
+      }),
+    ];
+
+    const resultado = analiseSazonalidade(vendas, {
+      inicial: "2026-09-01",
+      final: "2026-09-30",
+    });
+    const segunda = resultado.porDiaSemana.find(
+      (item) => item.dia === "Segunda-feira",
+    );
+    const terca = resultado.porDiaSemana.find(
+      (item) => item.dia === "Terça-feira",
+    );
+
+    expect(segunda?.ocorrencias).toBe(4);
+    expect(segunda?.faturamentoMedioPorOcorrencia).toBe(100);
+    expect(terca?.ocorrencias).toBe(5);
+    expect(terca?.faturamentoMedioPorOcorrencia).toBe(100);
+  });
+
+  it("preenche dias sem venda antes de alinhar séries comparativas", () => {
+    const atual = [
+      vendaBase({
+        nf_numero: "1",
+        nf_dt_emissao: "2026-10-01",
+        produto_vlr_total_liquido: 100,
+      }),
+      vendaBase({
+        nf_numero: "2",
+        nf_dt_emissao: "2026-10-03",
+        produto_vlr_total_liquido: 300,
+      }),
+    ];
+    const anterior = [
+      vendaBase({
+        nf_numero: "3",
+        nf_dt_emissao: "2026-09-01",
+        produto_vlr_total_liquido: 50,
+      }),
+      vendaBase({
+        nf_numero: "4",
+        nf_dt_emissao: "2026-09-02",
+        produto_vlr_total_liquido: 60,
+      }),
+      vendaBase({
+        nf_numero: "5",
+        nf_dt_emissao: "2026-09-03",
+        produto_vlr_total_liquido: 70,
+      }),
+    ];
+
+    const serie = dadosPorMetricaComparativa(
+      atual,
+      anterior,
+      "faturamento",
+      { inicial: "2026-10-01", final: "2026-10-03" },
+      { inicial: "2026-09-01", final: "2026-09-03" },
+    );
+
+    expect(serie.map((item) => item.total)).toEqual([100, 0, 300]);
+    expect(serie.map((item) => item.totalAnterior)).toEqual([50, 60, 70]);
+  });
+
+
+  it("explica a variação de receita por cliente sem incluir consumidor genérico", () => {
+    const atual = [
+      vendaBase({ nf_numero: "1", cliente_nome: "CLIENTE A", produto_vlr_total_liquido: 200 }),
+      vendaBase({ nf_numero: "2", cliente_nome: "CLIENTE B", produto_vlr_total_liquido: 80 }),
+      vendaBase({ nf_numero: "3", cliente_nome: "CONSUMIDOR FINAL", produto_vlr_total_liquido: 500 }),
+    ];
+    const anterior = [
+      vendaBase({ nf_numero: "4", cliente_nome: "CLIENTE A", produto_vlr_total_liquido: 100 }),
+      vendaBase({ nf_numero: "5", cliente_nome: "CLIENTE C", produto_vlr_total_liquido: 120 }),
+    ];
+
+    const resultado = analiseContribuicaoVariacao(
+      atual,
+      anterior,
+      "cliente",
+    );
+
+    expect(resultado.crescimento[0]).toMatchObject({
+      nome: "CLIENTE A",
+      diferenca: 100,
+    });
+    expect(resultado.queda[0]).toMatchObject({
+      nome: "CLIENTE C",
+      diferenca: -120,
+    });
+    expect(
+      [...resultado.crescimento, ...resultado.queda].some((item) =>
+        item.nome.includes("CONSUMIDOR"),
+      ),
+    ).toBe(false);
+  });
+
+  it("classifica crescimento de vendedor por volume e sinaliza ticket em queda", () => {
+    const anterior = [
+      vendaBase({ nf_numero: "1", vendedor_nome: "VENDEDOR A", produto_vlr_total_liquido: 100 }),
+      vendaBase({ nf_numero: "2", vendedor_nome: "VENDEDOR A", produto_vlr_total_liquido: 100 }),
+    ];
+    const atual = [
+      vendaBase({ nf_numero: "3", vendedor_nome: "VENDEDOR A", produto_vlr_total_liquido: 80 }),
+      vendaBase({ nf_numero: "4", vendedor_nome: "VENDEDOR A", produto_vlr_total_liquido: 80 }),
+      vendaBase({ nf_numero: "5", vendedor_nome: "VENDEDOR A", produto_vlr_total_liquido: 80 }),
+    ];
+
+    const resultado = analiseDriversVendedores(atual, anterior);
+    expect(resultado[0]).toMatchObject({
+      vendedor: "VENDEDOR A",
+      driver: "volume",
+      ticketEmQueda: true,
+      diferencaFaturamento: 40,
+    });
+  });
+
+  it("sinaliza aumento de desconto sem crescimento de receita", () => {
+    const anterior = [
+      vendaBase({
+        nf_numero: "1",
+        vendedor_nome: "VENDEDOR A",
+        produto_vlr_total_liquido: 100,
+        produto_vlr_desconto: 1,
+      }),
+    ];
+    const atual = [
+      vendaBase({
+        nf_numero: "2",
+        vendedor_nome: "VENDEDOR A",
+        produto_vlr_total_liquido: 90,
+        produto_vlr_desconto: 10,
+      }),
+    ];
+
+    const alertas = analiseDescontoSemRetorno(atual, anterior);
+    expect(alertas).toHaveLength(1);
+    expect(alertas[0].vendedor).toBe("VENDEDOR A");
+    expect(alertas[0].aumentoPp).toBeGreaterThan(1);
+    expect(alertas[0].variacaoFaturamento).toBe(-10);
+  });
+
+  it("mede renovação do top de produtos e perda de participação na classe A", () => {
+    const anterior = [
+      vendaBase({ nf_numero: "1", produto_id: "A", produto_descricao: "A", produto_vlr_total_liquido: 800 }),
+      vendaBase({ nf_numero: "2", produto_id: "B", produto_descricao: "B", produto_vlr_total_liquido: 150 }),
+      vendaBase({ nf_numero: "3", produto_id: "C", produto_descricao: "C", produto_vlr_total_liquido: 50 }),
+    ];
+    const atual = [
+      vendaBase({ nf_numero: "4", produto_id: "A", produto_descricao: "A", produto_vlr_total_liquido: 600 }),
+      vendaBase({ nf_numero: "5", produto_id: "D", produto_descricao: "D", produto_vlr_total_liquido: 300 }),
+      vendaBase({ nf_numero: "6", produto_id: "B", produto_descricao: "B", produto_vlr_total_liquido: 100 }),
+    ];
+
+    const mix = mudancaMixTopProdutos(atual, anterior, 3);
+    expect(mix.itensNovosNoTop).toBe(1);
+    expect(mix.renovacaoPercentual).toBeCloseTo(33.33, 1);
+
+    const quedasA = classeAPerdendoParticipacao(atual, anterior);
+    expect(quedasA.some((item) => item.id === "A")).toBe(true);
   });
 });

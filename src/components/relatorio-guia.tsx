@@ -32,7 +32,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     comoLer: [
       "Classe A (≈80% do faturamento): são os produtos que sustentam a operação — falta deles no estoque derruba a venda do dia.",
       "Classe C (≈5%): muitos itens com baixíssima participação — avalie se vale manter todos em estoque ou se há itens parados.",
-      "Compare com o volume de itens: um produto classe A em faturamento pode ter poucas unidades vendidas (alto valor) ou muitas (alto giro).",
+      "Compare quantidade somente dentro do mesmo produto/unidade. O diagnóstico mostra renovação do Top 10 e quais produtos classe A estão perdendo participação de receita.",
+      "A contribuição para a variação mostra quais produtos adicionaram ou retiraram mais receita entre os períodos.",
     ],
     dica: "Use a classe A como base para reposição prioritária e para negociar com fornecedores (são os itens que mais movimentam).",
     glossario: [
@@ -49,6 +50,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Se poucos clientes representam grande parte do faturamento, a operação depende muito deles — a perda de um único cliente seria sentida.",
       "Na base PDV, o cliente 'CONSUMIDOR' concentra o balcão — a análise de concentração ganha sentido principalmente nas vendas faturadas (convênio/NF-e).",
       "Compare a frequência com a média e a mediana da carteira. A grade mensal distingue compras regulares de compras concentradas em um único mês.",
+      "O diagnóstico de carteira separa recorrentes, clientes presentes só no atual e clientes sem compra no atual. Esses grupos descrevem apenas as duas janelas comparadas — não comprovam aquisição ou perda definitiva.",
       "Clientes sem compra no período atual aparecem no comparativo quando compraram no anterior. Isso não comprova perda do cliente; compra só no atual não comprova aquisição.",
     ],
     dica: "Para os clientes Top, avalie criar condições específicas (prazo, tabela) — são os que mais garantem previsibilidade de receita.",
@@ -69,6 +71,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Uma taxa de desconto alta em um vendedor pode indicar negociação agressiva ou falta de autoridade de preço — compare com os colegas.",
       "Departamentos com desconto recorrente podem ter preço de tabela acima do mercado ou sofrer pressão de concorrência.",
       "Compare taxa, valor concedido e faturamento líquido dentro da mesma dimensão antes de tomar uma decisão comercial.",
+      "A sinalização de desconto maior sem crescimento de receita é um indício para investigação, não prova que o desconto causou a queda.",
     ],
     dica: "Vendedor com taxa de desconto muito acima da média é candidato a treinamento de negociação ou revisão da política de preços.",
     glossario: [
@@ -80,7 +83,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     resumo:
       "Revela a evolução diária e mensal das vendas, além da distribuição por dia da semana e quinzena.",
     comoLer: [
-      "Dias da semana com pico indicam quando reforçar equipe e estoque; dias fracos indicam onde caberia uma ação de ativação.",
+      "Na visão por dia da semana, compare a média de faturamento por ocorrência (ex.: média de cada segunda-feira). Isso evita favorecer um dia apenas porque apareceu mais vezes no intervalo.",
       "A visão por quinzena divide o período entre os dias 1–15 e 16–fim do mês; ela mostra distribuição interna, não comparação com um período anterior.",
     ],
     dica: "Escale a operação (caixa, reposição) pelos dias de maior movimento e reserve ações promocionais para os dias fracos.",
@@ -88,7 +91,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "Sazonalidade", definicao: "Padrão de variação das vendas por dia da semana, quinzena ou época." },
       { termo: "Evolução diária", definicao: "Consolida faturamento, notas, ticket médio e descontos por data de emissão da NF. Registros sem data válida não entram nesta visão." },
       { termo: "Evolução mensal", definicao: "Consolida os mesmos indicadores por mês de emissão, facilitando a comparação da tendência no período selecionado." },
-      { termo: "Visão por dia da semana", definicao: "Consolida faturamento, pedidos e ticket médio de todas as segundas, terças e demais dias presentes no período." },
+      { termo: "Visão por dia da semana", definicao: "Mostra a média de faturamento e de pedidos por ocorrência de cada dia da semana no calendário selecionado, além dos totais. Normaliza diferenças na quantidade de segundas, terças etc. dentro do período." },
       { termo: "Visão por quinzena", definicao: "Agrupa as vendas emitidas entre os dias 1–15 e 16–fim de cada mês do período selecionado." },
     ],
   },
@@ -97,12 +100,13 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Detalha o faturamento por departamento/categoria, com os itens que compõem cada um — mostra o mix de produtos do negócio.",
     comoLer: [
       "Departamentos com maior faturamento são o coração do negócio; os menores podem ser complemento ou oportunidade não explorada.",
-      "Um departamento com muitos itens mas pouco faturamento pode ter estoque disperso demais.",
+      "Observe SKUs distintos, pedidos/NF, ticket médio e participação; quantidades físicas agregadas entre UN, KG, CX etc. não são comparáveis.",
+      "O diagnóstico de contribuição mostra quais departamentos explicam mais o crescimento ou a queda da receita.",
     ],
     dica: "Use o mix para decidir onde concentrar estoque, espaço e verba de compra.",
     glossario: [
       { termo: "Mix de vendas", definicao: "Proporção da receita vinda de cada departamento/categoria." },
-      { termo: "Visão sintética", definicao: "Uma linha por departamento, com quantidade de produtos, volume e faturamento." },
+      { termo: "Visão sintética", definicao: "Uma linha por departamento com SKUs distintos, pedidos/NF, ticket médio, faturamento e participação. Quantidades físicas agregadas não são usadas porque podem misturar UN, KG, CX e outras unidades." },
       { termo: "Visão analítica", definicao: "Uma linha por produto dentro dos departamentos, para identificar quais itens compõem o resultado." },
     ],
   },
@@ -111,12 +115,13 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Ranking da equipe: faturamento, ticket médio, quantidade de vendas e taxa de desconto de cada vendedor.",
     comoLer: [
       "Olhe o ticket médio junto do faturamento: vendedor com ticket alto vende melhor o valor, não só o volume.",
-      "Cruzando com a taxa de desconto, identifica-se quem vende mantendo margem e quem 'compra' a venda com desconto.",
+      "Cruzando com a taxa de desconto, identifica-se quem vende com menor ou maior concessão comercial; sem custo/CMV não é possível concluir margem.",
+      "O diagnóstico separa crescimento puxado por mais pedidos, por maior ticket ou por ambos, e sinaliza receita crescente com ticket em queda.",
     ],
     dica: "Metas individuais fazem mais sentido quando consideram o perfil de cada um (balcão vs. venda direta).",
     glossario: [
       { termo: "Ticket médio", definicao: "Faturamento ÷ número de notas (vendas) do vendedor no período." },
-      { termo: "Visão sintética", definicao: "Ranking consolidado: uma linha por vendedor com totais do período." },
+      { termo: "Visão sintética", definicao: "Ranking consolidado por vendedor com pedidos, clientes identificados, SKUs distintos, ticket, desconto e faturamento. Consumidores genéricos não entram em clientes únicos." },
       { termo: "Produtos por vendedor", definicao: "Mostra o mix de produtos vendido por cada vendedor, com quantidade, notas, descontos e faturamento no período." },
       { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por vendedor — mostra o que compõe os números do ranking." },
     ],
@@ -127,6 +132,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     comoLer: [
       "Concentração em poucas cidades significa mercado regional dependente — expansão passa por diversificar praças.",
       "Frete alto em cidades distantes pode elevar o custo de atendimento de pedidos pequenos — avalie valor mínimo de pedido por região.",
+      "A contribuição geográfica mostra quais cidades adicionaram ou retiraram mais receita na comparação selecionada.",
     ],
     dica: "Se uma praça distante gera pouco faturamento e muito frete, considere política de entrega mínima ou parceiro logístico local.",
     glossario: [
@@ -160,8 +166,8 @@ const TERMOS_PANORAMA = [
   { termo: "Faturamento", definicao: "Valor final das vendas do período, com descontos abatidos e frete/seguro/outros somados." },
   { termo: "Pedidos / NF", definicao: "Quantidade de notas fiscais emitidas no período — cada documento conta como uma venda." },
   { termo: "Ticket médio", definicao: "Faturamento do período ÷ número de notas. Valor médio de cada venda." },
-  { termo: "Clientes ativos", definicao: "Clientes distintos que compraram no período, incluindo consumidor de balcão." },
-  { termo: "Variação vs. período anterior", definicao: "Comparação com o período de mesma duração imediatamente anterior ao selecionado. Mostra crescimento (+) ou queda (−) em %." },
+  { termo: "Clientes identificados", definicao: "Clientes distintos identificados que compraram no período. Consumidores genéricos de balcão são excluídos para tornar a comparação comercial mais representativa." },
+  { termo: "Variação vs. período anterior", definicao: "Compara o valor atual com o período escolhido no seletor. Quando a base anterior é zero, o sistema mostra 'Sem base' em vez de atribuir artificialmente +100%." },
   { termo: "Consolidação por empresa", definicao: "Exibida quando duas ou mais empresas são selecionadas. Mantém os totais de cada unidade separados para explicar a participação no resultado consolidado; os rankings abaixo continuam representando o grupo selecionado." },
 ];
 

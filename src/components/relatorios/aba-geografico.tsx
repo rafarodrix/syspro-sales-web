@@ -67,14 +67,9 @@ export function AbaGeografico({
         />
       ) : visao === "uf" ? (
         <ReportTable
+          caption="Resumo por UF"
           data={ufsFiltradas}
           rowKey={(item) => item.uf}
-          onRowClick={(item) => {
-            (() => {
-              setUf(item.uf);
-              setVisao("cidade");
-            })();
-          }}
           columns={[
             {
               id: "uf",
@@ -82,10 +77,17 @@ export function AbaGeografico({
               kind: "name",
               value: (item) => item.uf,
               cell: (item) => (
-                <>
-                  <Badge variant="outline">{item.uf}</Badge>{" "}
-                  <MousePointerClick className="ml-1 inline size-3" />
-                </>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUf(item.uf);
+                    setVisao("cidade");
+                  }}
+                  className="inline-flex items-center gap-1 text-left hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <Badge variant="outline">{item.uf}</Badge>
+                  <MousePointerClick className="size-3" />
+                </button>
               ),
             },
             {
@@ -133,7 +135,7 @@ export function AbaGeografico({
             {
               id: "percentual",
               header: <>Participação</>,
-              kind: "number",
+              kind: "percent",
               value: (item) => item.percentual,
               cell: (item) => (
                 <DataBarPercent
@@ -159,9 +161,6 @@ export function AbaGeografico({
           <ReportTable
             data={cidades}
             rowKey={(cidade) => `${cidade.cidade}-${cidade.uf}`}
-            onRowClick={(cidade) => {
-              (() => abrirCidade(cidade.cidade))();
-            }}
             columns={[
               {
                 id: "cidade",
@@ -169,10 +168,14 @@ export function AbaGeografico({
                 kind: "name",
                 value: (cidade) => cidade.cidade,
                 cell: (cidade) => (
-                  <>
-                    {cidade.cidade}{" "}
-                    <MousePointerClick className="ml-1 inline size-3" />
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => abrirCidade(cidade.cidade)}
+                    className="inline-flex items-center gap-1 text-left hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                  >
+                    {cidade.cidade}
+                    <MousePointerClick className="size-3" />
+                  </button>
                 ),
               },
               {
@@ -224,7 +227,7 @@ export function AbaGeografico({
               {
                 id: "percentual",
                 header: <>Participação</>,
-                kind: "number",
+                kind: "percent",
                 value: (cidade) => cidade.percentual,
                 cell: (cidade) => (
                   <DataBarPercent

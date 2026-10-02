@@ -1,4 +1,5 @@
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
+import type { Periodo } from "@/lib/periodo";
 
 export interface VendaAgrupada {
   id: string;
@@ -30,6 +31,7 @@ export interface ProdutoRankeado {
   id: string;
   produto: string;
   departamento?: string;
+  un: string;
   quantidade: number;
   total: number;
   percentual: number;
@@ -51,6 +53,7 @@ export interface ResumoVendas {
   quantidadeItens: number;
   notas: number;
   clientes: number;
+  clientesIdentificados: number;
   ticketMedio: number;
   itensPorNota: number;
   skusPorNota: number;
@@ -73,6 +76,7 @@ export interface VariacaoMetrica {
   texto: string;
   positivo: boolean;
   neutro: boolean;
+  semBase?: boolean;
 }
 
 export interface DestaquesPeriodo {
@@ -114,7 +118,8 @@ export interface ItemDepartamentoAnalise {
   percentual: number;
   quantidadeItens: number;
   quantidadeProdutosDistintos: number;
-  ticketMedioPorItem: number;
+  pedidos: number;
+  ticketMedio: number;
   produtos: {
     id: string;
     produto: string;
@@ -134,6 +139,7 @@ export interface ItemVendedorAnalise {
   clientes: number;
   ticketMedio: number;
   quantidadeItens: number;
+  produtosDistintos: number;
   descontoConcedido: number;
   taxaDesconto: number;
   principalProduto?: string;
@@ -145,6 +151,7 @@ export interface ItemClienteAnalise {
   uf: string;
   pedidos: number;
   quantidadeItens: number;
+  produtosDistintos: number;
   faturamento: number;
   descontos: number;
   ticketMedio: number;
@@ -178,6 +185,9 @@ export interface ItemDiaSemanaAnalise {
   pedidos: number;
   ticketMedio: number;
   percentual: number;
+  ocorrencias: number;
+  faturamentoMedioPorOcorrencia: number;
+  pedidosMediosPorOcorrencia: number;
 }
 
 export interface RelatorioSazonalidade {
@@ -225,6 +235,7 @@ export interface ItemEmpresaAnalise {
   faturamento: number;
   pedidos: number;
   quantidadeItens: number;
+  produtosDistintos: number;
   descontos: number;
   ticketMedio: number;
   percentual: number;
@@ -249,7 +260,7 @@ export interface ItemFinanceiroAnalise {
   ticketMedio: number;
 }
 
-export type MetricaDeVendas = "faturamento" | "itens" | "notas";
+export type MetricaDeVendas = "faturamento" | "itens" | "notas" | "ticket";
 
 export function paraNumero(valor: number | string | null | undefined): number {
   if (valor == null || valor === "") return 0;
@@ -360,6 +371,7 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
   const formasPagamento = new Map<string, number>();
   const modelosDocumento = new Map<string, number>();
   const cidades = new Map<string, number>();
+  const skusPorNotaMap = new Map<string, Set<string>>();
 
   let faturamento = 0;
   let descontos = 0;
@@ -374,6 +386,10 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
     const st = paraNumero(venda.produto_vlr_icms_stb);
     const qtd = paraNumero(venda.produto_qtde);
     const chaveNota = chaveDaNota(venda);
+    const sku = `${String(venda.produto_id ?? "").trim()}|${venda.produto_descricao?.trim() ?? ""}`;
+    const skusDaNota = skusPorNotaMap.get(chaveNota) ?? new Set<string>();
+    skusDaNota.add(sku);
+    skusPorNotaMap.set(chaveNota, skusDaNota);
 
     faturamento += total;
     descontos += desc;
@@ -402,7 +418,11 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
   const faturamentoBruto = faturamento + descontos;
 
   const itensPorNota = totalNotas ? quantidadeItens / totalNotas : 0;
-  const skusPorNota = totalNotas ? vendas.length / totalNotas : 0;
+  const totalSkusDistintosNasNotas = [...skusPorNotaMap.values()].reduce(
+    (total, skus) => total + skus.size,
+    0,
+  );
+  const skusPorNota = totalNotas ? totalSkusDistintosNasNotas / totalNotas : 0;
   const taxaDesconto = faturamentoBruto > 0 ? (descontos / faturamentoBruto) * 100 : 0;
   const taxaFrete = faturamento > 0 ? (frete / faturamento) * 100 : 0;
 
@@ -427,6 +447,7 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
     quantidadeItens,
     notas: totalNotas,
     clientes: totalClientes,
+    clientesIdentificados: clientesCadastradosCount,
     ticketMedio,
     itensPorNota,
     skusPorNota,
@@ -448,7 +469,7 @@ export function produtosMaisVendidos(
 ): ProdutoRankeado[] {
   const produtosMap = new Map<
     string,
-    { id: string; produto: string; total: number; quantidade: number; departamento?: string }
+    { id: string; produto: string; total: number; quantidade: number; departamento?: string; un: string }
   >();
 
   let faturamentoTotal = 0;
@@ -472,6 +493,7 @@ export function produtosMaisVendidos(
         total,
         quantidade: qtd,
         departamento: venda.produto_departamento?.trim(),
+        un: venda.produto_un?.trim() || "UN",
       });
     }
   }
@@ -601,6 +623,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
       nome: string;
       faturamento: number;
       quantidadeItens: number;
+      notas: Set<string>;
       produtosMap: Map<string, { id: string; produto: string; un: string; quantidade: number; total: number }>;
     }
   >();
@@ -623,6 +646,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
         nome: nomeDepto,
         faturamento: 0,
         quantidadeItens: 0,
+        notas: new Set(),
         produtosMap: new Map(),
       };
       deptosMap.set(nomeDepto, depto);
@@ -630,6 +654,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
 
     depto.faturamento += total;
     depto.quantidadeItens += qtd;
+    depto.notas.add(chaveDaNota(venda));
 
     const prodAtual = depto.produtosMap.get(chaveProd);
     if (prodAtual) {
@@ -662,7 +687,8 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
         percentual: faturamentoTotal > 0 ? (d.faturamento / faturamentoTotal) * 100 : 0,
         quantidadeItens: d.quantidadeItens,
         quantidadeProdutosDistintos: produtos.length,
-        ticketMedioPorItem: d.quantidadeItens > 0 ? d.faturamento / d.quantidadeItens : 0,
+        pedidos: d.notas.size,
+        ticketMedio: d.notas.size > 0 ? d.faturamento / d.notas.size : 0,
         produtos,
       };
     })
@@ -714,7 +740,9 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
     vend.desconto += desc;
     vend.quantidadeItens += qtd;
     vend.notas.add(chaveNota);
-    if (cliente) vend.clientes.add(cliente);
+    if (cliente && !isClienteConsumidorGenerico(cliente)) {
+      vend.clientes.add(cliente);
+    }
     vend.produtosMap.set(nomeProd, (vend.produtosMap.get(nomeProd) ?? 0) + total);
   }
 
@@ -732,6 +760,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
         pedidos,
         clientes: v.clientes.size,
         quantidadeItens: v.quantidadeItens,
+        produtosDistintos: v.produtosMap.size,
         ticketMedio: pedidos > 0 ? v.faturamento / pedidos : 0,
         descontoConcedido: v.desconto,
         taxaDesconto,
@@ -752,6 +781,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
       descontos: number;
       quantidadeItens: number;
       notas: Set<string>;
+      produtos: Set<string>;
     }
   >();
 
@@ -776,6 +806,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
         descontos: 0,
         quantidadeItens: 0,
         notas: new Set(),
+        produtos: new Set(),
       };
       clientesMap.set(nome, cli);
     }
@@ -784,6 +815,9 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
     cli.descontos += desc;
     cli.quantidadeItens += qtd;
     cli.notas.add(chaveNota);
+    cli.produtos.add(
+      `${String(venda.produto_id ?? "").trim()}|${venda.produto_descricao?.trim() ?? ""}`,
+    );
   }
 
   const clientesOrdenados = [...clientesMap.values()].sort((a, b) => b.faturamento - a.faturamento);
@@ -810,6 +844,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
       uf: c.uf,
       pedidos,
       quantidadeItens: c.quantidadeItens,
+      produtosDistintos: c.produtos.size,
       faturamento: c.faturamento,
       descontos: c.descontos,
       ticketMedio: pedidos > 0 ? c.faturamento / pedidos : 0,
@@ -828,7 +863,13 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
  * de NF emitidos por filiais diferentes.
  */
 export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): ItemEmpresaAnalise[] {
-  const empresas = new Map<string, Omit<ItemEmpresaAnalise, "pedidos" | "ticketMedio" | "percentual"> & { notas: Set<string> }>();
+  const empresas = new Map<
+    string,
+    Omit<
+      ItemEmpresaAnalise,
+      "pedidos" | "ticketMedio" | "percentual" | "produtosDistintos"
+    > & { notas: Set<string>; produtos: Set<string> }
+  >();
 
   for (const venda of vendas) {
     const vendaEmpresa = venda as VendaComEmpresa;
@@ -841,20 +882,25 @@ export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): Ite
       quantidadeItens: 0,
       descontos: 0,
       notas: new Set<string>(),
+      produtos: new Set<string>(),
     };
 
     atual.faturamento += valorItem(venda);
     atual.quantidadeItens += paraNumero(venda.produto_qtde);
     atual.descontos += paraNumero(venda.produto_vlr_desconto);
     atual.notas.add(chaveDaNota(venda));
+    atual.produtos.add(
+      `${String(venda.produto_id ?? "").trim()}|${venda.produto_descricao?.trim() ?? ""}`,
+    );
     empresas.set(id, atual);
   }
 
   const faturamentoTotal = [...empresas.values()].reduce((total, empresa) => total + empresa.faturamento, 0);
   return [...empresas.values()]
-    .map(({ notas, ...empresa }) => ({
+    .map(({ notas, produtos, ...empresa }) => ({
       ...empresa,
       pedidos: notas.size,
+      produtosDistintos: produtos.size,
       ticketMedio: notas.size > 0 ? empresa.faturamento / notas.size : 0,
       percentual: faturamentoTotal > 0 ? (empresa.faturamento / faturamentoTotal) * 100 : 0,
     }))
@@ -1003,7 +1049,10 @@ export function extrairDataInfo(
   return null;
 }
 
-export function analiseSazonalidade(vendas: VendaProduto[]): RelatorioSazonalidade {
+export function analiseSazonalidade(
+  vendas: VendaProduto[],
+  periodo?: Periodo,
+): RelatorioSazonalidade {
   const nomesDias = [
     "Domingo",
     "Segunda-feira",
@@ -1014,9 +1063,22 @@ export function analiseSazonalidade(vendas: VendaProduto[]): RelatorioSazonalida
     "Sábado",
   ];
 
-  const diasSemanaMap = new Map<number, { faturamento: number; notas: Set<string> }>();
+  const diasSemanaMap = new Map<
+    number,
+    { faturamento: number; notas: Set<string>; ocorrencias: number }
+  >();
   for (let i = 0; i < 7; i++) {
-    diasSemanaMap.set(i, { faturamento: 0, notas: new Set() });
+    diasSemanaMap.set(i, { faturamento: 0, notas: new Set(), ocorrencias: 0 });
+  }
+
+  if (periodo) {
+    const cursor = new Date(`${periodo.inicial}T00:00:00Z`);
+    const fim = new Date(`${periodo.final}T00:00:00Z`);
+    while (cursor <= fim) {
+      const item = diasSemanaMap.get(cursor.getUTCDay());
+      if (item) item.ocorrencias += 1;
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
   }
 
   const quinzena1 = { faturamento: 0, notas: new Set<string>() };
@@ -1051,13 +1113,18 @@ export function analiseSazonalidade(vendas: VendaProduto[]): RelatorioSazonalida
   const porDiaSemana: ItemDiaSemanaAnalise[] = [1, 2, 3, 4, 5, 6, 0].map((indice) => {
     const d = diasSemanaMap.get(indice)!;
     const pedidos = d.notas.size;
+    const ocorrencias = d.ocorrencias || 1;
     return {
       dia: nomesDias[indice],
       indice,
       faturamento: d.faturamento,
       pedidos,
       ticketMedio: pedidos > 0 ? d.faturamento / pedidos : 0,
-      percentual: faturamentoTotal > 0 ? (d.faturamento / faturamentoTotal) * 100 : 0,
+      percentual:
+        faturamentoTotal > 0 ? (d.faturamento / faturamentoTotal) * 100 : 0,
+      ocorrencias,
+      faturamentoMedioPorOcorrencia: d.faturamento / ocorrencias,
+      pedidosMediosPorOcorrencia: pedidos / ocorrencias,
     };
   });
 
@@ -1204,7 +1271,9 @@ export function analiseGeografica(vendas: VendaProduto[]): ItemGeograficoAnalise
     praca.faturamento += total;
     praca.frete += freteItem;
     praca.notas.add(chaveNota);
-    if (cliente) praca.clientes.add(cliente);
+    if (cliente && !isClienteConsumidorGenerico(cliente)) {
+      praca.clientes.add(cliente);
+    }
   }
 
   return [...pracaMap.values()]
@@ -1296,10 +1365,11 @@ export function calcularVariacao(atual: number, anterior: number): VariacaoMetri
       atual,
       anterior,
       diferenca,
-      percentual: 100,
-      texto: "+100%",
+      percentual: 0,
+      texto: "Sem base",
       positivo: true,
       neutro: false,
+      semBase: true,
     };
   }
 
@@ -1341,17 +1411,20 @@ export function dadosPorMetricaComparativa(
   vendasAtuais: VendaProduto[],
   vendasAnteriores: VendaProduto[],
   metrica: MetricaDeVendas,
+  periodoAtual?: Periodo,
+  periodoAnterior?: Periodo,
 ): PontoFaturamento[] {
-  const pontosAtuais = agruparPorDia(vendasAtuais, metrica);
-  const pontosAnteriores = agruparPorDia(vendasAnteriores, metrica);
+  const pontosAtuais = periodoAtual
+    ? preencherSerieDiaria(vendasAtuais, metrica, periodoAtual)
+    : agruparPorDia(vendasAtuais, metrica);
+  const pontosAnteriores = periodoAnterior
+    ? preencherSerieDiaria(vendasAnteriores, metrica, periodoAnterior)
+    : agruparPorDia(vendasAnteriores, metrica);
 
-  return pontosAtuais.map((pt, idx) => {
-    const ant = pontosAnteriores[idx];
-    return {
-      ...pt,
-      totalAnterior: ant ? ant.total : 0,
-    };
-  });
+  return pontosAtuais.map((pt, idx) => ({
+    ...pt,
+    totalAnterior: pontosAnteriores[idx]?.total ?? 0,
+  }));
 }
 
 export function dadosPorMetrica(
@@ -1365,35 +1438,79 @@ function agruparPorDia(
   vendas: VendaProduto[],
   metrica: MetricaDeVendas,
 ): PontoFaturamento[] {
-  const totais = new Map<string, number>();
+  const faturamento = new Map<string, number>();
   const notas = new Map<string, Set<string>>();
+  const quantidades = new Map<string, number>();
 
   for (const venda of vendas) {
-    const data = venda.nf_dt_emissao || "Sem data";
-    if (metrica === "notas") {
-      const notasDoDia = notas.get(data) ?? new Set<string>();
-      notasDoDia.add(chaveDaNota(venda));
-      notas.set(data, notasDoDia);
-      continue;
-    }
-    totais.set(
+    const info = extrairDataInfo(venda.nf_dt_emissao);
+    if (!info) continue;
+    const data = [
+      String(info.ano).padStart(4, "0"),
+      String(info.mes).padStart(2, "0"),
+      String(info.dia).padStart(2, "0"),
+    ].join("-");
+
+    faturamento.set(data, (faturamento.get(data) ?? 0) + valorItem(venda));
+
+    const notasDoDia = notas.get(data) ?? new Set<string>();
+    notasDoDia.add(chaveDaNota(venda));
+    notas.set(data, notasDoDia);
+
+    quantidades.set(
       data,
-      (totais.get(data) ?? 0) +
-        (metrica === "faturamento"
-          ? valorItem(venda)
-          : paraNumero(venda.produto_qtde)),
+      (quantidades.get(data) ?? 0) + paraNumero(venda.produto_qtde),
     );
   }
 
-  if (metrica === "notas") {
-    for (const [data, notasDoDia] of notas) {
-      totais.set(data, notasDoDia.size);
-    }
+  const datas = new Set([
+    ...faturamento.keys(),
+    ...notas.keys(),
+    ...quantidades.keys(),
+  ]);
+
+  return [...datas]
+    .map((data) => {
+      const fat = faturamento.get(data) ?? 0;
+      const qtdNotas = notas.get(data)?.size ?? 0;
+      const total =
+        metrica === "faturamento"
+          ? fat
+          : metrica === "notas"
+            ? qtdNotas
+            : metrica === "ticket"
+              ? qtdNotas > 0
+                ? fat / qtdNotas
+                : 0
+              : quantidades.get(data) ?? 0;
+      return { data, total, rotulo: data };
+    })
+    .sort((a, b) => dataParaOrdem(a.data) - dataParaOrdem(b.data));
+}
+
+function preencherSerieDiaria(
+  vendas: VendaProduto[],
+  metrica: MetricaDeVendas,
+  periodo: Periodo,
+): PontoFaturamento[] {
+  const agregados = new Map(
+    agruparPorDia(vendas, metrica).map((ponto) => [ponto.data, ponto.total]),
+  );
+  const pontos: PontoFaturamento[] = [];
+  const cursor = new Date(`${periodo.inicial}T00:00:00Z`);
+  const fim = new Date(`${periodo.final}T00:00:00Z`);
+
+  while (cursor <= fim) {
+    const data = cursor.toISOString().slice(0, 10);
+    pontos.push({
+      data,
+      rotulo: data,
+      total: agregados.get(data) ?? 0,
+    });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
 
-  return [...totais.entries()]
-    .map(([data, total]) => ({ data, total, rotulo: data }))
-    .sort((a, b) => dataParaOrdem(a.data) - dataParaOrdem(b.data));
+  return pontos;
 }
 
 export function calcularDestaques(
@@ -1543,7 +1660,10 @@ export function calcularVariacoesPeriodo(
     faturamento: calcularVariacao(atual.faturamento, anterior.faturamento),
     notas: calcularVariacao(atual.notas, anterior.notas),
     ticketMedio: calcularVariacao(atual.ticketMedio, anterior.ticketMedio),
-    clientes: calcularVariacao(atual.clientes, anterior.clientes),
+    clientes: calcularVariacao(
+      atual.clientesIdentificados,
+      anterior.clientesIdentificados,
+    ),
     quantidadeItens: calcularVariacao(atual.quantidadeItens, anterior.quantidadeItens),
   };
 }
@@ -1582,7 +1702,7 @@ export function concentracaoTopN<T extends { faturamento: number }>(
 export interface ClientesNovosRecorrentes {
   /** Clientes ativos no período atual (exclui consumidor/balcão genérico) */
   ativosAtual: number;
-  /** Clientes que não compraram no período anterior (base nova) */
+  /** Clientes presentes apenas no período atual frente à janela comparada; não comprova aquisição */
   novos: number;
   /** Clientes que compraram nos dois períodos */
   recorrentes: number;
@@ -1605,8 +1725,9 @@ function chaveClienteCadastrado(nome: string | null | undefined): string | null 
 }
 
 /**
- * Separa a base de clientes do período atual entre novos e recorrentes,
- * comparando com o período anterior equivalente. Clientes de balcão
+ * Separa a base do período atual entre clientes presentes só no atual e
+ * recorrentes nas duas janelas. "Só no atual" não comprova aquisição, pois
+ * a comparação não consulta todo o histórico. Clientes de balcão
  * (CONSUMIDOR etc.) ficam de fora por não representarem um cadastro.
  */
 export function analiseClientesNovosRecorrentes(
@@ -1669,6 +1790,303 @@ export interface CrescimentoProduto {
   totalAtual: number;
   totalAnterior: number;
   variacao: VariacaoMetrica;
+}
+
+export type DimensaoContribuicao =
+  | "cliente"
+  | "produto"
+  | "vendedor"
+  | "departamento"
+  | "cidade";
+
+export interface ItemContribuicaoVariacao {
+  chave: string;
+  nome: string;
+  atual: number;
+  anterior: number;
+  diferenca: number;
+  variacao: VariacaoMetrica;
+}
+
+export interface DiagnosticoContribuicao {
+  variacaoTotal: number;
+  crescimento: ItemContribuicaoVariacao[];
+  queda: ItemContribuicaoVariacao[];
+}
+
+function dimensaoReceita(
+  venda: VendaProduto,
+  dimensao: DimensaoContribuicao,
+): { chave: string; nome: string } | null {
+  if (dimensao === "cliente") {
+    const nome = venda.cliente_nome?.trim();
+    if (!nome || isClienteConsumidorGenerico(nome)) return null;
+    const chave = nome.toUpperCase();
+    return { chave, nome };
+  }
+  if (dimensao === "produto") {
+    const id = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const nome = venda.produto_descricao?.trim() || "Produto não identificado";
+    return { chave: `${id}|${nome}`, nome: `${id} · ${nome}` };
+  }
+  if (dimensao === "vendedor") {
+    const nome = venda.vendedor_nome?.trim() || "Sem vendedor";
+    return { chave: nome.toUpperCase(), nome };
+  }
+  if (dimensao === "departamento") {
+    const nome = venda.produto_departamento?.trim() || "Sem departamento";
+    return { chave: nome.toUpperCase(), nome };
+  }
+  const cidade = venda.cliente_cidade?.trim() || "Não informada";
+  const uf = venda.cliente_uf?.trim().toUpperCase() || "—";
+  return { chave: `${cidade.toUpperCase()}|${uf}`, nome: `${cidade} / ${uf}` };
+}
+
+function receitaPorDimensao(
+  vendas: VendaProduto[],
+  dimensao: DimensaoContribuicao,
+): Map<string, { nome: string; total: number }> {
+  const mapa = new Map<string, { nome: string; total: number }>();
+  for (const venda of vendas) {
+    const dimensaoItem = dimensaoReceita(venda, dimensao);
+    if (!dimensaoItem) continue;
+    const atual = mapa.get(dimensaoItem.chave) ?? {
+      nome: dimensaoItem.nome,
+      total: 0,
+    };
+    atual.total += valorItem(venda);
+    mapa.set(dimensaoItem.chave, atual);
+  }
+  return mapa;
+}
+
+/**
+ * Explica a variação total de faturamento mostrando quais dimensões
+ * adicionaram ou retiraram mais receita entre os períodos comparados.
+ */
+export function analiseContribuicaoVariacao(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  dimensao: DimensaoContribuicao,
+  limite = 5,
+): DiagnosticoContribuicao {
+  const atual = receitaPorDimensao(vendasAtuais, dimensao);
+  const anterior = receitaPorDimensao(vendasAnteriores, dimensao);
+  const chaves = new Set([...atual.keys(), ...anterior.keys()]);
+  const itens: ItemContribuicaoVariacao[] = [];
+
+  for (const chave of chaves) {
+    const a = atual.get(chave);
+    const b = anterior.get(chave);
+    const atualTotal = a?.total ?? 0;
+    const anteriorTotal = b?.total ?? 0;
+    const diferenca = atualTotal - anteriorTotal;
+    itens.push({
+      chave,
+      nome: a?.nome ?? b?.nome ?? chave,
+      atual: atualTotal,
+      anterior: anteriorTotal,
+      diferenca,
+      variacao: calcularVariacao(atualTotal, anteriorTotal),
+    });
+  }
+
+  const variacaoTotal = itens.reduce((total, item) => total + item.diferenca, 0);
+  return {
+    variacaoTotal,
+    crescimento: itens
+      .filter((item) => item.diferenca > 0)
+      .sort((a, b) => b.diferenca - a.diferenca)
+      .slice(0, limite),
+    queda: itens
+      .filter((item) => item.diferenca < 0)
+      .sort((a, b) => a.diferenca - b.diferenca)
+      .slice(0, limite),
+  };
+}
+
+export interface DiagnosticoVendedorComparativo {
+  vendedor: string;
+  faturamentoAtual: number;
+  faturamentoAnterior: number;
+  diferencaFaturamento: number;
+  pedidosAtual: number;
+  pedidosAnterior: number;
+  ticketAtual: number;
+  ticketAnterior: number;
+  driver: "volume" | "ticket" | "ambos" | "misto";
+  ticketEmQueda: boolean;
+}
+
+/**
+ * Identifica como os vendedores que cresceram chegaram ao resultado:
+ * mais pedidos, maior ticket ou ambos. Não atribui causalidade.
+ */
+export function analiseDriversVendedores(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+): DiagnosticoVendedorComparativo[] {
+  const atual = new Map(
+    analiseVendedores(vendasAtuais).map((item) => [item.nome, item]),
+  );
+  const anterior = new Map(
+    analiseVendedores(vendasAnteriores).map((item) => [item.nome, item]),
+  );
+
+  return [...atual.entries()]
+    .flatMap(([vendedor, a]) => {
+      const b = anterior.get(vendedor);
+      if (!b) return [];
+      const diferencaFaturamento = a.faturamento - b.faturamento;
+      if (diferencaFaturamento <= 0) return [];
+      const pedidosSubiram = a.pedidos > b.pedidos;
+      const ticketSubiu = a.ticketMedio > b.ticketMedio;
+      const driver: DiagnosticoVendedorComparativo["driver"] =
+        pedidosSubiram && ticketSubiu
+          ? "ambos"
+          : pedidosSubiram
+            ? "volume"
+            : ticketSubiu
+              ? "ticket"
+              : "misto";
+      return [{
+        vendedor,
+        faturamentoAtual: a.faturamento,
+        faturamentoAnterior: b.faturamento,
+        diferencaFaturamento,
+        pedidosAtual: a.pedidos,
+        pedidosAnterior: b.pedidos,
+        ticketAtual: a.ticketMedio,
+        ticketAnterior: b.ticketMedio,
+        driver,
+        ticketEmQueda: a.ticketMedio < b.ticketMedio,
+      }];
+    })
+    .sort((a, b) => b.diferencaFaturamento - a.diferencaFaturamento);
+}
+
+export interface AlertaDescontoSemRetorno {
+  vendedor: string;
+  taxaAtual: number;
+  taxaAnterior: number;
+  aumentoPp: number;
+  faturamentoAtual: number;
+  faturamentoAnterior: number;
+  variacaoFaturamento: number;
+}
+
+/**
+ * Sinaliza vendedor cuja taxa de desconto subiu pelo menos 1 p.p. sem
+ * crescimento de faturamento. É um indício para investigação, não causalidade.
+ */
+export function analiseDescontoSemRetorno(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  limite = 5,
+): AlertaDescontoSemRetorno[] {
+  const atual = new Map(
+    analiseDescontos(vendasAtuais).porVendedor.map((item) => [item.nome, item]),
+  );
+  const anterior = new Map(
+    analiseDescontos(vendasAnteriores).porVendedor.map((item) => [
+      item.nome,
+      item,
+    ]),
+  );
+
+  return [...atual.entries()]
+    .flatMap(([vendedor, itemAtual]) => {
+      const itemAnterior = anterior.get(vendedor);
+      if (!itemAnterior) return [];
+      const aumentoPp = itemAtual.taxaDesconto - itemAnterior.taxaDesconto;
+      const variacaoFaturamento =
+        itemAtual.faturamentoLiquido - itemAnterior.faturamentoLiquido;
+      if (aumentoPp < 1 || variacaoFaturamento > 0) return [];
+      return [{
+        vendedor,
+        taxaAtual: itemAtual.taxaDesconto,
+        taxaAnterior: itemAnterior.taxaDesconto,
+        aumentoPp,
+        faturamentoAtual: itemAtual.faturamentoLiquido,
+        faturamentoAnterior: itemAnterior.faturamentoLiquido,
+        variacaoFaturamento,
+      }];
+    })
+    .sort((a, b) => b.aumentoPp - a.aumentoPp)
+    .slice(0, limite);
+}
+
+export interface QuedaParticipacaoClasseA {
+  id: string;
+  produto: string;
+  participacaoAtual: number;
+  participacaoAnterior: number;
+  diferencaPp: number;
+}
+
+/** Produtos que seguem na classe A, mas perderam participação de receita. */
+export function classeAPerdendoParticipacao(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  limite = 5,
+): QuedaParticipacaoClasseA[] {
+  const atual = calcularCurvaABC(vendasAtuais);
+  const anterior = calcularCurvaABC(vendasAnteriores);
+  const anteriorMap = new Map(
+    anterior.itens.map((item) => [`${item.id}|${item.produto}`, item]),
+  );
+
+  return atual.itens
+    .filter((item) => item.classe === "A")
+    .flatMap((item) => {
+      const ant = anteriorMap.get(`${item.id}|${item.produto}`);
+      if (!ant) return [];
+      const diferencaPp = item.percentual - ant.percentual;
+      if (diferencaPp >= 0) return [];
+      return [{
+        id: item.id,
+        produto: item.produto,
+        participacaoAtual: item.percentual,
+        participacaoAnterior: ant.percentual,
+        diferencaPp,
+      }];
+    })
+    .sort((a, b) => a.diferencaPp - b.diferencaPp)
+    .slice(0, limite);
+}
+
+export interface MudancaMixTop {
+  topN: number;
+  itensAtuais: number;
+  itensMantidos: number;
+  itensNovosNoTop: number;
+  renovacaoPercentual: number;
+}
+
+/** Mede quanto o Top N de produtos mudou entre os períodos. */
+export function mudancaMixTopProdutos(
+  vendasAtuais: VendaProduto[],
+  vendasAnteriores: VendaProduto[],
+  topN = 10,
+): MudancaMixTop {
+  const atual = calcularCurvaABC(vendasAtuais).itens.slice(0, topN);
+  const anterior = calcularCurvaABC(vendasAnteriores).itens.slice(0, topN);
+  const chavesAnterior = new Set(
+    anterior.map((item) => `${item.id}|${item.produto}`),
+  );
+  const itensMantidos = atual.filter((item) =>
+    chavesAnterior.has(`${item.id}|${item.produto}`),
+  ).length;
+  const itensAtuais = atual.length;
+  const itensNovosNoTop = Math.max(0, itensAtuais - itensMantidos);
+  return {
+    topN,
+    itensAtuais,
+    itensMantidos,
+    itensNovosNoTop,
+    renovacaoPercentual:
+      itensAtuais > 0 ? (itensNovosNoTop / itensAtuais) * 100 : 0,
+  };
 }
 
 function agregaReceitaPorProduto(vendas: VendaProduto[]): Map<string, { id: string; produto: string; total: number }> {
@@ -1748,7 +2166,12 @@ export function analiseUFs(vendas: VendaProduto[]): ItemUFVendas[] {
     atual.faturamento += total;
     atual.frete += paraNumero(venda.produto_vlr_frete);
     atual.notas.add(chaveDaNota(venda));
-    if (venda.cliente_nome?.trim()) atual.clientes.add(venda.cliente_nome.trim().toUpperCase());
+    if (
+      venda.cliente_nome?.trim() &&
+      !isClienteConsumidorGenerico(venda.cliente_nome)
+    ) {
+      atual.clientes.add(venda.cliente_nome.trim().toUpperCase());
+    }
     if (venda.cliente_cidade?.trim()) atual.cidades.add(venda.cliente_cidade.trim());
     porUf.set(uf, atual);
   }

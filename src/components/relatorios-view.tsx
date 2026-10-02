@@ -6,18 +6,18 @@ import { useRouter } from "next/navigation";
 import { ReportToolbar, ReportFilters } from "./relatorios/report-toolbar";
 import { FiltroRelatorio } from "./relatorios/filtro-relatorio";
 import { erroPeriodo } from "@/lib/periodo";
+import { REPORT_DEFINITIONS } from "./relatorios/report-definitions";
 import {
   Search,
   X,
-  Layers,
+  Sparkles,
+  Building2,
   Users,
+  Percent,
+  Layers,
   MapPin,
   CreditCard,
-  Sparkles,
-  Percent,
   CalendarDays,
-  UserCheck,
-  Building2,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
@@ -35,9 +35,14 @@ import {
   analiseFinanceira,
   agruparVendasPorNota,
   calcularVariacoesPeriodo,
-  calcularPeriodoAnterior,
   concentracaoTopN,
-  maioresCrescimentosProdutos,
+  analiseClientesNovosRecorrentes,
+  analiseContribuicaoVariacao,
+  analiseDescontoSemRetorno,
+  analiseDriversVendedores,
+  classeAPerdendoParticipacao,
+  mudancaMixTopProdutos,
+  isClienteConsumidorGenerico,
   formatarDataInputParaBR,
 } from "@/lib/vendas";
 import {
@@ -64,9 +69,15 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MetricaCard } from "@/components/metrica-card";
+import {
+  formatarMoeda,
+  formatarNumero,
+  formatarPercentual,
+} from "@/lib/formatters";
 
 // Subcomponentes modulares de abas
-import { AbaCurvaABC } from "./relatorios/aba-curva-abc";
+import { AbaCurvaABC, ResumoCurvaAbcCard } from "./relatorios/aba-curva-abc";
 import { AbaClientes } from "./relatorios/aba-clientes";
 import { AbaDescontos } from "./relatorios/aba-descontos";
 import { AbaSazonalidade } from "./relatorios/aba-sazonalidade";
@@ -82,9 +93,11 @@ import {
 } from "@/lib/clientes-frequencia";
 import {
   resolverComparacao,
+  rotuloModoComparacao,
   type ModoComparacao,
 } from "@/lib/periodo-comparacao";
 import { ComparacaoPeriodo } from "./relatorios/comparacao-periodo";
+import { ReportDiagnostics } from "./relatorios/report-diagnostics";
 
 interface EmpresaOption {
   id: string;
@@ -99,69 +112,14 @@ interface Props {
   initialPeriod?: Periodo;
   initialVendas?: (VendaProduto | VendaComEmpresa)[];
   initialPeriodoAnterior?: { inicial: string; final: string };
+  initialModoComparacao?: ModoComparacao;
+  initialComparacaoPersonalizada?: Periodo;
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialComparacaoDisponivel?: boolean;
   initialError?: string;
 }
 
-const relatoriosOpcoes = [
-  {
-    id: "curva-abc",
-    label: "Curva ABC (Produtos)",
-    icone: Sparkles,
-    cor: "text-amber-500",
-    desc: "Pareto 80/15/5 de faturamento e volume de itens",
-  },
-  {
-    id: "clientes",
-    label: "Clientes",
-    icone: UserCheck,
-    cor: "text-emerald-500",
-    desc: "Recorrência, concentração e Pareto da base de clientes",
-  },
-  {
-    id: "descontos",
-    label: "Descontos & Margem",
-    icone: Percent,
-    cor: "text-rose-500",
-    desc: "Descontos por vendedor, departamento e forma de pagamento",
-  },
-  {
-    id: "sazonalidade",
-    label: "Sazonalidade & Evolução",
-    icone: CalendarDays,
-    cor: "text-indigo-500",
-    desc: "Evolução diária e mensal, dias da semana e quinzenas",
-  },
-  {
-    id: "departamentos",
-    label: "Departamentos",
-    icone: Layers,
-    cor: "text-blue-500",
-    desc: "Faturamento por categoria com itens detalhados",
-  },
-  {
-    id: "vendedores",
-    label: "Equipe de Vendedores",
-    icone: Users,
-    cor: "text-violet-500",
-    desc: "Ranking de consultores, ticket médio e descontos",
-  },
-  {
-    id: "geografico",
-    label: "Cidade e UF",
-    icone: MapPin,
-    cor: "text-teal-500",
-    desc: "Distribuição por cidade ou UF, clientes atendidos e frete rateado",
-  },
-  {
-    id: "financeiro",
-    label: "Financeiro & Fiscal",
-    icone: CreditCard,
-    cor: "text-orange-500",
-    desc: "Formas de pagamento declaradas e documentos fiscais",
-  },
-];
+const relatoriosOpcoes = REPORT_DEFINITIONS;
 const abasComBusca = new Set([
   "curva-abc",
   "clientes",
@@ -177,6 +135,8 @@ export function RelatoriosView({
   initialPeriod,
   initialVendas = [],
   initialPeriodoAnterior,
+  initialModoComparacao = "mes-anterior",
+  initialComparacaoPersonalizada,
   initialVendasAnteriores = [],
   initialComparacaoDisponivel = true,
   initialError,
@@ -193,13 +153,14 @@ export function RelatoriosView({
     initialPeriod ?? periodoMesAtual(),
   );
   const [modoComparacao, setModoComparacao] =
-    useState<ModoComparacao>("automatico");
+    useState<ModoComparacao>(initialModoComparacao);
   const [modoConsultado, setModoConsultado] =
-    useState<ModoComparacao>("automatico");
+    useState<ModoComparacao>(initialModoComparacao);
   const [comparacaoPersonalizada, setComparacaoPersonalizada] =
     useState<Periodo>(
-      initialPeriodoAnterior ??
-        resolverComparacao(initialPeriod ?? periodoMesAtual()),
+      initialComparacaoPersonalizada ??
+        initialPeriodoAnterior ??
+        resolverComparacao(initialPeriod ?? periodoMesAtual(), "mes-anterior"),
     );
   const [periodoAnterior, setPeriodoAnterior] = useState<{
     inicial: string;
@@ -207,9 +168,7 @@ export function RelatoriosView({
   } | null>(
     initialPeriodoAnterior ??
       (initialPeriod
-        ? abaInicial === "clientes"
-          ? resolverComparacao(initialPeriod)
-          : calcularPeriodoAnterior(initialPeriod.inicial, initialPeriod.final)
+        ? resolverComparacao(initialPeriod, "mes-anterior")
         : null),
   );
   const {
@@ -264,13 +223,91 @@ export function RelatoriosView({
     return `${formatarDataInputParaBR(periodoAnterior.inicial)} a ${formatarDataInputParaBR(periodoAnterior.final)}`;
   }, [periodoAnterior]);
 
-  // Produtos em alta vs. período anterior (comparáveis nos dois períodos)
-  const produtosEmAlta = useMemo(
+  const cicloClientes = useMemo(
     () =>
-      comparacaoDisponivel
-        ? maioresCrescimentosProdutos(vendas, vendasAnteriores, 5)
+      abaAtiva === "clientes" && comparacaoDisponivel
+        ? analiseClientesNovosRecorrentes(
+            vendasClientes,
+            vendasClientesAnteriores,
+          )
+        : null,
+    [
+      abaAtiva,
+      comparacaoDisponivel,
+      vendasClientes,
+      vendasClientesAnteriores,
+    ],
+  );
+
+  const contribuicaoAtiva = useMemo(() => {
+    if (!comparacaoDisponivel) return null;
+    if (abaAtiva === "clientes") {
+      return analiseContribuicaoVariacao(
+        vendasClientes,
+        vendasClientesAnteriores,
+        "cliente",
+      );
+    }
+    if (abaAtiva === "vendedores") {
+      return analiseContribuicaoVariacao(
+        vendas,
+        vendasAnteriores,
+        "vendedor",
+      );
+    }
+    if (abaAtiva === "departamentos") {
+      return analiseContribuicaoVariacao(
+        vendas,
+        vendasAnteriores,
+        "departamento",
+      );
+    }
+    if (abaAtiva === "geografico") {
+      return analiseContribuicaoVariacao(vendas, vendasAnteriores, "cidade");
+    }
+    if (abaAtiva === "curva-abc") {
+      return analiseContribuicaoVariacao(vendas, vendasAnteriores, "produto");
+    }
+    return null;
+  }, [
+    abaAtiva,
+    comparacaoDisponivel,
+    vendas,
+    vendasAnteriores,
+    vendasClientes,
+    vendasClientesAnteriores,
+  ]);
+
+  const driversVendedores = useMemo(
+    () =>
+      abaAtiva === "vendedores" && comparacaoDisponivel
+        ? analiseDriversVendedores(vendas, vendasAnteriores)
         : [],
-    [vendas, vendasAnteriores, comparacaoDisponivel],
+    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
+  );
+
+  const alertasDesconto = useMemo(
+    () =>
+      abaAtiva === "descontos" && comparacaoDisponivel
+        ? analiseDescontoSemRetorno(vendas, vendasAnteriores)
+        : [],
+    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
+  );
+
+  const classeAEmQueda = useMemo(
+    () =>
+      abaAtiva === "curva-abc" && comparacaoDisponivel
+        ? classeAPerdendoParticipacao(vendas, vendasAnteriores)
+        : [],
+    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
+  );
+
+  const mudancaMix = useMemo(
+    () =>
+      abaAtiva === "curva-abc" && comparacaoDisponivel
+        ? mudancaMixTopProdutos(vendas, vendasAnteriores, 10)
+        : null,
+    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
   );
 
   // Filtros internos
@@ -347,7 +384,7 @@ export function RelatoriosView({
       abaAtiva === "clientes"
         ? analisarFrequenciaClientes(
             vendasClientes,
-            vendasAnteriores,
+            vendasClientesAnteriores,
             periodoConsultado,
             periodoAnterior,
             comparacaoDisponivel,
@@ -356,7 +393,7 @@ export function RelatoriosView({
     [
       abaAtiva,
       vendasClientes,
-      vendasAnteriores,
+      vendasClientesAnteriores,
       periodoConsultado,
       periodoAnterior,
       comparacaoDisponivel,
@@ -417,8 +454,8 @@ export function RelatoriosView({
     if (abaAtiva !== "sazonalidade") {
       return { porDiaSemana: [], porQuinzena: [] };
     }
-    return analiseSazonalidade(vendas);
-  }, [vendas, abaAtiva]);
+    return analiseSazonalidade(vendas, periodoConsultado);
+  }, [vendas, abaAtiva, periodoConsultado]);
 
   const relatorioEvolucao = useMemo(() => {
     if (abaAtiva !== "sazonalidade") return { diario: [], mensal: [] };
@@ -516,19 +553,347 @@ export function RelatoriosView({
     );
   }, [relatorioGeografico, busca]);
 
+  const metricaContextual = useMemo(() => {
+    if (abaAtiva === "curva-abc") {
+      return <ResumoCurvaAbcCard relatorioABC={relatorioABC} />;
+    }
+
+    if (abaAtiva === "clientes") {
+      return null;
+    }
+
+    if (abaAtiva === "vendedores") {
+      const ativos = relatorioVendedores.filter((item) => item.faturamento > 0).length;
+      return (
+        <MetricaCard
+          rotulo="Vendedores ativos"
+          definicao="Quantidade de vendedores com faturamento no período consultado."
+          valor={formatarNumero(ativos, 0)}
+          icone={Users}
+        />
+      );
+    }
+
+    if (abaAtiva === "departamentos") {
+      const ativos = relatorioDeptos.filter((item) => item.faturamento > 0).length;
+      return (
+        <MetricaCard
+          rotulo="Departamentos ativos"
+          definicao="Quantidade de departamentos com faturamento no período consultado."
+          valor={formatarNumero(ativos, 0)}
+          icone={Layers}
+        />
+      );
+    }
+
+    if (abaAtiva === "descontos") {
+      const itens = relatorioDescontos.porVendedor;
+      const faturamentoLiquido = itens.reduce(
+        (total, item) => total + item.faturamentoLiquido,
+        0,
+      );
+      const descontos = itens.reduce((total, item) => total + item.desconto, 0);
+      const bruto = faturamentoLiquido + descontos;
+      const taxa = bruto > 0 ? (descontos / bruto) * 100 : 0;
+      return (
+        <MetricaCard
+          rotulo="Taxa média de desconto"
+          definicao="Desconto total dividido pelo faturamento bruto estimado do período."
+          valor={formatarPercentual(taxa, 1)}
+          rodape={descontos > 0 ? formatarMoeda(descontos) : undefined}
+          icone={Percent}
+        />
+      );
+    }
+
+    if (abaAtiva === "geografico") {
+      const cidades = relatorioGeografico.filter((item) => item.faturamento > 0).length;
+      const ufs = relatorioUFs.filter((item) => item.faturamento > 0).length;
+      return (
+        <MetricaCard
+          rotulo="Cobertura geográfica"
+          definicao="Quantidade de cidades e UFs com vendas no período consultado."
+          valor={formatarNumero(cidades, 0)}
+          rodape={`${formatarNumero(ufs, 0)} UFs atendidas`}
+          icone={MapPin}
+        />
+      );
+    }
+
+    if (abaAtiva === "financeiro") {
+      const principal = relatorioFinanceiro.formasPagamento[0];
+      return (
+        <MetricaCard
+          rotulo="Forma predominante"
+          definicao="Forma de pagamento com maior faturamento no período consultado."
+          valor={principal?.nome ?? "—"}
+          rodape={
+            principal ? formatarPercentual(principal.percentual, 1) : undefined
+          }
+          icone={CreditCard}
+        />
+      );
+    }
+
+    if (abaAtiva === "sazonalidade") {
+      const melhorDia = [...relatorioSazonalidade.porDiaSemana].sort(
+        (a, b) =>
+          b.faturamentoMedioPorOcorrencia -
+          a.faturamentoMedioPorOcorrencia,
+      )[0];
+      return (
+        <MetricaCard
+          rotulo="Melhor dia"
+          definicao="Dia da semana com maior faturamento médio por ocorrência no calendário consultado."
+          valor={melhorDia?.dia ?? "—"}
+          rodape={
+            melhorDia
+              ? `${formatarMoeda(
+                  melhorDia.faturamentoMedioPorOcorrencia,
+                )} por ocorrência`
+              : undefined
+          }
+          icone={CalendarDays}
+        />
+      );
+    }
+
+    return null;
+  }, [
+    abaAtiva,
+    relatorioABC,
+    relatorioVendedores,
+    relatorioDeptos,
+    relatorioDescontos,
+    relatorioGeografico,
+    relatorioUFs,
+    relatorioFinanceiro,
+    relatorioSazonalidade,
+  ]);
+
+  const diagnosticoRelatorio = useMemo(() => {
+    if (abaAtiva === "clientes") {
+      const clientesIdentificados = relatorioClientes.itens.filter(
+        (item) => !isClienteConsumidorGenerico(item.nome),
+      );
+      const top5 = concentracaoTopN(clientesIdentificados, 5);
+      const top10 = concentracaoTopN(clientesIdentificados, 10);
+      return (
+        <ReportDiagnostics
+          titulo="Saúde da carteira"
+          metricas={[
+            ...(cicloClientes
+              ? [
+                  {
+                    label: "Só no período atual",
+                    value: formatarNumero(cicloClientes.novos, 0),
+                    detail: `${formatarMoeda(cicloClientes.receitaNovos)} · não comprova aquisição`,
+                  },
+                  {
+                    label: "Clientes recorrentes",
+                    value: formatarNumero(cicloClientes.recorrentes, 0),
+                    detail: `${formatarPercentual(
+                      cicloClientes.percentualReceitaRecorrentes,
+                      1,
+                    )} da receita identificada`,
+                  },
+                  {
+                    label: "Sem compra no atual",
+                    value: formatarNumero(cicloClientes.inativos, 0),
+                    detail: "Compraram no período comparado",
+                    attention: cicloClientes.inativos > 0,
+                  },
+                ]
+              : []),
+            {
+              label: "Concentração Top 5 / 10",
+              value: `${formatarPercentual(
+                top5.percentualTop,
+                1,
+              )} / ${formatarPercentual(top10.percentualTop, 1)}`,
+              detail: "Participação na receita identificada",
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "vendedores") {
+      const top3 = concentracaoTopN(relatorioVendedores, 3);
+      const top5 = concentracaoTopN(relatorioVendedores, 5);
+      const porVolume = driversVendedores.filter(
+        (item) => item.driver === "volume",
+      ).length;
+      const porTicket = driversVendedores.filter(
+        (item) => item.driver === "ticket",
+      ).length;
+      const ticketEmQueda = driversVendedores.filter(
+        (item) => item.ticketEmQueda,
+      );
+      return (
+        <ReportDiagnostics
+          titulo="Diagnóstico da equipe"
+          metricas={[
+            {
+              label: "Concentração Top 3 / 5",
+              value: `${formatarPercentual(
+                top3.percentualTop,
+                1,
+              )} / ${formatarPercentual(top5.percentualTop, 1)}`,
+              detail: "Participação no faturamento",
+            },
+            ...(comparacaoDisponivel
+              ? [
+                  {
+                    label: "Crescimento por volume",
+                    value: formatarNumero(porVolume, 0),
+                    detail:
+                      "Receita cresceu com mais pedidos e sem alta de ticket",
+                  },
+                  {
+                    label: "Crescimento por ticket",
+                    value: formatarNumero(porTicket, 0),
+                    detail:
+                      "Receita cresceu com ticket maior e sem alta de pedidos",
+                  },
+                  {
+                    label: "Receita ↑ com ticket ↓",
+                    value: formatarNumero(ticketEmQueda.length, 0),
+                    detail: ticketEmQueda[0]
+                      ? ticketEmQueda[0].vendedor
+                      : "Nenhum vendedor sinalizado",
+                    attention: ticketEmQueda.length > 0,
+                  },
+                ]
+              : []),
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "departamentos") {
+      const top3 = concentracaoTopN(relatorioDeptos, 3);
+      return (
+        <ReportDiagnostics
+          titulo="Diagnóstico do mix por departamento"
+          metricas={[
+            {
+              label: "Concentração Top 3",
+              value: formatarPercentual(top3.percentualTop, 1),
+              detail: "Receita concentrada nos três maiores departamentos",
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "geografico") {
+      const top5 = concentracaoTopN(relatorioGeografico, 5);
+      return (
+        <ReportDiagnostics
+          titulo="Diagnóstico geográfico"
+          metricas={[
+            {
+              label: "Concentração Top 5 cidades",
+              value: formatarPercentual(top5.percentualTop, 1),
+              detail: "Participação das cinco maiores praças",
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "curva-abc" && comparacaoDisponivel) {
+      return (
+        <ReportDiagnostics
+          titulo="Mudança de mix e contribuição"
+          metricas={[
+            ...(mudancaMix
+              ? [
+                  {
+                    label: "Renovação do Top 10",
+                    value: formatarPercentual(
+                      mudancaMix.renovacaoPercentual,
+                      1,
+                    ),
+                    detail: `${mudancaMix.itensNovosNoTop} novos entre os ${mudancaMix.itensAtuais} atuais`,
+                  },
+                ]
+              : []),
+            {
+              label: "Classe A perdendo participação",
+              value: formatarNumero(classeAEmQueda.length, 0),
+              detail:
+                classeAEmQueda[0]
+                  ? `${classeAEmQueda[0].produto}: ${formatarNumero(
+                      classeAEmQueda[0].diferencaPp,
+                      1,
+                    )} p.p.`
+                  : "Nenhuma perda comparável",
+              attention: classeAEmQueda.length > 0,
+            },
+          ]}
+          crescimento={contribuicaoAtiva?.crescimento ?? []}
+          queda={contribuicaoAtiva?.queda ?? []}
+        />
+      );
+    }
+
+    if (abaAtiva === "descontos" && comparacaoDisponivel) {
+      const principal = alertasDesconto[0];
+      return (
+        <ReportDiagnostics
+          titulo="Eficiência do desconto"
+          metricas={[
+            {
+              label: "Desconto maior sem crescimento",
+              value: formatarNumero(alertasDesconto.length, 0),
+              detail: principal
+                ? `${principal.vendedor}: +${formatarNumero(
+                    principal.aumentoPp,
+                    1,
+                  )} p.p. de desconto e ${formatarMoeda(
+                    principal.variacaoFaturamento,
+                  )} de receita`
+                : "Nenhum vendedor sinalizado",
+              attention: alertasDesconto.length > 0,
+            },
+          ]}
+        />
+      );
+    }
+
+    return null;
+  }, [
+    abaAtiva,
+    comparacaoDisponivel,
+    cicloClientes,
+    contribuicaoAtiva,
+    relatorioClientes,
+    relatorioVendedores,
+    driversVendedores,
+    relatorioDeptos,
+    relatorioGeografico,
+    mudancaMix,
+    classeAEmQueda,
+    alertasDesconto,
+  ]);
+
   async function consultar(proximoPeriodo: Periodo = periodo) {
     try {
-      const proximoAnterior =
-        abaAtiva === "clientes"
-          ? resolverComparacao(
-              proximoPeriodo,
-              modoComparacao,
-              comparacaoPersonalizada,
-            )
-          : calcularPeriodoAnterior(
-              proximoPeriodo.inicial,
-              proximoPeriodo.final,
-            );
+      const proximoAnterior = resolverComparacao(
+        proximoPeriodo,
+        modoComparacao,
+        comparacaoPersonalizada,
+      );
       await consultarVendas({
         empresaId,
         periodo: proximoPeriodo,
@@ -538,6 +903,24 @@ export function RelatoriosView({
       setPeriodoAnterior(proximoAnterior);
       setPeriodoConsultado({ ...proximoPeriodo });
       setModoConsultado(modoComparacao);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set("periodoInicial", proximoPeriodo.inicial);
+      params.set("periodoFinal", proximoPeriodo.final);
+      params.set("comparacao", modoComparacao);
+      if (modoComparacao === "personalizado") {
+        params.set("comparacaoInicial", comparacaoPersonalizada.inicial);
+        params.set("comparacaoFinal", comparacaoPersonalizada.final);
+      } else {
+        params.delete("comparacaoInicial");
+        params.delete("comparacaoFinal");
+      }
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
+
       toast.success("Dados de relatórios atualizados com sucesso!");
     } catch (erro) {
       toast.error(
@@ -556,6 +939,8 @@ export function RelatoriosView({
           empresaNome: rotuloEmpresa,
           cnpj: modoConsolidado ? undefined : empresaAtual?.cnpj,
           periodo: periodoConsultado,
+          periodoComparacao: periodoAnterior ?? undefined,
+          modoComparacao: rotuloModoComparacao(modoConsultado),
         },
       }}
     >
@@ -567,7 +952,19 @@ export function RelatoriosView({
             value={abaAtiva}
             onChange={(event) =>
               router.push(
-                `/relatorios?${new URLSearchParams({ aba: event.target.value, empresa: empresaId })}`,
+                `/relatorios?${new URLSearchParams({
+                  aba: event.target.value,
+                  empresa: empresaId,
+                  periodoInicial: periodoConsultado.inicial,
+                  periodoFinal: periodoConsultado.final,
+                  comparacao: modoConsultado,
+                  ...(modoConsultado === "personalizado"
+                    ? {
+                        comparacaoInicial: comparacaoPersonalizada.inicial,
+                        comparacaoFinal: comparacaoPersonalizada.final,
+                      }
+                    : {}),
+                })}`,
               )
             }
             className="min-w-0 flex-1 rounded-md border bg-background p-2"
@@ -618,38 +1015,29 @@ export function RelatoriosView({
             </div>
           </CardHeader>
           <CardContent className="space-y-3 border-t border-border/60 pt-4">
-            <ReportToolbar>
-              <details className="rounded-md border p-2 text-xs">
-                <summary className="cursor-pointer font-medium">
-                  Período
-                </summary>
-                <div className="mt-3">
-                  <DateRangeFilter
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+              <section className="min-w-0 flex-1 rounded-md border p-2.5" aria-label="Período">
+                <div className="mb-2 text-xs font-semibold">Período</div>
+                <DateRangeFilter
                     value={periodo}
                     onChange={setPeriodo}
                     onConsultar={consultar}
                     loading={loading}
                     compact
+                    persistirCookie={false}
                   />
-                </div>
-              </details>
-              {abaAtiva === "clientes" ? (
-                <details className="rounded-md border p-2 text-xs">
-                  <summary className="cursor-pointer font-medium">
-                    Comparação
-                  </summary>
-                  <div className="mt-3">
-                    <ComparacaoPeriodo
-                      periodo={periodo}
-                      modo={modoComparacao}
-                      personalizado={comparacaoPersonalizada}
-                      onModo={setModoComparacao}
-                      onPersonalizado={setComparacaoPersonalizada}
-                      loading={loading}
-                    />
-                  </div>
-                </details>
-              ) : null}
+              </section>
+              <section className="min-w-0 rounded-md border p-2.5" aria-label="Comparação">
+                <div className="mb-2 text-xs font-semibold">Comparação</div>
+                <ComparacaoPeriodo
+                  periodo={periodo}
+                  modo={modoComparacao}
+                  personalizado={comparacaoPersonalizada}
+                  onModo={setModoComparacao}
+                  onPersonalizado={setComparacaoPersonalizada}
+                  loading={loading}
+                />
+              </section>
               <Button
                 size="sm"
                 disabled={loading || !!erroPeriodo(periodo)}
@@ -657,16 +1045,13 @@ export function RelatoriosView({
               >
                 {loading ? "Consultando..." : "Consultar"}
               </Button>
-            </ReportToolbar>
+            </div>
             {periodo.inicial !== periodoConsultado.inicial ||
             periodo.final !== periodoConsultado.final ||
-            (abaAtiva === "clientes" &&
-              (modoComparacao !== modoConsultado ||
-                (modoComparacao === "personalizado" &&
-                  (comparacaoPersonalizada.inicial !==
-                    periodoAnterior?.inicial ||
-                    comparacaoPersonalizada.final !==
-                      periodoAnterior?.final)))) ? (
+            modoComparacao !== modoConsultado ||
+            (modoComparacao === "personalizado" &&
+              (comparacaoPersonalizada.inicial !== periodoAnterior?.inicial ||
+                comparacaoPersonalizada.final !== periodoAnterior?.final)) ? (
               <p role="status" className="text-xs text-muted-foreground">
                 Alterações pendentes. Clique em Consultar para aplicar.
               </p>
@@ -809,8 +1194,12 @@ export function RelatoriosView({
                     variacoes={variacoesPeriodo}
                     rotuloPeriodoAnterior={rotuloPeriodoAnterior}
                     compacto
+                    mostrarClientes={abaAtiva === "clientes"}
+                    metricaExtra={metricaContextual}
                   />
                 )}
+
+                {diagnosticoRelatorio}
 
                 {modoConsolidado && consolidacaoEmpresas.length > 1 ? (
                   <ConsolidacaoEmpresas
@@ -837,8 +1226,6 @@ export function RelatoriosView({
                         : null
                     }
                     concentracaoTop20={concentracaoProdutosTop20}
-                    produtosEmAlta={produtosEmAlta}
-                    temPeriodoAnterior={comparacaoDisponivel}
                   />
                 )}
 
@@ -856,6 +1243,8 @@ export function RelatoriosView({
                       empresaNome: rotuloEmpresa,
                       cnpj: modoConsolidado ? undefined : empresaAtual?.cnpj,
                       periodo: periodoConsultado,
+                      periodoComparacao: periodoAnterior ?? undefined,
+                      modoComparacao: rotuloModoComparacao(modoConsultado),
                     }}
                     periodoAnterior={rotuloPeriodoAnterior}
                   />

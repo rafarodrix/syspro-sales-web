@@ -26,12 +26,12 @@ export function ConsolidacaoEmpresas({ empresas, abaAtiva }: ConsolidacaoEmpresa
       </div>
 
       <ReportTableFrame>
-          <thead><tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground"><th className="p-3">Empresa</th><th className="p-3 text-right">Pedidos / NF</th><th className="p-3 text-right">Itens</th><th className="p-3 text-right">Descontos</th><th className="p-3 text-right">Ticket médio</th><th className="p-3 text-right">Faturamento</th><th className="p-3 text-right">Participação</th><th className="w-10 p-3" aria-label="Ação" /></tr></thead>
+          <thead><tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground"><th className="p-3">Empresa</th><th className="p-3 text-right">Pedidos / NF</th><th className="p-3 text-right">SKUs distintos</th><th className="p-3 text-right">Descontos</th><th className="p-3 text-right">Ticket médio</th><th className="p-3 text-right">Faturamento</th><th className="p-3 text-right">Participação</th><th className="w-10 p-3" aria-label="Ação" /></tr></thead>
           <tbody>{empresas.map((empresa) => (
             <tr key={empresa.id} className="border-b last:border-0 hover:bg-muted/20">
               <td className="p-3"><div className="flex items-center gap-2"><Building2 className="size-3.5 shrink-0 text-primary" /><div><p className="font-semibold text-foreground">{empresa.nome}</p>{empresa.cnpj ? <p className="font-mono text-[10px] text-muted-foreground">{empresa.cnpj}</p> : null}</div></div></td>
               <td className="p-3 text-right font-mono">{formatarNumero(empresa.pedidos, 0)}</td>
-              <td className="p-3 text-right font-mono">{formatarNumero(empresa.quantidadeItens, 2)}</td>
+              <td className="p-3 text-right font-mono">{formatarNumero(empresa.produtosDistintos, 0)}</td>
               <td className="p-3 text-right font-mono text-rose-600 dark:text-rose-400">{formatarMoeda(empresa.descontos)}</td>
               <td className="p-3 text-right font-mono">{formatarMoeda(empresa.ticketMedio)}</td>
               <td className="p-3 text-right font-mono font-bold">{formatarMoeda(empresa.faturamento)}</td>
