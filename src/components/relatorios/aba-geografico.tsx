@@ -67,6 +67,7 @@ export function AbaGeografico({
         />
       ) : visao === "uf" ? (
         <ReportTable
+          caption="Resumo por UF"
           data={ufsFiltradas}
           rowKey={(item) => item.uf}
           onRowClick={(item) => {
@@ -133,7 +134,7 @@ export function AbaGeografico({
             {
               id: "percentual",
               header: <>Participação</>,
-              kind: "number",
+              kind: "percent",
               value: (item) => item.percentual,
               cell: (item) => (
                 <DataBarPercent
@@ -224,7 +225,7 @@ export function AbaGeografico({
               {
                 id: "percentual",
                 header: <>Participação</>,
-                kind: "number",
+                kind: "percent",
                 value: (cidade) => cidade.percentual,
                 cell: (cidade) => (
                   <DataBarPercent
