@@ -47,10 +47,12 @@ function generateSmoothPath(points: { x: number; y: number }[]): string {
 export function GraficoFaturamento({
   dados,
   formato = "moeda",
+  rotuloMetrica,
   temComparacao = false,
 }: {
   dados: PontoFaturamento[];
   formato?: FormatoDoGrafico;
+  rotuloMetrica?: string;
   temComparacao?: boolean;
 }) {
   const id = useId().replace(/:/g, "");
@@ -330,7 +332,8 @@ export function GraficoFaturamento({
         <div className="flex items-center gap-2">
           <span className="size-2 rounded-full bg-primary shadow-xs" />
           <span className="font-semibold text-foreground">
-            {formato === "moeda" ? "Faturamento Realizado (R$)" : "Volume de Pedidos"}
+            {rotuloMetrica ??
+              (formato === "moeda" ? "Faturamento realizado" : "Pedidos / NF")}
           </span>
         </div>
         {temComparacao && (
@@ -410,7 +413,7 @@ export function GraficoProdutos({ dados, empresaId }: { dados: ProdutoRankeado[]
                   </span>
                   {item.quantidade > 0 && (
                     <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 h-4">
-                      {formatarNumero(item.quantidade, 0)} un
+                      {formatarNumero(item.quantidade, 2)} {item.un}
                     </Badge>
                   )}
                 </div>
