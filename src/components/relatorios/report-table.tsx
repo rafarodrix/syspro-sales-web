@@ -14,6 +14,7 @@ import { ExportarVisao } from "./exportar-visao";
 import { useReportContext } from "./report-context";
 import { ReportToolbar } from "./report-toolbar";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
+import { formatarDataInputParaBR } from "@/lib/vendas";
 
 function headerText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -145,7 +146,11 @@ export function ReportTable<T>({
                     ? formatarMoeda(value)
                     : column.kind === "percent" && typeof value === "number"
                       ? formatarPercentual(value, 2)
-                      : value;
+                      : column.kind === "date" &&
+                          typeof value === "string" &&
+                          /^\d{4}-\d{2}-\d{2}$/.test(value)
+                        ? formatarDataInputParaBR(value)
+                        : value;
               }),
             )}
           />
