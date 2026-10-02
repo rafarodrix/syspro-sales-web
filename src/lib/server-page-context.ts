@@ -6,7 +6,10 @@ import { obterVendas, SalesIntegrationError, type EmpresaInfo } from "@/lib/sale
 import type { VendaComEmpresa } from "@/lib/syspro-api";
 import type { UserRole } from "@/lib/validations";
 import type { Permissao } from "@/lib/role-permissions";
-import { resolverComparacao } from "@/lib/periodo-comparacao";
+import {
+  resolverComparacao,
+  type ModoComparacao,
+} from "@/lib/periodo-comparacao";
 
 export interface ServerPageContextOptions {
   permissao?: Permissao;
@@ -15,6 +18,9 @@ export interface ServerPageContextOptions {
     aba?: string;
     periodoInicial?: string;
     periodoFinal?: string;
+    comparacao?: string;
+    comparacaoInicial?: string;
+    comparacaoFinal?: string;
   }>;
   carregarPeriodoAnterior?: boolean;
   comparacaoCalendarioClientes?: boolean;
@@ -35,6 +41,8 @@ export interface ServerPageContextResult {
   comparacaoDisponivel?: boolean;
   erroInicial?: string;
   abaParam?: string;
+  modoComparacao?: ModoComparacao;
+  comparacaoPersonalizada?: { inicial: string; final: string };
 }
 
 export async function resolveServerPageContext({
@@ -51,6 +59,9 @@ export async function resolveServerPageContext({
     aba: abaParam,
     periodoInicial,
     periodoFinal,
+    comparacao,
+    comparacaoInicial,
+    comparacaoFinal,
   } = await searchParams;
   const cookieStore = await cookies();
   const cookieEmpresa = cookieStore.get("syspro_empresa_ativa")?.value;
@@ -90,11 +101,38 @@ export async function resolveServerPageContext({
       : erroPeriodo(periodoCookie)
         ? periodoPadrao
         : periodoCookie;
+  const modosComparacao: ModoComparacao[] = [
+    "automatico",
+    "dias-anteriores",
+    "mes-anterior",
+    "ano-anterior",
+    "personalizado",
+  ];
+  const comparacaoPersonalizada = {
+    inicial: comparacaoInicial ?? "",
+    final: comparacaoFinal ?? "",
+  };
+  const modoComparacaoSolicitado = modosComparacao.includes(
+    comparacao as ModoComparacao,
+  )
+    ? (comparacao as ModoComparacao)
+    : "mes-anterior";
+  const modoComparacao =
+    modoComparacaoSolicitado === "personalizado" &&
+    erroPeriodo(comparacaoPersonalizada)
+      ? "mes-anterior"
+      : modoComparacaoSolicitado;
 
   let periodoAnterior: { inicial: string; final: string } | undefined;
   if (carregarPeriodoAnterior) {
     periodoAnterior = comparacaoMesAnteriorPadrao
-      ? resolverComparacao(periodo, "mes-anterior")
+      ? resolverComparacao(
+          periodo,
+          modoComparacao,
+          modoComparacao === "personalizado"
+            ? comparacaoPersonalizada
+            : undefined,
+        )
       : comparacaoCalendarioClientes && abaParam === "clientes"
         ? resolverComparacao(periodo, "mes-anterior")
         : calcularPeriodoAnterior(periodo.inicial, periodo.final);
@@ -154,5 +192,8 @@ export async function resolveServerPageContext({
     comparacaoDisponivel,
     erroInicial,
     abaParam,
+    modoComparacao,
+    comparacaoPersonalizada:
+      modoComparacao === "personalizado" ? comparacaoPersonalizada : undefined,
   };
 }
