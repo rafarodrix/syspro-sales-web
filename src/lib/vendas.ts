@@ -647,7 +647,6 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
         faturamento: 0,
         quantidadeItens: 0,
         notas: new Set(),
-        produtos: new Set(),
         produtosMap: new Map(),
       };
       deptosMap.set(nomeDepto, depto);
