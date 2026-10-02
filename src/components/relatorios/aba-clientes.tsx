@@ -1,4 +1,4 @@
-import { ReportTableFrame } from "./report-table";
+import { ReportTable } from "./report-table";
 import { useMemo, useState } from "react";
 import { CalendarDays, FileText, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import {
 } from "@/lib/formatters";
 import type { ItemClienteAnalise, VendaAgrupada } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
-import { TablePagination } from "@/components/table-pagination";
 import { ReportViewSelector } from "./report-view-toggle";
 import { DetalhamentoClientes } from "./detalhamento-clientes";
 import type { Periodo } from "@/lib/periodo";
@@ -56,13 +55,6 @@ export function AbaClientes({
   const [clientesSelecionados, setClientesSelecionados] = useState<string[]>(
     [],
   );
-  const [paginaAtual, setPaginaAtual] = useState(1);
-  const [itensPorPagina, setItensPorPagina] = useState(25);
-  const paginaExibida = Math.min(
-    paginaAtual,
-    Math.max(1, Math.ceil(clientesFiltrados.length / itensPorPagina)),
-  );
-
   const frequenciaPorNome = useMemo(
     () => new Map(frequencia.itens.map((item) => [item.nome, item])),
     [frequencia],
@@ -103,11 +95,6 @@ export function AbaClientes({
     () => notasAgrupadas.filter((item) => nomesFiltrados.has(item.cliente)),
     [notasAgrupadas, nomesFiltrados],
   );
-  const clientesPaginados = useMemo(() => {
-    const inicio = (paginaExibida - 1) * itensPorPagina;
-    return clientesOrdenados.slice(inicio, inicio + itensPorPagina);
-  }, [clientesOrdenados, paginaExibida, itensPorPagina]);
-
   function abrirAnaliticoDoCliente(nome: string, mes?: string) {
     setClientesSelecionados([nome]);
     setOrigem(visao === "frequencia" ? "frequencia" : "sintetico");
@@ -152,7 +139,6 @@ export function AbaClientes({
               valor={ordem}
               onChange={(valor) => {
                 setOrdem(valor);
-                setPaginaAtual(1);
               }}
               opcoes={[
                 { valor: "faturamento", rotulo: "Maior faturamento" },
@@ -200,128 +186,152 @@ export function AbaClientes({
               })}
             />
           </div>
-          {/* Tabela de Ranking de Clientes */}
-          <ReportTableFrame>
-            <thead>
-              <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
-                <th className="w-16 p-3 text-center">Classe</th>
-                <th className="p-3">Cliente</th>
-                <th className="p-3">Praça (Cidade/UF)</th>
-                <th className="p-3 text-right">Notas</th>
-                <th className="p-3 text-right">Dias com compra</th>
-                <th className="p-3">Última compra</th>
-                <th className="p-3 text-right">Qtd Itens</th>
-                <th className="p-3 text-right">Ticket Médio</th>
-                <th className="p-3 text-right">Descontos</th>
-                <th className="p-3 text-right">Total Faturado</th>
-                <th className="p-3 text-right">% Fat.</th>
-                <th className="p-3 text-right">% Acum.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientesPaginados.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={12}
-                    className="p-8 text-center text-muted-foreground"
+          {/* Ranking de clientes no padrão único de relatórios */}
+          <ReportTable
+            data={clientesOrdenados}
+            rowKey={(cli) => cli.nome}
+            label="clientes"
+            caption="Ranking de clientes"
+            showExport={false}
+            columns={[
+              {
+                id: "classe",
+                header: "Classe",
+                kind: "number",
+                value: (cli) => cli.classe,
+                cell: (cli) => (
+                  <Badge
+                    variant={
+                      cli.classe === "A"
+                        ? "default"
+                        : cli.classe === "B"
+                          ? "secondary"
+                          : "outline"
+                    }
+                    className={`font-bold ${
+                      cli.classe === "A"
+                        ? "bg-emerald-600 text-white"
+                        : cli.classe === "B"
+                          ? "bg-blue-600 text-white"
+                          : "text-amber-700 dark:text-amber-400 border-amber-500/40"
+                    }`}
                   >
-                    Nenhum cliente encontrado para os filtros selecionados.
-                  </td>
-                </tr>
-              ) : null}
-              {clientesPaginados.map((cli) => (
-                <tr
-                  key={cli.nome}
-                  className="border-b last:border-0 hover:bg-muted/30"
-                >
-                  <td className="p-3 text-center">
-                    <Badge
-                      variant={
-                        cli.classe === "A"
-                          ? "default"
-                          : cli.classe === "B"
-                            ? "secondary"
-                            : "outline"
-                      }
-                      className={`font-bold ${
-                        cli.classe === "A"
-                          ? "bg-emerald-600 text-white"
-                          : cli.classe === "B"
-                            ? "bg-blue-600 text-white"
-                            : "text-amber-700 dark:text-amber-400 border-amber-500/40"
-                      }`}
-                    >
-                      {cli.classe}
-                    </Badge>
-                  </td>
-                  <td className="p-3 font-semibold text-foreground">
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={() => abrirAnaliticoDoCliente(cli.nome)}
-                    >
-                      {cli.nome}
-                    </Button>
-                  </td>
-                  <td className="p-3 text-muted-foreground">
-                    {cli.cidade} / {cli.uf}
-                  </td>
-                  <td className="p-3 text-right font-mono">
-                    {formatarNumero(cli.pedidos, 0)}
-                  </td>
-                  <td className="p-3 text-right font-mono">
-                    {frequenciaPorNome.get(cli.nome)?.diasComCompra ?? "—"}
-                  </td>
-                  <td className="whitespace-nowrap p-3">
-                    {frequenciaPorNome.get(cli.nome)?.ultimaCompra
-                      ? formatarDataInputParaBR(
-                          frequenciaPorNome.get(cli.nome)!.ultimaCompra!,
-                        )
-                      : "—"}
-                  </td>
-                  <td className="p-3 text-right font-mono text-muted-foreground">
-                    {formatarNumero(cli.quantidadeItens, 2)}
-                  </td>
-                  <td className="p-3 text-right font-mono text-muted-foreground">
-                    {formatarMoeda(cli.ticketMedio)}
-                  </td>
-                  <td className="p-3 text-right font-mono text-muted-foreground">
-                    {formatarMoeda(cli.descontos)}
-                  </td>
-                  <td className="p-3 text-right font-mono font-bold text-foreground">
-                    {formatarMoeda(cli.faturamento)}
-                  </td>
-                  <td className="p-3 text-right">
-                    <DataBarPercent
-                      valor={formatarPercentual(cli.percentual, 2)}
-                      percentual={cli.percentual}
-                      cor={
-                        cli.classe === "A"
-                          ? "bg-emerald-500/20"
-                          : cli.classe === "B"
-                            ? "bg-blue-500/20"
-                            : "bg-amber-500/20"
-                      }
-                    />
-                  </td>
-                  <td className="p-3 text-right font-mono font-semibold text-primary">
+                    {cli.classe}
+                  </Badge>
+                ),
+              },
+              {
+                id: "cliente",
+                header: "Cliente",
+                kind: "name",
+                value: (cli) => cli.nome,
+                cell: (cli) => (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => abrirAnaliticoDoCliente(cli.nome)}
+                  >
+                    {cli.nome}
+                  </Button>
+                ),
+              },
+              {
+                id: "praca",
+                header: "Praça (Cidade/UF)",
+                kind: "name",
+                value: (cli) => `${cli.cidade} / ${cli.uf}`,
+                cell: (cli) => <>{cli.cidade} / {cli.uf}</>,
+              },
+              {
+                id: "notas",
+                header: "Notas",
+                kind: "number",
+                value: (cli) => cli.pedidos,
+                cell: (cli) => <>{formatarNumero(cli.pedidos, 0)}</>,
+              },
+              {
+                id: "dias-compra",
+                header: "Dias com compra",
+                kind: "number",
+                value: (cli) => frequenciaPorNome.get(cli.nome)?.diasComCompra ?? null,
+                cell: (cli) => <>{frequenciaPorNome.get(cli.nome)?.diasComCompra ?? "—"}</>,
+              },
+              {
+                id: "ultima-compra",
+                header: "Última compra",
+                kind: "date",
+                value: (cli) => frequenciaPorNome.get(cli.nome)?.ultimaCompra ?? null,
+                exportValue: (cli) => {
+                  const data = frequenciaPorNome.get(cli.nome)?.ultimaCompra;
+                  return data ? formatarDataInputParaBR(data) : "—";
+                },
+                cell: (cli) => {
+                  const data = frequenciaPorNome.get(cli.nome)?.ultimaCompra;
+                  return <>{data ? formatarDataInputParaBR(data) : "—"}</>;
+                },
+              },
+              {
+                id: "itens",
+                header: "Qtd Itens",
+                kind: "number",
+                value: (cli) => cli.quantidadeItens,
+                exportValue: (cli) => formatarNumero(cli.quantidadeItens, 2),
+                cell: (cli) => <>{formatarNumero(cli.quantidadeItens, 2)}</>,
+              },
+              {
+                id: "ticket",
+                header: "Ticket Médio",
+                kind: "currency",
+                value: (cli) => cli.ticketMedio,
+                cell: (cli) => <>{formatarMoeda(cli.ticketMedio)}</>,
+              },
+              {
+                id: "descontos",
+                header: "Descontos",
+                kind: "currency",
+                value: (cli) => cli.descontos,
+                cell: (cli) => <>{formatarMoeda(cli.descontos)}</>,
+              },
+              {
+                id: "faturamento",
+                header: "Total Faturado",
+                kind: "currency",
+                value: (cli) => cli.faturamento,
+                cell: (cli) => <strong>{formatarMoeda(cli.faturamento)}</strong>,
+              },
+              {
+                id: "percentual",
+                header: "% Fat.",
+                kind: "number",
+                value: (cli) => cli.percentual,
+                exportValue: (cli) => formatarPercentual(cli.percentual, 2),
+                cell: (cli) => (
+                  <DataBarPercent
+                    valor={formatarPercentual(cli.percentual, 2)}
+                    percentual={cli.percentual}
+                    cor={
+                      cli.classe === "A"
+                        ? "bg-emerald-500/20"
+                        : cli.classe === "B"
+                          ? "bg-blue-500/20"
+                          : "bg-amber-500/20"
+                    }
+                  />
+                ),
+              },
+              {
+                id: "acumulado",
+                header: "% Acum.",
+                kind: "number",
+                value: (cli) => cli.percentualAcumulado,
+                exportValue: (cli) => formatarPercentual(cli.percentualAcumulado, 1),
+                cell: (cli) => (
+                  <span className="font-semibold text-primary">
                     {formatarPercentual(cli.percentualAcumulado, 1)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </ReportTableFrame>
-
-          <TablePagination
-            paginaAtual={paginaExibida}
-            totalItens={clientesFiltrados.length}
-            itensPorPagina={itensPorPagina}
-            onPaginaChange={setPaginaAtual}
-            onItensPorPaginaChange={(valor) => {
-              setItensPorPagina(valor);
-              setPaginaAtual(1);
-            }}
-            labelItens="clientes"
+                  </span>
+                ),
+              },
+            ]}
           />
         </div>
       </div>
