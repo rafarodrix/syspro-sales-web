@@ -15,7 +15,7 @@ interface PanoramaPeriodoProps {
 }
 
 function BadgeVariacao({ variacao }: { variacao: VariacaoMetrica }) {
-  if (variacao.neutro) {
+  if (variacao.neutro || variacao.semBase) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] font-bold text-muted-foreground">
         <Minus className="size-3" /> {variacao.texto}
@@ -92,8 +92,8 @@ export function PanoramaPeriodo({
         />
         {mostrarClientes ? (
           <MetricaCard
-            rotulo="Clientes ativos"
-            definicao="Número de clientes distintos que compraram no período (inclui consumidor de balcão)."
+            rotulo="Clientes identificados"
+            definicao="Clientes distintos identificados que compraram no período. Consumidores genéricos de balcão são excluídos para evitar distorção na comparação comercial."
             valor={formatarNumero(variacoes.clientes.atual, 0)}
             icone={Users}
             suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.clientes} />}
