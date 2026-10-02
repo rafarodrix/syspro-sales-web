@@ -384,7 +384,7 @@ export function RelatoriosView({
       abaAtiva === "clientes"
         ? analisarFrequenciaClientes(
             vendasClientes,
-            vendasAnteriores,
+            vendasClientesAnteriores,
             periodoConsultado,
             periodoAnterior,
             comparacaoDisponivel,
@@ -393,7 +393,7 @@ export function RelatoriosView({
     [
       abaAtiva,
       vendasClientes,
-      vendasAnteriores,
+      vendasClientesAnteriores,
       periodoConsultado,
       periodoAnterior,
       comparacaoDisponivel,
