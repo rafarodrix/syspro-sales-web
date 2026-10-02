@@ -32,7 +32,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     comoLer: [
       "Classe A (≈80% do faturamento): são os produtos que sustentam a operação — falta deles no estoque derruba a venda do dia.",
       "Classe C (≈5%): muitos itens com baixíssima participação — avalie se vale manter todos em estoque ou se há itens parados.",
-      "Compare com o volume de itens: um produto classe A em faturamento pode ter poucas unidades vendidas (alto valor) ou muitas (alto giro).",
+      "Compare quantidade somente dentro do mesmo produto/unidade. O diagnóstico mostra renovação do Top 10 e quais produtos classe A estão perdendo participação de receita.",
+      "A contribuição para a variação mostra quais produtos adicionaram ou retiraram mais receita entre os períodos.",
     ],
     dica: "Use a classe A como base para reposição prioritária e para negociar com fornecedores (são os itens que mais movimentam).",
     glossario: [
@@ -49,6 +50,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Se poucos clientes representam grande parte do faturamento, a operação depende muito deles — a perda de um único cliente seria sentida.",
       "Na base PDV, o cliente 'CONSUMIDOR' concentra o balcão — a análise de concentração ganha sentido principalmente nas vendas faturadas (convênio/NF-e).",
       "Compare a frequência com a média e a mediana da carteira. A grade mensal distingue compras regulares de compras concentradas em um único mês.",
+      "O diagnóstico de carteira separa recorrentes, clientes presentes só no atual e clientes sem compra no atual. Esses grupos descrevem apenas as duas janelas comparadas — não comprovam aquisição ou perda definitiva.",
       "Clientes sem compra no período atual aparecem no comparativo quando compraram no anterior. Isso não comprova perda do cliente; compra só no atual não comprova aquisição.",
     ],
     dica: "Para os clientes Top, avalie criar condições específicas (prazo, tabela) — são os que mais garantem previsibilidade de receita.",
@@ -69,6 +71,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Uma taxa de desconto alta em um vendedor pode indicar negociação agressiva ou falta de autoridade de preço — compare com os colegas.",
       "Departamentos com desconto recorrente podem ter preço de tabela acima do mercado ou sofrer pressão de concorrência.",
       "Compare taxa, valor concedido e faturamento líquido dentro da mesma dimensão antes de tomar uma decisão comercial.",
+      "A sinalização de desconto maior sem crescimento de receita é um indício para investigação, não prova que o desconto causou a queda.",
     ],
     dica: "Vendedor com taxa de desconto muito acima da média é candidato a treinamento de negociação ou revisão da política de preços.",
     glossario: [
@@ -97,7 +100,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Detalha o faturamento por departamento/categoria, com os itens que compõem cada um — mostra o mix de produtos do negócio.",
     comoLer: [
       "Departamentos com maior faturamento são o coração do negócio; os menores podem ser complemento ou oportunidade não explorada.",
-      "Um departamento com muitos itens mas pouco faturamento pode ter estoque disperso demais.",
+      "Observe SKUs distintos, pedidos/NF, ticket médio e participação; quantidades físicas agregadas entre UN, KG, CX etc. não são comparáveis.",
+      "O diagnóstico de contribuição mostra quais departamentos explicam mais o crescimento ou a queda da receita.",
     ],
     dica: "Use o mix para decidir onde concentrar estoque, espaço e verba de compra.",
     glossario: [
@@ -111,7 +115,8 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       "Ranking da equipe: faturamento, ticket médio, quantidade de vendas e taxa de desconto de cada vendedor.",
     comoLer: [
       "Olhe o ticket médio junto do faturamento: vendedor com ticket alto vende melhor o valor, não só o volume.",
-      "Cruzando com a taxa de desconto, identifica-se quem vende mantendo margem e quem 'compra' a venda com desconto.",
+      "Cruzando com a taxa de desconto, identifica-se quem vende com menor ou maior concessão comercial; sem custo/CMV não é possível concluir margem.",
+      "O diagnóstico separa crescimento puxado por mais pedidos, por maior ticket ou por ambos, e sinaliza receita crescente com ticket em queda.",
     ],
     dica: "Metas individuais fazem mais sentido quando consideram o perfil de cada um (balcão vs. venda direta).",
     glossario: [
@@ -127,6 +132,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     comoLer: [
       "Concentração em poucas cidades significa mercado regional dependente — expansão passa por diversificar praças.",
       "Frete alto em cidades distantes pode elevar o custo de atendimento de pedidos pequenos — avalie valor mínimo de pedido por região.",
+      "A contribuição geográfica mostra quais cidades adicionaram ou retiraram mais receita na comparação selecionada.",
     ],
     dica: "Se uma praça distante gera pouco faturamento e muito frete, considere política de entrega mínima ou parceiro logístico local.",
     glossario: [
