@@ -7,7 +7,6 @@ import {
 } from "./report-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TablePagination } from "@/components/table-pagination";
 import {
   formatarMoeda,
   formatarNumero,
@@ -20,7 +19,7 @@ import {
   type SegmentoFrequencia,
 } from "@/lib/clientes-frequencia";
 import { cn } from "@/lib/utils";
-import { ExportarVisao, type ContextoExportacao } from "./exportar-visao";
+import type { ContextoExportacao } from "./exportar-visao";
 import { FiltroRelatorio } from "./filtro-relatorio";
 
 const situacoes = {
@@ -51,8 +50,6 @@ export function VisaoFrequenciaClientes({
 }) {
   const [segmento, setSegmento] = useState<SegmentoFrequencia>("todos");
   const [ordem, setOrdem] = useState("frequencia");
-  const [pagina, setPagina] = useState(1);
-  const [porPagina, setPorPagina] = useState(25);
   const itens = useMemo(() => {
     const filtrados = filtrarFrequencia(
       relatorio.itens,
@@ -72,68 +69,10 @@ export function VisaoFrequenciaClientes({
       return diferenca || a.nome.localeCompare(b.nome, "pt-BR");
     });
   }, [relatorio, busca, classe, segmento, ordem]);
-  const paginaSegura = Math.min(
-    pagina,
-    Math.max(1, Math.ceil(itens.length / porPagina)),
-  );
-  const exibidos = itens.slice(
-    (paginaSegura - 1) * porPagina,
-    paginaSegura * porPagina,
-  );
   const meses = relatorio.meses.map(
     (mes) => `${mes.slice(5)}/${mes.slice(0, 4)}`,
   );
   const observacoes = `Frequência em ${relatorio.unidade}; meses sem compra incluídos. Média da carteira: ${formatarNumero(relatorio.media, 2)}; mediana: ${formatarNumero(relatorio.mediana, 2)}. Referência: ${relatorio.ativos} clientes identificados com data de compra válida, antes dos filtros. ${relatorio.comparar ? `Anterior: ${periodoAnterior}. Variação de frequência normalizada por 30 dias.` : "Comparativo indisponível."} Última compra observada nas janelas consultadas; dias sem compra até o final do período atual. Agrupamento por nome, sujeito a homônimos. Consumidor genérico excluído. — indica dado indisponível ou base anterior zero.`;
-  const colunas = [
-    "Cliente",
-    "Cidade",
-    "UF",
-    "Classe atual",
-    "Situação",
-    ...meses.map((mes) => `Dias ${mes}`),
-    "Dias com compra",
-    `Frequência (${relatorio.unidade})`,
-    "Meses com compra",
-    "Intervalo médio (dias)",
-    "Última compra observada",
-    "Dias sem compra",
-    "Frequência anterior/30 dias",
-    "Frequência atual/30 dias",
-    "Variação frequência (%)",
-    "Faturamento anterior",
-    "Faturamento atual",
-    "Variação faturamento (%)",
-    "Média carteira",
-    "Mediana carteira",
-    "Período anterior comparado",
-  ];
-  const linhas = itens.map((item) => [
-    item.nome,
-    item.cidade,
-    item.uf,
-    item.classe ?? "—",
-    situacoes[item.situacao],
-    ...item.porMes,
-    item.diasComCompra,
-    formatarNumero(item.frequencia, 2),
-    `${item.mesesComCompra}/${meses.length}`,
-    item.intervaloMedio === null ? "—" : formatarNumero(item.intervaloMedio, 1),
-    item.ultimaCompra ? formatarDataInputParaBR(item.ultimaCompra) : "—",
-    item.diasSemCompra ?? "—",
-    item.frequenciaAnterior30 === null
-      ? "—"
-      : formatarNumero(item.frequenciaAnterior30, 2),
-    formatarNumero(item.frequenciaAtual30, 2),
-    variacao(item.variacaoFrequencia),
-    item.faturamentoAnterior === null
-      ? "—"
-      : formatarMoeda(item.faturamentoAnterior),
-    formatarMoeda(item.faturamento),
-    variacao(item.variacaoFaturamento),
-    formatarNumero(relatorio.media, 2),
-    formatarNumero(relatorio.mediana, 2),
-    relatorio.comparar ? (periodoAnterior ?? "—") : "Indisponível",
-  ]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -175,7 +114,7 @@ export function VisaoFrequenciaClientes({
           count={segmento === "todos" ? 0 : 1}
           onClear={() => {
             setSegmento("todos");
-            setPagina(1);
+            
           }}
         >
           <FiltroRelatorio
@@ -183,7 +122,7 @@ export function VisaoFrequenciaClientes({
             valor={segmento}
             onChange={(valor) => {
               setSegmento(valor as SegmentoFrequencia);
-              setPagina(1);
+              
             }}
             opcoes={[
               { valor: "todos", rotulo: "Todos os clientes" },
@@ -202,7 +141,7 @@ export function VisaoFrequenciaClientes({
           valor={ordem}
           onChange={(valor) => {
             setOrdem(valor);
-            setPagina(1);
+            
           }}
           opcoes={[
             { valor: "frequencia", rotulo: "Maior frequência" },
@@ -211,13 +150,7 @@ export function VisaoFrequenciaClientes({
             { valor: "faturamento", rotulo: "Maior faturamento" },
           ]}
         />
-        <ExportarVisao
-          titulo="Clientes - Frequência"
-          contexto={contexto}
-          colunas={colunas}
-          linhas={linhas}
-          observacoes={observacoes}
-        />
+
       </ReportToolbar>
       <p className="text-xs text-muted-foreground">
         Referência: carteira inteira, antes dos filtros. Frequência em{" "}
@@ -233,16 +166,18 @@ export function VisaoFrequenciaClientes({
         </p>
       ) : null}
       <ReportTable
-        caption="Frequência por cliente"
-        data={exibidos}
+        data={itens}
         rowKey={(item) => item.nome}
-        pagination={false}
+        label="clientes"
+        caption="Frequência por cliente"
         stickyFirst
+        exportObservacoes={observacoes}
         columns={[
           {
             id: "cliente",
             header: "Cliente",
             kind: "name",
+            value: (item) => item.nome,
             cell: (item) => (
               <Button
                 variant="link"
@@ -256,12 +191,15 @@ export function VisaoFrequenciaClientes({
           {
             id: "classe",
             header: "Classe",
+            kind: "name",
+            value: (item) => item.classe ?? "—",
             cell: (item) => item.classe ?? "—",
           },
           {
             id: "situacao",
             header: "Situação",
             kind: "name",
+            value: (item) => situacoes[item.situacao],
             cell: (item) => (
               <Badge variant="outline">{situacoes[item.situacao]}</Badge>
             ),
@@ -269,6 +207,9 @@ export function VisaoFrequenciaClientes({
           {
             id: "frequencia",
             header: "Frequência",
+            kind: "number",
+            value: (item) => item.frequencia,
+            exportValue: (item) => formatarNumero(item.frequencia, 2),
             cell: (item) => (
               <span
                 title={`Média da carteira: ${formatarNumero(relatorio.media, 2)} ${relatorio.unidade}`}
@@ -281,11 +222,19 @@ export function VisaoFrequenciaClientes({
           {
             id: "regularidade",
             header: "Regularidade",
+            kind: "name",
+            value: (item) => `${item.mesesComCompra}/${meses.length}`,
             cell: (item) => `${item.mesesComCompra}/${meses.length}`,
           },
           {
             id: "intervalo",
             header: "Intervalo médio",
+            kind: "number",
+            value: (item) => item.intervaloMedio,
+            exportValue: (item) =>
+              item.intervaloMedio === null
+                ? "—"
+                : `${formatarNumero(item.intervaloMedio, 1)} d`,
             cell: (item) =>
               item.intervaloMedio === null
                 ? "—"
@@ -295,6 +244,7 @@ export function VisaoFrequenciaClientes({
             id: mes,
             header: meses[i],
             kind: "month" as const,
+            value: (item: RelatorioFrequencia["itens"][number]) => item.porMes[i],
             cell: (item: RelatorioFrequencia["itens"][number]) => (
               <button
                 type="button"
@@ -319,6 +269,9 @@ export function VisaoFrequenciaClientes({
             id: "ultima",
             header: "Última compra",
             kind: "date",
+            value: (item) => item.ultimaCompra,
+            exportValue: (item) =>
+              item.ultimaCompra ? formatarDataInputParaBR(item.ultimaCompra) : "—",
             cell: (item) =>
               item.ultimaCompra
                 ? formatarDataInputParaBR(item.ultimaCompra)
@@ -327,37 +280,36 @@ export function VisaoFrequenciaClientes({
           {
             id: "ausencia",
             header: "Dias sem compra",
+            kind: "number",
+            value: (item) => item.diasSemCompra,
             cell: (item) => item.diasSemCompra ?? "—",
           },
           {
             id: "faturamento",
             header: "Faturamento",
             kind: "currency",
+            value: (item) => item.faturamento,
             cell: (item) => formatarMoeda(item.faturamento),
           },
           {
             id: "variacao-frequencia",
             header: "Δ Frequência",
+            kind: "percent",
+            value: (item) => item.variacaoFrequencia,
+            exportValue: (item) => variacao(item.variacaoFrequencia),
             cell: (item) => variacao(item.variacaoFrequencia),
           },
           {
             id: "variacao-faturamento",
             header: "Δ Faturamento",
+            kind: "percent",
+            value: (item) => item.variacaoFaturamento,
+            exportValue: (item) => variacao(item.variacaoFaturamento),
             cell: (item) => variacao(item.variacaoFaturamento),
           },
         ]}
       />
-      <TablePagination
-        paginaAtual={paginaSegura}
-        totalItens={itens.length}
-        itensPorPagina={porPagina}
-        onPaginaChange={setPagina}
-        onItensPorPaginaChange={(valor) => {
-          setPorPagina(valor);
-          setPagina(1);
-        }}
-        labelItens="clientes"
-      />
+
       <details className="rounded-md border p-3 text-xs text-muted-foreground">
         <summary className="cursor-pointer font-medium">
           Como calculamos
