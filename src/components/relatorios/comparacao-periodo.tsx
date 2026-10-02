@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import type { Periodo } from "@/lib/periodo";
 import {
   resolverComparacao,
+  ROTULOS_MODO_COMPARACAO,
   type ModoComparacao,
 } from "@/lib/periodo-comparacao";
 import { formatarDataInputParaBR } from "@/lib/vendas";
@@ -39,13 +40,12 @@ export function ComparacaoPeriodo({
         rotulo="Comparar com"
         valor={modo}
         onChange={(valor) => onModo(valor as ModoComparacao)}
-        opcoes={[
-          { valor: "automatico", rotulo: "Automático" },
-          { valor: "dias-anteriores", rotulo: "Dias anteriores" },
-          { valor: "mes-anterior", rotulo: "Mesmo intervalo do mês anterior" },
-          { valor: "ano-anterior", rotulo: "Mesmo período do ano anterior" },
-          { valor: "personalizado", rotulo: "Personalizado" },
-        ]}
+        opcoes={(Object.keys(ROTULOS_MODO_COMPARACAO) as ModoComparacao[]).map(
+          (valor) => ({
+            valor,
+            rotulo: ROTULOS_MODO_COMPARACAO[valor],
+          }),
+        )}
       />
       {modo === "personalizado" ? (
         <>
