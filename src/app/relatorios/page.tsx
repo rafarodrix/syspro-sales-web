@@ -5,13 +5,19 @@ import { resolveServerPageContext } from "@/lib/server-page-context";
 export default async function RelatoriosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ empresa?: string; aba?: string }>;
+  searchParams: Promise<{
+    empresa?: string;
+    aba?: string;
+    periodoInicial?: string;
+    periodoFinal?: string;
+  }>;
 }) {
   const ctx = await resolveServerPageContext({
     permissao: "relatorios:visualizar",
     searchParams,
     carregarPeriodoAnterior: true,
-    comparacaoCalendarioClientes: true,
+    comparacaoMesAnteriorPadrao: true,
+    ignorarPeriodoCookie: true,
   });
 
   return (
