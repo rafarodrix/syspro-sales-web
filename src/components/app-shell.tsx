@@ -132,9 +132,19 @@ export function AppShell({
     if (pathname.startsWith("/relatorios") && path === "/relatorios") {
       const periodoInicial = searchParams.get("periodoInicial");
       const periodoFinal = searchParams.get("periodoFinal");
+      const comparacao = searchParams.get("comparacao");
+      const comparacaoInicial = searchParams.get("comparacaoInicial");
+      const comparacaoFinal = searchParams.get("comparacaoFinal");
       if (periodoInicial && periodoFinal) {
         params.set("periodoInicial", periodoInicial);
         params.set("periodoFinal", periodoFinal);
+      }
+      if (comparacao) {
+        params.set("comparacao", comparacao);
+      }
+      if (comparacao === "personalizado" && comparacaoInicial && comparacaoFinal) {
+        params.set("comparacaoInicial", comparacaoInicial);
+        params.set("comparacaoFinal", comparacaoFinal);
       }
     }
 
