@@ -5,12 +5,18 @@ import { resolveServerPageContext } from "@/lib/server-page-context";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ empresa?: string }>;
+  searchParams: Promise<{
+    empresa?: string;
+    comparacao?: string;
+    comparacaoInicial?: string;
+    comparacaoFinal?: string;
+  }>;
 }) {
   const ctx = await resolveServerPageContext({
     permissao: "dashboard:visualizar",
-    searchParams: searchParams as Promise<{ empresa?: string; aba?: string }>,
+    searchParams,
     carregarPeriodoAnterior: true,
+    comparacaoMesAnteriorPadrao: true,
   });
 
   return (
@@ -25,6 +31,9 @@ export default async function DashboardPage({
         empresaInicial={ctx.empresaSelecionada}
         initialPeriod={ctx.periodo}
         initialVendas={ctx.vendas}
+        initialPeriodoAnterior={ctx.periodoAnterior}
+        initialModoComparacao={ctx.modoComparacao}
+        initialComparacaoPersonalizada={ctx.comparacaoPersonalizada}
         initialVendasAnteriores={ctx.vendasAnteriores ?? []}
         initialComparacaoDisponivel={ctx.comparacaoDisponivel}
         initialError={ctx.erroInicial}
