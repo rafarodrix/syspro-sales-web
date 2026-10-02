@@ -16,8 +16,6 @@ import {
   Award,
   Calendar,
   Layers,
-  Lightbulb,
-  ArrowUpRight,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
@@ -197,21 +195,6 @@ export function DashboardView({
 
   const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
   const destaques = useMemo(() => calcularDestaques(vendas, resumo), [vendas, resumo]);
-  const insights = useMemo(() => {
-    if (!vendas.length) return [] as string[];
-    const itens: string[] = [];
-    if (resumo.porDepartamento[0]) {
-      itens.push(`${resumo.porDepartamento[0].nome} lidera o faturamento com ${formatarPercentual(resumo.porDepartamento[0].percentual, 1)} do total.`);
-    }
-    if (destaques.topVendedor) {
-      itens.push(`${destaques.topVendedor.nome} é o principal vendedor, com ${formatarPercentual(destaques.topVendedor.percentual, 1)} da receita.`);
-    }
-    if (resumo.taxaDesconto > 0) {
-      itens.push(`Os descontos representam ${formatarPercentual(resumo.taxaDesconto, 1)} do faturamento bruto.`);
-    }
-    return itens.slice(0, 3);
-  }, [vendas.length, resumo, destaques]);
-
   const sparklineFaturamento = useMemo(() => {
     return dadosPorMetrica(vendas, "faturamento").map((p) => p.total);
   }, [vendas]);
@@ -337,40 +320,56 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Barra de Filtro de Período Executiva */}
+      {/* Filtros executivos: mesmo padrão visual da Central de Relatórios. */}
       <Card className="no-print border-border/60 shadow-xs">
-        <CardContent className="p-3 sm:p-3.5 space-y-2.5">
-          {/* Linha 1: Presets de data + Inputs de data inline + Botão Consultar + Botão Exportar PDF */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex-1 min-w-[280px]">
+        <CardContent className="space-y-3 p-3 sm:p-3.5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+            <section
+              className="min-w-0 flex-1 rounded-md border p-2.5"
+              aria-label="Período"
+            >
+              <div className="mb-2 text-xs font-semibold">Período</div>
               <DateRangeFilter
                 value={periodo}
                 onChange={setPeriodo}
                 onConsultar={consultar}
                 loading={loading}
+                compact
+              />
+            </section>
+
+            <section
+              className="min-w-0 rounded-md border p-2.5"
+              aria-label="Comparação"
+            >
+              <div className="mb-2 text-xs font-semibold">Comparação</div>
+              <ComparacaoPeriodo
+                periodo={periodo}
+                modo={modoComparacao}
+                personalizado={comparacaoPersonalizada}
+                onModo={setModoComparacao}
+                onPersonalizado={setComparacaoPersonalizada}
+                loading={loading}
+              />
+            </section>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                size="sm"
+                disabled={loading || !!erroPeriodo(periodo)}
+                onClick={() => consultar()}
+              >
+                {loading ? "Consultando..." : "Consultar"}
+              </Button>
+              <ExportDropdown
+                onExportarPdf={() => handleExportarPdf("download")}
+                onImprimir={() => handleExportarPdf("imprimir")}
+                disabled={loading || vendas.length === 0}
+                label="Exportar"
               />
             </div>
+          </div>
 
-            <ExportDropdown
-              onExportarPdf={() => handleExportarPdf("download")}
-              onImprimir={() => handleExportarPdf("imprimir")}
-              disabled={loading || vendas.length === 0}
-              label="Exportar"
-            />
-          </div>
-          <div className="border-t border-border/40 pt-2">
-            <div className="mb-2 text-xs font-semibold text-foreground">
-              Comparação
-            </div>
-            <ComparacaoPeriodo
-              periodo={periodo}
-              modo={modoComparacao}
-              personalizado={comparacaoPersonalizada}
-              onModo={setModoComparacao}
-              onPersonalizado={setComparacaoPersonalizada}
-              loading={loading}
-            />
-          </div>
           {periodo.inicial !== periodoConsultado.inicial ||
           periodo.final !== periodoConsultado.final ||
           modoComparacao !== modoConsultado ||
@@ -381,14 +380,14 @@ export function DashboardView({
               Alterações pendentes. Clique em Consultar para aplicar.
             </p>
           ) : null}
+
           {!comparacaoDisponivel && (
-            <p className="text-xs text-amber-700 dark:text-amber-400" role="status">
-              Comparação indisponível. Os indicadores atuais seguem disponíveis; tente consultar novamente.
-            </p>
-          )}
-          {loading && (
-            <p className="text-[11px] text-primary" aria-live="polite">
-              Atualizando dados…
+            <p
+              className="text-xs text-amber-700 dark:text-amber-400"
+              role="status"
+            >
+              Comparação indisponível. Os indicadores atuais seguem disponíveis;
+              tente consultar novamente.
             </p>
           )}
         </CardContent>
@@ -415,7 +414,7 @@ export function DashboardView({
 
       {/* Linha de KPIs Executivos */}
       <section
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5"
         aria-label="Indicadores principais"
       >
         {loading ? (
@@ -513,7 +512,7 @@ export function DashboardView({
       {!loading && vendas.length > 0 && (
         <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Taxa Média Desconto
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -527,7 +526,7 @@ export function DashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Itens / Pedido (IPF)
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -541,7 +540,7 @@ export function DashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Clientes Recorrentes
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -555,7 +554,7 @@ export function DashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Impacto do Frete
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -570,30 +569,12 @@ export function DashboardView({
         </section>
       )}
 
-      {!loading && insights.length > 0 && (
-        <section aria-label="Insights do período" className="rounded-xl border border-primary/20 bg-primary/[0.04] p-3.5 sm:p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Lightbulb className="size-4 text-primary" aria-hidden="true" />
-            <div>
-              <h2 className="text-sm font-bold text-foreground">Leitura rápida do período</h2>
-              <p className="text-[11px] text-muted-foreground">Principais sinais calculados a partir dos dados consultados.</p>
-            </div>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {insights.map((insight) => (
-              <div key={insight} className="flex items-start gap-2 rounded-lg border border-border/60 bg-background/70 p-2.5 text-xs leading-relaxed text-muted-foreground">
-                <ArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                <span>{insight}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+
 
       {/* Grid Analítico Principal: Gráfico Temporal (65%) + Insights/Top Produtos (35%) */}
-      <section className="grid gap-6 lg:grid-cols-12">
+      <section className="grid gap-4 xl:grid-cols-12">
         {/* Gráfico de Evolução Temporal (Bklit UI Gradient Area) */}
-        <Card className="border-border/60 shadow-xs lg:col-span-8 flex flex-col justify-between">
+        <Card className="border-border/60 shadow-xs xl:col-span-8 flex flex-col justify-between">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
             <div>
               <CardTitle className="text-base font-bold text-foreground">
@@ -638,7 +619,7 @@ export function DashboardView({
         </Card>
 
         {/* Destaques do Período & Performance */}
-        <Card className="border-border/60 shadow-xs lg:col-span-4 flex flex-col">
+        <Card className="border-border/60 shadow-xs xl:col-span-4 flex flex-col">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Award className="size-4 text-primary" />
@@ -650,10 +631,10 @@ export function DashboardView({
               Síntese executiva dos principais motores de venda.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3.5 flex-1 justify-around">
+          <CardContent className="flex flex-1 flex-col divide-y divide-border/60 rounded-lg border border-border/60 p-0">
             {destaques.melhorDia ? (
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="px-3 py-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Melhor Dia de Vendas
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
@@ -671,8 +652,8 @@ export function DashboardView({
             ) : null}
 
             {destaques.maiorVenda ? (
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="px-3 py-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Maior Pedido / NF
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
@@ -690,8 +671,8 @@ export function DashboardView({
             ) : null}
 
             {destaques.topVendedor ? (
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="px-3 py-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Top Vendedor
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
