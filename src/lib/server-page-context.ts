@@ -67,7 +67,7 @@ export async function resolveServerPageContext({
   let periodoAnterior: { inicial: string; final: string } | undefined;
   if (carregarPeriodoAnterior) {
     periodoAnterior = comparacaoCalendarioClientes && abaParam === "clientes"
-      ? resolverComparacao(periodo)
+      ? resolverComparacao(periodo, "mes-anterior")
       : calcularPeriodoAnterior(periodo.inicial, periodo.final);
   }
 
