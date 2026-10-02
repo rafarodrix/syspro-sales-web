@@ -41,6 +41,15 @@ interface ValoresNota {
   liquido: number;
 }
 
+function skusDaNota(nota: VendaAgrupada): number {
+  return new Set(
+    nota.itens.map(
+      (item) =>
+        `${String(item.produto_id ?? "").trim()}|${item.produto_descricao?.trim() ?? ""}`,
+    ),
+  ).size;
+}
+
 function valoresDaNota(nota: VendaAgrupada): ValoresNota {
   let bruto = 0;
   let desconto = 0;
@@ -116,7 +125,7 @@ export function VisaoAnaliticaNotas({
       dimensaoRotulo,
       "Cliente",
       "Cidade",
-      "Qtd Itens",
+      "SKUs distintos",
       "Valor Bruto",
       "Desconto",
       "Valor Líquido",
@@ -129,7 +138,7 @@ export function VisaoAnaliticaNotas({
         String(nota[dimensaoChave]),
         nota.cliente,
         nota.cidade,
-        formatarNumero(nota.quantidadeItens, 2),
+        skusDaNota(nota),
         formatarMoeda(valores.bruto),
         formatarMoeda(valores.desconto),
         formatarMoeda(valores.liquido),
@@ -177,8 +186,8 @@ export function VisaoAnaliticaNotas({
             <span className="font-bold text-foreground">· Líq. {formatarMoeda(totais.liquido)}</span>
           </Badge>
           {contextoExportacao ? <ExportarVisao titulo={`${dimensaoRotulo} - Notas detalhadas`} contexto={contextoExportacao}
-            colunas={["Cliente", "NF", "Modelo", "Emissão", "Empresa", "Cidade", "Qtd itens", "Bruto", "Desconto", "Líquido"]}
-            linhas={notasFiltradas.map((nota) => { const valores = valoresDaNota(nota); return [nota.cliente, nota.numero, nota.modelo, nota.emissao, nota.empresaNome ?? "—", nota.cidade, formatarNumero(nota.quantidadeItens, 2), formatarMoeda(valores.bruto), formatarMoeda(valores.desconto), formatarMoeda(valores.liquido)]; })}
+            colunas={["Cliente", "NF", "Modelo", "Emissão", "Empresa", "Cidade", "SKUs distintos", "Bruto", "Desconto", "Líquido"]}
+            linhas={notasFiltradas.map((nota) => { const valores = valoresDaNota(nota); return [nota.cliente, nota.numero, nota.modelo, nota.emissao, nota.empresaNome ?? "—", nota.cidade, skusDaNota(nota), formatarMoeda(valores.bruto), formatarMoeda(valores.desconto), formatarMoeda(valores.liquido)]; })}
           /> : <Button
             type="button"
             variant="outline"
@@ -202,7 +211,7 @@ export function VisaoAnaliticaNotas({
               {exibirColunaDimensao && <th className="p-3">{dimensaoRotulo}</th>}
               <th className="p-3">Cliente</th>
               <th className="p-3">Cidade</th>
-              <th className="p-3 text-right">Qtd Itens</th>
+              <th className="p-3 text-right">SKUs distintos</th>
               <th className="p-3 text-right">Valor Bruto</th>
               <th className="p-3 text-right">Desconto</th>
               <th className="p-3 text-right">Valor Líquido</th>
@@ -229,7 +238,7 @@ export function VisaoAnaliticaNotas({
                       {nota.cliente}
                     </td>
                     <td className="p-3 text-muted-foreground">{nota.cidade || "—"}</td>
-                    <td className="p-3 text-right font-mono">{formatarNumero(nota.quantidadeItens, 2)}</td>
+                    <td className="p-3 text-right font-mono">{skusDaNota(nota)}</td>
                     <td className="p-3 text-right font-mono text-muted-foreground">{formatarMoeda(valores.bruto)}</td>
                     <td className="p-3 text-right font-mono text-rose-600 dark:text-rose-400">
                       {formatarMoeda(valores.desconto)}
