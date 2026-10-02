@@ -90,6 +90,7 @@ export function AbaCurvaABC({
     <div className="space-y-4">
       {/* Tabela Curva ABC */}
       <ReportTable
+        caption="Curva ABC de produtos"
         data={itensFiltrados}
         rowKey={(item) => `${item.id}-${item.produto}-${item.un}`}
         columns={[
@@ -171,7 +172,7 @@ export function AbaCurvaABC({
           {
             id: "percentual",
             header: <>% Fat.</>,
-            kind: "number",
+            kind: "percent",
             value: (item) => item.percentual,
             cell: (item) => (
               <>
@@ -192,7 +193,7 @@ export function AbaCurvaABC({
           {
             id: "percentualAcumulado",
             header: <>% Acumulado</>,
-            kind: "number",
+            kind: "percent",
             value: (item) => item.percentualAcumulado,
             cell: (item) => (
               <>{formatarPercentual(item.percentualAcumulado, 1)}</>
