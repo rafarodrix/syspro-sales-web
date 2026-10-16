@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
+  ShoppingBasket,
   PackageSearch,
   BarChart3,
   UserCog,
@@ -105,6 +106,9 @@ export function AppShell({
     if (pathname.startsWith("/dashboard")) return { secao: "Visão Geral", pagina: "Dashboard Executivo" };
     if (pathname.startsWith("/vendas")) return { secao: "Comercial", pagina: "Consulta de Vendas" };
     if (pathname.startsWith("/estoque")) return { secao: "Estoque", pagina: "Movimentações / Kardex" };
+    if (pathname.startsWith("/relatorios/compras")) {
+      return { secao: "Relatórios / Compras", pagina: "Relatório de Compras" };
+    }
     if (pathname.startsWith("/relatorios")) {
       const relatorio = relatoriosSubLinks.find((r) => r.id === abaAtiva);
       return { secao: "Relatórios", pagina: relatorio ? relatorio.label : "Central de Relatórios" };
@@ -289,6 +293,24 @@ export function AppShell({
                       const ativo = pathname === "/relatorios" && abaAtiva === item.id;
                       return <Link key={item.id} href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${ativo ? "bg-muted font-bold text-foreground shadow-2xs border-l-2 border-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}><Icone className={`size-3.5 shrink-0 ${ativo ? item.cor : "text-muted-foreground"}`} /><span className="truncate">{item.label}</span></Link>;
                     })}
+                    {podeVerEstoque ? (
+                      <>
+                        <span className="mt-2 block px-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                          Compras
+                        </span>
+                        <Link
+                          href={criarLinkComEmpresa("/relatorios/compras")}
+                          className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${
+                            pathname === "/relatorios/compras"
+                              ? "border-l-2 border-primary bg-muted font-bold text-foreground shadow-2xs"
+                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                          }`}
+                        >
+                          <ShoppingBasket className="size-3.5 shrink-0" />
+                          <span className="truncate">Relatório de Compras</span>
+                        </Link>
+                      </>
+                    ) : null}
                   </div>
                 )
               )}
@@ -463,6 +485,24 @@ export function AppShell({
                       {item.label}
                     </Link>
                   ))}
+                  {podeVerEstoque ? (
+                    <>
+                      <span className="mt-3 block text-[10px] font-bold uppercase text-muted-foreground">
+                        Compras
+                      </span>
+                      <Link
+                        href={criarLinkComEmpresa("/relatorios/compras")}
+                        className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs ${
+                          pathname === "/relatorios/compras"
+                            ? "bg-muted font-bold text-foreground"
+                            : "text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <ShoppingBasket className="size-3.5" />
+                        Relatório de Compras
+                      </Link>
+                    </>
+                  ) : null}
                 </div>
               )}
 

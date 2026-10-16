@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
+  ShoppingBasket,
   Sparkles,
   UserCheck,
   Percent,
@@ -49,6 +50,7 @@ const comandos: CommandItem[] = [
   { id: "vendedores", titulo: "Vendedores", categoria: "Relatórios", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500", permissao: "relatorios:visualizar" },
   { id: "geografico", titulo: "Cidade e UF", categoria: "Relatórios", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500", permissao: "relatorios:visualizar" },
   { id: "financeiro", titulo: "Financeiro & Formas de Pagto", categoria: "Relatórios", href: "/relatorios?aba=financeiro", icone: CreditCard, cor: "text-orange-500", permissao: "relatorios:visualizar" },
+  { id: "compras", titulo: "Relatório de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "estoque:visualizar" },
   { id: "usuarios", titulo: "Gestão de Usuários & Acessos", categoria: "Administração", href: "/usuarios", icone: UserCog, permissao: "usuarios:gerenciar" },
   { id: "configuracoes", titulo: "Configurações da API Syspro", categoria: "Administração", href: "/configuracoes", icone: Settings, permissao: "configuracoes:gerenciar" },
 ];
