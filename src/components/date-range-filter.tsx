@@ -40,6 +40,13 @@ export function periodoUltimos30Dias(): Periodo {
   return { inicial: paraInput(trintaAtras), final: paraInput(hoje) };
 }
 
+export function periodoUltimos90Dias(): Periodo {
+  const hoje = new Date();
+  const noventaAtras = new Date();
+  noventaAtras.setDate(hoje.getDate() - 89);
+  return { inicial: paraInput(noventaAtras), final: paraInput(hoje) };
+}
+
 export function periodoMesAtual(): Periodo {
   const hoje = new Date();
   return {
@@ -84,6 +91,7 @@ export function DateRangeFilter({
     { label: "Este mês", value: periodoMesAtual() },
     { label: "Mês anterior", value: periodoMesAnterior() },
     { label: "30 dias", value: periodoUltimos30Dias() },
+    { label: "90 dias", value: periodoUltimos90Dias() },
   ];
 
   return (
