@@ -1,13 +1,11 @@
-import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { aplicarLimite, autenticarApi, validarJson } from "@/lib/api-route";
 import { prisma } from "@/lib/database";
 import { SysproApiError } from "@/lib/syspro-api";
 import { resumoVendas } from "@/lib/vendas";
 import { obterVendas, periodoConsultaValido, SalesIntegrationError, SalesQueryError } from "@/lib/sales-service";
 import { vendasQuerySchema } from "@/lib/validations";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { temAcessoTodasEmpresas, temPermissao } from "@/lib/role-permissions";
+import { temAcessoTodasEmpresas } from "@/lib/role-permissions";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,39 +20,27 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleVendas(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-  }
-  if (!temPermissao(session.user.role, "vendas:visualizar")) {
-    return NextResponse.json({ error: "Perfil sem permissão para consultar vendas." }, { status: 403 });
-  }
+  const autenticacao = await autenticarApi(
+    "vendas:visualizar",
+    "Perfil sem permissão para consultar vendas.",
+  );
+  if (!autenticacao.ok) return autenticacao.response;
+  const session = autenticacao.value;
 
   // Rate limiter por usuário: máximo 45 consultas por minuto
-  const rateCheck = checkRateLimit(`vendas:${session.user.id}`, 45, 60_000);
-  if (!rateCheck.success) {
-    return NextResponse.json(
-      { error: "Limite de consultas excedido. Aguarde alguns instantes." },
-      { status: 429 },
-    );
-  }
+  const limite = aplicarLimite(
+    `vendas:${session.user.id}`,
+    45,
+    60_000,
+    "Limite de consultas excedido. Aguarde alguns instantes.",
+  );
+  if (limite) return limite;
 
   const isAdmin = temAcessoTodasEmpresas(session.user.role);
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
-  }
-
-  const parsed = vendasQuerySchema.safeParse(body);
-  if (!parsed.success) {
-    const errorMsg = parsed.error.issues[0]?.message ?? "Parâmetros de consulta inválidos.";
-    return NextResponse.json({ error: errorMsg }, { status: 400 });
-  }
-
-  const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = parsed.data;
+  const json = await validarJson(request, vendasQuerySchema, "Parâmetros de consulta inválidos.");
+  if (!json.ok) return json.response;
+  const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = json.value;
 
   if (!periodoConsultaValido(dtInicial, dtFinal)) {
     return NextResponse.json(

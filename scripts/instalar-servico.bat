@@ -29,7 +29,7 @@ findstr /C:"TROQUE-POR" ".env" >nul && (
 )
 
 echo Instalando dependencias...
-call npm install --omit=dev
+call npm ci
 if errorlevel 1 ( pause & exit /b 1 )
 
 where pm2 >nul 2>&1
@@ -48,10 +48,14 @@ if errorlevel 1 ( pause & exit /b 1 )
 call npx tsx prisma/seed.ts
 if errorlevel 1 ( pause & exit /b 1 )
 
+echo Removendo dependencias exclusivas de desenvolvimento...
+call npm prune --omit=dev
+if errorlevel 1 ( pause & exit /b 1 )
+
 pm2 delete syspro-erp-reports >nul 2>&1
 pm2 start ecosystem.config.cjs
 pm2 save
 
-echo [OK] Instalado. O Next escuta somente em 127.0.0.1 por padrao.
-echo Publique-o por um proxy HTTPS e libere somente a porta do proxy no firewall.
+echo [OK] Instalado. O host de escuta e definido por HOST no .env.
+echo Em producao, prefira HOST=127.0.0.1 com um proxy HTTPS.
 pause

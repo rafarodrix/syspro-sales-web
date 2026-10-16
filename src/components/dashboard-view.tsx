@@ -4,15 +4,12 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Building2Icon,
-  ChevronRight,
   DollarSignIcon,
   FileText,
-  BadgePercentIcon,
   RotateCwIcon,
   ShoppingCart,
   UsersRound,
   Package,
-  TrendingUp,
   Award,
   Calendar,
   Layers,
@@ -21,7 +18,6 @@ import {
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
-  dataInputParaSyspro,
   dadosPorMetricaComparativa,
   dadosPorMetrica,
   type MetricaDeVendas,
@@ -32,7 +28,6 @@ import {
   calcularPeriodoAnterior,
   calcularDestaques,
   formatarDataInputParaBR,
-  paraNumero,
 } from "@/lib/vendas";
 import { buscarVendasApi } from "@/lib/vendas-client";
 import { exportarPdfDashboard } from "@/lib/pdf-export";
@@ -54,13 +49,6 @@ import { resolverEmpresaSelecionada } from "@/lib/empresa-selecao";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
 interface EmpresaOption {

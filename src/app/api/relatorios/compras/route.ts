@@ -1,44 +1,26 @@
-import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { aplicarLimite, autenticarApi, buscarEmpresaAutorizada, validarJson } from "@/lib/api-route";
 import { obterRelatorioCompras } from "@/lib/compras-service";
-import { prisma } from "@/lib/database";
 import { EstoqueQueryError } from "@/lib/estoque-service";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { temAcessoTodasEmpresas, temPermissao } from "@/lib/role-permissions";
 import { SalesIntegrationError, SalesQueryError } from "@/lib/sales-service";
 import { SysproApiError } from "@/lib/syspro-api";
 import { vendasQuerySchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-    if (!temPermissao(session.user.role, "estoque:visualizar")) {
-      return NextResponse.json(
-        { error: "Acesso ao relatório de compras restrito a Administrador e Gerência." },
-        { status: 403 },
-      );
-    }
+    const autenticacao = await autenticarApi(
+      "estoque:visualizar",
+      "Acesso ao relatório de compras restrito a Administrador e Gerência.",
+    );
+    if (!autenticacao.ok) return autenticacao.response;
+    const session = autenticacao.value;
 
-    const rateCheck = checkRateLimit(`relatorio-compras:${session.user.id}`, 10, 60_000);
-    if (!rateCheck.success) {
-      return NextResponse.json(
-        { error: "Limite de consultas excedido. Aguarde alguns instantes." },
-        { status: 429 },
-      );
-    }
+    const limite = aplicarLimite(`relatorio-compras:${session.user.id}`, 10, 60_000, "Limite de consultas excedido. Aguarde alguns instantes.");
+    if (limite) return limite;
 
-    const body: unknown = await request.json().catch(() => null);
-    const parsed = vendasQuerySchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Parâmetros inválidos." },
-        { status: 400 },
-      );
-    }
-
-    const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = parsed.data;
+    const json = await validarJson(request, vendasQuerySchema, "Parâmetros inválidos.");
+    if (!json.ok) return json.response;
+    const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = json.value;
     if (empresaId === "todas" || empresaId.includes(",")) {
       return NextResponse.json(
         { error: "Selecione uma única empresa para consultar estoque e devoluções." },
@@ -46,14 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isAdmin = temAcessoTodasEmpresas(session.user.role);
-    const empresa = await prisma.empresa.findFirst({
-      where: {
-        id: empresaId,
-        ativa: true,
-        ...(isAdmin ? {} : { usuarios: { some: { userId: session.user.id } } }),
-      },
-    });
+    const empresa = await buscarEmpresaAutorizada(session, empresaId);
     if (!empresa) {
       return NextResponse.json(
         { error: "Empresa não encontrada ou não liberada." },

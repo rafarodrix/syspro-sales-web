@@ -89,3 +89,8 @@ export const vendasQuerySchema = z.object({
 
 export const kardexQuerySchema = vendasQuerySchema;
 
+export const configuracaoTesteSchema = z.object({
+  baseUrl: z.string().trim().min(1, "URL da API Syspro não informada."),
+  useIis: z.boolean({ error: "Modo IIS inválido." }),
+});
+

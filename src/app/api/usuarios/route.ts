@@ -1,46 +1,21 @@
-import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { aplicarLimite, autenticarApi, validarJson } from "@/lib/api-route";
 import { prisma } from "@/lib/database";
 import { hashPassword } from "better-auth/crypto";
 import { usuarioCreateSchema, usuarioUpdateSchema } from "@/lib/validations";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { temPermissao } from "@/lib/role-permissions";
-
-async function authorizeAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || !temPermissao(session.user.role, "usuarios:gerenciar")) return null;
-  return session;
-}
 
 export async function POST(request: NextRequest) {
-  const session = await authorizeAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
-  }
+  const autenticacao = await autenticarApi("usuarios:gerenciar", "Acesso restrito ao Administrador.");
+  if (!autenticacao.ok) return autenticacao.response;
+  const session = autenticacao.value;
 
-  const rateCheck = checkRateLimit(`usuarios:post:${session.user.id}`, 30, 60_000);
-  if (!rateCheck.success) {
-    return NextResponse.json(
-      { error: "Muitas requisições. Aguarde um momento." },
-      { status: 429 },
-    );
-  }
+  const limite = aplicarLimite(`usuarios:post:${session.user.id}`, 30, 60_000, "Muitas requisições. Aguarde um momento.");
+  if (limite) return limite;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
-  }
-
-  const parsed = usuarioCreateSchema.safeParse(body);
-  if (!parsed.success) {
-    const errorMsg = parsed.error.issues[0]?.message ?? "Dados de usuário inválidos.";
-    return NextResponse.json({ error: errorMsg }, { status: 400 });
-  }
-
-  const { name, email, password, role } = parsed.data;
+  const json = await validarJson(request, usuarioCreateSchema, "Dados de usuário inválidos.");
+  if (!json.ok) return json.response;
+  const { name, email, password, role } = json.value;
 
   const existente = await prisma.user.findUnique({ where: { email } });
   if (existente) {
@@ -69,25 +44,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await authorizeAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
-  }
+  const autenticacao = await autenticarApi("usuarios:gerenciar", "Acesso restrito ao Administrador.");
+  if (!autenticacao.ok) return autenticacao.response;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
-  }
-
-  const parsed = usuarioUpdateSchema.safeParse(body);
-  if (!parsed.success) {
-    const errorMsg = parsed.error.issues[0]?.message ?? "Dados inválidos para atualização.";
-    return NextResponse.json({ error: errorMsg }, { status: 400 });
-  }
-
-  const { id, role, name, email, password } = parsed.data;
+  const json = await validarJson(request, usuarioUpdateSchema, "Dados inválidos para atualização.");
+  if (!json.ok) return json.response;
+  const { id, role, name, email, password } = json.value;
 
   const usuarioExistente = await prisma.user.findUnique({ where: { id } });
   if (!usuarioExistente) {
@@ -137,10 +99,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await authorizeAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
-  }
+  const autenticacao = await autenticarApi("usuarios:gerenciar", "Acesso restrito ao Administrador.");
+  if (!autenticacao.ok) return autenticacao.response;
+  const session = autenticacao.value;
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");

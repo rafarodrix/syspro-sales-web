@@ -9,14 +9,6 @@ import {
   ShoppingBasket,
   PackageSearch,
   BarChart3,
-  Sparkles,
-  UserCheck,
-  Percent,
-  CalendarDays,
-  Layers,
-  Users,
-  MapPin,
-  CreditCard,
   UserCog,
   Settings,
   ChevronLeft,
@@ -24,14 +16,7 @@ import {
   ChevronDown,
   Menu,
   X,
-  Building2,
-  CheckCircle2,
-  LogOut,
-  Moon,
-  Sun,
   ShieldCheck,
-  Activity,
-  Server,
 } from "lucide-react";
 import { EmpresaNavSelect } from "@/components/empresa-nav-select";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -39,6 +24,7 @@ import { LogOutButton } from "@/components/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/command-palette";
+import { relatoriosVendas } from "@/lib/navigation";
 import { temPermissao } from "@/lib/role-permissions";
 
 type UserRole = "admin" | "gerente" | "supervisor" | "vendas";
@@ -56,17 +42,6 @@ interface AppShellProps {
   empresaSelecionada?: string;
   children: React.ReactNode;
 }
-
-const relatoriosVendas = [
-  { id: "curva-abc", label: "Curva ABC", icone: Sparkles, cor: "text-amber-500" },
-  { id: "departamentos", label: "Departamentos", icone: Layers, cor: "text-blue-500" },
-  { id: "clientes", label: "Clientes", icone: UserCheck, cor: "text-emerald-500" },
-  { id: "descontos", label: "Descontos & Margem", icone: Percent, cor: "text-rose-500" },
-  { id: "sazonalidade", label: "Sazonalidade & Evolução", icone: CalendarDays, cor: "text-indigo-500" },
-  { id: "vendedores", label: "Vendedores", icone: Users, cor: "text-violet-500" },
-  { id: "geografico", label: "Cidade e UF", icone: MapPin, cor: "text-teal-500" },
-  { id: "financeiro", label: "Financeiro & Fiscal", icone: CreditCard, cor: "text-orange-500" },
-];
 
 const relatoriosSubLinks = relatoriosVendas;
 

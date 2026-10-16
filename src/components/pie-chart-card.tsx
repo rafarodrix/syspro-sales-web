@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { CreditCard, ArrowRight } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import type { ItemRankeado } from "@/lib/vendas";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
 import {
@@ -47,9 +47,9 @@ export function PieChartCard({
   );
 
   // Top 5 + Outros
-  const { fatias, dadosFiltrados } = useMemo(() => {
+  const fatias = useMemo(() => {
     if (!itens.length || totalFaturamento === 0) {
-      return { fatias: [], dadosFiltrados: [] };
+      return [];
     }
 
     const principais = itens.slice(0, 5);
@@ -79,7 +79,7 @@ export function PieChartCard({
       };
     });
 
-    return { fatias: fatiasCalc, dadosFiltrados: dados };
+    return fatiasCalc;
   }, [itens, totalFaturamento]);
 
   // Função auxiliar para converter polar em cartesiano

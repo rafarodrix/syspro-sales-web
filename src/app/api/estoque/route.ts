@@ -1,46 +1,29 @@
-import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/database";
+import { aplicarLimite, autenticarApi, buscarEmpresaAutorizada, validarJson } from "@/lib/api-route";
 import { SysproApiError } from "@/lib/syspro-api";
 import { obterMovimentosEstoque, EstoqueQueryError } from "@/lib/estoque-service";
 import { kardexQuerySchema } from "@/lib/validations";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { temAcessoTodasEmpresas, temPermissao } from "@/lib/role-permissions";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    const autenticacao = await autenticarApi(
+      "estoque:visualizar",
+      "Acesso ao Kardex restrito a Administrador e Gerência.",
+    );
+    if (!autenticacao.ok) return autenticacao.response;
+    const session = autenticacao.value;
 
-    if (!temPermissao(session.user.role, "estoque:visualizar")) {
-      return NextResponse.json({ error: "Acesso ao Kardex restrito a Administrador e Gerência." }, { status: 403 });
-    }
+    const limite = aplicarLimite(`estoque:${session.user.id}`, 20, 60_000, "Limite de consultas de estoque excedido. Aguarde alguns instantes.");
+    if (limite) return limite;
 
-    const rateCheck = checkRateLimit(`estoque:${session.user.id}`, 20, 60_000);
-    if (!rateCheck.success) {
-      return NextResponse.json({ error: "Limite de consultas de estoque excedido. Aguarde alguns instantes." }, { status: 429 });
-    }
-
-    const body: unknown = await request.json().catch(() => null);
-    const parsed = kardexQuerySchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Parâmetros inválidos." }, { status: 400 });
-    }
-
-    const { empresaId, dtInicial, dtFinal } = parsed.data;
+    const json = await validarJson(request, kardexQuerySchema, "Parâmetros inválidos.");
+    if (!json.ok) return json.response;
+    const { empresaId, dtInicial, dtFinal } = json.value;
     if (empresaId === "todas" || empresaId.includes(",")) {
       return NextResponse.json({ error: "Selecione uma única empresa para consultar o Kardex." }, { status: 400 });
     }
 
-    const isAdmin = temAcessoTodasEmpresas(session.user.role);
-    const empresa = await prisma.empresa.findFirst({
-      where: {
-        id: empresaId,
-        ativa: true,
-        ...(isAdmin ? {} : { usuarios: { some: { userId: session.user.id } } }),
-      },
-    });
+    const empresa = await buscarEmpresaAutorizada(session, empresaId);
     if (!empresa) return NextResponse.json({ error: "Empresa não encontrada ou não liberada." }, { status: 403 });
 
     const movimentos = await obterMovimentosEstoque({ empresa, dtInicial, dtFinal });

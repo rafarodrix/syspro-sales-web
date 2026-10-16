@@ -1,9 +1,9 @@
 /** Inicializa o standalone com configuracao de producao validada. */
 const path = require("path");
 const fs = require("fs");
-const { config: loadEnv } = require("dotenv");
+const { loadEnvConfig } = require("@next/env");
 
-loadEnv({ path: path.join(process.cwd(), ".env"), override: false });
+loadEnvConfig(process.cwd());
 
 const installDir = process.cwd();
 const standaloneDir = path.join(installDir, ".next", "standalone");
@@ -13,6 +13,17 @@ function validarAmbienteProducao() {
   if (!secret || secret.length < 32 || secret.includes("GERAR-COM")) {
     throw new Error("BETTER_AUTH_SECRET deve ter pelo menos 32 caracteres aleatorios.");
   }
+}
+
+function resolverDatabaseUrl(databaseUrl) {
+  const valor = databaseUrl?.trim() || "file:./dev.db";
+  if (!valor.startsWith("file:")) return valor;
+
+  const arquivo = valor.slice("file:".length);
+  const caminhoAbsoluto = path.isAbsolute(arquivo)
+    ? arquivo
+    : path.resolve(installDir, arquivo);
+  return `file:${caminhoAbsoluto.replace(/\\/g, "/")}`;
 }
 
 function materializarDependenciasStandalone() {
@@ -43,18 +54,20 @@ function materializarDependenciasStandalone() {
 }
 
 validarAmbienteProducao();
+if (!fs.existsSync(path.join(standaloneDir, "server.js"))) {
+  throw new Error("Build standalone não encontrado. Execute `npm run build` antes de iniciar.");
+}
 materializarDependenciasStandalone();
 
 const PORT = process.env.PORT || "3000";
 // Escuta em todas as interfaces p/ permitir acesso pela rede (No-IP, IP local,
 // VPN). Em producao com HTTPS, proteger na camada do proxy reverso (Caddy).
 const HOST = process.env.HOST || "0.0.0.0";
-const dbPath = path.join(installDir, "dev.db");
 
 console.log(`[SysproERP Reports] iniciando na porta ${PORT} (host ${HOST})`);
 process.env.PORT = PORT;
 process.env.HOSTNAME = HOST;
 process.env.NODE_ENV = "production";
-process.env.DATABASE_URL = `file:${dbPath.replace(/\\/g, "/")}`;
+process.env.DATABASE_URL = resolverDatabaseUrl(process.env.DATABASE_URL);
 process.chdir(standaloneDir);
 require(path.join(standaloneDir, "server.js"));

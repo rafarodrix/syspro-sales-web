@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import Link from "next/link";
-import { Crown, Sparkles, TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
+import { Crown } from "lucide-react";
 import type { PontoFaturamento, ProdutoRankeado } from "@/lib/vendas";
 import {
   formatarMoeda,
@@ -61,7 +61,7 @@ export function GraficoFaturamento({
     indice: number;
   } | null>(null);
 
-  const { pontosArray, pontosAnterioresArray, yLabels, maxVal } = useMemo(() => {
+  const { pontosArray, pontosAnterioresArray, yLabels } = useMemo(() => {
     if (!dados.length)
       return { pontosArray: [], pontosAnterioresArray: [], yLabels: [], maxVal: 1 };
 
