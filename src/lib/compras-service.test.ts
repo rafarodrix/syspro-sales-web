@@ -200,4 +200,35 @@ describe("orquestração do relatório de compras", () => {
       { inicial: "2026-09-01", final: "2026-09-30" },
     );
   });
+
+  it("preserva o movimento por descricao quando a venda traz GUID sem codigo auxiliar", async () => {
+    mocks.dividirPeriodoKardex.mockReturnValue([
+      { inicial: "2026-09-01", final: "2026-09-30" },
+    ]);
+    mocks.obterVendas.mockResolvedValue([{
+      empresa_codigo: "1",
+      nf_numero: "10",
+      produto_id: "{47E770D8-EE38-474E-AFF3-3A1A51E3EDC4}",
+      produto_descricao: "Água desmineralizada",
+    }]);
+    const movimento = {
+      documento: "EDC-1",
+      produtoCodigoAuxiliar: "1263",
+      produtoDescricao: "AGUA DESMINERALIZADA",
+    };
+    mocks.obterMovimentosEstoque.mockReset().mockResolvedValue([movimento]);
+
+    await obterRelatorioCompras({
+      actorId: "usuario-1",
+      empresa,
+      dtInicial: "2026-09-01",
+      dtFinal: "2026-09-30",
+    });
+
+    expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
+      expect.any(Array),
+      [movimento],
+      { inicial: "2026-09-01", final: "2026-09-30" },
+    );
+  });
 });

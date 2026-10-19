@@ -214,7 +214,7 @@ export function ComprasView({
               setBusca(valor);
               setPagina(1);
             }}
-            placeholder="Buscar por código ou descrição..."
+            placeholder="Buscar por descrição..."
             temFiltrosAtivos={Boolean(busca) || curva !== "todas"}
             onLimpar={() => {
               setBusca("");
@@ -256,7 +256,6 @@ export function ComprasView({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Código</TableHead>
                       <TableHead>Produto</TableHead>
                       <TableHead className="text-center">Curva</TableHead>
                       <TableHead className="text-right">Vendas no periodo</TableHead>
@@ -264,15 +263,11 @@ export function ComprasView({
                       <TableHead className="text-right">Demanda líquida</TableHead>
                       <TableHead className="text-right">Estoque atual</TableHead>
                       <TableHead className="text-right">Cobertura</TableHead>
-                      <TableHead>Ultimo movimento</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {itensDaPagina.map((item) => (
                       <TableRow key={item.codigo}>
-                        <TableCell className="font-mono text-xs font-semibold">
-                          {item.codigo}
-                        </TableCell>
                         <TableCell>
                           <p className="font-medium">{item.produto}</p>
                           <p className="text-xs text-muted-foreground">{item.unidade}</p>
@@ -299,9 +294,6 @@ export function ComprasView({
                           {item.coberturaDias === null
                             ? "-"
                             : `${formatarNumero(item.coberturaDias, 1)} dias`}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          {item.dataUltimoMovimento?.slice(0, 10) ?? "Não localizado"}
                         </TableCell>
                       </TableRow>
                     ))}

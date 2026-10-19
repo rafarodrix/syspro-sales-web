@@ -62,6 +62,37 @@ describe("relatorio de compras", () => {
     });
   });
 
+  it("relaciona o GUID da venda ao codigo auxiliar do Kardex", () => {
+    const itemVendido = {
+      ...venda("{47E770D8-EE38-474E-AFF3-3A1A51E3EDC4}", 10, "Água desmineralizada"),
+      produto_codigo_auxiliar: "1263",
+    };
+    const relatorio = montarRelatorioCompras(
+      [itemVendido],
+      [movimento("1263", "2026-10-10", "EDC", -2, 8)],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({
+      codigo: "1263",
+      quantidadeDevolvida: 2,
+      estoqueAtual: 8,
+    });
+  });
+
+  it("usa a descricao como compatibilidade quando a venda nao traz codigo auxiliar", () => {
+    const relatorio = montarRelatorioCompras(
+      [venda("{47E770D8-EE38-474E-AFF3-3A1A51E3EDC4}", 10, "Água  desmineralizada")],
+      [{
+        ...movimento("1263", "2026-10-10", "EDC", -2, 8),
+        produtoDescricao: "AGUA DESMINERALIZADA",
+      }],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({ quantidadeDevolvida: 2, estoqueAtual: 8 });
+  });
+
   it("nao soma EDC fora do periodo de vendas, mas usa o movimento no saldo atual", () => {
     const relatorio = montarRelatorioCompras(
       [venda("10", 5)],

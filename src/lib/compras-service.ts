@@ -1,5 +1,5 @@
 import { obterMovimentosEstoque } from "@/lib/estoque-service";
-import { normalizarCodigoProduto } from "@/lib/metricas-negocio";
+import { normalizarCodigoProduto, normalizarDescricaoProduto } from "@/lib/metricas-negocio";
 import { SysproApiError } from "@/lib/syspro-api";
 import { dividirPeriodoKardex, montarRelatorioCompras } from "@/lib/relatorio-compras";
 import {
@@ -65,11 +65,13 @@ async function obterMovimentosAdaptativo({
   empresa,
   janela,
   codigosProdutos,
+  descricoesProdutos,
   signal,
 }: {
   empresa: EmpresaInfo;
   janela: JanelaConsulta;
   codigosProdutos: Set<string>;
+  descricoesProdutos: Set<string>;
   signal?: AbortSignal;
 }) {
   try {
@@ -80,7 +82,8 @@ async function obterMovimentosAdaptativo({
       signal,
     });
     return movimentos.filter((movimento) =>
-      codigosProdutos.has(normalizarCodigoProduto(movimento.produtoCodigoAuxiliar, "")),
+      codigosProdutos.has(normalizarCodigoProduto(movimento.produtoCodigoAuxiliar, ""))
+      || descricoesProdutos.has(normalizarDescricaoProduto(movimento.produtoDescricao)),
     );
   } catch (error) {
     if (!excedeuLimiteResposta(error)) throw error;
@@ -94,6 +97,7 @@ async function obterMovimentosAdaptativo({
         empresa,
         janela: parte,
         codigosProdutos,
+        descricoesProdutos,
         signal,
       }));
     }
@@ -137,12 +141,24 @@ export async function obterRelatorioCompras({
   });
   const codigosProdutos = new Set(
     vendas
-      .map((venda) => normalizarCodigoProduto(venda.produto_id, ""))
+      .flatMap((venda) => [venda.produto_codigo_auxiliar, venda.produto_id])
+      .map((codigo) => normalizarCodigoProduto(codigo, ""))
+      .filter(Boolean),
+  );
+  const descricoesProdutos = new Set(
+    vendas
+      .map((venda) => normalizarDescricaoProduto(venda.produto_descricao))
       .filter(Boolean),
   );
   const movimentos = codigosProdutos.size > 0
     ? await executarComPool(janelasKardex, 2, (janela) =>
-        obterMovimentosAdaptativo({ empresa, janela, codigosProdutos, signal }),
+        obterMovimentosAdaptativo({
+          empresa,
+          janela,
+          codigosProdutos,
+          descricoesProdutos,
+          signal,
+        }),
       ).then((resultados) => resultados.flat())
     : [];
 

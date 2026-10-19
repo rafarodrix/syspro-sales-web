@@ -34,6 +34,7 @@ export interface VendaProduto {
   cliente_cidade: string;
   cliente_uf: string;
   produto_id: string;
+  produto_codigo_auxiliar?: string;
   produto_descricao: string;
   produto_departamento: string;
   produto_un: string;
@@ -271,6 +272,11 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
     cliente_cidade: texto("cliente_cidade"),
     cliente_uf: texto("cliente_uf"),
     produto_id: texto("produto_id"),
+    produto_codigo_auxiliar:
+      texto("produto_codigo_auxiliar")
+      || texto("produto_codigo")
+      || texto("produto_cd_auxiliar")
+      || undefined,
     produto_descricao: texto("produto_descricao"),
     produto_departamento: texto("produto_departamento"),
     produto_un: texto("produto_un"),

@@ -28,7 +28,11 @@ afterEach(() => vi.unstubAllGlobals());
 describe("cliente da API Syspro", () => {
   it("monta a rota sem IIS, converte data ISO e normaliza vendas", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify([vendaValida({ produto_vlr_seguro: {}, cliente_nome: " Cliente " })])),
+      new Response(JSON.stringify([vendaValida({
+        produto_vlr_seguro: {},
+        cliente_nome: " Cliente ",
+        produto_codigo_auxiliar: " 1263 ",
+      })])),
     );
     vi.stubGlobal("fetch", fetchMock);
     const signal = new AbortController().signal;
@@ -46,6 +50,7 @@ describe("cliente da API Syspro", () => {
       produto_qtde: "2",
       produto_vlr_total_item: 30,
       produto_vlr_seguro: undefined,
+      produto_codigo_auxiliar: "1263",
     });
   });
 

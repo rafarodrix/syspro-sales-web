@@ -7,6 +7,7 @@ import {
   calcularPercentual,
   classificarCurvaABC,
   normalizarCodigoProduto,
+  normalizarDescricaoProduto,
   paraNumero,
   type ClasseCurvaABC,
 } from "@/lib/metricas-negocio";
@@ -61,9 +62,12 @@ export function montarRelatorioCompras(
     string,
     Omit<ItemRelatorioCompras, "curva"> & { ordemUltimoMovimento: number }
   >();
+  const chavePorDescricao = new Map<string, string | null>();
 
   for (const venda of vendas) {
-    const codigoOriginal = String(venda.produto_id ?? "").trim();
+    const codigoOriginal = String(
+      venda.produto_codigo_auxiliar || venda.produto_id || "",
+    ).trim();
     const codigo = normalizarCodigo(codigoOriginal);
     if (!codigo) continue;
 
@@ -83,11 +87,20 @@ export function montarRelatorioCompras(
     };
     atual.quantidadeVendida += paraNumero(venda.produto_qtde);
     porProduto.set(codigo, atual);
+
+    const descricao = normalizarDescricaoProduto(venda.produto_descricao);
+    if (descricao) {
+      const chaveExistente = chavePorDescricao.get(descricao);
+      if (!chavePorDescricao.has(descricao)) chavePorDescricao.set(descricao, codigo);
+      else if (chaveExistente !== codigo) chavePorDescricao.set(descricao, null);
+    }
   }
 
   movimentos.forEach((movimento, indice) => {
     const codigo = normalizarCodigo(movimento.produtoCodigoAuxiliar);
-    const atual = porProduto.get(codigo);
+    const descricao = normalizarDescricaoProduto(movimento.produtoDescricao);
+    const chave = porProduto.has(codigo) ? codigo : chavePorDescricao.get(descricao);
+    const atual = chave ? porProduto.get(chave) : undefined;
     if (!atual) return;
 
     if (

@@ -54,6 +54,15 @@ export function normalizarCodigoProduto(
   return String(codigo ?? "").trim().toUpperCase() || fallback;
 }
 
+export function normalizarDescricaoProduto(descricao: string | null | undefined): string {
+  return String(descricao ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
 export function classificarCurvaABC(percentualAcumuladoAnterior: number): ClasseCurvaABC {
   if (percentualAcumuladoAnterior < 80) return "A";
   if (percentualAcumuladoAnterior < 95) return "B";
