@@ -72,7 +72,6 @@ export interface ResumoVendas {
   skusPorNota: number;
   taxaDesconto: number;
   taxaFrete: number;
-  clientesIdentificados: number;
   clientesRecorrentes: number;
   percentualRecorrencia: number;
   porDepartamento: ItemRankeado[];
@@ -432,7 +431,6 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
     skusPorNota,
     taxaDesconto,
     taxaFrete,
-    clientesIdentificados: clientesCadastradosCount,
     clientesRecorrentes,
     percentualRecorrencia,
     porDepartamento: rankear(departamentos, faturamento),

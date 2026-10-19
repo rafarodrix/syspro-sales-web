@@ -279,7 +279,7 @@ describe("métricas de gestão (comparativo e concentração)", () => {
 
   it("não representa base zero como crescimento de 100%", () => {
     const variacao = calcularVariacao(500, 0);
-    expect(variacao.texto).toBe("Sem base");
+    expect(variacao.texto).toBe("Novo");
     expect(variacao.semBase).toBe(true);
     expect(variacao.percentual).toBe(0);
   });

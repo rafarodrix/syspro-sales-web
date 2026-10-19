@@ -260,18 +260,18 @@ describe("frequência de clientes", () => {
 
   it("reconhece o mesmo cliente entre períodos apesar de acento e pontuação", () => {
     const atual = [
-      venda({
-        nf_numero: "100",
-        cliente_nome: "PAOLA EMANUELE PEREIRA DE SOUZA",
-        nf_dt_emissao: "2026-09-10",
-      }),
+      venda(
+        "PAOLA EMANUELE PEREIRA DE SOUZA",
+        "2026-09-10",
+        { nf_numero: "100" },
+      ),
     ];
     const anterior = [
-      venda({
-        nf_numero: "90",
-        cliente_nome: "Paola Emanuèle Pereira de Souza.",
-        nf_dt_emissao: "2026-06-10",
-      }),
+      venda(
+        "Paola Emanuèle Pereira de Souza.",
+        "2026-06-10",
+        { nf_numero: "90" },
+      ),
     ];
 
     const resultado = analisarFrequenciaClientes(
