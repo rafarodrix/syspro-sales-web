@@ -19,7 +19,9 @@ export interface MovimentoKardex {
   empresaCodigo: string;
   empresaNome: string;
   participante: string;
+  produtoIdProduto?: string;
   produtoCodigoAuxiliar: string;
+  produtoMarca?: string;
   produtoDescricao: string;
   valorTotal: number;
   dataMovimento: string;
@@ -75,7 +77,7 @@ export function normalizarMovimentoKardex(item: unknown): MovimentoKardex {
   const descricaoGrupoDocumento = texto("kardex_ds_grupo_documento");
   const operacaoSyspro = texto("kardex_operacao");
   const classificacao = classificarMovimentoKardex(grupoDocumento, operacaoSyspro, descricaoGrupoDocumento);
-  return { empresaCodigo: texto("empresa_codigo"), empresaNome: texto("empresa_nome"), participante: texto("participante_nome"), produtoCodigoAuxiliar: texto("produto_codigo_auxiliar"), produtoDescricao: texto("produto_descricao"), valorTotal: paraNumero(registro.produto_vlr_total), dataMovimento: texto("kardex_data_movimento"), quantidadeAnterior: paraNumero(registro.kardex_qtde_anterior), quantidadeMovimentada: paraNumero(registro.kardex_qtde_movimento), saldo: paraNumero(registro.kardex_qtde_saldo), documento: texto("kardex_nro_documento"), grupoDocumento, descricaoGrupoDocumento, operacaoSyspro, modeloDocumento: texto("kardex_modelo_documento"), direcao: classificacao.direcao, classificacao };
+  return { empresaCodigo: texto("empresa_codigo"), empresaNome: texto("empresa_nome"), participante: texto("participante_nome"), produtoIdProduto: texto("produto_id_produto"), produtoCodigoAuxiliar: texto("produto_codigo_auxiliar"), produtoMarca: texto("produto_marca"), produtoDescricao: texto("produto_descricao"), valorTotal: paraNumero(registro.produto_vlr_total), dataMovimento: texto("kardex_data_movimento"), quantidadeAnterior: paraNumero(registro.kardex_qtde_anterior), quantidadeMovimentada: paraNumero(registro.kardex_qtde_movimento), saldo: paraNumero(registro.kardex_qtde_saldo), documento: texto("kardex_nro_documento"), grupoDocumento, descricaoGrupoDocumento, operacaoSyspro, modeloDocumento: texto("kardex_modelo_documento"), direcao: classificacao.direcao, classificacao };
 }
 
 export function resumirProdutosKardex(movimentos: MovimentoKardex[]) {

@@ -82,7 +82,8 @@ async function obterMovimentosAdaptativo({
       signal,
     });
     return movimentos.filter((movimento) =>
-      codigosProdutos.has(normalizarCodigoProduto(movimento.produtoCodigoAuxiliar, ""))
+      codigosProdutos.has(normalizarCodigoProduto(movimento.produtoIdProduto, ""))
+      || codigosProdutos.has(normalizarCodigoProduto(movimento.produtoCodigoAuxiliar, ""))
       || descricoesProdutos.has(normalizarDescricaoProduto(movimento.produtoDescricao)),
     );
   } catch (error) {
@@ -150,7 +151,7 @@ export async function obterRelatorioCompras({
       .map((venda) => normalizarDescricaoProduto(venda.produto_descricao))
       .filter(Boolean),
   );
-  const movimentos = codigosProdutos.size > 0
+  const movimentos = codigosProdutos.size > 0 || descricoesProdutos.size > 0
     ? await executarComPool(janelasKardex, 2, (janela) =>
         obterMovimentosAdaptativo({
           empresa,

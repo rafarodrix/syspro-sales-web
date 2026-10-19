@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type { ClasseCurvaCompras, RelatorioCompras } from "@/lib/relatorio-compras";
 
 const RELATORIO_VAZIO: RelatorioCompras = {
@@ -257,10 +257,13 @@ export function ComprasView({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Produto</TableHead>
+                      <TableHead>Marca</TableHead>
                       <TableHead className="text-center">Curva</TableHead>
                       <TableHead className="text-right">Vendas no periodo</TableHead>
                       <TableHead className="text-right">Devoluções EDC</TableHead>
                       <TableHead className="text-right">Demanda líquida</TableHead>
+                      <TableHead className="text-right">Custo aquisição</TableHead>
+                      <TableHead className="text-right">Custo reposição</TableHead>
                       <TableHead className="text-right">Estoque atual</TableHead>
                       <TableHead className="text-right">Cobertura</TableHead>
                     </TableRow>
@@ -271,6 +274,12 @@ export function ComprasView({
                         <TableCell>
                           <p className="font-medium">{item.produto}</p>
                           <p className="text-xs text-muted-foreground">{item.unidade}</p>
+                          <p className="font-mono text-[10px] text-muted-foreground" title="ID do produto">
+                            {item.produtoId || item.codigo}
+                          </p>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {item.marca || "Não informada"}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge variant={badgeCurva(item.curva)}>{item.curva}</Badge>
@@ -286,6 +295,12 @@ export function ComprasView({
                         </TableCell>
                         <TableCell className="text-right font-mono font-semibold">
                           {formatarNumero(item.demandaLiquida, 0)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {item.custoAquisicaoMedio == null ? "-" : formatarMoeda(item.custoAquisicaoMedio)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {item.custoReposicaoMedio == null ? "-" : formatarMoeda(item.custoReposicaoMedio)}
                         </TableCell>
                         <TableCell className="text-right font-mono font-semibold">
                           {item.estoqueAtual === null ? "-" : formatarNumero(item.estoqueAtual, 0)}
@@ -333,7 +348,7 @@ export function ComprasView({
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <RotateCcw className="size-3.5" aria-hidden="true" />
         Devoluções consideram exclusivamente o grupo EDC e não estornam receita sem valor fiscal.
-        Produtos são relacionados pelo código do item.
+        Produtos são relacionados por ID, código auxiliar e, com cautela, descrição normalizada.
       </p>
     </div>
   );

@@ -27,6 +27,10 @@ export interface ItemRelatorioCompras {
   mediaDiaria: number;
   coberturaDias: number | null;
   dataUltimoMovimento: string | null;
+  produtoId?: string;
+  marca?: string;
+  custoAquisicaoMedio?: number | null;
+  custoReposicaoMedio?: number | null;
 }
 
 export interface ResumoRelatorioCompras {
@@ -60,9 +64,17 @@ export function montarRelatorioCompras(
 ): RelatorioCompras {
   const porProduto = new Map<
     string,
-    Omit<ItemRelatorioCompras, "curva"> & { ordemUltimoMovimento: number }
+    Omit<ItemRelatorioCompras, "curva"> & {
+      ordemUltimoMovimento: number;
+      totalCustoAquisicao: number;
+      totalCustoReposicao: number;
+      quantidadeComCustoAquisicao: number;
+      quantidadeComCustoReposicao: number;
+    }
   >();
   const chavePorDescricao = new Map<string, string | null>();
+  const chavePorId = new Map<string, string>();
+  const chavePorAuxiliar = new Map<string, string>();
 
   for (const venda of vendas) {
     const codigoOriginal = String(
@@ -83,11 +95,33 @@ export function montarRelatorioCompras(
       mediaDiaria: 0,
       coberturaDias: null,
       dataUltimoMovimento: null,
+      produtoId: String(venda.produto_id ?? "").trim() || undefined,
+      marca: undefined,
+      custoAquisicaoMedio: null,
+      custoReposicaoMedio: null,
+      totalCustoAquisicao: 0,
+      totalCustoReposicao: 0,
+      quantidadeComCustoAquisicao: 0,
+      quantidadeComCustoReposicao: 0,
       ordemUltimoMovimento: -1,
     };
-    atual.quantidadeVendida += paraNumero(venda.produto_qtde);
+    const quantidade = paraNumero(venda.produto_qtde);
+    atual.quantidadeVendida += quantidade;
+    const custoAquisicao = paraNumero(venda.produto_vlr_custo_aquisicao);
+    const custoReposicao = paraNumero(venda.produto_vlr_custo_reposicao);
+    if (custoAquisicao > 0) {
+      atual.totalCustoAquisicao += custoAquisicao * quantidade;
+      atual.quantidadeComCustoAquisicao += quantidade;
+    }
+    if (custoReposicao > 0) {
+      atual.totalCustoReposicao += custoReposicao * quantidade;
+      atual.quantidadeComCustoReposicao += quantidade;
+    }
+    const idNormalizado = normalizarCodigoProduto(venda.produto_id, "");
+    const auxiliarNormalizado = normalizarCodigoProduto(venda.produto_codigo_auxiliar, "");
+    if (idNormalizado) chavePorId.set(idNormalizado, codigo);
+    if (auxiliarNormalizado) chavePorAuxiliar.set(auxiliarNormalizado, codigo);
     porProduto.set(codigo, atual);
-
     const descricao = normalizarDescricaoProduto(venda.produto_descricao);
     if (descricao) {
       const chaveExistente = chavePorDescricao.get(descricao);
@@ -97,9 +131,12 @@ export function montarRelatorioCompras(
   }
 
   movimentos.forEach((movimento, indice) => {
-    const codigo = normalizarCodigo(movimento.produtoCodigoAuxiliar);
+    const codigoAuxiliar = normalizarCodigo(movimento.produtoCodigoAuxiliar);
+    const codigoId = normalizarCodigoProduto(movimento.produtoIdProduto, "");
     const descricao = normalizarDescricaoProduto(movimento.produtoDescricao);
-    const chave = porProduto.has(codigo) ? codigo : chavePorDescricao.get(descricao);
+    const chave = chavePorAuxiliar.get(codigoAuxiliar)
+      ?? chavePorId.get(codigoId)
+      ?? chavePorDescricao.get(descricao);
     const atual = chave ? porProduto.get(chave) : undefined;
     if (!atual) return;
 
@@ -114,6 +151,7 @@ export function montarRelatorioCompras(
     const dataAnterior = atual.dataUltimoMovimento?.slice(0, 10) ?? "";
     if (dataAtual > dataAnterior || (dataAtual === dataAnterior && indice > atual.ordemUltimoMovimento)) {
       atual.estoqueAtual = movimento.saldo;
+      atual.marca = movimento.produtoMarca?.trim() || atual.marca;
       atual.dataUltimoMovimento = movimento.dataMovimento;
       atual.ordemUltimoMovimento = indice;
     }
@@ -125,6 +163,12 @@ export function montarRelatorioCompras(
     item.taxaDevolucao = calcularPercentual(item.quantidadeDevolvida, item.quantidadeVendida);
     item.mediaDiaria = diasPeriodo > 0 ? item.demandaLiquida / diasPeriodo : 0;
     item.coberturaDias = calcularCoberturaEstoque(item.estoqueAtual, item.demandaLiquida, diasPeriodo);
+    item.custoAquisicaoMedio = item.quantidadeComCustoAquisicao > 0
+      ? item.totalCustoAquisicao / item.quantidadeComCustoAquisicao
+      : null;
+    item.custoReposicaoMedio = item.quantidadeComCustoReposicao > 0
+      ? item.totalCustoReposicao / item.quantidadeComCustoReposicao
+      : null;
   }
 
   const ordenados = [...porProduto.values()].sort(
@@ -153,6 +197,10 @@ export function montarRelatorioCompras(
       mediaDiaria: item.mediaDiaria,
       coberturaDias: item.coberturaDias,
       dataUltimoMovimento: item.dataUltimoMovimento,
+      produtoId: item.produtoId,
+      marca: item.marca,
+      custoAquisicaoMedio: item.custoAquisicaoMedio,
+      custoReposicaoMedio: item.custoReposicaoMedio,
       curva,
     };
   });

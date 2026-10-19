@@ -93,6 +93,31 @@ describe("relatorio de compras", () => {
     expect(relatorio.itens[0]).toMatchObject({ quantidadeDevolvida: 2, estoqueAtual: 8 });
   });
 
+  it("relaciona por ID e expõe marca e custos médios", () => {
+    const relatorio = montarRelatorioCompras(
+      [{
+        ...venda("AUX-1", 2, "Produto com marca"),
+        produto_id: "GUID-1",
+        produto_codigo_auxiliar: "AUX-1",
+        produto_vlr_custo_aquisicao: 10,
+        produto_vlr_custo_reposicao: 12,
+      }],
+      [{
+        ...movimento("OUTRO-AUX", "2026-10-10", "EVD", -1, 8),
+        produtoIdProduto: "GUID-1",
+        produtoMarca: "MARCA TESTE",
+      }],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({
+      produtoId: "GUID-1",
+      marca: "MARCA TESTE",
+      custoAquisicaoMedio: 10,
+      custoReposicaoMedio: 12,
+      estoqueAtual: 8,
+    });
+  });
   it("nao soma EDC fora do periodo de vendas, mas usa o movimento no saldo atual", () => {
     const relatorio = montarRelatorioCompras(
       [venda("10", 5)],

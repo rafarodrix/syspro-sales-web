@@ -32,7 +32,9 @@ describe("cliente da API Syspro", () => {
         produto_vlr_seguro: {},
         cliente_nome: " Cliente ",
         produto_codigo_auxiliar: " 1263 ",
-      })])),
+          produto_vlr_custo_aquisicao: "36,888",
+          produto_vlr_custo_reposicao: 47.9817,
+        })])),
     );
     vi.stubGlobal("fetch", fetchMock);
     const signal = new AbortController().signal;
@@ -51,6 +53,8 @@ describe("cliente da API Syspro", () => {
       produto_vlr_total_item: 30,
       produto_vlr_seguro: undefined,
       produto_codigo_auxiliar: "1263",
+      produto_vlr_custo_aquisicao: "36,888",
+      produto_vlr_custo_reposicao: 47.9817,
     });
   });
 

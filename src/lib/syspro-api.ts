@@ -35,6 +35,8 @@ export interface VendaProduto {
   cliente_uf: string;
   produto_id: string;
   produto_codigo_auxiliar?: string;
+  produto_vlr_custo_aquisicao?: number | string;
+  produto_vlr_custo_reposicao?: number | string;
   produto_descricao: string;
   produto_departamento: string;
   produto_un: string;
@@ -60,7 +62,9 @@ export interface VendaComEmpresa extends VendaProduto {
 }
 
 export interface MovimentacaoEstoque {
-  codigo_auxiliar: string;
+  produto_id_produto?: string;
+  produto_codigo_auxiliar: string;
+  produto_marca?: string;
   produto_descricao: string;
   data_movimento: string;
   qtde_anterior: number | string;
@@ -277,6 +281,8 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
       || texto("produto_codigo")
       || texto("produto_cd_auxiliar")
       || undefined,
+    produto_vlr_custo_aquisicao: numeroOpcional("produto_vlr_custo_aquisicao"),
+    produto_vlr_custo_reposicao: numeroOpcional("produto_vlr_custo_reposicao"),
     produto_descricao: texto("produto_descricao"),
     produto_departamento: texto("produto_departamento"),
     produto_un: texto("produto_un"),
