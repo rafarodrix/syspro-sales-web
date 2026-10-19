@@ -1,5 +1,18 @@
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import type { Periodo } from "@/lib/periodo";
+import {
+  calcularPercentual,
+  calcularVariacao,
+  classificarCurvaABC,
+  normalizarCodigoProduto,
+  paraNumero,
+  valorBrutoItem,
+  valorLiquidoItem,
+  type VariacaoMetrica,
+} from "@/lib/metricas-negocio";
+
+export { calcularVariacao, paraNumero } from "@/lib/metricas-negocio";
+export type { VariacaoMetrica } from "@/lib/metricas-negocio";
 
 export interface VendaAgrupada {
   id: string;
@@ -59,6 +72,7 @@ export interface ResumoVendas {
   skusPorNota: number;
   taxaDesconto: number;
   taxaFrete: number;
+  clientesIdentificados: number;
   clientesRecorrentes: number;
   percentualRecorrencia: number;
   porDepartamento: ItemRankeado[];
@@ -66,17 +80,6 @@ export interface ResumoVendas {
   porFormaPagamento: ItemRankeado[];
   porModeloDocumento: ItemRankeado[];
   porCidade: ItemRankeado[];
-}
-
-export interface VariacaoMetrica {
-  atual: number;
-  anterior: number;
-  diferenca: number;
-  percentual: number;
-  texto: string;
-  positivo: boolean;
-  neutro: boolean;
-  semBase?: boolean;
 }
 
 export interface DestaquesPeriodo {
@@ -262,32 +265,8 @@ export interface ItemFinanceiroAnalise {
 
 export type MetricaDeVendas = "faturamento" | "itens" | "notas" | "ticket";
 
-export function paraNumero(valor: number | string | null | undefined): number {
-  if (valor == null || valor === "") return 0;
-  if (typeof valor === "number") return Number.isFinite(valor) ? valor : 0;
-  const texto = String(valor).trim().replace(/\s/g, "");
-  const normalizado = texto.includes(",")
-    ? texto.replace(/\./g, "").replace(",", ".")
-    : texto;
-  const numero = Number(normalizado);
-  return Number.isFinite(numero) ? numero : 0;
-}
-
 export function valorItem(venda: VendaProduto): number {
-  // Valor FINAL do item (bruto - desconto + frete + outros + seguro).
-  // produto_vlr_total_item é o BRUTO (não abate desconto) — sempre usar o líquido.
-  const liquidoInformado = venda.produto_vlr_total_liquido;
-  if (liquidoInformado !== undefined && liquidoInformado !== null && liquidoInformado !== "") {
-    return paraNumero(liquidoInformado);
-  }
-
-  return (
-    paraNumero(venda.produto_vlr_total_item)
-    - paraNumero(venda.produto_vlr_desconto)
-    + paraNumero(venda.produto_vlr_frete)
-    + paraNumero(venda.produto_vlr_seguro)
-    + paraNumero(venda.produto_vlr_outros)
-  );
+  return valorLiquidoItem(venda);
 }
 
 export function chaveDaNota(venda: VendaProduto | VendaComEmpresa): string {
@@ -374,6 +353,7 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
   const skusPorNotaMap = new Map<string, Set<string>>();
 
   let faturamento = 0;
+  let faturamentoBruto = 0;
   let descontos = 0;
   let frete = 0;
   let icmsSt = 0;
@@ -392,6 +372,7 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
     skusPorNotaMap.set(chaveNota, skusDaNota);
 
     faturamento += total;
+    faturamentoBruto += valorBrutoItem(venda);
     descontos += desc;
     frete += frt;
     icmsSt += st;
@@ -415,16 +396,14 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
   const notasAgrupadas = agruparVendasPorNota(vendas);
   const totalNotas = notasAgrupadas.length;
   const ticketMedio = totalNotas ? faturamento / totalNotas : 0;
-  const faturamentoBruto = faturamento + descontos;
-
   const itensPorNota = totalNotas ? quantidadeItens / totalNotas : 0;
-  const totalSkusDistintosNasNotas = [...skusPorNotaMap.values()].reduce(
-    (total, skus) => total + skus.size,
+  const totalSkusNasNotas = notasAgrupadas.reduce(
+    (total, nota) => total + new Set(nota.itens.map((item) => normalizarCodigoProduto(item.produto_id))).size,
     0,
   );
-  const skusPorNota = totalNotas ? totalSkusDistintosNasNotas / totalNotas : 0;
-  const taxaDesconto = faturamentoBruto > 0 ? (descontos / faturamentoBruto) * 100 : 0;
-  const taxaFrete = faturamento > 0 ? (frete / faturamento) * 100 : 0;
+  const skusPorNota = totalNotas ? totalSkusNasNotas / totalNotas : 0;
+  const taxaDesconto = calcularPercentual(descontos, faturamentoBruto);
+  const taxaFrete = calcularPercentual(frete, faturamento);
 
   let clientesCadastradosCount = 0;
   let clientesRecorrentes = 0;
@@ -453,6 +432,7 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
     skusPorNota,
     taxaDesconto,
     taxaFrete,
+    clientesIdentificados: clientesCadastradosCount,
     clientesRecorrentes,
     percentualRecorrencia,
     porDepartamento: rankear(departamentos, faturamento),
@@ -475,9 +455,9 @@ export function produtosMaisVendidos(
   let faturamentoTotal = 0;
 
   for (const venda of vendas) {
-    const id = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const id = normalizarCodigoProduto(venda.produto_id);
     const nome = venda.produto_descricao?.trim() || "Produto não identificado";
-    const chave = `${id}|${nome}`;
+    const chave = id;
     const total = valorItem(venda);
     const qtd = paraNumero(venda.produto_qtde);
     faturamentoTotal += total;
@@ -501,7 +481,7 @@ export function produtosMaisVendidos(
   return [...produtosMap.values()]
     .map((p) => ({
       ...p,
-      percentual: faturamentoTotal > 0 ? (p.total / faturamentoTotal) * 100 : 0,
+      percentual: calcularPercentual(p.total, faturamentoTotal),
     }))
     .sort((a, b) => b.total - a.total)
     .slice(0, limite);
@@ -527,9 +507,9 @@ export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
   let faturamentoTotal = 0;
 
   for (const venda of vendas) {
-    const id = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const id = normalizarCodigoProduto(venda.produto_id);
     const nome = venda.produto_descricao?.trim() || "Produto sem descrição";
-    const chave = `${id}|${nome}`;
+    const chave = id;
     const total = valorItem(venda);
     const qtd = paraNumero(venda.produto_qtde);
 
@@ -563,17 +543,17 @@ export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
     const percentual = faturamentoTotal > 0 ? (p.total / faturamentoTotal) * 100 : 0;
     const percentualAcumulado = faturamentoTotal > 0 ? (acumulado / faturamentoTotal) * 100 : 0;
 
-    let classe: "A" | "B" | "C";
-    if (percentualAcumulado <= 80 || (acumulado - p.total) / (faturamentoTotal || 1) < 0.8) {
-      classe = "A";
+    const percentualAnterior = faturamentoTotal > 0
+      ? ((acumulado - p.total) / faturamentoTotal) * 100
+      : 100;
+    const classe = classificarCurvaABC(percentualAnterior);
+    if (classe === "A") {
       fatA += p.total;
       itensA += 1;
-    } else if (percentualAcumulado <= 95 || (acumulado - p.total) / (faturamentoTotal || 1) < 0.95) {
-      classe = "B";
+    } else if (classe === "B") {
       fatB += p.total;
       itensB += 1;
     } else {
-      classe = "C";
       fatC += p.total;
       itensC += 1;
     }
@@ -634,9 +614,9 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
     const nomeDepto = venda.produto_departamento?.trim() || "Sem departamento";
     const total = valorItem(venda);
     const qtd = paraNumero(venda.produto_qtde);
-    const idProd = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const idProd = normalizarCodigoProduto(venda.produto_id);
     const nomeProd = venda.produto_descricao?.trim() || "Produto sem descrição";
-    const chaveProd = `${idProd}|${nomeProd}`;
+    const chaveProd = idProd;
 
     faturamentoTotal += total;
 
@@ -701,6 +681,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
     {
       nome: string;
       faturamento: number;
+      faturamentoBruto: number;
       desconto: number;
       quantidadeItens: number;
       notas: Set<string>;
@@ -714,6 +695,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
   for (const venda of vendas) {
     const nomeVend = venda.vendedor_nome?.trim() || "Sem vendedor";
     const total = valorItem(venda);
+    const bruto = valorBrutoItem(venda);
     const desc = paraNumero(venda.produto_vlr_desconto);
     const qtd = paraNumero(venda.produto_qtde);
     const chaveNota = chaveDaNota(venda);
@@ -727,6 +709,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
       vend = {
         nome: nomeVend,
         faturamento: 0,
+        faturamentoBruto: 0,
         desconto: 0,
         quantidadeItens: 0,
         notas: new Set(),
@@ -737,6 +720,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
     }
 
     vend.faturamento += total;
+    vend.faturamentoBruto += bruto;
     vend.desconto += desc;
     vend.quantidadeItens += qtd;
     vend.notas.add(chaveNota);
@@ -750,8 +734,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
     .map((v) => {
       const topProd = [...v.produtosMap.entries()].sort((a, b) => b[1] - a[1])[0];
       const pedidos = v.notas.size;
-      const faturamentoBruto = v.faturamento + v.desconto;
-      const taxaDesconto = faturamentoBruto > 0 ? (v.desconto / faturamentoBruto) * 100 : 0;
+      const taxaDesconto = calcularPercentual(v.desconto, v.faturamentoBruto);
 
       return {
         nome: v.nome,
@@ -828,15 +811,8 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
     const pedidos = c.notas.size;
     const percentual = faturamentoTotal > 0 ? (c.faturamento / faturamentoTotal) * 100 : 0;
     const percentualAcumulado = faturamentoTotal > 0 ? (acumulado / faturamentoTotal) * 100 : 0;
-
-    let classe: "A" | "B" | "C";
-    if (percentualAcumulado <= 80 || (acumulado - c.faturamento) / (faturamentoTotal || 1) < 0.8) {
-      classe = "A";
-    } else if (percentualAcumulado <= 95 || (acumulado - c.faturamento) / (faturamentoTotal || 1) < 0.95) {
-      classe = "B";
-    } else {
-      classe = "C";
-    }
+    const percentualAnterior = calcularPercentual(acumulado - c.faturamento, faturamentoTotal);
+    const classe = classificarCurvaABC(percentualAnterior);
 
     return {
       nome: c.nome,
@@ -908,12 +884,14 @@ export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): Ite
 }
 
 export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
-  const vendMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
-  const deptoMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
-  const formaPagamentoMap = new Map<string, { faturamento: number; desconto: number; notas: Set<string> }>();
+  type AcumuladoDesconto = { faturamento: number; bruto: number; desconto: number; notas: Set<string> };
+  const vendMap = new Map<string, AcumuladoDesconto>();
+  const deptoMap = new Map<string, AcumuladoDesconto>();
+  const formaPagamentoMap = new Map<string, AcumuladoDesconto>();
 
   for (const venda of vendas) {
     const total = valorItem(venda);
+    const bruto = valorBrutoItem(venda);
     const desc = paraNumero(venda.produto_vlr_desconto);
     const chaveNota = chaveDaNota(venda);
     const vend = venda.vendedor_nome?.trim() || "Sem vendedor";
@@ -923,45 +901,46 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
     // Vendedor
     let vData = vendMap.get(vend);
     if (!vData) {
-      vData = { faturamento: 0, desconto: 0, notas: new Set() };
+      vData = { faturamento: 0, bruto: 0, desconto: 0, notas: new Set() };
       vendMap.set(vend, vData);
     }
     vData.faturamento += total;
+    vData.bruto += bruto;
     vData.desconto += desc;
     vData.notas.add(chaveNota);
 
     // Departamento
     let dData = deptoMap.get(depto);
     if (!dData) {
-      dData = { faturamento: 0, desconto: 0, notas: new Set() };
+      dData = { faturamento: 0, bruto: 0, desconto: 0, notas: new Set() };
       deptoMap.set(depto, dData);
     }
     dData.faturamento += total;
+    dData.bruto += bruto;
     dData.desconto += desc;
     dData.notas.add(chaveNota);
 
     // Forma de pagamento
     let fpData = formaPagamentoMap.get(formaPagamento);
     if (!fpData) {
-      fpData = { faturamento: 0, desconto: 0, notas: new Set() };
+      fpData = { faturamento: 0, bruto: 0, desconto: 0, notas: new Set() };
       formaPagamentoMap.set(formaPagamento, fpData);
     }
     fpData.faturamento += total;
+    fpData.bruto += bruto;
     fpData.desconto += desc;
     fpData.notas.add(chaveNota);
 
   }
 
-  function formatarRankingDesconto(map: Map<string, { faturamento: number; desconto: number; notas: Set<string> }>): ItemDescontoAnalise[] {
+  function formatarRankingDesconto(map: Map<string, AcumuladoDesconto>): ItemDescontoAnalise[] {
     return [...map.entries()]
       .map(([nome, d]) => {
-        const bruto = d.faturamento + d.desconto;
-        const taxa = bruto > 0 ? (d.desconto / bruto) * 100 : 0;
         return {
           nome,
           faturamentoLiquido: d.faturamento,
           desconto: d.desconto,
-          taxaDesconto: taxa,
+          taxaDesconto: calcularPercentual(d.desconto, d.bruto),
           pedidos: d.notas.size,
         };
       })
@@ -1201,9 +1180,9 @@ export function analiseProdutosPorDimensao(
     const nomeDimensao = dimensao === "cliente"
       ? venda.cliente_nome?.trim() || "Cliente não identificado"
       : venda.vendedor_nome?.trim() || "Sem vendedor";
-    const produtoId = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const produtoId = normalizarCodigoProduto(venda.produto_id);
     const produto = venda.produto_descricao?.trim() || "Produto sem descrição";
-    const chave = `${nomeDimensao}\u0000${produtoId}\u0000${produto}`;
+    const chave = `${nomeDimensao}\u0000${produtoId}`;
     const atual = mapa.get(chave) ?? {
       dimensao: nomeDimensao,
       produtoId,
@@ -1347,47 +1326,6 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
   return { formasPagamento, modelosDocumento };
 }
 
-export function calcularVariacao(atual: number, anterior: number): VariacaoMetrica {
-  const diferenca = atual - anterior;
-  if (anterior === 0) {
-    if (atual === 0) {
-      return {
-        atual,
-        anterior,
-        diferenca: 0,
-        percentual: 0,
-        texto: "0,0%",
-        positivo: true,
-        neutro: true,
-      };
-    }
-    return {
-      atual,
-      anterior,
-      diferenca,
-      percentual: 0,
-      texto: "Sem base",
-      positivo: true,
-      neutro: false,
-      semBase: true,
-    };
-  }
-
-  const percentual = ((atual - anterior) / Math.abs(anterior)) * 100;
-  const sinal = percentual > 0 ? "+" : "";
-  const texto = `${sinal}${percentual.toFixed(1).replace(".", ",")}%`;
-
-  return {
-    atual,
-    anterior,
-    diferenca,
-    percentual,
-    texto,
-    positivo: percentual >= 0,
-    neutro: Math.abs(percentual) < 0.01,
-  };
-}
-
 export function calcularPeriodoAnterior(
   dtInicialInput: string,
   dtFinalInput: string,
@@ -1421,10 +1359,33 @@ export function dadosPorMetricaComparativa(
     ? preencherSerieDiaria(vendasAnteriores, metrica, periodoAnterior)
     : agruparPorDia(vendasAnteriores, metrica);
 
-  return pontosAtuais.map((pt, idx) => ({
-    ...pt,
-    totalAnterior: pontosAnteriores[idx]?.total ?? 0,
-  }));
+  const paraTimestamp = (data: string) => {
+    const iso = /^\d{4}-\d{2}-\d{2}$/.test(data)
+      ? data
+      : data.replace(/^(\d{2})\/(\d{2})\/(\d{4})$/, "$3-$2-$1");
+    const timestamp = Date.parse(`${iso}T00:00:00Z`);
+    return Number.isFinite(timestamp) ? timestamp : null;
+  };
+  const inicioAtual = pontosAtuais.map((p) => paraTimestamp(p.data)).find((data) => data !== null);
+  const inicioAnterior = pontosAnteriores.map((p) => paraTimestamp(p.data)).find((data) => data !== null);
+  const anterioresPorDiaRelativo = new Map<number, number>();
+  if (inicioAnterior != null) {
+    for (const ponto of pontosAnteriores) {
+      const data = paraTimestamp(ponto.data);
+      if (data !== null) anterioresPorDiaRelativo.set((data - inicioAnterior) / 86_400_000, ponto.total);
+    }
+  }
+
+  return pontosAtuais.map((pt) => {
+    const dataAtual = paraTimestamp(pt.data);
+    const diaRelativo = dataAtual !== null && inicioAtual != null
+      ? (dataAtual - inicioAtual) / 86_400_000
+      : null;
+    return {
+      ...pt,
+      totalAnterior: diaRelativo === null ? 0 : (anterioresPorDiaRelativo.get(diaRelativo) ?? 0),
+    };
+  });
 }
 
 export function dadosPorMetrica(
@@ -2092,9 +2053,9 @@ export function mudancaMixTopProdutos(
 function agregaReceitaPorProduto(vendas: VendaProduto[]): Map<string, { id: string; produto: string; total: number }> {
   const mapa = new Map<string, { id: string; produto: string; total: number }>();
   for (const venda of vendas) {
-    const id = String(venda.produto_id ?? "").trim() || "SEM-COD";
+    const id = normalizarCodigoProduto(venda.produto_id);
     const produto = venda.produto_descricao?.trim() || "Produto não identificado";
-    const chave = `${id}|${produto}`;
+    const chave = id;
     const atual = mapa.get(chave) ?? { id, produto, total: 0 };
     atual.total += valorItem(venda);
     mapa.set(chave, atual);

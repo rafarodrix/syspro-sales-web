@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatarNumero } from "@/lib/formatters";
+import { formatarNumero, formatarPercentual } from "@/lib/formatters";
 import type { ClasseCurvaCompras, RelatorioCompras } from "@/lib/relatorio-compras";
 
 const RELATORIO_VAZIO: RelatorioCompras = {
@@ -33,7 +33,10 @@ const RELATORIO_VAZIO: RelatorioCompras = {
     totalProdutos: 0,
     quantidadeVendida: 0,
     quantidadeDevolvida: 0,
+    demandaLiquida: 0,
+    taxaDevolucao: 0,
     produtosSemSaldo: 0,
+    produtosSemSaldoLocalizado: 0,
   },
 };
 
@@ -43,14 +46,14 @@ function ResumoCard({
   descricao,
 }: {
   titulo: string;
-  valor: number;
+  valor: string;
   descricao: string;
 }) {
   return (
     <Card size="sm">
       <CardHeader>
         <CardDescription>{titulo}</CardDescription>
-        <CardTitle className="font-mono text-2xl">{formatarNumero(valor, 0)}</CardTitle>
+        <CardTitle className="font-mono text-2xl">{valor}</CardTitle>
       </CardHeader>
       <CardContent className="text-xs text-muted-foreground">{descricao}</CardContent>
     </Card>
@@ -146,7 +149,7 @@ export function ComprasView({
             Relatório de Compras
           </CardTitle>
           <CardDescription>
-            Vendas, devoluções de compra EDC e estoque atual por produto em {empresaNome}.
+            Vendas, devoluções de venda EDC e estoque atual por produto em {empresaNome}.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -169,26 +172,31 @@ export function ComprasView({
       ) : null}
 
       {periodoConsultado ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <ResumoCard
             titulo="Produtos analisados"
-            valor={relatorio.resumo.totalProdutos}
+            valor={formatarNumero(relatorio.resumo.totalProdutos, 0)}
             descricao="Produtos com vendas no período"
           />
           <ResumoCard
             titulo="Quantidade vendida"
-            valor={relatorio.resumo.quantidadeVendida}
+            valor={formatarNumero(relatorio.resumo.quantidadeVendida, 0)}
             descricao="Origem: consulta de vendas"
           />
           <ResumoCard
-            titulo="Quantidade devolvida"
-            valor={relatorio.resumo.quantidadeDevolvida}
-            descricao="Movimentações EDC no período"
+            titulo="Demanda líquida"
+            valor={formatarNumero(relatorio.resumo.demandaLiquida, 0)}
+            descricao="Vendas menos devoluções EDC"
           />
           <ResumoCard
-            titulo="Sem saldo localizado"
-            valor={relatorio.resumo.produtosSemSaldo}
-            descricao="Produtos sem correspondência no Kardex"
+            titulo="Taxa de devolução"
+            valor={formatarPercentual(relatorio.resumo.taxaDevolucao, 1)}
+            descricao={`${formatarNumero(relatorio.resumo.quantidadeDevolvida, 0)} unidade(s) devolvida(s)`}
+          />
+          <ResumoCard
+            titulo="Sem estoque"
+            valor={formatarNumero(relatorio.resumo.produtosSemSaldo, 0)}
+            descricao={`${relatorio.resumo.produtosSemSaldoLocalizado} sem saldo localizado`}
           />
         </div>
       ) : null}
@@ -197,7 +205,7 @@ export function ComprasView({
         <CardHeader>
           <CardTitle>Produtos para analise de compra</CardTitle>
           <CardDescription>
-            Curva ABC calculada pela quantidade vendida. O estoque usa o saldo do movimento mais
+            Curva ABC calculada pela demanda líquida. O estoque usa o saldo do movimento mais
             recente encontrado até hoje.
           </CardDescription>
           <DataFilterBar
@@ -253,7 +261,9 @@ export function ComprasView({
                       <TableHead className="text-center">Curva</TableHead>
                       <TableHead className="text-right">Vendas no periodo</TableHead>
                       <TableHead className="text-right">Devoluções EDC</TableHead>
+                      <TableHead className="text-right">Demanda líquida</TableHead>
                       <TableHead className="text-right">Estoque atual</TableHead>
+                      <TableHead className="text-right">Cobertura</TableHead>
                       <TableHead>Ultimo movimento</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -275,9 +285,20 @@ export function ComprasView({
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {formatarNumero(item.quantidadeDevolvida, 0)}
+                          <span className="block text-[10px] text-muted-foreground">
+                            {formatarPercentual(item.taxaDevolucao, 1)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-semibold">
+                          {formatarNumero(item.demandaLiquida, 0)}
                         </TableCell>
                         <TableCell className="text-right font-mono font-semibold">
                           {item.estoqueAtual === null ? "-" : formatarNumero(item.estoqueAtual, 0)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {item.coberturaDias === null
+                            ? "-"
+                            : `${formatarNumero(item.coberturaDias, 1)} dias`}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {item.dataUltimoMovimento?.slice(0, 10) ?? "Não localizado"}
@@ -319,8 +340,8 @@ export function ComprasView({
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <RotateCcw className="size-3.5" aria-hidden="true" />
-        Devoluções consideram exclusivamente o grupo de documento EDC. Produtos são relacionados
-        pelo código do item.
+        Devoluções consideram exclusivamente o grupo EDC e não estornam receita sem valor fiscal.
+        Produtos são relacionados pelo código do item.
       </p>
     </div>
   );

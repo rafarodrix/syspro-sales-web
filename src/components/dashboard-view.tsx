@@ -555,7 +555,7 @@ export function DashboardView({
 
       {/* Mini-Indicadores de Eficiência Comercial & Operacional */}
       {!loading && vendas.length > 0 && (
-        <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-5">
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Taxa Média Desconto
@@ -593,7 +593,7 @@ export function DashboardView({
                 {formatarPercentual(resumo.percentualRecorrencia, 1)}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                ({resumo.clientesRecorrentes} de {resumo.clientes})
+                ({resumo.clientesRecorrentes} de {resumo.clientesIdentificados})
               </span>
             </div>
           </div>

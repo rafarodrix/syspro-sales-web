@@ -11,6 +11,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:coverage:critical": "vitest run --coverage --coverage.include=\"src/lib/{sales-service,syspro-api,compras-service,api-route}.ts\" --coverage.thresholds.perFile=true --coverage.thresholds.lines=70 --coverage.thresholds.statements=70 --coverage.thresholds.functions=70 --coverage.thresholds.branches=70",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm test",

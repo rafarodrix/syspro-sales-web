@@ -45,6 +45,8 @@ describe("relatorio de compras", () => {
       codigo: "SP1002A",
       quantidadeVendida: 32,
       quantidadeDevolvida: 3,
+      demandaLiquida: 29,
+      taxaDevolucao: 9.375,
       estoqueAtual: 20,
       dataUltimoMovimento: "2026-10-15",
       curva: "A",
@@ -53,7 +55,10 @@ describe("relatorio de compras", () => {
       totalProdutos: 2,
       quantidadeVendida: 40,
       quantidadeDevolvida: 4,
+      demandaLiquida: 36,
+      taxaDevolucao: 10,
       produtosSemSaldo: 0,
+      produtosSemSaldoLocalizado: 0,
     });
   });
 
@@ -65,6 +70,35 @@ describe("relatorio de compras", () => {
     );
 
     expect(relatorio.itens[0]).toMatchObject({ quantidadeDevolvida: 0, estoqueAtual: 9 });
+  });
+
+  it("classifica como C quando as devolucoes anulam toda a demanda", () => {
+    const relatorio = montarRelatorioCompras(
+      [venda("10", 5)],
+      [movimento("10", "2026-10-10", "EDC", -5, 5)],
+      { inicial: "2026-10-01", final: "2026-10-10" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({ demandaLiquida: 0, curva: "C" });
+  });
+
+  it("calcula demanda, cobertura e separa estoque zerado de saldo não localizado", () => {
+    const relatorio = montarRelatorioCompras(
+      [venda("A", 10), venda("B", 5)],
+      [movimento("A", "2026-10-10", "EVD", -1, 0)],
+      { inicial: "2026-10-01", final: "2026-10-10" },
+    );
+
+    expect(relatorio.itens.find((item) => item.codigo === "A")).toMatchObject({
+      demandaLiquida: 10,
+      mediaDiaria: 1,
+      coberturaDias: 0,
+    });
+    expect(relatorio.itens.find((item) => item.codigo === "B")?.coberturaDias).toBeNull();
+    expect(relatorio.resumo).toMatchObject({
+      produtosSemSaldo: 1,
+      produtosSemSaldoLocalizado: 1,
+    });
   });
 
   it("divide consultas longas em janelas inclusivas de no maximo 31 dias", () => {
