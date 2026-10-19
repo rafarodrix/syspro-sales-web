@@ -1,8 +1,17 @@
 import type { MovimentoKardex } from "@/lib/kardex";
 import type { VendaProduto } from "@/lib/syspro-api";
-import { paraNumero } from "@/lib/vendas";
+import {
+  calcularCoberturaEstoque,
+  calcularDemandaLiquida,
+  calcularDiasInclusivos,
+  calcularPercentual,
+  classificarCurvaABC,
+  normalizarCodigoProduto,
+  paraNumero,
+  type ClasseCurvaABC,
+} from "@/lib/metricas-negocio";
 
-export type ClasseCurvaCompras = "A" | "B" | "C";
+export type ClasseCurvaCompras = ClasseCurvaABC;
 
 export interface ItemRelatorioCompras {
   codigo: string;
@@ -11,7 +20,11 @@ export interface ItemRelatorioCompras {
   curva: ClasseCurvaCompras;
   quantidadeVendida: number;
   quantidadeDevolvida: number;
+  demandaLiquida: number;
+  taxaDevolucao: number;
   estoqueAtual: number | null;
+  mediaDiaria: number;
+  coberturaDias: number | null;
   dataUltimoMovimento: string | null;
 }
 
@@ -19,7 +32,10 @@ export interface ResumoRelatorioCompras {
   totalProdutos: number;
   quantidadeVendida: number;
   quantidadeDevolvida: number;
+  demandaLiquida: number;
+  taxaDevolucao: number;
   produtosSemSaldo: number;
+  produtosSemSaldoLocalizado: number;
 }
 
 export interface RelatorioCompras {
@@ -28,7 +44,7 @@ export interface RelatorioCompras {
 }
 
 function normalizarCodigo(codigo: string): string {
-  return codigo.trim().toUpperCase();
+  return normalizarCodigoProduto(codigo, "");
 }
 
 function estaNoPeriodo(data: string, inicial: string, final: string): boolean {
@@ -57,7 +73,11 @@ export function montarRelatorioCompras(
       unidade: venda.produto_un?.trim() || "-",
       quantidadeVendida: 0,
       quantidadeDevolvida: 0,
+      demandaLiquida: 0,
+      taxaDevolucao: 0,
       estoqueAtual: null,
+      mediaDiaria: 0,
+      coberturaDias: null,
       dataUltimoMovimento: null,
       ordemUltimoMovimento: -1,
     };
@@ -86,23 +106,39 @@ export function montarRelatorioCompras(
     }
   });
 
+  const diasPeriodo = calcularDiasInclusivos(periodo.inicial, periodo.final);
+  for (const item of porProduto.values()) {
+    item.demandaLiquida = calcularDemandaLiquida(item.quantidadeVendida, item.quantidadeDevolvida);
+    item.taxaDevolucao = calcularPercentual(item.quantidadeDevolvida, item.quantidadeVendida);
+    item.mediaDiaria = diasPeriodo > 0 ? item.demandaLiquida / diasPeriodo : 0;
+    item.coberturaDias = calcularCoberturaEstoque(item.estoqueAtual, item.demandaLiquida, diasPeriodo);
+  }
+
   const ordenados = [...porProduto.values()].sort(
-    (a, b) => b.quantidadeVendida - a.quantidadeVendida || a.codigo.localeCompare(b.codigo),
+    (a, b) => b.demandaLiquida - a.demandaLiquida || a.codigo.localeCompare(b.codigo),
   );
   const totalVendido = ordenados.reduce((total, item) => total + item.quantidadeVendida, 0);
+  const totalDevolvido = ordenados.reduce((total, item) => total + item.quantidadeDevolvida, 0);
+  const totalDemandaLiquida = ordenados.reduce((total, item) => total + item.demandaLiquida, 0);
   let acumulado = 0;
 
   const itens = ordenados.map((item) => {
-    const percentualAntes = totalVendido > 0 ? (acumulado / totalVendido) * 100 : 100;
-    acumulado += item.quantidadeVendida;
-    const curva: ClasseCurvaCompras = percentualAntes < 80 ? "A" : percentualAntes < 95 ? "B" : "C";
+    const percentualAntes = totalDemandaLiquida > 0
+      ? calcularPercentual(acumulado, totalDemandaLiquida)
+      : 100;
+    acumulado += item.demandaLiquida;
+    const curva = classificarCurvaABC(percentualAntes);
     return {
       codigo: item.codigo,
       produto: item.produto,
       unidade: item.unidade,
       quantidadeVendida: item.quantidadeVendida,
       quantidadeDevolvida: item.quantidadeDevolvida,
+      demandaLiquida: item.demandaLiquida,
+      taxaDevolucao: item.taxaDevolucao,
       estoqueAtual: item.estoqueAtual,
+      mediaDiaria: item.mediaDiaria,
+      coberturaDias: item.coberturaDias,
       dataUltimoMovimento: item.dataUltimoMovimento,
       curva,
     };
@@ -113,8 +149,11 @@ export function montarRelatorioCompras(
     resumo: {
       totalProdutos: itens.length,
       quantidadeVendida: totalVendido,
-      quantidadeDevolvida: itens.reduce((total, item) => total + item.quantidadeDevolvida, 0),
-      produtosSemSaldo: itens.filter((item) => item.estoqueAtual === null).length,
+      quantidadeDevolvida: totalDevolvido,
+      demandaLiquida: totalDemandaLiquida,
+      taxaDevolucao: calcularPercentual(totalDevolvido, totalVendido),
+      produtosSemSaldo: itens.filter((item) => item.estoqueAtual !== null && item.estoqueAtual <= 0).length,
+      produtosSemSaldoLocalizado: itens.filter((item) => item.estoqueAtual === null).length,
     },
   };
 }

@@ -9,8 +9,12 @@ import {
   analiseClientesNovosRecorrentes,
   analiseUFs,
   calcularVariacoesPeriodo,
+  calcularCurvaABC,
   concentracaoTopN,
+  dadosPorMetricaComparativa,
   maioresCrescimentosProdutos,
+  produtosMaisVendidos,
+  resumoVendas,
   valorItem,
 } from "@/lib/vendas";
 import { periodoConsultaValido } from "@/lib/sales-service";
@@ -68,6 +72,41 @@ describe("cálculos de vendas", () => {
     ]);
     expect(notas).toHaveLength(1);
     expect(notas[0].total).toBe(145);
+  });
+
+  it("separa faturamento bruto do líquido e conta SKUs distintos por nota", () => {
+    const resumo = resumoVendas([
+      vendaBase({ produto_id: "P1", produto_descricao: "Descrição antiga", produto_vlr_total_item: 100, produto_vlr_total_liquido: 90, produto_vlr_desconto: 10 }),
+      vendaBase({ produto_id: " p1 ", produto_descricao: "Descrição nova", produto_vlr_total_item: 100, produto_vlr_total_liquido: 90, produto_vlr_desconto: 10 }),
+    ]);
+
+    expect(resumo.faturamento).toBe(180);
+    expect(resumo.faturamentoBruto).toBe(200);
+    expect(resumo.taxaDesconto).toBe(10);
+    expect(resumo.skusPorNota).toBe(1);
+  });
+
+  it("calcula recorrencia somente sobre clientes identificados", () => {
+    const resumo = resumoVendas([
+      vendaBase({ nf_numero: "1", cliente_nome: "Cliente A" }),
+      vendaBase({ nf_numero: "2", cliente_nome: "Cliente A" }),
+      vendaBase({ nf_numero: "3", cliente_nome: "CONSUMIDOR FINAL" }),
+    ]);
+
+    expect(resumo.clientes).toBe(2);
+    expect(resumo.clientesIdentificados).toBe(1);
+    expect(resumo.clientesRecorrentes).toBe(1);
+    expect(resumo.percentualRecorrencia).toBe(100);
+  });
+
+  it("consolida o mesmo código de produto mesmo se a descrição mudar", () => {
+    const vendas = [
+      vendaBase({ produto_id: "p1", produto_descricao: "Nome antigo", produto_vlr_total_liquido: 50 }),
+      vendaBase({ produto_id: " P1 ", produto_descricao: "Nome novo", produto_vlr_total_liquido: 70 }),
+    ];
+
+    expect(produtosMaisVendidos(vendas)).toHaveLength(1);
+    expect(calcularCurvaABC(vendas).itens).toHaveLength(1);
   });
 
   it("rejeita datas inexistentes antes de consultar o Syspro", () => {
@@ -139,6 +178,23 @@ describe("métricas de gestão (comparativo e concentração)", () => {
     expect(variacoes.faturamento.percentual).toBe(100);
     expect(variacoes.notas.diferenca).toBe(0);
     expect(variacoes.clientes.diferenca).toBe(0);
+  });
+
+  it("alinha a série anterior pelo dia relativo mesmo quando faltam datas", () => {
+    const atual = [
+      vendaBase({ nf_dt_emissao: "2026-10-01", produto_vlr_total_liquido: 10 }),
+      vendaBase({ nf_numero: "2", nf_dt_emissao: "2026-10-03", produto_vlr_total_liquido: 30 }),
+    ];
+    const anterior = [
+      vendaBase({ nf_dt_emissao: "2026-09-01", produto_vlr_total_liquido: 5 }),
+      vendaBase({ nf_numero: "2", nf_dt_emissao: "2026-09-02", produto_vlr_total_liquido: 20 }),
+      vendaBase({ nf_numero: "3", nf_dt_emissao: "2026-09-03", produto_vlr_total_liquido: 25 }),
+    ];
+
+    expect(dadosPorMetricaComparativa(atual, anterior, "faturamento")).toEqual([
+      expect.objectContaining({ data: "2026-10-01", totalAnterior: 5 }),
+      expect.objectContaining({ data: "2026-10-03", totalAnterior: 25 }),
+    ]);
   });
 
   it("soma corretamente a concentração do Top N em um ranking", () => {

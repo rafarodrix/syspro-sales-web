@@ -406,7 +406,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoFaturamento?.positivo}
-              neutro={variacaoFaturamento?.neutro}
+              neutro={variacaoFaturamento?.neutro || variacaoFaturamento?.semBase}
               destaque={true}
               icone={DollarSignIcon}
               sparklineData={sparklineFaturamento}
@@ -421,7 +421,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoPedidos?.positivo}
-              neutro={variacaoPedidos?.neutro}
+              neutro={variacaoPedidos?.neutro || variacaoPedidos?.semBase}
               icone={ShoppingCart}
               sparklineData={sparklinePedidos}
             />
@@ -435,7 +435,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoTicket?.positivo}
-              neutro={variacaoTicket?.neutro}
+              neutro={variacaoTicket?.neutro || variacaoTicket?.semBase}
               icone={FileText}
               sparklineData={sparklineFaturamento}
             />
@@ -449,7 +449,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoClientes?.positivo}
-              neutro={variacaoClientes?.neutro}
+              neutro={variacaoClientes?.neutro || variacaoClientes?.semBase}
               icone={UsersRound}
               sparklineData={sparklinePedidos}
             />
@@ -465,7 +465,7 @@ export function DashboardView({
               }
               periodoComparado={periodoAnteriorFormatado}
               tendenciaPositiva={variacaoItens?.positivo}
-              neutro={variacaoItens?.neutro}
+              neutro={variacaoItens?.neutro || variacaoItens?.semBase}
               icone={Package}
               sparklineData={sparklineItens}
             />
@@ -475,7 +475,7 @@ export function DashboardView({
 
       {/* Mini-Indicadores de Eficiência Comercial & Operacional */}
       {!loading && vendas.length > 0 && (
-        <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-5">
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Taxa Média Desconto
@@ -506,6 +506,20 @@ export function DashboardView({
 
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              SKUs / Pedido
+            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-base font-extrabold text-foreground">
+                {formatarNumero(resumo.skusPorNota, 1)}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                produtos distintos
+              </span>
+            </div>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Clientes Recorrentes
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -513,7 +527,7 @@ export function DashboardView({
                 {formatarPercentual(resumo.percentualRecorrencia, 1)}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                ({resumo.clientesRecorrentes} de {resumo.clientes})
+                ({resumo.clientesRecorrentes} de {resumo.clientesIdentificados})
               </span>
             </div>
           </div>

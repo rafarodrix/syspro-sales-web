@@ -12,7 +12,7 @@ interface PanoramaPeriodoProps {
 }
 
 function BadgeVariacao({ variacao }: { variacao: VariacaoMetrica }) {
-  if (variacao.neutro) {
+  if (variacao.neutro || variacao.semBase) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] font-bold text-muted-foreground">
         <Minus className="size-3" /> {variacao.texto}
