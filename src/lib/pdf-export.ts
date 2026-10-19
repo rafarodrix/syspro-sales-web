@@ -167,7 +167,7 @@ export async function exportarPdfDashboard({
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   adicionarCabecalho(doc, "Dashboard Executivo de Vendas", contexto);
 
-  // Grid de KPIs Principais (3 Colunas x 2 Linhas)
+  // Grid de KPIs Principais (3 colunas)
   const startY = 40;
   const kpis = [
     { label: "FATURAMENTO TOTAL", valor: formatarMoeda(resumo.faturamento) },
@@ -176,6 +176,9 @@ export async function exportarPdfDashboard({
     { label: "SKUS / PEDIDO", valor: formatarNumero(resumo.skusPorNota, 1) },
     { label: "CLIENTES IDENTIFICADOS", valor: formatarNumero(resumo.clientesIdentificados, 0) },
     { label: "TAXA MÉDIA DESCONTO", valor: `${formatarPercentual(resumo.taxaDesconto, 1)} (${formatarMoeda(resumo.descontos)})` },
+    { label: "LUCRO BRUTO", valor: resumo.faturamentoComCusto > 0 ? formatarMoeda(resumo.lucroBruto) : "Sem custo" },
+    { label: "MARGEM BRUTA", valor: resumo.faturamentoComCusto > 0 ? formatarPercentual(resumo.margemBruta, 1) : "Sem custo" },
+    { label: "MARGEM REPOSIÇÃO", valor: resumo.faturamentoComCustoReposicao > 0 ? formatarPercentual(resumo.margemReposicao, 1) : "Sem custo" },
   ];
 
   const cardWidth = 58;
@@ -202,7 +205,7 @@ export async function exportarPdfDashboard({
     doc.text(kpi.valor, x + 3, y + 11.5);
   });
 
-  const currentY = startY + 2 * (cardHeight + gap) + 6;
+  const currentY = startY + Math.ceil(kpis.length / 3) * (cardHeight + gap) + 6;
 
   // Tabela: Top Produtos
   doc.setFont("helvetica", "bold");
@@ -212,7 +215,7 @@ export async function exportarPdfDashboard({
 
   autoTable(doc, {
     startY: currentY + 2,
-    head: [["#", "Código", "Descrição do Produto", "Qtd", "Faturamento", "Part. %"]],
+    head: [["#", "ID", "Descrição do Produto", "Qtd", "Faturamento", "Part. %"]],
     body: topProdutos.map((p, idx) => [
       String(idx + 1),
       p.id,

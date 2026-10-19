@@ -247,8 +247,8 @@ export function VisaoAnaliticaNotas({
                   </tr>
                   {expandirItens && notaAberta === nota.id ? <tr><td colSpan={colSpan} className="bg-muted/20 p-3">
                     <table className="w-full text-xs" aria-label={`Produtos da nota ${nota.numero}`}>
-                      <thead><tr className="text-left"><th className="p-2">Código</th><th className="p-2">Produto</th><th className="p-2 text-right">Quantidade</th><th className="p-2">Unidade</th><th className="p-2 text-right">Desconto</th><th className="p-2 text-right">Total</th></tr></thead>
-                      <tbody>{nota.itens.map((item, indice) => <tr key={indice}><td className="p-2">{item.produto_id}</td><td className="p-2">{item.produto_descricao}</td><td className="p-2 text-right">{formatarNumero(paraNumero(item.produto_qtde), 2)}</td><td className="p-2">{item.produto_un}</td><td className="p-2 text-right">{formatarMoeda(paraNumero(item.produto_vlr_desconto))}</td><td className="p-2 text-right">{formatarMoeda(valorItem(item))}</td></tr>)}</tbody>
+                      <thead><tr className="text-left"><th className="p-2">ID</th><th className="p-2">Referência</th><th className="p-2">Produto</th><th className="p-2 text-right">Quantidade</th><th className="p-2">Unidade</th><th className="p-2 text-right">Desconto</th><th className="p-2 text-right">Total</th></tr></thead>
+                      <tbody>{nota.itens.map((item, indice) => <tr key={indice}><td className="p-2">{item.produto_id}</td><td className="p-2">{item.produto_codigo_auxiliar || "—"}</td><td className="p-2">{item.produto_descricao}</td><td className="p-2 text-right">{formatarNumero(paraNumero(item.produto_qtde), 2)}</td><td className="p-2">{item.produto_un}</td><td className="p-2 text-right">{formatarMoeda(paraNumero(item.produto_vlr_desconto))}</td><td className="p-2 text-right">{formatarMoeda(valorItem(item))}</td></tr>)}</tbody>
                     </table>
                   </td></tr> : null}</Fragment>
                 );

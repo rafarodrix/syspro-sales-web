@@ -1,5 +1,5 @@
 import { obterMovimentosEstoque } from "@/lib/estoque-service";
-import { normalizarCodigoProduto, normalizarDescricaoProduto } from "@/lib/metricas-negocio";
+import { normalizarCodigoProduto } from "@/lib/metricas-negocio";
 import { SysproApiError } from "@/lib/syspro-api";
 import { dividirPeriodoKardex, montarRelatorioCompras } from "@/lib/relatorio-compras";
 import {
@@ -64,14 +64,12 @@ function excedeuLimiteResposta(error: unknown): boolean {
 async function obterMovimentosAdaptativo({
   empresa,
   janela,
-  codigosProdutos,
-  descricoesProdutos,
+  idsProdutos,
   signal,
 }: {
   empresa: EmpresaInfo;
   janela: JanelaConsulta;
-  codigosProdutos: Set<string>;
-  descricoesProdutos: Set<string>;
+  idsProdutos: Set<string>;
   signal?: AbortSignal;
 }) {
   try {
@@ -82,9 +80,7 @@ async function obterMovimentosAdaptativo({
       signal,
     });
     return movimentos.filter((movimento) =>
-      codigosProdutos.has(normalizarCodigoProduto(movimento.produtoIdProduto, ""))
-      || codigosProdutos.has(normalizarCodigoProduto(movimento.produtoCodigoAuxiliar, ""))
-      || descricoesProdutos.has(normalizarDescricaoProduto(movimento.produtoDescricao)),
+      idsProdutos.has(normalizarCodigoProduto(movimento.produtoIdProduto, "")),
     );
   } catch (error) {
     if (!excedeuLimiteResposta(error)) throw error;
@@ -97,8 +93,7 @@ async function obterMovimentosAdaptativo({
       movimentos.push(...await obterMovimentosAdaptativo({
         empresa,
         janela: parte,
-        codigosProdutos,
-        descricoesProdutos,
+        idsProdutos,
         signal,
       }));
     }
@@ -140,24 +135,17 @@ export async function obterRelatorioCompras({
     signal,
     enforceRateLimit: false,
   });
-  const codigosProdutos = new Set(
+  const idsProdutos = new Set(
     vendas
-      .flatMap((venda) => [venda.produto_codigo_auxiliar, venda.produto_id])
-      .map((codigo) => normalizarCodigoProduto(codigo, ""))
+      .map((venda) => normalizarCodigoProduto(venda.produto_id, ""))
       .filter(Boolean),
   );
-  const descricoesProdutos = new Set(
-    vendas
-      .map((venda) => normalizarDescricaoProduto(venda.produto_descricao))
-      .filter(Boolean),
-  );
-  const movimentos = codigosProdutos.size > 0 || descricoesProdutos.size > 0
+  const movimentos = idsProdutos.size > 0
     ? await executarComPool(janelasKardex, 2, (janela) =>
         obterMovimentosAdaptativo({
           empresa,
           janela,
-          codigosProdutos,
-          descricoesProdutos,
+          idsProdutos,
           signal,
         }),
       ).then((resultados) => resultados.flat())

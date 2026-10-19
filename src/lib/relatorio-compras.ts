@@ -7,7 +7,6 @@ import {
   calcularPercentual,
   classificarCurvaABC,
   normalizarCodigoProduto,
-  normalizarDescricaoProduto,
   paraNumero,
   type ClasseCurvaABC,
 } from "@/lib/metricas-negocio";
@@ -48,10 +47,6 @@ export interface RelatorioCompras {
   resumo: ResumoRelatorioCompras;
 }
 
-function normalizarCodigo(codigo: string): string {
-  return normalizarCodigoProduto(codigo, "");
-}
-
 function estaNoPeriodo(data: string, inicial: string, final: string): boolean {
   const dataIso = data.slice(0, 10);
   return dataIso >= inicial && dataIso <= final;
@@ -72,19 +67,16 @@ export function montarRelatorioCompras(
       quantidadeComCustoReposicao: number;
     }
   >();
-  const chavePorDescricao = new Map<string, string | null>();
   const chavePorId = new Map<string, string>();
-  const chavePorAuxiliar = new Map<string, string>();
 
   for (const venda of vendas) {
-    const codigoOriginal = String(
-      venda.produto_codigo_auxiliar || venda.produto_id || "",
-    ).trim();
-    const codigo = normalizarCodigo(codigoOriginal);
-    if (!codigo) continue;
+    const produtoId = String(venda.produto_id ?? "").trim();
+    const idNormalizado = normalizarCodigoProduto(produtoId, "");
+    if (!idNormalizado) continue;
+    const codigoReferencia = String(venda.produto_codigo_auxiliar ?? "").trim();
 
-    const atual = porProduto.get(codigo) ?? {
-      codigo: codigoOriginal,
+    const atual = porProduto.get(idNormalizado) ?? {
+      codigo: codigoReferencia,
       produto: venda.produto_descricao?.trim() || "Produto sem descrição",
       unidade: venda.produto_un?.trim() || "-",
       quantidadeVendida: 0,
@@ -95,7 +87,7 @@ export function montarRelatorioCompras(
       mediaDiaria: 0,
       coberturaDias: null,
       dataUltimoMovimento: null,
-      produtoId: String(venda.produto_id ?? "").trim() || undefined,
+      produtoId,
       marca: undefined,
       custoAquisicaoMedio: null,
       custoReposicaoMedio: null,
@@ -117,26 +109,14 @@ export function montarRelatorioCompras(
       atual.totalCustoReposicao += custoReposicao * quantidade;
       atual.quantidadeComCustoReposicao += quantidade;
     }
-    const idNormalizado = normalizarCodigoProduto(venda.produto_id, "");
-    const auxiliarNormalizado = normalizarCodigoProduto(venda.produto_codigo_auxiliar, "");
-    if (idNormalizado) chavePorId.set(idNormalizado, codigo);
-    if (auxiliarNormalizado) chavePorAuxiliar.set(auxiliarNormalizado, codigo);
-    porProduto.set(codigo, atual);
-    const descricao = normalizarDescricaoProduto(venda.produto_descricao);
-    if (descricao) {
-      const chaveExistente = chavePorDescricao.get(descricao);
-      if (!chavePorDescricao.has(descricao)) chavePorDescricao.set(descricao, codigo);
-      else if (chaveExistente !== codigo) chavePorDescricao.set(descricao, null);
-    }
+    if (!atual.codigo && codigoReferencia) atual.codigo = codigoReferencia;
+    chavePorId.set(idNormalizado, idNormalizado);
+    porProduto.set(idNormalizado, atual);
   }
 
   movimentos.forEach((movimento, indice) => {
-    const codigoAuxiliar = normalizarCodigo(movimento.produtoCodigoAuxiliar);
     const codigoId = normalizarCodigoProduto(movimento.produtoIdProduto, "");
-    const descricao = normalizarDescricaoProduto(movimento.produtoDescricao);
-    const chave = chavePorAuxiliar.get(codigoAuxiliar)
-      ?? chavePorId.get(codigoId)
-      ?? chavePorDescricao.get(descricao);
+    const chave = chavePorId.get(codigoId);
     const atual = chave ? porProduto.get(chave) : undefined;
     if (!atual) return;
 

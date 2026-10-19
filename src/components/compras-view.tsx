@@ -270,12 +270,15 @@ export function ComprasView({
                   </TableHeader>
                   <TableBody>
                     {itensDaPagina.map((item) => (
-                      <TableRow key={item.codigo}>
+                      <TableRow key={item.produtoId}>
                         <TableCell>
                           <p className="font-medium">{item.produto}</p>
                           <p className="text-xs text-muted-foreground">{item.unidade}</p>
                           <p className="font-mono text-[10px] text-muted-foreground" title="ID do produto">
-                            {item.produtoId || item.codigo}
+                            ID: {item.produtoId || "—"}
+                          </p>
+                          <p className="font-mono text-[10px] text-muted-foreground" title="Código de referência">
+                            Ref.: {item.codigo || "—"}
                           </p>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">

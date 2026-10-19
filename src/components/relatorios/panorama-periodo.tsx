@@ -1,9 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { TrendingUp, TrendingDown, Minus, DollarSign, FileText, Receipt, Users } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, DollarSign, FileText, Receipt, Users, Percent } from "lucide-react";
 import type { VariacoesPeriodoVendas, VariacaoMetrica } from "@/lib/vendas";
-import { formatarMoeda, formatarNumero } from "@/lib/formatters";
+import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { MetricaCard } from "@/components/metrica-card";
 
 interface PanoramaPeriodoProps {
@@ -64,7 +64,7 @@ export function PanoramaPeriodo({
           </span>
         </div>
       ) : null}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricaCard
           rotulo="Faturamento"
           definicao="Valor final de todas as vendas do período, com descontos abatidos e frete/seguro/outros somados."
@@ -89,6 +89,17 @@ export function PanoramaPeriodo({
           icone={FileText}
           suplemento={semComparativo ? null : <BadgeVariacao variacao={variacoes.ticketMedio} />}
           rodape={semComparativo ? null : `antes: ${formatarMoeda(variacoes.ticketMedio.anterior)}`}
+        />
+        <MetricaCard
+          rotulo="Margem bruta"
+          definicao="Receita dos itens com custo informado menos o custo de aquisição. Itens sem custo não entram no cálculo."
+          valor={variacoes.coberturaCustoAtual > 0
+            ? formatarPercentual(variacoes.margemBruta.atual, 1)
+            : "—"}
+          icone={Percent}
+          rodape={variacoes.coberturaCustoAtual > 0
+            ? `lucro ${formatarMoeda(variacoes.lucroBruto.atual)} · cobertura ${formatarPercentual(variacoes.coberturaCustoAtual, 1)}`
+            : "Custos de aquisição não informados"}
         />
         {mostrarClientes ? (
           <MetricaCard

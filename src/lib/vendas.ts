@@ -1,6 +1,7 @@
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import type { Periodo } from "@/lib/periodo";
 import {
+  calcularMargemItem,
   calcularPercentual,
   calcularVariacao,
   classificarCurvaABC,
@@ -28,6 +29,10 @@ export interface VendaAgrupada {
   itens: VendaProduto[];
   quantidadeItens: number;
   total: number;
+  custoAquisicao: number;
+  lucroBruto: number;
+  margemBruta: number;
+  coberturaCusto: number;
   empresaId?: string;
   empresaNome?: string;
   empresaCnpj?: string;
@@ -74,6 +79,16 @@ export interface ResumoVendas {
   taxaFrete: number;
   clientesRecorrentes: number;
   percentualRecorrencia: number;
+  custoAquisicao: number;
+  lucroBruto: number;
+  margemBruta: number;
+  faturamentoComCusto: number;
+  coberturaCusto: number;
+  custoReposicao: number;
+  lucroReposicao: number;
+  margemReposicao: number;
+  faturamentoComCustoReposicao: number;
+  coberturaCustoReposicao: number;
   porDepartamento: ItemRankeado[];
   porVendedor: ItemRankeado[];
   porFormaPagamento: ItemRankeado[];
@@ -94,6 +109,7 @@ export interface DestaquesPeriodo {
 
 export interface ItemCurvaABC {
   id: string;
+  codigoReferencia: string;
   produto: string;
   departamento: string;
   un: string;
@@ -124,6 +140,7 @@ export interface ItemDepartamentoAnalise {
   ticketMedio: number;
   produtos: {
     id: string;
+    codigoReferencia: string;
     produto: string;
     un: string;
     quantidade: number;
@@ -172,6 +189,10 @@ export interface ItemDescontoAnalise {
   desconto: number;
   taxaDesconto: number;
   pedidos?: number;
+  custoAquisicao: number;
+  lucroBruto: number;
+  margemBruta: number;
+  coberturaCusto: number;
 }
 
 export interface RelatorioDescontos {
@@ -220,6 +241,7 @@ export interface RelatorioEvolucaoVendas {
 export interface ItemProdutoPorDimensao {
   dimensao: string;
   produtoId: string;
+  codigoReferencia: string;
   produto: string;
   departamento: string;
   un: string;
@@ -268,6 +290,56 @@ export function valorItem(venda: VendaProduto): number {
   return valorLiquidoItem(venda);
 }
 
+export interface ResumoMargens {
+  custoAquisicao: number;
+  lucroBruto: number;
+  margemBruta: number;
+  faturamentoComCusto: number;
+  coberturaCusto: number;
+  custoReposicao: number;
+  lucroReposicao: number;
+  margemReposicao: number;
+  faturamentoComCustoReposicao: number;
+  coberturaCustoReposicao: number;
+}
+
+export function resumirMargens(vendas: VendaProduto[]): ResumoMargens {
+  let faturamento = 0;
+  let faturamentoComCusto = 0;
+  let faturamentoComCustoReposicao = 0;
+  let custoAquisicao = 0;
+  let custoReposicao = 0;
+
+  for (const venda of vendas) {
+    const aquisicao = calcularMargemItem(venda, "aquisicao");
+    const reposicao = calcularMargemItem(venda, "reposicao");
+    faturamento += aquisicao.receita;
+    if (aquisicao.custoTotal !== null) {
+      faturamentoComCusto += aquisicao.receita;
+      custoAquisicao += aquisicao.custoTotal;
+    }
+    if (reposicao.custoTotal !== null) {
+      faturamentoComCustoReposicao += reposicao.receita;
+      custoReposicao += reposicao.custoTotal;
+    }
+  }
+
+  const lucroBruto = faturamentoComCusto - custoAquisicao;
+  const lucroReposicao = faturamentoComCustoReposicao - custoReposicao;
+  return {
+    custoAquisicao,
+    lucroBruto,
+    margemBruta: calcularPercentual(lucroBruto, faturamentoComCusto),
+    faturamentoComCusto,
+    coberturaCusto: calcularPercentual(faturamentoComCusto, faturamento),
+    custoReposicao,
+    lucroReposicao,
+    margemReposicao: calcularPercentual(lucroReposicao, faturamentoComCustoReposicao),
+    faturamentoComCustoReposicao,
+    coberturaCustoReposicao: calcularPercentual(faturamentoComCustoReposicao, faturamento),
+  };
+}
+
 export function chaveDaNota(venda: VendaProduto | VendaComEmpresa): string {
   const empresaId = (venda as VendaComEmpresa).empresa_id || venda.empresa_codigo?.trim() || "1";
   return [
@@ -307,12 +379,25 @@ export function agruparVendasPorNota(vendas: (VendaProduto | VendaComEmpresa)[])
       itens: [venda],
       quantidadeItens: qtdItem,
       total: totalItem,
+      custoAquisicao: 0,
+      lucroBruto: 0,
+      margemBruta: 0,
+      coberturaCusto: 0,
       empresaId: vEmp.empresa_id,
       empresaNome: vEmp.empresa_nome,
       empresaCnpj: vEmp.empresa_cnpj,
     });
   }
-  return [...notas.values()].sort(
+  return [...notas.values()].map((nota) => {
+    const margem = resumirMargens(nota.itens);
+    return {
+      ...nota,
+      custoAquisicao: margem.custoAquisicao,
+      lucroBruto: margem.lucroBruto,
+      margemBruta: margem.margemBruta,
+      coberturaCusto: margem.coberturaCusto,
+    };
+  }).sort(
     (a, b) => dataParaOrdem(b.emissao) - dataParaOrdem(a.emissao),
   );
 }
@@ -415,6 +500,7 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
   const totalClientes = clienteNotasCount.size;
   const percentualRecorrencia =
     clientesCadastradosCount > 0 ? (clientesRecorrentes / clientesCadastradosCount) * 100 : 0;
+  const margens = resumirMargens(vendas);
 
   return {
     faturamento,
@@ -433,6 +519,7 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
     taxaFrete,
     clientesRecorrentes,
     percentualRecorrencia,
+    ...margens,
     porDepartamento: rankear(departamentos, faturamento),
     porVendedor: rankear(vendedores, faturamento),
     porFormaPagamento: rankear(formasPagamento, faturamento),
@@ -494,6 +581,7 @@ export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
     string,
     {
       id: string;
+      codigoReferencia: string;
       produto: string;
       departamento: string;
       un: string;
@@ -520,6 +608,7 @@ export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
     } else {
       produtosMap.set(chave, {
         id,
+        codigoReferencia: venda.produto_codigo_auxiliar?.trim() || "",
         produto: nome,
         departamento: venda.produto_departamento?.trim() || "Sem departamento",
         un: venda.produto_un?.trim() || "UN",
@@ -602,7 +691,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
       faturamento: number;
       quantidadeItens: number;
       notas: Set<string>;
-      produtosMap: Map<string, { id: string; produto: string; un: string; quantidade: number; total: number }>;
+      produtosMap: Map<string, { id: string; codigoReferencia: string; produto: string; un: string; quantidade: number; total: number }>;
     }
   >();
 
@@ -641,6 +730,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
     } else {
       depto.produtosMap.set(chaveProd, {
         id: idProd,
+        codigoReferencia: venda.produto_codigo_auxiliar?.trim() || "",
         produto: nomeProd,
         un: venda.produto_un?.trim() || "UN",
         quantidade: qtd,
@@ -882,7 +972,22 @@ export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): Ite
 }
 
 export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
-  type AcumuladoDesconto = { faturamento: number; bruto: number; desconto: number; notas: Set<string> };
+  type AcumuladoDesconto = {
+    faturamento: number;
+    faturamentoComCusto: number;
+    custoAquisicao: number;
+    bruto: number;
+    desconto: number;
+    notas: Set<string>;
+  };
+  const novoAcumulado = (): AcumuladoDesconto => ({
+    faturamento: 0,
+    faturamentoComCusto: 0,
+    custoAquisicao: 0,
+    bruto: 0,
+    desconto: 0,
+    notas: new Set(),
+  });
   const vendMap = new Map<string, AcumuladoDesconto>();
   const deptoMap = new Map<string, AcumuladoDesconto>();
   const formaPagamentoMap = new Map<string, AcumuladoDesconto>();
@@ -895,51 +1000,58 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
     const vend = venda.vendedor_nome?.trim() || "Sem vendedor";
     const depto = venda.produto_departamento?.trim() || "Sem departamento";
     const formaPagamento = venda.nf_forma_pagto?.trim() || "Não informado";
+    const margem = calcularMargemItem(venda, "aquisicao");
+    const acumular = (dados: AcumuladoDesconto) => {
+      dados.faturamento += total;
+      dados.bruto += bruto;
+      dados.desconto += desc;
+      dados.notas.add(chaveNota);
+      if (margem.custoTotal !== null) {
+        dados.faturamentoComCusto += total;
+        dados.custoAquisicao += margem.custoTotal;
+      }
+    };
 
     // Vendedor
     let vData = vendMap.get(vend);
     if (!vData) {
-      vData = { faturamento: 0, bruto: 0, desconto: 0, notas: new Set() };
+      vData = novoAcumulado();
       vendMap.set(vend, vData);
     }
-    vData.faturamento += total;
-    vData.bruto += bruto;
-    vData.desconto += desc;
-    vData.notas.add(chaveNota);
+    acumular(vData);
 
     // Departamento
     let dData = deptoMap.get(depto);
     if (!dData) {
-      dData = { faturamento: 0, bruto: 0, desconto: 0, notas: new Set() };
+      dData = novoAcumulado();
       deptoMap.set(depto, dData);
     }
-    dData.faturamento += total;
-    dData.bruto += bruto;
-    dData.desconto += desc;
-    dData.notas.add(chaveNota);
+    acumular(dData);
 
     // Forma de pagamento
     let fpData = formaPagamentoMap.get(formaPagamento);
     if (!fpData) {
-      fpData = { faturamento: 0, bruto: 0, desconto: 0, notas: new Set() };
+      fpData = novoAcumulado();
       formaPagamentoMap.set(formaPagamento, fpData);
     }
-    fpData.faturamento += total;
-    fpData.bruto += bruto;
-    fpData.desconto += desc;
-    fpData.notas.add(chaveNota);
+    acumular(fpData);
 
   }
 
   function formatarRankingDesconto(map: Map<string, AcumuladoDesconto>): ItemDescontoAnalise[] {
     return [...map.entries()]
       .map(([nome, d]) => {
+        const lucroBruto = d.faturamentoComCusto - d.custoAquisicao;
         return {
           nome,
           faturamentoLiquido: d.faturamento,
           desconto: d.desconto,
           taxaDesconto: calcularPercentual(d.desconto, d.bruto),
           pedidos: d.notas.size,
+          custoAquisicao: d.custoAquisicao,
+          lucroBruto,
+          margemBruta: calcularPercentual(lucroBruto, d.faturamentoComCusto),
+          coberturaCusto: calcularPercentual(d.faturamentoComCusto, d.faturamento),
         };
       })
       .sort((a, b) => b.desconto - a.desconto);
@@ -1184,6 +1296,7 @@ export function analiseProdutosPorDimensao(
     const atual = mapa.get(chave) ?? {
       dimensao: nomeDimensao,
       produtoId,
+      codigoReferencia: venda.produto_codigo_auxiliar?.trim() || "",
       produto,
       departamento: venda.produto_departamento?.trim() || "Sem departamento",
       un: venda.produto_un?.trim() || "UN",
@@ -1605,6 +1718,10 @@ export interface VariacoesPeriodoVendas {
   ticketMedio: VariacaoMetrica;
   clientes: VariacaoMetrica;
   quantidadeItens: VariacaoMetrica;
+  lucroBruto: VariacaoMetrica;
+  margemBruta: VariacaoMetrica;
+  coberturaCustoAtual: number;
+  coberturaCustoAnterior: number;
 }
 
 /** Variação das métricas principais entre o período atual e o período anterior equivalente. */
@@ -1624,6 +1741,10 @@ export function calcularVariacoesPeriodo(
       anterior.clientesIdentificados,
     ),
     quantidadeItens: calcularVariacao(atual.quantidadeItens, anterior.quantidadeItens),
+    lucroBruto: calcularVariacao(atual.lucroBruto, anterior.lucroBruto),
+    margemBruta: calcularVariacao(atual.margemBruta, anterior.margemBruta),
+    coberturaCustoAtual: atual.coberturaCusto,
+    coberturaCustoAnterior: anterior.coberturaCusto,
   };
 }
 

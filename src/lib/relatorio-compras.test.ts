@@ -6,6 +6,7 @@ import type { VendaProduto } from "@/lib/syspro-api";
 function venda(codigo: string, quantidade: number, descricao = `Produto ${codigo}`) {
   return {
     produto_id: codigo,
+    produto_codigo_auxiliar: codigo,
     produto_descricao: descricao,
     produto_un: "UN",
     produto_qtde: quantidade,
@@ -20,6 +21,7 @@ function movimento(
   saldo: number,
 ) {
   return {
+    produtoIdProduto: codigo,
     produtoCodigoAuxiliar: codigo,
     produtoDescricao: `Produto ${codigo}`,
     dataMovimento: data,
@@ -62,35 +64,39 @@ describe("relatorio de compras", () => {
     });
   });
 
-  it("relaciona o GUID da venda ao codigo auxiliar do Kardex", () => {
+  it("não relaciona venda e Kardex apenas pelo código auxiliar", () => {
     const itemVendido = {
       ...venda("{47E770D8-EE38-474E-AFF3-3A1A51E3EDC4}", 10, "Água desmineralizada"),
       produto_codigo_auxiliar: "1263",
     };
     const relatorio = montarRelatorioCompras(
       [itemVendido],
-      [movimento("1263", "2026-10-10", "EDC", -2, 8)],
+      [{
+        ...movimento("OUTRO-ID", "2026-10-10", "EDC", -2, 8),
+        produtoCodigoAuxiliar: "1263",
+      }],
       { inicial: "2026-10-01", final: "2026-10-31" },
     );
 
     expect(relatorio.itens[0]).toMatchObject({
       codigo: "1263",
-      quantidadeDevolvida: 2,
-      estoqueAtual: 8,
+      quantidadeDevolvida: 0,
+      estoqueAtual: null,
     });
   });
 
-  it("usa a descricao como compatibilidade quando a venda nao traz codigo auxiliar", () => {
+  it("não usa descrição como compatibilidade entre IDs diferentes", () => {
     const relatorio = montarRelatorioCompras(
       [venda("{47E770D8-EE38-474E-AFF3-3A1A51E3EDC4}", 10, "Água  desmineralizada")],
       [{
-        ...movimento("1263", "2026-10-10", "EDC", -2, 8),
+        ...movimento("OUTRO-ID", "2026-10-10", "EDC", -2, 8),
+        produtoCodigoAuxiliar: "1263",
         produtoDescricao: "AGUA DESMINERALIZADA",
       }],
       { inicial: "2026-10-01", final: "2026-10-31" },
     );
 
-    expect(relatorio.itens[0]).toMatchObject({ quantidadeDevolvida: 2, estoqueAtual: 8 });
+    expect(relatorio.itens[0]).toMatchObject({ quantidadeDevolvida: 0, estoqueAtual: null });
   });
 
   it("relaciona por ID e expõe marca e custos médios", () => {

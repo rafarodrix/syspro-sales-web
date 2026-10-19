@@ -22,6 +22,7 @@ import {
   maioresCrescimentosProdutos,
   produtosMaisVendidos,
   resumoVendas,
+  resumirMargens,
   valorItem,
 } from "@/lib/vendas";
 import { periodoConsultaValido } from "@/lib/sales-service";
@@ -91,6 +92,53 @@ describe("cálculos de vendas", () => {
     expect(resumo.faturamentoBruto).toBe(200);
     expect(resumo.taxaDesconto).toBe(10);
     expect(resumo.skusPorNota).toBe(1);
+  });
+
+  it("calcula margens somente sobre vendas com custo informado e expõe a cobertura", () => {
+    const vendas = [
+      vendaBase({
+        nf_numero: "1",
+        produto_qtde: 2,
+        produto_vlr_total_liquido: 100,
+        produto_vlr_custo_aquisicao: 30,
+        produto_vlr_custo_reposicao: 40,
+      }),
+      vendaBase({
+        nf_numero: "2",
+        produto_vlr_total_liquido: 100,
+        produto_vlr_custo_aquisicao: undefined,
+        produto_vlr_custo_reposicao: undefined,
+      }),
+    ];
+
+    expect(resumirMargens(vendas)).toMatchObject({
+      custoAquisicao: 60,
+      lucroBruto: 40,
+      margemBruta: 40,
+      coberturaCusto: 50,
+      custoReposicao: 80,
+      lucroReposicao: 20,
+      margemReposicao: 20,
+      coberturaCustoReposicao: 50,
+    });
+    expect(resumoVendas(vendas)).toMatchObject({ lucroBruto: 40, margemBruta: 40 });
+  });
+
+  it("inclui margem por vendedor, departamento e forma de pagamento", () => {
+    const relatorio = analiseDescontos([
+      vendaBase({
+        produto_qtde: 2,
+        produto_vlr_total_liquido: 100,
+        produto_vlr_custo_aquisicao: 30,
+      }),
+    ]);
+
+    expect(relatorio.porVendedor[0]).toMatchObject({
+      custoAquisicao: 60,
+      lucroBruto: 40,
+      margemBruta: 40,
+      coberturaCusto: 100,
+    });
   });
 
   it("calcula recorrencia somente sobre clientes identificados", () => {

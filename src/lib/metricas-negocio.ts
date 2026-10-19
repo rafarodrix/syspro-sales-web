@@ -43,6 +43,52 @@ export function valorLiquidoItem(venda: VendaProduto): number {
   );
 }
 
+export function valorNumericoOpcional(
+  valor: number | string | null | undefined,
+): number | null {
+  if (valor === undefined || valor === null || String(valor).trim() === "") return null;
+  if (typeof valor === "number") return Number.isFinite(valor) ? valor : null;
+  const texto = valor.trim().replace(/\s/g, "");
+  const normalizado = texto.includes(",")
+    ? texto.replace(/\./g, "").replace(",", ".")
+    : texto;
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) ? numero : null;
+}
+
+export interface MargemItem {
+  receita: number;
+  custoUnitario: number | null;
+  custoTotal: number | null;
+  lucro: number | null;
+  margemPercentual: number | null;
+}
+
+/** Calcula margem somente quando a API informou um custo válido. */
+export function calcularMargemItem(
+  venda: VendaProduto,
+  tipoCusto: "aquisicao" | "reposicao" = "aquisicao",
+): MargemItem {
+  const receita = valorLiquidoItem(venda);
+  const campo = tipoCusto === "aquisicao"
+    ? venda.produto_vlr_custo_aquisicao
+    : venda.produto_vlr_custo_reposicao;
+  const custoUnitario = valorNumericoOpcional(campo);
+  if (custoUnitario === null) {
+    return { receita, custoUnitario: null, custoTotal: null, lucro: null, margemPercentual: null };
+  }
+
+  const custoTotal = custoUnitario * paraNumero(venda.produto_qtde);
+  const lucro = receita - custoTotal;
+  return {
+    receita,
+    custoUnitario,
+    custoTotal,
+    lucro,
+    margemPercentual: receita !== 0 ? (lucro / receita) * 100 : null,
+  };
+}
+
 export function calcularPercentual(parte: number, total: number): number {
   return total > 0 ? (parte / total) * 100 : 0;
 }

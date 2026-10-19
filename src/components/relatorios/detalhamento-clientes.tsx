@@ -102,7 +102,8 @@ export function DetalhamentoClientes({
     "Cliente",
     "Empresa",
     ...(visao === "mensal" ? ["Mês"] : []),
-    "Código",
+    "ID",
+    "Referência",
     "Produto",
     "Quantidade",
     "Unidade",
@@ -115,6 +116,7 @@ export function DetalhamentoClientes({
     item.empresa,
     ...(visao === "mensal" ? [item.mes] : []),
     item.codigo,
+    item.codigoReferencia,
     item.produto,
     formatarNumero(item.quantidade, 2),
     item.unidade,
@@ -266,6 +268,7 @@ export function DetalhamentoClientes({
                         </td>
                       ) : null}
                       <td className="p-3">{item.codigo}</td>
+                      <td className="p-3">{item.codigoReferencia || "—"}</td>
                       <td className="min-w-40 p-3">{item.produto}</td>
                       <td className="p-3 text-right">
                         {formatarNumero(item.quantidade, 2)}

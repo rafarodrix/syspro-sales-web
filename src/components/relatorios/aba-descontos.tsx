@@ -27,7 +27,7 @@ function dadosDaVisao(relatorio: RelatorioDescontos, visao: VisaoDesconto) {
     return {
       titulo: "Descontos por departamento",
       descricao:
-        "Compara o desconto concedido entre departamentos e categorias.",
+        "Compara descontos, custo de aquisição e margem entre departamentos e categorias.",
       rotulo: "Departamento",
       itens: relatorio.porDepartamento,
     };
@@ -37,7 +37,7 @@ function dadosDaVisao(relatorio: RelatorioDescontos, visao: VisaoDesconto) {
     return {
       titulo: "Descontos por forma de pagamento",
       descricao:
-        "Mostra se a concessão de desconto varia conforme o meio de pagamento informado na nota.",
+        "Mostra desconto e margem conforme o meio de pagamento informado na nota.",
       rotulo: "Forma de pagamento",
       itens: relatorio.porFormaPagamento,
     };
@@ -45,7 +45,7 @@ function dadosDaVisao(relatorio: RelatorioDescontos, visao: VisaoDesconto) {
 
   return {
     titulo: "Descontos por vendedor",
-    descricao: "Compara a concessão de desconto entre os vendedores.",
+    descricao: "Compara descontos, custo de aquisição e margem entre os vendedores.",
     rotulo: "Vendedor",
     itens: relatorio.porVendedor,
   };
@@ -106,6 +106,39 @@ function TabelaDescontos({
               />
             </>
           ),
+        },
+        {
+          id: "custoAquisicao",
+          header: <>Custo aquisição</>,
+          kind: "currency",
+          value: (item) => item.custoAquisicao,
+          cell: (item) => <>{formatarMoeda(item.custoAquisicao)}</>,
+        },
+        {
+          id: "lucroBruto",
+          header: <>Lucro bruto</>,
+          kind: "currency",
+          value: (item) => item.lucroBruto,
+          cell: (item) => <>{formatarMoeda(item.lucroBruto)}</>,
+        },
+        {
+          id: "margemBruta",
+          header: <>Margem bruta</>,
+          kind: "percent",
+          value: (item) => item.margemBruta,
+          exportValue: (item) => item.coberturaCusto > 0
+            ? formatarPercentual(item.margemBruta, 1)
+            : "Sem custo",
+          cell: (item) => item.coberturaCusto > 0
+            ? <>{formatarPercentual(item.margemBruta, 1)}</>
+            : <>—</>,
+        },
+        {
+          id: "coberturaCusto",
+          header: <>Cobertura custo</>,
+          kind: "percent",
+          value: (item) => item.coberturaCusto,
+          cell: (item) => <>{formatarPercentual(item.coberturaCusto, 1)}</>,
         },
       ]}
     />

@@ -131,8 +131,8 @@ export function GraficoFaturamento({
       <div className="relative flex h-72 w-full pt-2">
         {/* Y Axis Labels */}
         <div className="flex flex-col-reverse justify-between pr-3 text-[11px] font-mono font-semibold text-muted-foreground select-none">
-          {yLabels.map((val) => (
-            <span key={val} className="leading-none">
+          {yLabels.map((val, index) => (
+            <span key={`${val}-${index}`} className="leading-none">
               {formato === "moeda" ? formatarK(val) : val}
             </span>
           ))}
@@ -451,8 +451,8 @@ export function GraficoProdutos({ dados, empresaId }: { dados: ProdutoRankeado[]
 
       {/* Eixo X com Escala */}
       <div className="flex justify-between border-t border-border/60 pt-2 text-[10px] font-mono font-semibold text-muted-foreground">
-        {xTicks.map((val) => (
-          <span key={val}>{formatarK(val)}</span>
+        {xTicks.map((val, index) => (
+          <span key={`${val}-${index}`}>{formatarK(val)}</span>
         ))}
       </div>
     </div>

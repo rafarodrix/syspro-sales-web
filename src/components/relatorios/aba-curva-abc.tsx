@@ -115,10 +115,17 @@ export function AbaCurvaABC({
           },
           {
             id: "id",
-            header: <>Código</>,
+            header: <>ID</>,
             kind: "number",
             value: (item) => item.id,
             cell: (item) => <>{item.id}</>,
+          },
+          {
+            id: "codigoReferencia",
+            header: <>Referência</>,
+            kind: "number",
+            value: (item) => item.codigoReferencia,
+            cell: (item) => <>{item.codigoReferencia || "—"}</>,
           },
           {
             id: "produto",

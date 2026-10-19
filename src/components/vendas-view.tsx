@@ -19,6 +19,7 @@ import {
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
+  resumirMargens,
   paraNumero,
   valorItem,
   type VendaAgrupada,
@@ -32,6 +33,7 @@ import { useConsultaVendas } from "@/hooks/use-consulta-vendas";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
+import { calcularMargemItem } from "@/lib/metricas-negocio";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
@@ -254,7 +256,8 @@ export function VendasView({
     }
     const totalNotas = notasFiltradas.length;
     const ticketMedio = totalNotas ? faturamento / totalNotas : 0;
-    return { faturamento, totalNotas, clientes: clientes.size, ticketMedio, itensTotal };
+    const margens = resumirMargens(notasFiltradas.flatMap((nota) => nota.itens));
+    return { faturamento, totalNotas, clientes: clientes.size, ticketMedio, itensTotal, ...margens };
   }, [notasFiltradas]);
 
   function alternarOrdenacao(campo: CampoOrdenacao) {
@@ -610,7 +613,7 @@ export function VendasView({
           ) : vendas.length > 0 ? (
             <>
               {/* Resumo Consolidado dos Filtros Aplicados */}
-              <div className="no-print mb-4 grid grid-cols-2 gap-3 rounded-lg border border-border/60 bg-muted/20 p-3.5 sm:grid-cols-4">
+              <div className="no-print mb-4 grid grid-cols-2 gap-3 rounded-lg border border-border/60 bg-muted/20 p-3.5 sm:grid-cols-3 xl:grid-cols-6">
                 <div className="flex flex-col">
                   <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Total Faturado
@@ -641,6 +644,27 @@ export function VendasView({
                   </span>
                   <span className="font-mono text-base font-extrabold text-foreground">
                     {formatarMoeda(resumoBusca.ticketMedio)}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Lucro Bruto
+                  </span>
+                  <span className="font-mono text-base font-extrabold text-foreground">
+                    {formatarMoeda(resumoBusca.lucroBruto)}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Margem Bruta
+                  </span>
+                  <span className="font-mono text-base font-extrabold text-foreground">
+                    {resumoBusca.faturamentoComCusto > 0
+                      ? `${formatarNumero(resumoBusca.margemBruta, 1)}%`
+                      : "—"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    cobertura {formatarNumero(resumoBusca.coberturaCusto, 1)}%
                   </span>
                 </div>
               </div>
@@ -718,12 +742,13 @@ export function VendasView({
                           />
                         </div>
                       </TableHead>
+                      <TableHead className="text-right">Margem</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {notasPaginadas.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="py-12 text-center">
+                        <TableCell colSpan={8} className="py-12 text-center">
                           <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
                             <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
                               <SearchX className="size-5" />
@@ -824,7 +849,8 @@ function exportarCsv(vendas: VendaProduto[]) {
     "Grupo fiscal",
     "Modelo",
     "Forma de pagamento",
-    "Código Produto",
+    "ID Produto",
+    "Código de referência",
     "Produto",
     "Departamento",
     "Unidade",
@@ -835,9 +861,17 @@ function exportarCsv(vendas: VendaProduto[]) {
     "Seguro",
     "Outros acréscimos",
     "ICMS-ST",
+    "Custo unitário de aquisição",
+    "Custo total de aquisição",
+    "Lucro bruto",
+    "Margem bruta (%)",
+    "Custo unitário de reposição",
     "Total",
   ];
-  const linhas = vendas.map((venda) => [
+  const linhas = vendas.map((venda) => {
+    const margem = calcularMargemItem(venda, "aquisicao");
+    const reposicao = calcularMargemItem(venda, "reposicao");
+    return [
     (venda as VendaComEmpresa).empresa_nome || "Empresa Principal",
     venda.nf_numero,
     venda.nf_dt_emissao,
@@ -849,6 +883,7 @@ function exportarCsv(vendas: VendaProduto[]) {
     venda.nf_modelo,
     venda.nf_forma_pagto,
     venda.produto_id,
+    venda.produto_codigo_auxiliar || "",
     venda.produto_descricao,
     venda.produto_departamento,
     venda.produto_un,
@@ -859,8 +894,14 @@ function exportarCsv(vendas: VendaProduto[]) {
     paraNumero(venda.produto_vlr_seguro),
     paraNumero(venda.produto_vlr_outros),
     paraNumero(venda.produto_vlr_icms_stb),
+    margem.custoUnitario ?? "",
+    margem.custoTotal ?? "",
+    margem.lucro ?? "",
+    margem.margemPercentual ?? "",
+    reposicao.custoUnitario ?? "",
     valorItem(venda),
-  ]);
+    ];
+  });
   exportarParaCSV(`vendas-syspro-${new Date().toISOString().slice(0, 10)}`, cabecalho, linhas);
 }
 
@@ -921,10 +962,13 @@ function NotaRow({
         <TableCell className={`text-right font-mono font-bold text-xs text-foreground ${cellPadding}`}>
           {formatarMoeda(nota.total)}
         </TableCell>
+        <TableCell className={`text-right font-mono text-xs ${cellPadding}`}>
+          {nota.coberturaCusto > 0 ? `${formatarNumero(nota.margemBruta, 1)}%` : "—"}
+        </TableCell>
       </TableRow>
       {aberta ? (
         <TableRow>
-          <TableCell colSpan={7} className="bg-muted/30 p-4">
+          <TableCell colSpan={8} className="bg-muted/30 p-4">
             <TabelaItens itens={nota.itens} />
           </TableCell>
         </TableRow>
@@ -936,10 +980,11 @@ function NotaRow({
 function TabelaItens({ itens }: { itens: VendaProduto[] }) {
   return (
     <div className="overflow-x-auto rounded-md border bg-background shadow-xs">
-      <table className="w-full min-w-[760px] text-xs">
+      <table className="w-full min-w-[1100px] text-xs">
         <thead className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
           <tr>
-            <th className="p-2.5 font-semibold">Código</th>
+            <th className="p-2.5 font-semibold">ID</th>
+            <th className="p-2.5 font-semibold">Referência</th>
             <th className="p-2.5 font-semibold">Produto</th>
             <th className="p-2.5 font-semibold">Departamento</th>
             <th className="p-2.5 font-semibold">Un.</th>
@@ -947,17 +992,24 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
             <th className="p-2.5 text-right font-semibold">Unitário</th>
             <th className="p-2.5 text-right font-semibold">Desconto</th>
             <th className="p-2.5 text-right font-semibold">Frete</th>
+            <th className="p-2.5 text-right font-semibold">Custo aquisição</th>
+            <th className="p-2.5 text-right font-semibold">Margem bruta</th>
             <th className="p-2.5 text-right font-semibold">Total</th>
           </tr>
         </thead>
         <tbody>
-          {itens.map((item, indice) => (
+          {itens.map((item, indice) => {
+            const margem = calcularMargemItem(item, "aquisicao");
+            return (
             <tr
               key={`${item.produto_id}-${indice}`}
               className="border-b last:border-0 hover:bg-muted/20"
             >
               <td className="p-2.5 font-mono text-muted-foreground text-[11px]">
                 {item.produto_id || "—"}
+              </td>
+              <td className="p-2.5 font-mono text-muted-foreground text-[11px]">
+                {item.produto_codigo_auxiliar || "—"}
               </td>
               <td className="p-2.5 font-semibold text-foreground">
                 {item.produto_descricao}
@@ -980,11 +1032,18 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
               <td className="p-2.5 text-right font-mono text-muted-foreground">
                 {formatarMoeda(paraNumero(item.produto_vlr_frete))}
               </td>
+              <td className="p-2.5 text-right font-mono text-muted-foreground">
+                {margem.custoUnitario === null ? "—" : formatarMoeda(margem.custoUnitario)}
+              </td>
+              <td className="p-2.5 text-right font-mono font-semibold">
+                {margem.margemPercentual === null ? "—" : `${formatarNumero(margem.margemPercentual, 1)}%`}
+              </td>
               <td className="p-2.5 text-right font-mono font-bold text-foreground">
                 {formatarMoeda(valorItem(item))}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

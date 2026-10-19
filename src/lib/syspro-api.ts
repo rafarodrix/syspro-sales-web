@@ -258,7 +258,9 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
   };
   const numeroOpcional = (campo: string) => {
     const valor = venda[campo];
-    return typeof valor === "number" || typeof valor === "string" ? valor : undefined;
+    return (typeof valor === "number" || typeof valor === "string") && String(valor).trim() !== ""
+      ? valor
+      : undefined;
   };
   const camposObrigatorios = ["empresa_codigo", "nf_numero", "nf_dt_emissao"];
   if (camposObrigatorios.some((campo) => !texto(campo))) {

@@ -13,6 +13,7 @@ import {
   Award,
   Calendar,
   Layers,
+  Percent,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
@@ -175,6 +176,14 @@ export function DashboardView({
         ? calcularVariacao(resumo.skusPorNota, resumoAnterior.skusPorNota)
         : null,
     [resumo.skusPorNota, resumoAnterior],
+  );
+
+  const variacaoLucroBruto = useMemo(
+    () =>
+      resumoAnterior
+        ? calcularVariacao(resumo.lucroBruto, resumoAnterior.lucroBruto)
+        : null,
+    [resumo.lucroBruto, resumoAnterior],
   );
 
   const serieDaMetrica = useMemo(
@@ -457,11 +466,11 @@ export function DashboardView({
 
       {/* Linha de KPIs Executivos */}
       <section
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
         aria-label="Indicadores principais"
       >
         {loading ? (
-          Array.from({ length: 5 }).map((_, index) => (
+          Array.from({ length: 6 }).map((_, index) => (
             <Card key={index} className="border-border/60 p-4">
               <div className="flex items-center gap-3">
                 <Skeleton className="size-11 rounded-xl" />
@@ -549,6 +558,22 @@ export function DashboardView({
               neutro={variacaoSkusPorNota?.neutro || variacaoSkusPorNota?.semBase}
               icone={Package}
             />
+
+            <KpiCard
+              titulo="Lucro Bruto"
+              valor={resumo.faturamentoComCusto > 0 ? formatarMoeda(resumo.lucroBruto) : "—"}
+              subtitulo={resumo.faturamentoComCusto > 0
+                ? `Margem ${formatarPercentual(resumo.margemBruta, 1)} · cobertura ${formatarPercentual(resumo.coberturaCusto, 1)}`
+                : "Custos de aquisição não informados"}
+              variacao={variacaoLucroBruto?.texto}
+              valorAnterior={resumoAnterior?.faturamentoComCusto
+                ? formatarMoeda(resumoAnterior.lucroBruto)
+                : undefined}
+              periodoComparado={periodoAnteriorFormatado}
+              tendenciaPositiva={variacaoLucroBruto?.positivo}
+              neutro={variacaoLucroBruto?.neutro || variacaoLucroBruto?.semBase}
+              icone={Percent}
+            />
           </>
         )}
       </section>
@@ -566,6 +591,22 @@ export function DashboardView({
               </span>
               <span className="text-[11px] text-muted-foreground font-mono">
                 ({formatarMoeda(resumo.descontos)})
+              </span>
+            </div>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Margem de Reposição
+            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-base font-extrabold text-foreground">
+                {resumo.faturamentoComCustoReposicao > 0
+                  ? formatarPercentual(resumo.margemReposicao, 1)
+                  : "—"}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                cobertura {formatarPercentual(resumo.coberturaCustoReposicao, 1)}
               </span>
             </div>
           </div>

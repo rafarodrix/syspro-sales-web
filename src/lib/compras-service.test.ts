@@ -51,8 +51,8 @@ beforeEach(() => {
     { empresa_codigo: "1", nf_numero: "10", produto_id: "P1" },
   ]);
   mocks.obterMovimentosEstoque.mockReset()
-    .mockResolvedValueOnce([{ documento: "A", produtoCodigoAuxiliar: "P1" }])
-    .mockResolvedValueOnce([{ documento: "B", produtoCodigoAuxiliar: "P1" }]);
+    .mockResolvedValueOnce([{ documento: "A", produtoIdProduto: "P1", produtoCodigoAuxiliar: "REF-1" }])
+    .mockResolvedValueOnce([{ documento: "B", produtoIdProduto: "P1", produtoCodigoAuxiliar: "REF-1" }]);
   mocks.montarRelatorioCompras.mockReset().mockReturnValue({ itens: [], resumo: { totalProdutos: 0 } });
 });
 
@@ -106,8 +106,8 @@ describe("orquestração do relatório de compras", () => {
     expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
       [{ empresa_codigo: "1", nf_numero: "10", produto_id: "P1" }],
       [
-        { documento: "A", produtoCodigoAuxiliar: "P1" },
-        { documento: "B", produtoCodigoAuxiliar: "P1" },
+        { documento: "A", produtoIdProduto: "P1", produtoCodigoAuxiliar: "REF-1" },
+        { documento: "B", produtoIdProduto: "P1", produtoCodigoAuxiliar: "REF-1" },
       ],
       { inicial: "2026-09-01", final: "2026-09-30" },
     );
@@ -146,10 +146,12 @@ describe("orquestração do relatório de compras", () => {
       }
       return Promise.resolve([{
         documento: `${dtInicial}:${dtFinal}`,
-        produtoCodigoAuxiliar: "P1",
+        produtoIdProduto: "P1",
+        produtoCodigoAuxiliar: "REF-1",
       }, {
         documento: "produto-fora-do-relatorio",
-        produtoCodigoAuxiliar: "P2",
+        produtoIdProduto: "P2",
+        produtoCodigoAuxiliar: "REF-2",
       }]);
     });
 
@@ -176,8 +178,8 @@ describe("orquestração do relatório de compras", () => {
     expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
       expect.any(Array),
       [
-        { documento: "2026-09-01:2026-09-15", produtoCodigoAuxiliar: "P1" },
-        { documento: "2026-09-16:2026-09-30", produtoCodigoAuxiliar: "P1" },
+        { documento: "2026-09-01:2026-09-15", produtoIdProduto: "P1", produtoCodigoAuxiliar: "REF-1" },
+        { documento: "2026-09-16:2026-09-30", produtoIdProduto: "P1", produtoCodigoAuxiliar: "REF-1" },
       ],
       { inicial: "2026-09-01", final: "2026-09-30" },
     );
@@ -201,7 +203,7 @@ describe("orquestração do relatório de compras", () => {
     );
   });
 
-  it("preserva o movimento por descricao quando a venda traz GUID sem codigo auxiliar", async () => {
+  it("ignora movimento com descrição igual quando o ID do produto diverge", async () => {
     mocks.dividirPeriodoKardex.mockReturnValue([
       { inicial: "2026-09-01", final: "2026-09-30" },
     ]);
@@ -213,6 +215,7 @@ describe("orquestração do relatório de compras", () => {
     }]);
     const movimento = {
       documento: "EDC-1",
+      produtoIdProduto: "OUTRO-ID",
       produtoCodigoAuxiliar: "1263",
       produtoDescricao: "AGUA DESMINERALIZADA",
     };
@@ -227,7 +230,7 @@ describe("orquestração do relatório de compras", () => {
 
     expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
       expect.any(Array),
-      [movimento],
+      [],
       { inicial: "2026-09-01", final: "2026-09-30" },
     );
   });
