@@ -67,7 +67,9 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 4. **Datas**: input `type=date` entrega `AAAA-MM-DD` — converter para `DD/MM/AAAA` (dia/mês/ano!) antes de mandar à API do Syspro. Split correto: `[a,m,d] = v.split("-")` → `${d}/${m}/${a}`. Erro aqui → API responde **500**.
 5. **Acesso externo (celular)**: servidor escuta 0.0.0.0; liberar no `trustedOrigins` (Better Auth) + `allowedDevOrigins` (Next) os IPs usados (Wi-Fi 192.168.x e Tailscale 100.x).
 6. **npm no Windows** bloqueia install-scripts: `npm install-scripts approve <pkg>` (better-sqlite3 precisa do build nativo).
-7. **Empresa cadastrada** tem CNPJ + `empresaCodigo` que DEVE bater com o valor real do Syspro (`"1"`, `"2"` — não `"002"`). Código errado → filtro retorna 0 itens silenciosamente.
+- **Empresa cadastrada** tem CNPJ + `empresaCodigo` que DEVE bater com o valor real do Syspro (`"1"`, `"2"` — não `"002"`). Código errado → filtro retorna 0 itens silenciosamente.
+- **Identificação de produtos:** a venda pode retornar `produto_id` (GUID) e `produto_cd_auxiliar`; o Kardex retorna `produto_id_produto`, `produto_codigo_auxiliar` e `produto_marca`. O relatório de Compras relaciona primeiro por código auxiliar, depois por ID e usa descrição normalizada somente como fallback.
+- **Custos de venda:** `produto_vlr_custo_aquisicao` e `produto_vlr_custo_reposicao` são preservados pelo normalizador e exibidos como custos médios no relatório de Compras; não tratar esses campos como preço de venda.
 
 ## Fluxo de dados (segurança)
 ```

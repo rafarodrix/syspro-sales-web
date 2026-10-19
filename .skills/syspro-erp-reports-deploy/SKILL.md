@@ -18,7 +18,7 @@ Como instalar e atualizar o `SysproERP Reports` **no servidor do cliente** — a
    - `BETTER_AUTH_URL` — URL/porta que os usuários digitam no navegador.
    - `BETTER_AUTH_SECRET` — gerar: `openssl rand -base64 32`.
    - URL e modo IIS da API são cadastrados por empresa na tela **Configurações**.
-   - `SYSPRO_ALLOWED_ORIGINS` — **allowlist** de origens da API Syspro (vírgula). A URL de CADA empresa cadastrada precisa estar aqui, senão a consulta falha com "A origem da API Syspro nao esta na allowlist". Ex.: `http://localhost:1234,http://servidor:1234`.
+   - `SYSPRO_ALLOWED_ORIGINS` — **allowlist** de origens da API Syspro (vírgula). A URL de CADA empresa cadastrada precisa estar aqui, senão a consulta falha com "A origem da API Syspro nao esta na allowlist". Ex.: `http://localhost:1234,http://servidor:1234`. A Mundial usa `http://mundial.serveftp.com:1234`; o caminho IIS é resolvido pelo modo `sysproUseIis` da empresa.
    - `BETTER_AUTH_TRUSTED_ORIGINS` — origens de acesso ao app (No-IP, IPs, tunnels), separadas por vírgula.
 3. Rodar **como Administrador**: `scripts\instalar-servico.bat`
    (instala deps, build, copia assets p/ standalone, migrations, seed admin, registra PM2).

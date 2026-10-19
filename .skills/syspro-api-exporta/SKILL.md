@@ -34,7 +34,12 @@ API REST do Syspro ERP para **consultar dados** (vendas, estoque, produção, t�
 - **401** no caminho IIS = exige auth Basic (quando o caminho sem IIS é o correto).
 
 ## Campos — rota produto/venda (parcial)
-`empresa_codigo`, `empresa_razao`, `nf_cd_grupo_documento`, `nf_ds_grupo_documento`, `nf_numero`, `nf_modelo` (55/65), `nf_dt_emissao`, `nf_forma_pagto`, `cliente_nome`, `cliente_cidade`, `cliente_uf`, `produto_id`, `produto_descricao`, `produto_departamento`, `produto_un`, `produto_qtde`, `produto_vlr_item`, `produto_vlr_icms_stb`, `produto_vlr_desconto`, `produto_vlr_frete`, `produto_vlr_seguro`, `produto_vlr_outros`, `produto_vlr_total_item`, `produto_vlr_total_liquido`, `vendedor_nome`.
+`empresa_codigo`, `empresa_razao`, `nf_cd_grupo_documento`, `nf_ds_grupo_documento`, `nf_numero`, `nf_modelo` (55/65), `nf_dt_emissao`, `nf_forma_pagto`, `cliente_nome`, `cliente_cidade`, `cliente_uf`, `produto_id`, `produto_cd_auxiliar` (normalizado no app como `produto_codigo_auxiliar`), `produto_descricao`, `produto_departamento`, `produto_un`, `produto_qtde`, `produto_vlr_item`, `produto_vlr_custo_aquisicao`, `produto_vlr_custo_reposicao`, `produto_vlr_icms_stb`, `produto_vlr_desconto`, `produto_vlr_frete`, `produto_vlr_seguro`, `produto_vlr_outros`, `produto_vlr_total_item`, `produto_vlr_total_liquido`, `vendedor_nome`.
+
+## Campos — rota produto/kardex (parcial)
+`empresa_codigo`, `empresa_nome`, `produto_id_produto`, `produto_codigo_auxiliar`, `produto_descricao`, `produto_marca`, `kardex_data_movimento`, `kardex_qtde_anterior`, `kardex_qtde_movimento`, `kardex_qtde_saldo`, `kardex_cd_grupo_documento`, `kardex_ds_grupo_documento`, `kardex_operacao`, `kardex_modelo_documento`, `kardex_nro_documento`, `participante_nome`, `produto_vlr_total`.
+
+No relatório de Compras, o vínculo venda↔Kardex prioriza código auxiliar e ID do produto; a descrição normalizada é apenas fallback para compatibilidade.
 
 ## Descobrir a configuração do cliente
 1. `appcmd list sites` (Windows/IIS) mostra o site (ex.: site "Syspro", porta 1234, physicalPath `C:\Syspro\Server` com `SysproServer.exe`/`SysproServerISAPI.dll`).
