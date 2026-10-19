@@ -29,6 +29,7 @@ vi.mock("@/lib/sales-service", () => ({
 }));
 
 import { obterRelatorioCompras } from "@/lib/compras-service";
+import { SysproApiError } from "@/lib/syspro-api";
 
 const empresa = {
   id: "empresa-1",
@@ -46,10 +47,12 @@ beforeEach(() => {
     { inicial: "2026-09-01", final: "2026-10-01" },
     { inicial: "2026-10-02", final: "2026-10-19" },
   ]);
-  mocks.obterVendas.mockReset().mockResolvedValue([{ empresa_codigo: "1", nf_numero: "10" }]);
+  mocks.obterVendas.mockReset().mockResolvedValue([
+    { empresa_codigo: "1", nf_numero: "10", produto_id: "P1" },
+  ]);
   mocks.obterMovimentosEstoque.mockReset()
-    .mockResolvedValueOnce([{ documento: "A" }])
-    .mockResolvedValueOnce([{ documento: "B" }]);
+    .mockResolvedValueOnce([{ documento: "A", produtoCodigoAuxiliar: "P1" }])
+    .mockResolvedValueOnce([{ documento: "B", produtoCodigoAuxiliar: "P1" }]);
   mocks.montarRelatorioCompras.mockReset().mockReturnValue({ itens: [], resumo: { totalProdutos: 0 } });
 });
 
@@ -101,8 +104,11 @@ describe("orquestração do relatório de compras", () => {
       signal,
     });
     expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
-      [{ empresa_codigo: "1", nf_numero: "10" }],
-      [{ documento: "A" }, { documento: "B" }],
+      [{ empresa_codigo: "1", nf_numero: "10", produto_id: "P1" }],
+      [
+        { documento: "A", produtoCodigoAuxiliar: "P1" },
+        { documento: "B", produtoCodigoAuxiliar: "P1" },
+      ],
       { inicial: "2026-09-01", final: "2026-09-30" },
     );
     expect(resultado).toEqual({ itens: [], resumo: { totalProdutos: 0 } });
@@ -124,6 +130,74 @@ describe("orquestração do relatório de compras", () => {
       expect.any(Array),
       [],
       { inicial: "2027-01-01", final: "2027-01-31" },
+    );
+  });
+
+  it("subdivide a janela do Kardex quando a resposta excede o limite", async () => {
+    mocks.dividirPeriodoKardex.mockReturnValue([
+      { inicial: "2026-09-01", final: "2026-09-30" },
+    ]);
+    mocks.obterMovimentosEstoque.mockReset().mockImplementation(({ dtInicial, dtFinal }) => {
+      if (dtInicial === "2026-09-01" && dtFinal === "2026-09-30") {
+        return Promise.reject(new SysproApiError(
+          "A resposta da API Syspro excede o limite permitido.",
+          502,
+        ));
+      }
+      return Promise.resolve([{
+        documento: `${dtInicial}:${dtFinal}`,
+        produtoCodigoAuxiliar: "P1",
+      }, {
+        documento: "produto-fora-do-relatorio",
+        produtoCodigoAuxiliar: "P2",
+      }]);
+    });
+
+    await obterRelatorioCompras({
+      actorId: "usuario-1",
+      empresa,
+      dtInicial: "2026-09-01",
+      dtFinal: "2026-09-30",
+    });
+
+    expect(mocks.obterMovimentosEstoque).toHaveBeenCalledTimes(3);
+    expect(mocks.obterMovimentosEstoque).toHaveBeenNthCalledWith(2, {
+      empresa,
+      dtInicial: "2026-09-01",
+      dtFinal: "2026-09-15",
+      signal: undefined,
+    });
+    expect(mocks.obterMovimentosEstoque).toHaveBeenNthCalledWith(3, {
+      empresa,
+      dtInicial: "2026-09-16",
+      dtFinal: "2026-09-30",
+      signal: undefined,
+    });
+    expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
+      expect.any(Array),
+      [
+        { documento: "2026-09-01:2026-09-15", produtoCodigoAuxiliar: "P1" },
+        { documento: "2026-09-16:2026-09-30", produtoCodigoAuxiliar: "P1" },
+      ],
+      { inicial: "2026-09-01", final: "2026-09-30" },
+    );
+  });
+
+  it("evita consultar o Kardex quando nao existem produtos vendidos", async () => {
+    mocks.obterVendas.mockResolvedValue([]);
+
+    await obterRelatorioCompras({
+      actorId: "usuario-1",
+      empresa,
+      dtInicial: "2026-09-01",
+      dtFinal: "2026-09-30",
+    });
+
+    expect(mocks.obterMovimentosEstoque).not.toHaveBeenCalled();
+    expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
+      [],
+      [],
+      { inicial: "2026-09-01", final: "2026-09-30" },
     );
   });
 });

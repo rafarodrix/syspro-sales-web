@@ -1,4 +1,6 @@
 import { obterMovimentosEstoque } from "@/lib/estoque-service";
+import { normalizarCodigoProduto } from "@/lib/metricas-negocio";
+import { SysproApiError } from "@/lib/syspro-api";
 import { dividirPeriodoKardex, montarRelatorioCompras } from "@/lib/relatorio-compras";
 import {
   obterVendas,
@@ -33,6 +35,72 @@ async function executarComPool<T, R>(
   return resultados;
 }
 
+interface JanelaConsulta {
+  inicial: string;
+  final: string;
+}
+
+function dividirJanelaAoMeio(janela: JanelaConsulta): [JanelaConsulta, JanelaConsulta] | null {
+  const inicio = Date.parse(`${janela.inicial}T00:00:00Z`);
+  const fim = Date.parse(`${janela.final}T00:00:00Z`);
+  if (!Number.isFinite(inicio) || !Number.isFinite(fim) || inicio >= fim) return null;
+
+  const umDia = 86_400_000;
+  const meio = inicio + Math.floor((fim - inicio) / umDia / 2) * umDia;
+  const paraIso = (timestamp: number) => new Date(timestamp).toISOString().slice(0, 10);
+
+  return [
+    { inicial: janela.inicial, final: paraIso(meio) },
+    { inicial: paraIso(meio + umDia), final: janela.final },
+  ];
+}
+
+function excedeuLimiteResposta(error: unknown): boolean {
+  return error instanceof SysproApiError
+    && error.status === 502
+    && error.message.includes("excede o limite");
+}
+
+async function obterMovimentosAdaptativo({
+  empresa,
+  janela,
+  codigosProdutos,
+  signal,
+}: {
+  empresa: EmpresaInfo;
+  janela: JanelaConsulta;
+  codigosProdutos: Set<string>;
+  signal?: AbortSignal;
+}) {
+  try {
+    const movimentos = await obterMovimentosEstoque({
+      empresa,
+      dtInicial: janela.inicial,
+      dtFinal: janela.final,
+      signal,
+    });
+    return movimentos.filter((movimento) =>
+      codigosProdutos.has(normalizarCodigoProduto(movimento.produtoCodigoAuxiliar, "")),
+    );
+  } catch (error) {
+    if (!excedeuLimiteResposta(error)) throw error;
+
+    const partes = dividirJanelaAoMeio(janela);
+    if (!partes) throw error;
+
+    const movimentos: Awaited<ReturnType<typeof obterMovimentosEstoque>> = [];
+    for (const parte of partes) {
+      movimentos.push(...await obterMovimentosAdaptativo({
+        empresa,
+        janela: parte,
+        codigosProdutos,
+        signal,
+      }));
+    }
+    return movimentos;
+  }
+}
+
 export async function obterRelatorioCompras({
   actorId,
   empresa,
@@ -57,7 +125,7 @@ export async function obterRelatorioCompras({
     : dtFinal;
   const janelasKardex = dividirPeriodoKardex(dtInicial, finalEstoque);
 
-  const vendasPromise = obterVendas({
+  const vendas = await obterVendas({
     actorId,
     empresasLiberadas: [empresa],
     empresaSelecionadaId: empresa.id,
@@ -67,15 +135,16 @@ export async function obterRelatorioCompras({
     signal,
     enforceRateLimit: false,
   });
-  const movimentosPromise = executarComPool(janelasKardex, 2, (janela) =>
-    obterMovimentosEstoque({
-      empresa,
-      dtInicial: janela.inicial,
-      dtFinal: janela.final,
-      signal,
-    }),
-  ).then((resultados) => resultados.flat());
+  const codigosProdutos = new Set(
+    vendas
+      .map((venda) => normalizarCodigoProduto(venda.produto_id, ""))
+      .filter(Boolean),
+  );
+  const movimentos = codigosProdutos.size > 0
+    ? await executarComPool(janelasKardex, 2, (janela) =>
+        obterMovimentosAdaptativo({ empresa, janela, codigosProdutos, signal }),
+      ).then((resultados) => resultados.flat())
+    : [];
 
-  const [vendas, movimentos] = await Promise.all([vendasPromise, movimentosPromise]);
   return montarRelatorioCompras(vendas, movimentos, { inicial: dtInicial, final: dtFinal });
 }
