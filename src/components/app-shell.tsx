@@ -16,14 +16,7 @@ import {
   ChevronDown,
   Menu,
   X,
-  Building2,
-  CheckCircle2,
-  LogOut,
-  Moon,
-  Sun,
   ShieldCheck,
-  Activity,
-  Server,
 } from "lucide-react";
 import { EmpresaNavSelect } from "@/components/empresa-nav-select";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -31,8 +24,8 @@ import { LogOutButton } from "@/components/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/command-palette";
+import { relatoriosVendas } from "@/lib/navigation";
 import { temPermissao } from "@/lib/role-permissions";
-import { REPORT_DEFINITIONS } from "@/components/relatorios/report-definitions";
 
 type UserRole = "admin" | "gerente" | "supervisor" | "vendas";
 
@@ -49,13 +42,6 @@ interface AppShellProps {
   empresaSelecionada?: string;
   children: React.ReactNode;
 }
-
-const relatoriosVendas = REPORT_DEFINITIONS.map((report) => ({
-  id: report.id,
-  label: report.menuLabel,
-  icone: report.icone,
-  cor: report.cor,
-}));
 
 const relatoriosSubLinks = relatoriosVendas;
 

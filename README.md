@@ -6,7 +6,7 @@ Aplicação web local (Next.js) para **consultar e apresentar as vendas do Syspr
 
 - Next.js (App Router) + React + TypeScript
 - Tailwind CSS + shadcn/ui
-- Better Auth (usuário/senha/sessão, RBAC admin/user)
+- Better Auth (usuário/senha/sessão, RBAC por perfil)
 - Prisma + SQLite
 - API do Syspro: rota `/api/exporta/...` (sem IIS) ou `/sysproserverisapi.dll/api/exporta/...` (com IIS)
 
@@ -37,6 +37,18 @@ O bootstrap cria somente um administrador e apenas quando o banco nao possui usu
 Ele nunca redefine senhas ou cria contas demonstrativas. Em producao, publique o app
 atras de HTTPS e configure `SYSPRO_ALLOWED_ORIGINS` com as origens exatas do Syspro.
 
+## Qualidade e testes
+
+```bash
+npm run check          # lint + TypeScript + testes unitários
+npm run test:coverage  # cobertura dos testes unitários
+npm run build          # build standalone de produção
+npm run test:e2e       # smoke tests no navegador
+```
+
+O comando `npm start` inicia o build standalone e, por isso, requer um `npm run build`
+anterior. Em produção, `DATABASE_URL` relativa é resolvida a partir da pasta de instalação.
+
 ## Estrutura
 
 ```
@@ -48,10 +60,13 @@ app/
   api/
     auth/         Better Auth
     vendas/       POST — consulta (backend → API Syspro, filtra empresa)
+    estoque/      POST — movimentações/Kardex
+    relatorios/   relatórios, incluindo compras
     empresas/     admin — cadastro de empresa
     usuarios/     admin — criar usuário / liberar CNPJ
     configuracao/ admin — salvar conexão
 lib/
+  api-route.ts    autenticação, JSON, rate limit e empresa autorizada nas APIs
   auth.ts         instância Better Auth
   database.ts     PrismaClient (adapter SQLite)
   syspro-api.ts   cliente da API Syspro (rotas do manual)
@@ -66,6 +81,7 @@ Skills versionadas no repo (formato SKILL.md), referenciadas pelo `AGENTS.md`:
 - `SysproERP Reports` — arquitetura, estrutura, comandos e armadilhas do app
 - `syspro-api-exporta` — API de exportação do Syspro (URLs com/sem IIS, datas, campos)
 - `web-code-quality` — fluxo de desenvolvimento (questionar → arquitetar → implementar → revisar)
+- `syspro-erp-reports-deploy` — instalação e atualização do standalone no cliente
 
 ## Fluxo de segurança
 

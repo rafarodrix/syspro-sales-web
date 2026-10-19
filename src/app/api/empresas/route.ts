@@ -1,53 +1,19 @@
-import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { aplicarLimite, autenticarApi, validarJson } from "@/lib/api-route";
 import { prisma } from "@/lib/database";
 import { empresaCreateSchema, empresaUpdateSchema } from "@/lib/validations";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { temPermissao } from "@/lib/role-permissions";
-
-async function authorizeAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || !temPermissao(session.user.role, "empresas:gerenciar")) return null;
-  return session;
-}
 
 export async function POST(request: NextRequest) {
-  const session = await authorizeAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
-  }
+  const autenticacao = await autenticarApi("empresas:gerenciar", "Acesso restrito ao Administrador.");
+  if (!autenticacao.ok) return autenticacao.response;
+  const session = autenticacao.value;
 
-  const rateCheck = checkRateLimit(`empresas:post:${session.user.id}`, 30, 60_000);
-  if (!rateCheck.success) {
-    return NextResponse.json(
-      { error: "Muitas requisições. Aguarde um momento." },
-      { status: 429 },
-    );
-  }
+  const limite = aplicarLimite(`empresas:post:${session.user.id}`, 30, 60_000, "Muitas requisições. Aguarde um momento.");
+  if (limite) return limite;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
-  }
-
-  let parsed: ReturnType<typeof empresaCreateSchema.safeParse>;
-  try {
-    parsed = empresaCreateSchema.safeParse(body);
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Dados da empresa inválidos." },
-      { status: 400 },
-    );
-  }
-  if (!parsed.success) {
-    const errorMsg = parsed.error.issues[0]?.message ?? "Dados da empresa inválidos.";
-    return NextResponse.json({ error: errorMsg }, { status: 400 });
-  }
-
-  const { cnpj, razaoSocial, empresaCodigo, sysproBaseUrl, sysproUseIis } = parsed.data;
+  const json = await validarJson(request, empresaCreateSchema, "Dados da empresa inválidos.");
+  if (!json.ok) return json.response;
+  const { cnpj, razaoSocial, empresaCodigo, sysproBaseUrl, sysproUseIis } = json.value;
 
   try {
     const empresa = await prisma.empresa.create({
@@ -72,33 +38,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await authorizeAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
-  }
+  const autenticacao = await autenticarApi("empresas:gerenciar", "Acesso restrito ao Administrador.");
+  if (!autenticacao.ok) return autenticacao.response;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
-  }
-
-  let parsed: ReturnType<typeof empresaUpdateSchema.safeParse>;
-  try {
-    parsed = empresaUpdateSchema.safeParse(body);
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Dados inválidos para atualização." },
-      { status: 400 },
-    );
-  }
-  if (!parsed.success) {
-    const errorMsg = parsed.error.issues[0]?.message ?? "Dados inválidos para atualização.";
-    return NextResponse.json({ error: errorMsg }, { status: 400 });
-  }
-
-  const { id, cnpj, razaoSocial, empresaCodigo, ativa, sysproBaseUrl, sysproUseIis } = parsed.data;
+  const json = await validarJson(request, empresaUpdateSchema, "Dados inválidos para atualização.");
+  if (!json.ok) return json.response;
+  const { id, cnpj, razaoSocial, empresaCodigo, ativa, sysproBaseUrl, sysproUseIis } = json.value;
 
   const existente = await prisma.empresa.findUnique({ where: { id } });
   if (!existente) {
@@ -138,10 +83,8 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await authorizeAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
-  }
+  const autenticacao = await autenticarApi("empresas:gerenciar", "Acesso restrito ao Administrador.");
+  if (!autenticacao.ok) return autenticacao.response;
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");

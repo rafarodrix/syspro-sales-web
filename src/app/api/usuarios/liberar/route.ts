@@ -1,36 +1,14 @@
-import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { autenticarApi, validarJson } from "@/lib/api-route";
 import { prisma } from "@/lib/database";
 import { usuarioLiberarSchema } from "@/lib/validations";
-import { temPermissao } from "@/lib/role-permissions";
-
-async function authorizeAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || !temPermissao(session.user.role, "usuarios:gerenciar")) return null;
-  return session;
-}
 
 export async function POST(request: NextRequest) {
-  const session = await authorizeAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
-  }
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
-  }
-
-  const parsed = usuarioLiberarSchema.safeParse(body);
-  if (!parsed.success) {
-    const errorMsg = parsed.error.issues[0]?.message ?? "Dados inválidos.";
-    return NextResponse.json({ error: errorMsg }, { status: 400 });
-  }
-
-  const { userId, empresaId } = parsed.data;
+  const autenticacao = await autenticarApi("usuarios:gerenciar", "Acesso restrito ao Administrador.");
+  if (!autenticacao.ok) return autenticacao.response;
+  const json = await validarJson(request, usuarioLiberarSchema, "Dados inválidos.");
+  if (!json.ok) return json.response;
+  const { userId, empresaId } = json.value;
 
   const [user, empresa] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
@@ -50,25 +28,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await authorizeAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Acesso restrito ao Administrador." }, { status: 403 });
-  }
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Corpo JSON inválido." }, { status: 400 });
-  }
-
-  const parsed = usuarioLiberarSchema.safeParse(body);
-  if (!parsed.success) {
-    const errorMsg = parsed.error.issues[0]?.message ?? "Dados inválidos.";
-    return NextResponse.json({ error: errorMsg }, { status: 400 });
-  }
-
-  const { userId, empresaId } = parsed.data;
+  const autenticacao = await autenticarApi("usuarios:gerenciar", "Acesso restrito ao Administrador.");
+  if (!autenticacao.ok) return autenticacao.response;
+  const json = await validarJson(request, usuarioLiberarSchema, "Dados inválidos.");
+  if (!json.ok) return json.response;
+  const { userId, empresaId } = json.value;
 
   await prisma.userEmpresa.deleteMany({ where: { userId, empresaId } });
   return NextResponse.json({ ok: true });

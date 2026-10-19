@@ -2,58 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  ShoppingBasket,
-  Sparkles,
-  UserCheck,
-  Percent,
-  CalendarDays,
-  Layers,
-  Users,
-  MapPin,
-  CreditCard,
-  UserCog,
-  Settings,
-  Search,
-  ArrowRight,
-  Command as CommandIcon,
-} from "lucide-react";
+import { Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { temPermissao, type Permissao } from "@/lib/role-permissions";
-
-interface CommandItem {
-  id: string;
-  titulo: string;
-  categoria: "Navegação" | "Relatórios" | "Administração";
-  href: string;
-  icone: React.ElementType;
-  cor?: string;
-  permissao: Permissao;
-}
-
-const comandos: CommandItem[] = [
-  { id: "dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard, permissao: "dashboard:visualizar" },
-  { id: "vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart, permissao: "vendas:visualizar" },
-  { id: "curva-abc", titulo: "Curva ABC", categoria: "Relatórios", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500", permissao: "relatorios:visualizar" },
-  { id: "clientes", titulo: "Clientes", categoria: "Relatórios", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500", permissao: "relatorios:visualizar" },
-  { id: "descontos", titulo: "Descontos & Margem", categoria: "Relatórios", href: "/relatorios?aba=descontos", icone: Percent, cor: "text-rose-500", permissao: "relatorios:visualizar" },
-  { id: "sazonalidade", titulo: "Sazonalidade & Evolução", categoria: "Relatórios", href: "/relatorios?aba=sazonalidade", icone: CalendarDays, cor: "text-indigo-500", permissao: "relatorios:visualizar" },
-  { id: "departamentos", titulo: "Departamentos", categoria: "Relatórios", href: "/relatorios?aba=departamentos", icone: Layers, cor: "text-blue-500", permissao: "relatorios:visualizar" },
-  { id: "vendedores", titulo: "Vendedores", categoria: "Relatórios", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500", permissao: "relatorios:visualizar" },
-  { id: "geografico", titulo: "Cidade e UF", categoria: "Relatórios", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500", permissao: "relatorios:visualizar" },
-  { id: "financeiro", titulo: "Financeiro & Formas de Pagto", categoria: "Relatórios", href: "/relatorios?aba=financeiro", icone: CreditCard, cor: "text-orange-500", permissao: "relatorios:visualizar" },
-  { id: "compras", titulo: "Relatório de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "estoque:visualizar" },
-  { id: "usuarios", titulo: "Gestão de Usuários & Acessos", categoria: "Administração", href: "/usuarios", icone: UserCog, permissao: "usuarios:gerenciar" },
-  { id: "configuracoes", titulo: "Configurações da API Syspro", categoria: "Administração", href: "/configuracoes", icone: Settings, permissao: "configuracoes:gerenciar" },
-];
+import { comandosNavegacao } from "@/lib/navigation";
+import { temPermissao } from "@/lib/role-permissions";
 
 export function CommandPalette({ userRole }: { userRole: string }) {
   const [aberto, setAberto] = useState(false);
@@ -72,7 +29,7 @@ export function CommandPalette({ userRole }: { userRole: string }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const filtrados = comandos.filter((c) =>
+  const filtrados = comandosNavegacao.filter((c) =>
     temPermissao(userRole, c.permissao) && (
       c.titulo.toLowerCase().includes(busca.toLowerCase()) ||
       c.categoria.toLowerCase().includes(busca.toLowerCase())

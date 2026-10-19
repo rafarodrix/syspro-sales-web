@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Layers, Users, MapPin, Tag } from "lucide-react";
+import { ChevronRight, Layers, Users, Tag } from "lucide-react";
 import type { ItemRankeado } from "@/lib/vendas";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
 import {

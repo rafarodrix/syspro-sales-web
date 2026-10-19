@@ -17,7 +17,7 @@ Como instalar e atualizar o `SysproERP Reports` **no servidor do cliente** — a
 2. Criar `.env` a partir de `.env.production.example` e ajustar:
    - `BETTER_AUTH_URL` — URL/porta que os usuários digitam no navegador.
    - `BETTER_AUTH_SECRET` — gerar: `openssl rand -base64 32`.
-   - `SYSPRO_API_URL` / `SYSPRO_USE_IIS` — endereço da API de exporta do cliente.
+   - URL e modo IIS da API são cadastrados por empresa na tela **Configurações**.
    - `SYSPRO_ALLOWED_ORIGINS` — **allowlist** de origens da API Syspro (vírgula). A URL de CADA empresa cadastrada precisa estar aqui, senão a consulta falha com "A origem da API Syspro nao esta na allowlist". Ex.: `http://localhost:1234,http://servidor:1234`.
    - `BETTER_AUTH_TRUSTED_ORIGINS` — origens de acesso ao app (No-IP, IPs, tunnels), separadas por vírgula.
 3. Rodar **como Administrador**: `scripts\instalar-servico.bat`
@@ -27,11 +27,12 @@ Como instalar e atualizar o `SysproERP Reports` **no servidor do cliente** — a
 ## Atualização (versões novas)
 ```bat
 git pull
-call npm install --omit=dev
+call npm ci
 call npm run build
 call npx prisma migrate deploy
 call npm run roles:normalize
 xcopy /E /I /Y ".next\static" ".next\standalone\.next\static" >nul
+call npm prune --omit=dev
 pm2 restart syspro-erp-reports
 ```
 (ou rodar o `instalar-servico.bat` de novo — é idempotente).
@@ -46,12 +47,12 @@ O app atende **dois públicos** com origens diferentes (ex.: IP local `192.168.x
   - Alternativa estável p/ externo: **No-IP/DDNS** (`http://host.ddns.net:3000`) ou um domínio com HTTPS.
 
 ## start-prod.js (produção)
-- O wrapper escuta em **`0.0.0.0`** (todas as interfaces) para permitir acesso externo (No-IP, IPs, VPN). Override: `HOST=127.0.0.1` no `.env` para restringir a localhost.
+- O wrapper usa `HOST` do `.env`. O exemplo de produção adota **`127.0.0.1`**, indicado quando há proxy HTTPS. Use `0.0.0.0` apenas quando o acesso direto pela rede for intencional.
 - Valida `BETTER_AUTH_SECRET` (≥32 chars) no start.
 - Carrega `.env` da raiz + resolve `DATABASE_URL` absoluto + `chdir` para `.next/standalone`.
 
 ## Porta e firewall
-- App escuta em `0.0.0.0:3000` (config do ecosystem). Para mudar: `PORT=XXXX` no `.env`.
+- Host e porta são configurados por `HOST` e `PORT` no `.env`.
 - Liberar no firewall do Windows a porta escolhida para a rede local (e para a interface da VPN se for acesso externo).
 
 ## Banco de dados

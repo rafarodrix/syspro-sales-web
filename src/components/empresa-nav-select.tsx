@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Building2Icon, Check, ChevronDown, Layers, CheckSquare, Square, Filter, X } from "lucide-react";
+import { Building2Icon, ChevronDown, Layers, CheckSquare, Square, Filter } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   DropdownMenu,

@@ -1,38 +1,20 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { temPermissao } from "@/lib/role-permissions";
+import { aplicarLimite, autenticarApi, validarJson } from "@/lib/api-route";
 import { dataInputParaSyspro, dataParaInput } from "@/lib/vendas";
-import { sanitizarSysproUrl } from "@/lib/validations";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { configuracaoTesteSchema, sanitizarSysproUrl } from "@/lib/validations";
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || !temPermissao(session.user.role, "configuracoes:gerenciar")) {
-    return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
-  }
+  const autenticacao = await autenticarApi("configuracoes:gerenciar", "Acesso não autorizado.");
+  if (!autenticacao.ok) return autenticacao.response;
+  const session = autenticacao.value;
 
-  const rateCheck = checkRateLimit(`config:testar:${session.user.id}`, 20, 60_000);
-  if (!rateCheck.success) {
-    return NextResponse.json(
-      { error: "Limite de testes atingido. Aguarde um momento." },
-      { status: 429 },
-    );
-  }
+  const limite = aplicarLimite(`config:testar:${session.user.id}`, 20, 60_000, "Limite de testes atingido. Aguarde um momento.");
+  if (limite) return limite;
 
   try {
-    const body = await request.json();
-    const { baseUrl, useIis } = body;
-
-    if (!baseUrl || typeof baseUrl !== "string") {
-      return NextResponse.json(
-        { error: "URL da API Syspro não informada." },
-        { status: 400 },
-      );
-    }
-    if (typeof useIis !== "boolean") {
-      return NextResponse.json({ error: "Modo IIS inválido." }, { status: 400 });
-    }
+    const json = await validarJson(request, configuracaoTesteSchema, "Configuração inválida.");
+    if (!json.ok) return json.response;
+    const { baseUrl, useIis } = json.value;
 
     let sanitizedBase: string;
     try {
