@@ -12,10 +12,14 @@ vi.mock("@/lib/estoque-service", () => ({
   obterMovimentosEstoque: mocks.obterMovimentosEstoque,
 }));
 
-vi.mock("@/lib/relatorio-compras", () => ({
-  dividirPeriodoKardex: mocks.dividirPeriodoKardex,
-  montarRelatorioCompras: mocks.montarRelatorioCompras,
-}));
+vi.mock("@/lib/relatorio-compras", async () => {
+  const real = await vi.importActual<typeof import("@/lib/relatorio-compras")>("@/lib/relatorio-compras");
+  return {
+    dividirPeriodoKardex: mocks.dividirPeriodoKardex,
+    montarRelatorioCompras: mocks.montarRelatorioCompras,
+    normalizarDataIso: real.normalizarDataIso,
+  };
+});
 
 vi.mock("@/lib/sales-service", () => ({
   obterVendas: mocks.obterVendas,

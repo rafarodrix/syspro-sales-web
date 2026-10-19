@@ -170,4 +170,10 @@ describe("relatorio de compras", () => {
       { inicial: "2026-09-19", final: "2026-10-16" },
     ]);
   });
+
+  it("aceita datas no formato DD/MM/AAAA sem perder as janelas do Kardex", () => {
+    expect(dividirPeriodoKardex("01/10/2026", "19/10/2026")).toEqual([
+      { inicial: "2026-10-01", final: "2026-10-19" },
+    ]);
+  });
 });

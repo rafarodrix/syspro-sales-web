@@ -199,7 +199,17 @@ export function montarRelatorioCompras(
   };
 }
 
-export function dividirPeriodoKardex(inicial: string, final: string) {
+/** Aceita AAAA-MM-DD ou DD/MM/AAAA e devolve sempre AAAA-MM-DD. */
+export function normalizarDataIso(valor: string): string {
+  const texto = String(valor ?? "").trim();
+  const br = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  return texto;
+}
+
+export function dividirPeriodoKardex(inicialBruto: string, finalBruto: string) {
+  const inicial = normalizarDataIso(inicialBruto);
+  const final = normalizarDataIso(finalBruto);
   const paraData = (valor: string) => {
     const [ano, mes, dia] = valor.split("-").map(Number);
     return new Date(Date.UTC(ano, mes - 1, dia));

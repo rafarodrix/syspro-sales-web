@@ -70,6 +70,7 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Empresa cadastrada** tem CNPJ + `empresaCodigo` que DEVE bater com o valor real do Syspro (`"1"`, `"2"` — não `"002"`). Código errado → filtro retorna 0 itens silenciosamente.
 - **Identificação de produtos:** `produto_id` (vendas) e `produto_id_produto` (Kardex) formam a chave única e absoluta do relacionamento. Não faça vínculo por código ou descrição. O ID é estritamente interno e não deve aparecer em telas ou relatórios. O código auxiliar (`produto_cd_auxiliar`/`produto_codigo_auxiliar`) é o código exibido ao usuário.
 - **Custos e margem:** custo de aquisição é o custo puro do item e serve para análises de compras/fornecedores. Custo de reposição inclui impostos, frete e demais despesas; toda margem de venda deve ser calculada exclusivamente pelo custo de reposição.
+- **Formato de data:** a API Syspro exige `DD/MM/AAAA`, mas os cálculos internos (janelas do Kardex, comparação de período, detecção de EDC) trabalham em `AAAA-MM-DD`. Normalize com `normalizarDataIso` antes de dividir janelas — data BR sem normalizar gera janela vazia e o Kardex volta sem saldo/marca, silenciosamente.
 - **Custos de venda:** `produto_vlr_custo_aquisicao` e `produto_vlr_custo_reposicao` são preservados pelo normalizador e exibidos como custos médios no relatório de Compras; não tratar esses campos como preço de venda.
 
 ## Fluxo de dados (segurança)

@@ -1,7 +1,7 @@
 import { obterMovimentosEstoque } from "@/lib/estoque-service";
 import { normalizarCodigoProduto } from "@/lib/metricas-negocio";
 import { SysproApiError } from "@/lib/syspro-api";
-import { dividirPeriodoKardex, montarRelatorioCompras } from "@/lib/relatorio-compras";
+import { dividirPeriodoKardex, montarRelatorioCompras, normalizarDataIso } from "@/lib/relatorio-compras";
 import {
   obterVendas,
   periodoConsultaValido,
@@ -120,10 +120,12 @@ export async function obterRelatorioCompras({
     throw new SalesQueryError("Informe um período válido de até 366 dias.", 400);
   }
 
-  const finalEstoque = dtInicial <= hojeEmSaoPaulo()
-    ? [dtFinal, hojeEmSaoPaulo()].sort().at(-1)!
-    : dtFinal;
-  const janelasKardex = dividirPeriodoKardex(dtInicial, finalEstoque);
+  const inicialIso = normalizarDataIso(dtInicial);
+  const finalIso = normalizarDataIso(dtFinal);
+  const finalEstoque = inicialIso <= hojeEmSaoPaulo()
+    ? [finalIso, hojeEmSaoPaulo()].sort().at(-1)!
+    : finalIso;
+  const janelasKardex = dividirPeriodoKardex(inicialIso, finalEstoque);
 
   const vendas = await obterVendas({
     actorId,
@@ -151,5 +153,5 @@ export async function obterRelatorioCompras({
       ).then((resultados) => resultados.flat())
     : [];
 
-  return montarRelatorioCompras(vendas, movimentos, { inicial: dtInicial, final: dtFinal });
+  return montarRelatorioCompras(vendas, movimentos, { inicial: inicialIso, final: finalIso });
 }
