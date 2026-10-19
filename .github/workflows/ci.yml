@@ -21,6 +21,7 @@ jobs:
       - run: npm ci
       - run: npx prisma migrate deploy
       - run: npm run check
+      - run: npm run test:coverage:critical
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

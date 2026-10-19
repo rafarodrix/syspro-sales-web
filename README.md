@@ -42,6 +42,7 @@ atras de HTTPS e configure `SYSPRO_ALLOWED_ORIGINS` com as origens exatas do Sys
 ```bash
 npm run check          # lint + TypeScript + testes unitários
 npm run test:coverage  # cobertura dos testes unitários
+npm run test:coverage:critical # exige >=70% nos serviços críticos
 npm run build          # build standalone de produção
 npm run test:e2e       # smoke tests no navegador
 ```
