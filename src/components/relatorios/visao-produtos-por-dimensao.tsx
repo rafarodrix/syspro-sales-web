@@ -50,8 +50,8 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
           {dimensoes.map((dimensao) => <option key={dimensao} value={dimensao}>{dimensao}</option>)}
         </select>
         {contextoExportacao ? <ExportarVisao titulo={`${dimensaoPlural} - Produtos`} contexto={contextoExportacao}
-          colunas={[dimensaoRotulo, "ID", "Referência", "Produto", "Departamento", "Notas", "Quantidade", "Unidade", "Desconto", "Faturamento"]}
-          linhas={itensFiltrados.map((item) => [item.dimensao, item.produtoId, item.codigoReferencia, item.produto, item.departamento, item.pedidos, formatarNumero(item.quantidade, 2), item.un, formatarMoeda(item.descontos), formatarMoeda(item.faturamento)])}
+          colunas={[dimensaoRotulo, "Código", "Produto", "Departamento", "Notas", "Quantidade", "Unidade", "Desconto", "Faturamento"]}
+          linhas={itensFiltrados.map((item) => [item.dimensao, item.codigoReferencia, item.produto, item.departamento, item.pedidos, formatarNumero(item.quantidade, 2), item.un, formatarMoeda(item.descontos), formatarMoeda(item.faturamento)])}
         /> : null}
       </div>
 
@@ -59,8 +59,7 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
           <thead>
             <tr className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
               {!dimensaoSelecionada && <th className="p-3">{dimensaoRotulo}</th>}
-              <th className="p-3">ID</th>
-              <th className="p-3">Referência</th>
+              <th className="p-3">Código</th>
               <th className="p-3">Produto</th>
               <th className="p-3">Departamento</th>
               <th className="p-3 text-right">Pedidos / NF</th>
@@ -71,11 +70,10 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
           </thead>
           <tbody>
             {itensPaginados.length === 0 ? (
-              <tr><td colSpan={dimensaoSelecionada ? 8 : 9} className="p-8 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
+              <tr><td colSpan={dimensaoSelecionada ? 7 : 8} className="p-8 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
             ) : itensPaginados.map((item) => (
               <tr key={`${item.dimensao}-${item.produtoId}-${item.produto}`} className="border-b last:border-0 hover:bg-muted/20">
                 {!dimensaoSelecionada && <td className="max-w-52 truncate p-3 font-semibold" title={item.dimensao}>{item.dimensao}</td>}
-                <td className="p-3 font-mono text-muted-foreground">{item.produtoId}</td>
                 <td className="p-3 font-mono text-muted-foreground">{item.codigoReferencia || "—"}</td>
                 <td className="max-w-64 truncate p-3 font-medium" title={item.produto}>{item.produto}</td>
                 <td className="max-w-48 truncate p-3 text-muted-foreground" title={item.departamento}>{item.departamento}</td>

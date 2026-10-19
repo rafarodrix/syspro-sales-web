@@ -29,7 +29,7 @@ export interface VendaAgrupada {
   itens: VendaProduto[];
   quantidadeItens: number;
   total: number;
-  custoAquisicao: number;
+  custoReposicao: number;
   lucroBruto: number;
   margemBruta: number;
   coberturaCusto: number;
@@ -47,6 +47,7 @@ export interface PontoFaturamento {
 
 export interface ProdutoRankeado {
   id: string;
+  codigo: string;
   produto: string;
   departamento?: string;
   un: string;
@@ -79,16 +80,11 @@ export interface ResumoVendas {
   taxaFrete: number;
   clientesRecorrentes: number;
   percentualRecorrencia: number;
-  custoAquisicao: number;
+  custoReposicao: number;
   lucroBruto: number;
   margemBruta: number;
   faturamentoComCusto: number;
   coberturaCusto: number;
-  custoReposicao: number;
-  lucroReposicao: number;
-  margemReposicao: number;
-  faturamentoComCustoReposicao: number;
-  coberturaCustoReposicao: number;
   porDepartamento: ItemRankeado[];
   porVendedor: ItemRankeado[];
   porFormaPagamento: ItemRankeado[];
@@ -189,7 +185,7 @@ export interface ItemDescontoAnalise {
   desconto: number;
   taxaDesconto: number;
   pedidos?: number;
-  custoAquisicao: number;
+  custoReposicao: number;
   lucroBruto: number;
   margemBruta: number;
   coberturaCusto: number;
@@ -291,52 +287,34 @@ export function valorItem(venda: VendaProduto): number {
 }
 
 export interface ResumoMargens {
-  custoAquisicao: number;
+  custoReposicao: number;
   lucroBruto: number;
   margemBruta: number;
   faturamentoComCusto: number;
   coberturaCusto: number;
-  custoReposicao: number;
-  lucroReposicao: number;
-  margemReposicao: number;
-  faturamentoComCustoReposicao: number;
-  coberturaCustoReposicao: number;
 }
 
 export function resumirMargens(vendas: VendaProduto[]): ResumoMargens {
   let faturamento = 0;
   let faturamentoComCusto = 0;
-  let faturamentoComCustoReposicao = 0;
-  let custoAquisicao = 0;
   let custoReposicao = 0;
 
   for (const venda of vendas) {
-    const aquisicao = calcularMargemItem(venda, "aquisicao");
-    const reposicao = calcularMargemItem(venda, "reposicao");
-    faturamento += aquisicao.receita;
-    if (aquisicao.custoTotal !== null) {
-      faturamentoComCusto += aquisicao.receita;
-      custoAquisicao += aquisicao.custoTotal;
-    }
-    if (reposicao.custoTotal !== null) {
-      faturamentoComCustoReposicao += reposicao.receita;
-      custoReposicao += reposicao.custoTotal;
+    const margem = calcularMargemItem(venda);
+    faturamento += margem.receita;
+    if (margem.custoTotal !== null) {
+      faturamentoComCusto += margem.receita;
+      custoReposicao += margem.custoTotal;
     }
   }
 
-  const lucroBruto = faturamentoComCusto - custoAquisicao;
-  const lucroReposicao = faturamentoComCustoReposicao - custoReposicao;
+  const lucroBruto = faturamentoComCusto - custoReposicao;
   return {
-    custoAquisicao,
+    custoReposicao,
     lucroBruto,
     margemBruta: calcularPercentual(lucroBruto, faturamentoComCusto),
     faturamentoComCusto,
     coberturaCusto: calcularPercentual(faturamentoComCusto, faturamento),
-    custoReposicao,
-    lucroReposicao,
-    margemReposicao: calcularPercentual(lucroReposicao, faturamentoComCustoReposicao),
-    faturamentoComCustoReposicao,
-    coberturaCustoReposicao: calcularPercentual(faturamentoComCustoReposicao, faturamento),
   };
 }
 
@@ -379,7 +357,7 @@ export function agruparVendasPorNota(vendas: (VendaProduto | VendaComEmpresa)[])
       itens: [venda],
       quantidadeItens: qtdItem,
       total: totalItem,
-      custoAquisicao: 0,
+      custoReposicao: 0,
       lucroBruto: 0,
       margemBruta: 0,
       coberturaCusto: 0,
@@ -392,7 +370,7 @@ export function agruparVendasPorNota(vendas: (VendaProduto | VendaComEmpresa)[])
     const margem = resumirMargens(nota.itens);
     return {
       ...nota,
-      custoAquisicao: margem.custoAquisicao,
+      custoReposicao: margem.custoReposicao,
       lucroBruto: margem.lucroBruto,
       margemBruta: margem.margemBruta,
       coberturaCusto: margem.coberturaCusto,
@@ -534,7 +512,7 @@ export function produtosMaisVendidos(
 ): ProdutoRankeado[] {
   const produtosMap = new Map<
     string,
-    { id: string; produto: string; total: number; quantidade: number; departamento?: string; un: string }
+    { id: string; codigo: string; produto: string; total: number; quantidade: number; departamento?: string; un: string }
   >();
 
   let faturamentoTotal = 0;
@@ -554,6 +532,7 @@ export function produtosMaisVendidos(
     } else {
       produtosMap.set(chave, {
         id,
+        codigo: venda.produto_codigo_auxiliar?.trim() || "",
         produto: nome,
         total,
         quantidade: qtd,
@@ -975,7 +954,7 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
   type AcumuladoDesconto = {
     faturamento: number;
     faturamentoComCusto: number;
-    custoAquisicao: number;
+    custoReposicao: number;
     bruto: number;
     desconto: number;
     notas: Set<string>;
@@ -983,7 +962,7 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
   const novoAcumulado = (): AcumuladoDesconto => ({
     faturamento: 0,
     faturamentoComCusto: 0,
-    custoAquisicao: 0,
+    custoReposicao: 0,
     bruto: 0,
     desconto: 0,
     notas: new Set(),
@@ -1000,7 +979,7 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
     const vend = venda.vendedor_nome?.trim() || "Sem vendedor";
     const depto = venda.produto_departamento?.trim() || "Sem departamento";
     const formaPagamento = venda.nf_forma_pagto?.trim() || "Não informado";
-    const margem = calcularMargemItem(venda, "aquisicao");
+    const margem = calcularMargemItem(venda);
     const acumular = (dados: AcumuladoDesconto) => {
       dados.faturamento += total;
       dados.bruto += bruto;
@@ -1008,7 +987,7 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
       dados.notas.add(chaveNota);
       if (margem.custoTotal !== null) {
         dados.faturamentoComCusto += total;
-        dados.custoAquisicao += margem.custoTotal;
+        dados.custoReposicao += margem.custoTotal;
       }
     };
 
@@ -1041,14 +1020,14 @@ export function analiseDescontos(vendas: VendaProduto[]): RelatorioDescontos {
   function formatarRankingDesconto(map: Map<string, AcumuladoDesconto>): ItemDescontoAnalise[] {
     return [...map.entries()]
       .map(([nome, d]) => {
-        const lucroBruto = d.faturamentoComCusto - d.custoAquisicao;
+        const lucroBruto = d.faturamentoComCusto - d.custoReposicao;
         return {
           nome,
           faturamentoLiquido: d.faturamento,
           desconto: d.desconto,
           taxaDesconto: calcularPercentual(d.desconto, d.bruto),
           pedidos: d.notas.size,
-          custoAquisicao: d.custoAquisicao,
+          custoReposicao: d.custoReposicao,
           lucroBruto,
           margemBruta: calcularPercentual(lucroBruto, d.faturamentoComCusto),
           coberturaCusto: calcularPercentual(d.faturamentoComCusto, d.faturamento),

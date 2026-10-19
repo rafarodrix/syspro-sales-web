@@ -274,11 +274,8 @@ export function ComprasView({
                         <TableCell>
                           <p className="font-medium">{item.produto}</p>
                           <p className="text-xs text-muted-foreground">{item.unidade}</p>
-                          <p className="font-mono text-[10px] text-muted-foreground" title="ID do produto">
-                            ID: {item.produtoId || "—"}
-                          </p>
-                          <p className="font-mono text-[10px] text-muted-foreground" title="Código de referência">
-                            Ref.: {item.codigo || "—"}
+                          <p className="font-mono text-[10px] text-muted-foreground" title="Código auxiliar">
+                            Código: {item.codigo || "—"}
                           </p>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
@@ -351,7 +348,7 @@ export function ComprasView({
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <RotateCcw className="size-3.5" aria-hidden="true" />
         Devoluções consideram exclusivamente o grupo EDC e não estornam receita sem valor fiscal.
-        Produtos são relacionados por ID, código auxiliar e, com cautela, descrição normalizada.
+        Produtos são relacionados exclusivamente pelo ID interno; o código auxiliar é usado para exibição.
       </p>
     </div>
   );

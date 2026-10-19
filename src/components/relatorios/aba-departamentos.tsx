@@ -69,15 +69,8 @@ export function AbaDepartamentos({
                 cell: (item) => <>{item.departamento}</>,
               },
               {
-                id: "id",
-                header: <>ID</>,
-                kind: "number",
-                value: (item) => item.id,
-                cell: (item) => <>{item.id}</>,
-              },
-              {
                 id: "codigoReferencia",
-                header: <>Referência</>,
+                header: <>Código</>,
                 kind: "number",
                 value: (item) => item.codigoReferencia,
                 cell: (item) => <>{item.codigoReferencia || "—"}</>,

@@ -112,16 +112,12 @@ describe("cálculos de vendas", () => {
     ];
 
     expect(resumirMargens(vendas)).toMatchObject({
-      custoAquisicao: 60,
-      lucroBruto: 40,
-      margemBruta: 40,
-      coberturaCusto: 50,
       custoReposicao: 80,
-      lucroReposicao: 20,
-      margemReposicao: 20,
-      coberturaCustoReposicao: 50,
+      lucroBruto: 20,
+      margemBruta: 20,
+      coberturaCusto: 50,
     });
-    expect(resumoVendas(vendas)).toMatchObject({ lucroBruto: 40, margemBruta: 40 });
+    expect(resumoVendas(vendas)).toMatchObject({ lucroBruto: 20, margemBruta: 20 });
   });
 
   it("inclui margem por vendedor, departamento e forma de pagamento", () => {
@@ -129,12 +125,13 @@ describe("cálculos de vendas", () => {
       vendaBase({
         produto_qtde: 2,
         produto_vlr_total_liquido: 100,
-        produto_vlr_custo_aquisicao: 30,
+        produto_vlr_custo_aquisicao: 10,
+        produto_vlr_custo_reposicao: 30,
       }),
     ]);
 
     expect(relatorio.porVendedor[0]).toMatchObject({
-      custoAquisicao: 60,
+      custoReposicao: 60,
       lucroBruto: 40,
       margemBruta: 40,
       coberturaCusto: 100,

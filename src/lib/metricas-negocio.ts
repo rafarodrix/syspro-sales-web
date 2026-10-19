@@ -65,15 +65,9 @@ export interface MargemItem {
 }
 
 /** Calcula margem somente quando a API informou um custo válido. */
-export function calcularMargemItem(
-  venda: VendaProduto,
-  tipoCusto: "aquisicao" | "reposicao" = "aquisicao",
-): MargemItem {
+export function calcularMargemItem(venda: VendaProduto): MargemItem {
   const receita = valorLiquidoItem(venda);
-  const campo = tipoCusto === "aquisicao"
-    ? venda.produto_vlr_custo_aquisicao
-    : venda.produto_vlr_custo_reposicao;
-  const custoUnitario = valorNumericoOpcional(campo);
+  const custoUnitario = valorNumericoOpcional(venda.produto_vlr_custo_reposicao);
   if (custoUnitario === null) {
     return { receita, custoUnitario: null, custoTotal: null, lucro: null, margemPercentual: null };
   }

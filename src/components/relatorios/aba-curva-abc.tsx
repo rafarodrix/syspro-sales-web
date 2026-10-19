@@ -72,7 +72,6 @@ export function ResumoCurvaAbcCard({
 }
 
 export function AbaCurvaABC({
-  relatorioABC,
   itensFiltrados,
   concentracaoTop10,
   concentracaoTop20,
@@ -114,15 +113,8 @@ export function AbaCurvaABC({
             ),
           },
           {
-            id: "id",
-            header: <>ID</>,
-            kind: "number",
-            value: (item) => item.id,
-            cell: (item) => <>{item.id}</>,
-          },
-          {
             id: "codigoReferencia",
-            header: <>Referência</>,
+            header: <>Código</>,
             kind: "number",
             value: (item) => item.codigoReferencia,
             cell: (item) => <>{item.codigoReferencia || "—"}</>,

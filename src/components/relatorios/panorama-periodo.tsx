@@ -92,14 +92,14 @@ export function PanoramaPeriodo({
         />
         <MetricaCard
           rotulo="Margem bruta"
-          definicao="Receita dos itens com custo informado menos o custo de aquisição. Itens sem custo não entram no cálculo."
+          definicao="Receita dos itens com custo informado menos o custo de reposição. Itens sem custo não entram no cálculo."
           valor={variacoes.coberturaCustoAtual > 0
             ? formatarPercentual(variacoes.margemBruta.atual, 1)
             : "—"}
           icone={Percent}
           rodape={variacoes.coberturaCustoAtual > 0
             ? `lucro ${formatarMoeda(variacoes.lucroBruto.atual)} · cobertura ${formatarPercentual(variacoes.coberturaCustoAtual, 1)}`
-            : "Custos de aquisição não informados"}
+            : "Custos de reposição não informados"}
         />
         {mostrarClientes ? (
           <MetricaCard

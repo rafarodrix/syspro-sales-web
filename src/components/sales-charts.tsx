@@ -407,7 +407,7 @@ export function GraficoProdutos({ dados, empresaId }: { dados: ProdutoRankeado[]
                     className={`truncate font-semibold ${
                       href ? "group-hover/prod:text-primary transition-colors" : "text-foreground"
                     }`}
-                    title={`${item.id ? `[${item.id}] ` : ""}${item.produto}`}
+                    title={`${item.codigo ? `[${item.codigo}] ` : ""}${item.produto}`}
                   >
                     {item.produto}
                   </span>

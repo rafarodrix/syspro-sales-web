@@ -172,7 +172,7 @@ export function VendasView({
           (n.empresaNome && n.empresaNome.toLowerCase().includes(termo)) ||
           n.itens.some((item) =>
             item.produto_descricao?.toLowerCase().includes(termo) ||
-            item.produto_id?.toLowerCase().includes(termo)
+            item.produto_codigo_auxiliar?.toLowerCase().includes(termo)
           );
         if (!bateu) return false;
       }
@@ -849,8 +849,7 @@ function exportarCsv(vendas: VendaProduto[]) {
     "Grupo fiscal",
     "Modelo",
     "Forma de pagamento",
-    "ID Produto",
-    "Código de referência",
+    "Código",
     "Produto",
     "Departamento",
     "Unidade",
@@ -861,16 +860,14 @@ function exportarCsv(vendas: VendaProduto[]) {
     "Seguro",
     "Outros acréscimos",
     "ICMS-ST",
-    "Custo unitário de aquisição",
-    "Custo total de aquisição",
+    "Custo unitário de reposição",
+    "Custo total de reposição",
     "Lucro bruto",
     "Margem bruta (%)",
-    "Custo unitário de reposição",
     "Total",
   ];
   const linhas = vendas.map((venda) => {
-    const margem = calcularMargemItem(venda, "aquisicao");
-    const reposicao = calcularMargemItem(venda, "reposicao");
+    const margem = calcularMargemItem(venda);
     return [
     (venda as VendaComEmpresa).empresa_nome || "Empresa Principal",
     venda.nf_numero,
@@ -882,7 +879,6 @@ function exportarCsv(vendas: VendaProduto[]) {
     venda.nf_ds_grupo_documento || venda.nf_cd_grupo_documento || "",
     venda.nf_modelo,
     venda.nf_forma_pagto,
-    venda.produto_id,
     venda.produto_codigo_auxiliar || "",
     venda.produto_descricao,
     venda.produto_departamento,
@@ -898,7 +894,6 @@ function exportarCsv(vendas: VendaProduto[]) {
     margem.custoTotal ?? "",
     margem.lucro ?? "",
     margem.margemPercentual ?? "",
-    reposicao.custoUnitario ?? "",
     valorItem(venda),
     ];
   });
@@ -983,8 +978,7 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
       <table className="w-full min-w-[1100px] text-xs">
         <thead className="border-b bg-muted/40 text-left font-bold text-muted-foreground">
           <tr>
-            <th className="p-2.5 font-semibold">ID</th>
-            <th className="p-2.5 font-semibold">Referência</th>
+            <th className="p-2.5 font-semibold">Código</th>
             <th className="p-2.5 font-semibold">Produto</th>
             <th className="p-2.5 font-semibold">Departamento</th>
             <th className="p-2.5 font-semibold">Un.</th>
@@ -992,22 +986,19 @@ function TabelaItens({ itens }: { itens: VendaProduto[] }) {
             <th className="p-2.5 text-right font-semibold">Unitário</th>
             <th className="p-2.5 text-right font-semibold">Desconto</th>
             <th className="p-2.5 text-right font-semibold">Frete</th>
-            <th className="p-2.5 text-right font-semibold">Custo aquisição</th>
+            <th className="p-2.5 text-right font-semibold">Custo reposição</th>
             <th className="p-2.5 text-right font-semibold">Margem bruta</th>
             <th className="p-2.5 text-right font-semibold">Total</th>
           </tr>
         </thead>
         <tbody>
           {itens.map((item, indice) => {
-            const margem = calcularMargemItem(item, "aquisicao");
+            const margem = calcularMargemItem(item);
             return (
             <tr
               key={`${item.produto_id}-${indice}`}
               className="border-b last:border-0 hover:bg-muted/20"
             >
-              <td className="p-2.5 font-mono text-muted-foreground text-[11px]">
-                {item.produto_id || "—"}
-              </td>
               <td className="p-2.5 font-mono text-muted-foreground text-[11px]">
                 {item.produto_codigo_auxiliar || "—"}
               </td>

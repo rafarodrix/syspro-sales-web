@@ -178,7 +178,7 @@ export async function exportarPdfDashboard({
     { label: "TAXA MÉDIA DESCONTO", valor: `${formatarPercentual(resumo.taxaDesconto, 1)} (${formatarMoeda(resumo.descontos)})` },
     { label: "LUCRO BRUTO", valor: resumo.faturamentoComCusto > 0 ? formatarMoeda(resumo.lucroBruto) : "Sem custo" },
     { label: "MARGEM BRUTA", valor: resumo.faturamentoComCusto > 0 ? formatarPercentual(resumo.margemBruta, 1) : "Sem custo" },
-    { label: "MARGEM REPOSIÇÃO", valor: resumo.faturamentoComCustoReposicao > 0 ? formatarPercentual(resumo.margemReposicao, 1) : "Sem custo" },
+    { label: "COBERTURA DE CUSTO", valor: resumo.faturamentoComCusto > 0 ? formatarPercentual(resumo.coberturaCusto, 1) : "Sem custo" },
   ];
 
   const cardWidth = 58;
@@ -215,10 +215,10 @@ export async function exportarPdfDashboard({
 
   autoTable(doc, {
     startY: currentY + 2,
-    head: [["#", "ID", "Descrição do Produto", "Qtd", "Faturamento", "Part. %"]],
+    head: [["#", "Código", "Descrição do Produto", "Qtd", "Faturamento", "Part. %"]],
     body: topProdutos.map((p, idx) => [
       String(idx + 1),
-      p.id,
+      p.codigo || "—",
       p.produto,
       `${formatarNumero(p.quantidade, 2)} ${p.un}`,
       formatarMoeda(p.total),

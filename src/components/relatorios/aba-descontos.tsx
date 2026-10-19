@@ -27,7 +27,7 @@ function dadosDaVisao(relatorio: RelatorioDescontos, visao: VisaoDesconto) {
     return {
       titulo: "Descontos por departamento",
       descricao:
-        "Compara descontos, custo de aquisição e margem entre departamentos e categorias.",
+        "Compara descontos, custo de reposição e margem entre departamentos e categorias.",
       rotulo: "Departamento",
       itens: relatorio.porDepartamento,
     };
@@ -45,7 +45,7 @@ function dadosDaVisao(relatorio: RelatorioDescontos, visao: VisaoDesconto) {
 
   return {
     titulo: "Descontos por vendedor",
-    descricao: "Compara descontos, custo de aquisição e margem entre os vendedores.",
+    descricao: "Compara descontos, custo de reposição e margem entre os vendedores.",
     rotulo: "Vendedor",
     itens: relatorio.porVendedor,
   };
@@ -108,11 +108,11 @@ function TabelaDescontos({
           ),
         },
         {
-          id: "custoAquisicao",
-          header: <>Custo aquisição</>,
+          id: "custoReposicao",
+          header: <>Custo reposição</>,
           kind: "currency",
-          value: (item) => item.custoAquisicao,
-          cell: (item) => <>{formatarMoeda(item.custoAquisicao)}</>,
+          value: (item) => item.custoReposicao,
+          cell: (item) => <>{formatarMoeda(item.custoReposicao)}</>,
         },
         {
           id: "lucroBruto",

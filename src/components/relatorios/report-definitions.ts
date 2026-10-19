@@ -50,7 +50,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     menuLabel: "Descontos & Margem",
     icone: Percent,
     cor: "text-rose-500",
-    desc: "Descontos, custo de aquisição e margem por dimensão comercial",
+    desc: "Descontos, custo de reposição e margem por dimensão comercial",
   },
   {
     id: "sazonalidade",

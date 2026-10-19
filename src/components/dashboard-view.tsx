@@ -564,7 +564,7 @@ export function DashboardView({
               valor={resumo.faturamentoComCusto > 0 ? formatarMoeda(resumo.lucroBruto) : "—"}
               subtitulo={resumo.faturamentoComCusto > 0
                 ? `Margem ${formatarPercentual(resumo.margemBruta, 1)} · cobertura ${formatarPercentual(resumo.coberturaCusto, 1)}`
-                : "Custos de aquisição não informados"}
+                : "Custos de reposição não informados"}
               variacao={variacaoLucroBruto?.texto}
               valorAnterior={resumoAnterior?.faturamentoComCusto
                 ? formatarMoeda(resumoAnterior.lucroBruto)
@@ -580,7 +580,7 @@ export function DashboardView({
 
       {/* Mini-Indicadores de Eficiência Comercial & Operacional */}
       {!loading && vendas.length > 0 && (
-        <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-5">
+        <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Taxa Média Desconto
@@ -591,22 +591,6 @@ export function DashboardView({
               </span>
               <span className="text-[11px] text-muted-foreground font-mono">
                 ({formatarMoeda(resumo.descontos)})
-              </span>
-            </div>
-          </div>
-
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Margem de Reposição
-            </span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-mono text-base font-extrabold text-foreground">
-                {resumo.faturamentoComCustoReposicao > 0
-                  ? formatarPercentual(resumo.margemReposicao, 1)
-                  : "—"}
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                cobertura {formatarPercentual(resumo.coberturaCustoReposicao, 1)}
               </span>
             </div>
           </div>

@@ -9,7 +9,6 @@ export function produtosDasNotas(notas: VendaAgrupada[], porMes: boolean) {
       empresa: string;
       mes: string;
       codigo: string;
-      codigoReferencia: string;
       produto: string;
       unidade: string;
       quantidade: number;
@@ -36,8 +35,7 @@ export function produtosDasNotas(notas: VendaAgrupada[], porMes: boolean) {
         cliente: nota.cliente,
         empresa: nota.empresaNome ?? item.empresa_codigo,
         mes,
-        codigo: item.produto_id,
-        codigoReferencia: item.produto_codigo_auxiliar?.trim() || "",
+        codigo: item.produto_codigo_auxiliar?.trim() || "",
         produto: item.produto_descricao,
         unidade,
         quantidade: 0,

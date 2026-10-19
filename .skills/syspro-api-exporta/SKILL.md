@@ -39,7 +39,7 @@ API REST do Syspro ERP para **consultar dados** (vendas, estoque, produção, t�
 ## Campos — rota produto/kardex (parcial)
 `empresa_codigo`, `empresa_nome`, `produto_id_produto`, `produto_codigo_auxiliar`, `produto_descricao`, `produto_marca`, `kardex_data_movimento`, `kardex_qtde_anterior`, `kardex_qtde_movimento`, `kardex_qtde_saldo`, `kardex_cd_grupo_documento`, `kardex_ds_grupo_documento`, `kardex_operacao`, `kardex_modelo_documento`, `kardex_nro_documento`, `participante_nome`, `produto_vlr_total`.
 
-No relatório de Compras, o vínculo venda↔Kardex prioriza código auxiliar e ID do produto; a descrição normalizada é apenas fallback para compatibilidade.
+No relatório de Compras, o vínculo venda↔Kardex usa exclusivamente o ID do produto (`produto_id` ↔ `produto_id_produto`). O ID não é exibido; o código auxiliar é a referência visual em telas e relatórios. O custo de aquisição representa o custo puro do item e fica reservado a análises de compras/fornecedores. Margens de venda usam sempre o custo de reposição, que inclui impostos, frete e outras despesas.
 
 ## Descobrir a configuração do cliente
 1. `appcmd list sites` (Windows/IIS) mostra o site (ex.: site "Syspro", porta 1234, physicalPath `C:\Syspro\Server` com `SysproServer.exe`/`SysproServerISAPI.dll`).
