@@ -93,7 +93,7 @@ export function AppShell({
     if (pathname.startsWith("/vendas")) return { secao: "Comercial", pagina: "Consulta de Vendas" };
     if (pathname.startsWith("/estoque")) return { secao: "Estoque", pagina: "Movimentações / Kardex" };
     if (pathname.startsWith("/relatorios/compras")) {
-      return { secao: "Relatórios / Compras", pagina: "Relatório de Compras" };
+      return { secao: "Relatórios / Compras", pagina: "Análise de Compras" };
     }
     if (pathname.startsWith("/relatorios")) {
       const relatorio = relatoriosSubLinks.find((r) => r.id === abaAtiva);
@@ -293,7 +293,7 @@ export function AppShell({
                           }`}
                         >
                           <ShoppingBasket className="size-3.5 shrink-0" />
-                          <span className="truncate">Relatório de Compras</span>
+                          <span className="truncate">Análise de Compras</span>
                         </Link>
                       </>
                     ) : null}
@@ -485,7 +485,7 @@ export function AppShell({
                         }`}
                       >
                         <ShoppingBasket className="size-3.5" />
-                        Relatório de Compras
+                        Análise de Compras
                       </Link>
                     </>
                   ) : null}

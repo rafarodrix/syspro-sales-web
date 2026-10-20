@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const autenticacao = await autenticarApi(
       "estoque:visualizar",
-      "Acesso ao relatório de compras restrito a Administrador e Gerência.",
+      "Acesso à análise de compras restrito a Administrador e Gerência.",
     );
     if (!autenticacao.ok) return autenticacao.response;
     const session = autenticacao.value;
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
     console.error("[api/relatorios/compras] Erro ao gerar relatório:", error);
     return NextResponse.json(
-      { error: "Não foi possível gerar o relatório de compras." },
+      { error: "Não foi possível gerar a análise de compras." },
       { status: 502 },
     );
   }

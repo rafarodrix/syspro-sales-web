@@ -1,5 +1,5 @@
 /**
- * Colunas e linhas do relatório de compras no formato usado pela exportação
+ * Colunas e linhas da análise de compras no formato usado pela exportação
  * (CSV compatível com Excel pt-BR: separador ";" e decimal ",").
  *
  * Código e unidade ficam em colunas próprias e os números saem no padrão

@@ -50,7 +50,7 @@ export const relatoriosVendas: ItemNavegacao[] = [
 
 export const itensRelatorios: ItemNavegacao[] = [
   ...relatoriosVendas,
-  { id: "compras", label: "Relatório de Compras", titulo: "Relatório de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "estoque:visualizar" },
+  { id: "compras", label: "Análise de Compras", titulo: "Análise de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "estoque:visualizar" },
 ];
 
 export const itensAdministracao: ItemNavegacao[] = [

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
+import { ActionMetricCard } from "@/components/analytics/action-metric-card";
+import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
@@ -67,75 +69,7 @@ const RELATORIO_VAZIO: RelatorioCompras = {
   },
 };
 
-function ResumoCard({
-  titulo,
-  valor,
-  descricao,
-  onClick,
-  acaoTitulo,
-}: {
-  titulo: string;
-  valor: string;
-  descricao: string;
-  onClick?: () => void;
-  acaoTitulo?: string;
-}) {
-  const clicavel = Boolean(onClick);
-  return (
-    <Card
-      size="sm"
-      onClick={onClick}
-      role={clicavel ? "button" : undefined}
-      tabIndex={clicavel ? 0 : undefined}
-      title={clicavel ? acaoTitulo : undefined}
-      onKeyDown={
-        clicavel
-          ? (evento) => {
-              if (evento.key === "Enter" || evento.key === " ") {
-                evento.preventDefault();
-                onClick?.();
-              }
-            }
-          : undefined
-      }
-      className={
-        clicavel
-          ? "cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          : undefined
-      }
-    >
-      <CardHeader>
-        <CardDescription>{titulo}</CardDescription>
-        <CardTitle className="font-mono text-2xl">{valor}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-xs text-muted-foreground">{descricao}</CardContent>
-    </Card>
-  );
-}
-
 /** Faixa compacta de métricas — evita uma grade de cards para números de contexto. */
-function FaixaLinha({
-  itens,
-}: {
-  itens: Array<{ rotulo: string; valor: string; detalhe?: string }>;
-}) {
-  return (
-    <div className="flex flex-wrap divide-border rounded-lg border bg-card sm:divide-x">
-      {itens.map((item) => (
-        <div key={item.rotulo} className="flex min-w-[9.5rem] flex-1 flex-col gap-0.5 px-3 py-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {item.rotulo}
-          </span>
-          <span className="font-mono text-sm font-semibold text-foreground">{item.valor}</span>
-          {item.detalhe ? (
-            <span className="text-[10px] leading-tight text-muted-foreground">{item.detalhe}</span>
-          ) : null}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function badgeCurva(curva: ClasseCurvaCompras) {
   if (curva === "A") return "default" as const;
   if (curva === "B") return "secondary" as const;
@@ -271,7 +205,7 @@ export function ComprasView({
       ? `${periodoConsultado.inicial}_a_${periodoConsultado.final}`
       : new Date().toISOString().slice(0, 10);
     exportarParaCSV(
-      `relatorio-compras-${empresaNome.replace(/[^\w-]+/g, "-").toLowerCase()}-${periodo}`,
+      `analise-compras-${empresaNome.replace(/[^\w-]+/g, "-").toLowerCase()}-${periodo}`,
       [...COLUNAS_EXPORTACAO_COMPRAS],
       montarLinhasExportacaoCompras(itensFiltrados, alvoDias),
     );
@@ -291,7 +225,7 @@ export function ComprasView({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShoppingBasket aria-hidden="true" />
-            Relatório de Compras
+            Análise de Compras
           </CardTitle>
           <CardDescription>
             Vendas, devoluções de venda EDV e estoque atual por produto em {empresaNome}.
@@ -310,7 +244,7 @@ export function ComprasView({
       {erro ? (
         <FeedbackState
           variant="error"
-          title="Não foi possível gerar o relatório"
+          title="Não foi possível gerar a análise"
           description={erro}
           onRetry={() => consultar()}
         />
@@ -325,7 +259,7 @@ export function ComprasView({
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <ResumoCard
+            <ActionMetricCard
               titulo="Sugestão de compra"
               valor={formatarMoeda(resumoDecisao.custoSugestao)}
               descricao={`${formatarNumero(resumoDecisao.unidadesSugeridas, 0)} un para cobrir ${alvoDias} dias`}
@@ -336,7 +270,7 @@ export function ComprasView({
               }}
               acaoTitulo="Ordenar a tabela pela maior sugestão de compra"
             />
-            <ResumoCard
+            <ActionMetricCard
               titulo="Rupturas"
               valor={formatarNumero(resumoDecisao.rupturas, 0)}
               descricao="Com demanda no período e estoque zerado ou negativo"
@@ -346,7 +280,7 @@ export function ComprasView({
               }}
               acaoTitulo="Filtrar somente produtos em ruptura"
             />
-            <ResumoCard
+            <ActionMetricCard
               titulo="Críticas"
               valor={formatarNumero(resumoDecisao.criticos, 0)}
               descricao={`Cobertura abaixo de ${formatarNumero(alvoDias / 2, 0)} dias`}
@@ -356,7 +290,7 @@ export function ComprasView({
               }}
               acaoTitulo="Filtrar somente produtos com cobertura crítica"
             />
-            <ResumoCard
+            <ActionMetricCard
               titulo="Capital parado"
               valor={formatarMoeda(resumoDecisao.excessoCapital + resumoDecisao.semDemandaCapital)}
               descricao={`${resumoDecisao.excessoProdutos} em excesso + ${resumoDecisao.semDemandaProdutos} sem demanda`}
@@ -380,7 +314,7 @@ export function ComprasView({
               {formatarPercentual(relatorio.resumo.coberturaCusto, 1)} da demanda
             </p>
           </div>
-          <FaixaLinha
+          <MetricsStrip
             itens={[
               {
                 rotulo: "Vendido",
@@ -421,7 +355,7 @@ export function ComprasView({
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1.5">
-              <CardTitle>Produtos para analise de compra</CardTitle>
+              <CardTitle>Produtos para análise de compra</CardTitle>
               <CardDescription>
                 Curva ABC calculada pela demanda líquida. O estoque usa o saldo do movimento mais
                 recente encontrado até hoje.
@@ -596,7 +530,7 @@ export function ComprasView({
                   </TableHeader>
                   <TableBody>
                     {itensDaPagina.map((item) => (
-                      <TableRow key={item.produtoId}>
+                      <TableRow key={item.produtoId ?? `${item.codigo}-${item.produto}`}>
                         <TableCell className="font-mono text-xs">{item.codigo || "—"}</TableCell>
                         <TableCell className="font-medium">{item.produto}</TableCell>
                         <TableCell className="text-center text-xs text-muted-foreground">{item.unidade}</TableCell>
@@ -767,7 +701,7 @@ export function ComprasView({
       <GlossarioRelatorio
         itens={GUIAS_RELATORIOS.compras.glossario ?? []}
         guia={GUIAS_RELATORIOS.compras}
-        relatorioLabel="Relatório de Compras"
+        relatorioLabel="Análise de Compras"
       />
     </div>
   );

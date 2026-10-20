@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface EmpresaOption { id: string; cnpj: string; razaoSocial: string }
 interface RespostaEstoque { movimentos: MovimentoKardexPublico[]; posicoes: PosicaoEstoque[]; resumo: ResumoSaudeEstoque }
+type FiltroSituacao = SituacaoEstoque | "todas" | "baixa_cobertura";
 
 const rotulosSituacao: Record<SituacaoEstoque, string> = {
   ruptura: "Ruptura", critico: "Crítico", atencao: "Atenção", saudavel: "Saudável", excesso: "Excesso", sem_giro: "Sem saída",
@@ -61,7 +62,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const [filtroDirecao, setFiltroDirecao] = useState("todas");
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
   const [filtroGrupo, setFiltroGrupo] = useState("todos");
-  const [filtroSituacao, setFiltroSituacao] = useState("todas");
+  const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
   const [aba, setAba] = useState("visao-geral");
 
   useEffect(() => {
@@ -107,7 +108,15 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   }, [busca, filtroDirecao, filtroCategoria, filtroGrupo, movimentos]);
   const posicoesFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    return posicoes.filter((item) => (!termo || [item.codigo, item.produto, item.marca].some((campo) => campo.toLowerCase().includes(termo))) && (filtroSituacao === "todas" || item.situacao === filtroSituacao));
+    return posicoes.filter((item) => {
+      const textoBate = !termo || [item.codigo, item.produto, item.marca]
+        .some((campo) => campo.toLowerCase().includes(termo));
+      const situacaoBate = filtroSituacao === "todas"
+        || item.situacao === filtroSituacao
+        || (filtroSituacao === "baixa_cobertura"
+          && (item.situacao === "critico" || item.situacao === "atencao"));
+      return textoBate && situacaoBate;
+    });
   }, [busca, filtroSituacao, posicoes]);
   const alertas = useMemo(() => posicoesFiltradas.filter((item) => item.situacao !== "saudavel").slice(0, 20), [posicoesFiltradas]);
   const devolucoes = useMemo(() => movimentosFiltrados.filter((item) => item.classificacao.categoria === "devolucao_venda" || item.classificacao.categoria === "devolucao_compra"), [movimentosFiltrados]);
@@ -128,6 +137,18 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     setBusca(item.codigo === "Sem código" ? item.produto : item.codigo);
     setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); movimentosPaginacao.reiniciar(); setAba("movimentacoes");
   }
+  function abrirPosicaoComSituacao(situacao: FiltroSituacao) {
+    setFiltroSituacao(situacao);
+    posicoesPaginacao.reiniciar();
+    setAba("posicao");
+  }
+  function abrirDevolucoes() {
+    setFiltroDirecao("todas");
+    setFiltroCategoria("todas");
+    setFiltroGrupo("todos");
+    devolucoesPaginacao.reiniciar();
+    setAba("devolucoes");
+  }
   const filtrosAtivos = Boolean(busca) || filtroDirecao !== "todas" || filtroCategoria !== "todas" || filtroGrupo !== "todos" || filtroSituacao !== "todas";
   function limparFiltros() { setBusca(""); setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); setFiltroSituacao("todas"); reiniciarPaginacoes(); }
 
@@ -141,7 +162,13 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       {erro ? <Card className="border-destructive/50 bg-destructive/5"><CardContent className="pt-6 text-sm font-medium text-destructive">{erro}</CardContent></Card> : null}
 
       {resumoSaude ? <>
-        <EstoqueMetricas resumo={resumoSaude} />
+        <EstoqueMetricas
+          resumo={resumoSaude}
+          onRupturas={() => abrirPosicaoComSituacao("ruptura")}
+          onBaixaCobertura={() => abrirPosicaoComSituacao("baixa_cobertura")}
+          onExcesso={() => abrirPosicaoComSituacao("excesso")}
+          onDevolucoes={abrirDevolucoes}
+        />
         {resumoSaude.movimentosSemProdutoId > 0 ? <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300" role="alert"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span>{formatarNumero(resumoSaude.movimentosSemProdutoId)} movimentação(ões) sem ID de produto ficaram fora dos agrupamentos, para evitar vínculos incorretos.</span></div> : null}
         {resumoSaude.saldosNegativos > 0 ? <div className="flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-800 dark:text-rose-300" role="alert"><ShieldAlert className="mt-0.5 size-4 shrink-0" /><span>{formatarNumero(resumoSaude.saldosNegativos)} produto(s) apresentam saldo negativo e precisam de conferência no Kardex.</span></div> : null}
       </> : null}
@@ -150,7 +177,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         <div className="overflow-x-auto pb-1"><TabsList className="min-w-max"><TabsTrigger value="visao-geral">Visão geral</TabsTrigger><TabsTrigger value="posicao">Posição por produto</TabsTrigger><TabsTrigger value="movimentacoes">Movimentações</TabsTrigger><TabsTrigger value="devolucoes">Devoluções</TabsTrigger><TabsTrigger value="transferencias">Transferências</TabsTrigger></TabsList></div>
 
         <DataFilterBar busca={busca} onBuscaChange={(valor) => { setBusca(valor); reiniciarPaginacoes(); }} placeholder="Buscar código, produto, marca, documento ou participante..." temFiltrosAtivos={filtrosAtivos} onLimpar={limparFiltros}>
-          {aba === "visao-geral" || aba === "posicao" ? <div className="w-40 sm:w-44"><Select value={filtroSituacao} onValueChange={(valor) => { setFiltroSituacao(valor); posicoesPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Situação" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as situações</SelectItem>{Object.entries(rotulosSituacao).map(([valor, rotulo]) => <SelectItem key={valor} value={valor}>{rotulo}</SelectItem>)}</SelectContent></Select></div> : <>
+          {aba === "visao-geral" || aba === "posicao" ? <div className="w-40 sm:w-44"><Select value={filtroSituacao} onValueChange={(valor) => { setFiltroSituacao(valor as FiltroSituacao); posicoesPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Situação" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as situações</SelectItem><SelectItem value="baixa_cobertura">Baixa cobertura</SelectItem>{Object.entries(rotulosSituacao).map(([valor, rotulo]) => <SelectItem key={valor} value={valor}>{rotulo}</SelectItem>)}</SelectContent></Select></div> : <>
             <div className="w-40 sm:w-44"><Select value={filtroDirecao} onValueChange={(valor) => { setFiltroDirecao(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Entrada / saída" /></SelectTrigger><SelectContent><SelectItem value="todas">Entradas e saídas</SelectItem><SelectItem value="entrada">Somente entradas</SelectItem><SelectItem value="saida">Somente saídas</SelectItem></SelectContent></Select></div>
             <div className="w-40 sm:w-44"><Select value={filtroCategoria} onValueChange={(valor) => { setFiltroCategoria(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as categorias</SelectItem><SelectItem value="venda">Vendas</SelectItem><SelectItem value="devolucao_venda">Devoluções de venda</SelectItem><SelectItem value="compra">Compras</SelectItem><SelectItem value="devolucao_compra">Devoluções de compra</SelectItem><SelectItem value="transferencia">Transferências</SelectItem><SelectItem value="bonificacao">Bonificações</SelectItem><SelectItem value="outros">Outros movimentos</SelectItem></SelectContent></Select></div>
             <div className="w-40 sm:w-44"><Select value={filtroGrupo} onValueChange={(valor) => { setFiltroGrupo(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Grupo" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os grupos</SelectItem>{gruposDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}</SelectContent></Select></div>
