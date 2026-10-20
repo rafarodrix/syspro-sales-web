@@ -161,6 +161,34 @@ describe("cálculos de vendas", () => {
     expect(calcularCurvaABC(vendas).itens).toHaveLength(1);
   });
 
+  it("classifica produtos por faturamento ou lucro usando custo de reposição", () => {
+    const vendas = [
+      vendaBase({
+        produto_id: "A",
+        produto_descricao: "Maior faturamento",
+        produto_vlr_total_liquido: 100,
+        produto_vlr_custo_reposicao: 90,
+      }),
+      vendaBase({
+        produto_id: "B",
+        produto_descricao: "Maior lucro",
+        produto_vlr_total_liquido: 80,
+        produto_vlr_custo_reposicao: 20,
+      }),
+    ];
+
+    expect(calcularCurvaABC(vendas, "faturamento").itens[0].id).toBe("A");
+    expect(calcularCurvaABC(vendas, "lucro").itens[0]).toMatchObject({
+      id: "B",
+      lucroBruto: 60,
+      margemBruta: 75,
+    });
+    expect(produtosMaisVendidos(vendas, 1, "lucro")[0]).toMatchObject({
+      id: "B",
+      total: 60,
+    });
+  });
+
   it("rejeita datas inexistentes antes de consultar o Syspro", () => {
     expect(periodoConsultaValido("31/02/2026", "01/03/2026")).toBe(false);
     expect(periodoConsultaValido("01/09/2026", "30/09/2026")).toBe(true);
@@ -170,17 +198,17 @@ describe("cálculos de vendas", () => {
 describe("métricas de gestão (comparativo e concentração)", () => {
   it("consolida a evolução por data e por mês de emissão", () => {
     const resultado = analiseEvolucaoVendas([
-      vendaBase({ nf_numero: "1", nf_dt_emissao: "2026-09-02", produto_vlr_total_liquido: 200, produto_vlr_desconto: 20 }),
-      vendaBase({ nf_numero: "2", nf_dt_emissao: "2026-09-01", produto_vlr_total_liquido: 100, produto_vlr_desconto: 10 }),
+      vendaBase({ nf_numero: "1", nf_dt_emissao: "2026-09-02", produto_vlr_total_liquido: 200, produto_vlr_desconto: 20, produto_vlr_custo_reposicao: 50 }),
+      vendaBase({ nf_numero: "2", nf_dt_emissao: "2026-09-01", produto_vlr_total_liquido: 100, produto_vlr_desconto: 10, produto_vlr_custo_reposicao: 40 }),
       vendaBase({ nf_numero: "3", nf_dt_emissao: "inválida", produto_vlr_total_liquido: 300 }),
     ]);
 
     expect(resultado.diario).toEqual([
-      expect.objectContaining({ periodo: "2026-09-01", faturamento: 100, pedidos: 1, descontos: 10 }),
-      expect.objectContaining({ periodo: "2026-09-02", faturamento: 200, pedidos: 1, descontos: 20 }),
+      expect.objectContaining({ periodo: "2026-09-01", faturamento: 100, pedidos: 1, descontos: 10, lucroBruto: 60, margemBruta: 60 }),
+      expect.objectContaining({ periodo: "2026-09-02", faturamento: 200, pedidos: 1, descontos: 20, lucroBruto: 150, margemBruta: 75 }),
     ]);
     expect(resultado.mensal).toEqual([
-      expect.objectContaining({ periodo: "2026-09", faturamento: 300, pedidos: 2, descontos: 30 }),
+      expect.objectContaining({ periodo: "2026-09", faturamento: 300, pedidos: 2, descontos: 30, custoReposicao: 90, lucroBruto: 210, margemBruta: 70, coberturaCusto: 100 }),
     ]);
   });
 
@@ -362,11 +390,13 @@ describe("métricas de gestão (comparativo e concentração)", () => {
         nf_numero: "1",
         nf_dt_emissao: "2026-09-07",
         produto_vlr_total_liquido: 100,
+        produto_vlr_custo_reposicao: 40,
       }),
       vendaBase({
         nf_numero: "2",
         nf_dt_emissao: "2026-09-14",
         produto_vlr_total_liquido: 300,
+        produto_vlr_custo_reposicao: 160,
       }),
       vendaBase({
         nf_numero: "3",
@@ -388,6 +418,12 @@ describe("métricas de gestão (comparativo e concentração)", () => {
 
     expect(segunda?.ocorrencias).toBe(4);
     expect(segunda?.faturamentoMedioPorOcorrencia).toBe(100);
+    expect(segunda).toMatchObject({
+      custoReposicao: 200,
+      lucroBruto: 200,
+      margemBruta: 50,
+      coberturaCusto: 100,
+    });
     expect(terca?.ocorrencias).toBe(5);
     expect(terca?.faturamentoMedioPorOcorrencia).toBe(100);
   });

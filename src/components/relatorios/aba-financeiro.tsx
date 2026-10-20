@@ -8,21 +8,14 @@ import {
 } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
+import type { ItemFinanceiroAnalise } from "@/lib/vendas";
 
 type VisaoFinanceira = "pagamento" | "documento";
 
-interface ItemFinanceiro {
-  nome: string;
-  pedidos: number;
-  ticketMedio: number;
-  total: number;
-  percentual: number;
-}
-
 interface AbaFinanceiroProps {
   relatorioFinanceiro: {
-    formasPagamento: ItemFinanceiro[];
-    modelosDocumento: ItemFinanceiro[];
+    formasPagamento: ItemFinanceiroAnalise[];
+    modelosDocumento: ItemFinanceiroAnalise[];
   };
 }
 
@@ -30,7 +23,7 @@ function TabelaFinanceira({
   itens,
   rotulo,
 }: {
-  itens: ItemFinanceiro[];
+  itens: ItemFinanceiroAnalise[];
   rotulo: string;
 }) {
   return (
@@ -66,6 +59,22 @@ function TabelaFinanceira({
           kind: "currency",
           value: (item) => item.total,
           cell: (item) => <>{formatarMoeda(item.total)}</>,
+        },
+        {
+          id: "lucroBruto",
+          header: <>Lucro bruto</>,
+          kind: "currency",
+          value: (item) => item.lucroBruto,
+          cell: (item) => <>{formatarMoeda(item.lucroBruto)}</>,
+        },
+        {
+          id: "margemBruta",
+          header: <>Margem</>,
+          kind: "percent",
+          value: (item) => item.margemBruta,
+          cell: (item) => item.coberturaCusto > 0
+            ? <>{formatarPercentual(item.margemBruta, 1)}</>
+            : <>—</>,
         },
         {
           id: "percentual",

@@ -44,6 +44,7 @@ import {
   mudancaMixTopProdutos,
   isClienteConsumidorGenerico,
   formatarDataInputParaBR,
+  type MetricaCurvaABC,
 } from "@/lib/vendas";
 import {
   DateRangeFilter,
@@ -318,6 +319,8 @@ export function RelatoriosView({
   const [filtroClasseCli, setFiltroClasseCli] = useState<
     "todas" | "A" | "B" | "C"
   >("todas");
+  const [metricaCurvaABC, setMetricaCurvaABC] =
+    useState<MetricaCurvaABC>("faturamento");
 
   const empresaAtual = useMemo(
     () => empresas.find((e) => e.id === empresaId),
@@ -344,30 +347,31 @@ export function RelatoriosView({
     if (abaAtiva !== "curva-abc") {
       return {
         itens: [],
-        faturamentoTotal: 0,
+        metrica: metricaCurvaABC,
+        valorTotal: 0,
         totalItens: 0,
         resumoA: {
-          faturamento: 0,
+          valor: 0,
           itens: 0,
-          percentualFaturamento: 0,
+          percentualValor: 0,
           percentualItens: 0,
         },
         resumoB: {
-          faturamento: 0,
+          valor: 0,
           itens: 0,
-          percentualFaturamento: 0,
+          percentualValor: 0,
           percentualItens: 0,
         },
         resumoC: {
-          faturamento: 0,
+          valor: 0,
           itens: 0,
-          percentualFaturamento: 0,
+          percentualValor: 0,
           percentualItens: 0,
         },
       };
     }
-    return calcularCurvaABC(vendas);
-  }, [vendas, abaAtiva]);
+    return calcularCurvaABC(vendas, metricaCurvaABC);
+  }, [vendas, abaAtiva, metricaCurvaABC]);
 
   const relatorioDeptos = useMemo(() => {
     if (abaAtiva !== "departamentos") return [];
@@ -432,7 +436,7 @@ export function RelatoriosView({
     () =>
       abaAtiva === "curva-abc"
         ? concentracaoTopN(
-            relatorioABC.itens.map((item) => ({ faturamento: item.total })),
+            relatorioABC.itens.map((item) => ({ faturamento: item.valorClassificacao })),
             20,
           )
         : null,
@@ -497,7 +501,7 @@ export function RelatoriosView({
         const termo = busca.toLowerCase().trim();
         return (
           item.produto.toLowerCase().includes(termo) ||
-          item.id.toLowerCase().includes(termo) ||
+          item.codigoReferencia.toLowerCase().includes(termo) ||
           item.departamento.toLowerCase().includes(termo)
         );
       }
@@ -1214,12 +1218,14 @@ export function RelatoriosView({
                 {abaAtiva === "curva-abc" && (
                   <AbaCurvaABC
                     relatorioABC={relatorioABC}
+                    metrica={metricaCurvaABC}
+                    onMetricaChange={setMetricaCurvaABC}
                     itensFiltrados={itensAbcFiltrados}
                     concentracaoTop10={
                       concentracaoProdutosTop20
                         ? concentracaoTopN(
                             relatorioABC.itens.map((item) => ({
-                              faturamento: item.total,
+                              faturamento: item.valorClassificacao,
                             })),
                             10,
                           )

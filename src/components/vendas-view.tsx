@@ -79,8 +79,9 @@ interface Props {
   initialError?: string;
 }
 
-type CampoOrdenacao = "emissao" | "numero" | "cliente" | "quantidadeItens" | "total";
+type CampoOrdenacao = "emissao" | "numero" | "cliente" | "quantidadeItens" | "total" | "margemBruta";
 type DirecaoOrdenacao = "asc" | "desc";
+type FiltroMargem = "todas" | "negativa" | "baixa" | "saudavel" | "custo-incompleto";
 
 export function VendasView({
   empresas,
@@ -109,6 +110,7 @@ export function VendasView({
   const [filtroDepartamento, setFiltroDepartamento] = useState<string>(() => searchParams.get("departamento") ?? "todos");
   const [filtroFormaPagto, setFiltroFormaPagto] = useState<string>(() => searchParams.get("formaPagamento") ?? "todos");
   const [filtroModelo, setFiltroModelo] = useState<string>("todos");
+  const [filtroMargem, setFiltroMargem] = useState<FiltroMargem>("todas");
 
   // Ordenação
   const [campoOrdenacao, setCampoOrdenacao] = useState<CampoOrdenacao>("emissao");
@@ -200,6 +202,11 @@ export function VendasView({
         return false;
       }
 
+      if (filtroMargem === "custo-incompleto" && n.coberturaCusto >= 100) return false;
+      if (filtroMargem === "negativa" && !(n.coberturaCusto > 0 && n.margemBruta < 0)) return false;
+      if (filtroMargem === "baixa" && !(n.coberturaCusto > 0 && n.margemBruta >= 0 && n.margemBruta < 20)) return false;
+      if (filtroMargem === "saudavel" && !(n.coberturaCusto > 0 && n.margemBruta >= 20)) return false;
+
       return true;
     });
   }, [
@@ -210,6 +217,7 @@ export function VendasView({
     filtroDepartamento,
     filtroFormaPagto,
     filtroModelo,
+    filtroMargem,
   ]);
 
   // Ordenação
@@ -294,6 +302,7 @@ export function VendasView({
     setFiltroDepartamento("todos");
     setFiltroFormaPagto("todos");
     setFiltroModelo("todos");
+    setFiltroMargem("todas");
     setPaginaAtual(1);
   }
 
@@ -346,7 +355,8 @@ export function VendasView({
     filtroVendedor !== "todos" ||
     filtroDepartamento !== "todos" ||
     filtroFormaPagto !== "todos" ||
-    filtroModelo !== "todos";
+    filtroModelo !== "todos" ||
+    filtroMargem !== "todas";
 
   return (
     <div className="flex flex-col gap-6">
@@ -572,6 +582,27 @@ export function VendasView({
                 </div>
               )}
 
+              <div className="w-40 sm:w-44">
+                <Select
+                  value={filtroMargem}
+                  onValueChange={(valor) => {
+                    setFiltroMargem(valor as FiltroMargem);
+                    setPaginaAtual(1);
+                  }}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Margem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as margens</SelectItem>
+                    <SelectItem value="negativa">Margem negativa</SelectItem>
+                    <SelectItem value="baixa">Margem baixa (0% a 20%)</SelectItem>
+                    <SelectItem value="saudavel">Margem saudável (20%+)</SelectItem>
+                    <SelectItem value="custo-incompleto">Custo incompleto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Seletor de Densidade */}
               <div className="flex items-center gap-0.5 rounded-lg border bg-muted/20 p-0.5 ml-auto">
                 <Button
@@ -742,7 +773,19 @@ export function VendasView({
                           />
                         </div>
                       </TableHead>
-                      <TableHead className="text-right">Margem</TableHead>
+                      <TableHead
+                        onClick={() => alternarOrdenacao("margemBruta")}
+                        className="cursor-pointer select-none text-right hover:text-foreground"
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Margem</span>
+                          <IconeOrdenacao
+                            campo="margemBruta"
+                            campoAtual={campoOrdenacao}
+                            direcao={direcaoOrdenacao}
+                          />
+                        </div>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

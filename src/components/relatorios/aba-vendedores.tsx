@@ -140,6 +140,29 @@ export function AbaVendedores({
                 cell: (vendedor) => <>{formatarMoeda(vendedor.faturamento)}</>,
               },
               {
+                id: "lucroBruto",
+                header: <>Lucro bruto</>,
+                kind: "currency",
+                value: (vendedor) => vendedor.lucroBruto,
+                cell: (vendedor) => <>{formatarMoeda(vendedor.lucroBruto)}</>,
+              },
+              {
+                id: "margemBruta",
+                header: <>Margem</>,
+                kind: "percent",
+                value: (vendedor) => vendedor.margemBruta,
+                cell: (vendedor) => vendedor.coberturaCusto > 0
+                  ? <>{formatarPercentual(vendedor.margemBruta, 1)}</>
+                  : <>—</>,
+              },
+              {
+                id: "coberturaCusto",
+                header: <>Cobertura custo</>,
+                kind: "percent",
+                value: (vendedor) => vendedor.coberturaCusto,
+                cell: (vendedor) => <>{formatarPercentual(vendedor.coberturaCusto, 1)}</>,
+              },
+              {
                 id: "percentual",
                 header: <>% Participação</>,
                 kind: "percent",

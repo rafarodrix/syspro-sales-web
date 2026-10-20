@@ -260,6 +260,29 @@ export function AbaClientes({
                 cell: (cli) => <strong>{formatarMoeda(cli.faturamento)}</strong>,
               },
               {
+                id: "lucroBruto",
+                header: "Lucro bruto",
+                kind: "currency",
+                value: (cli) => cli.lucroBruto,
+                cell: (cli) => <>{formatarMoeda(cli.lucroBruto)}</>,
+              },
+              {
+                id: "margemBruta",
+                header: "Margem",
+                kind: "percent",
+                value: (cli) => cli.margemBruta,
+                cell: (cli) => cli.coberturaCusto > 0
+                  ? <>{formatarPercentual(cli.margemBruta, 1)}</>
+                  : <>—</>,
+              },
+              {
+                id: "coberturaCusto",
+                header: "Cobertura custo",
+                kind: "percent",
+                value: (cli) => cli.coberturaCusto,
+                cell: (cli) => <>{formatarPercentual(cli.coberturaCusto, 1)}</>,
+              },
+              {
                 id: "percentual",
                 header: "% Fat.",
                 kind: "percent",

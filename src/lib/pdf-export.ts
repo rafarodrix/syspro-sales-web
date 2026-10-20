@@ -156,11 +156,13 @@ export async function exportarPdfDashboard({
   contexto,
   resumo,
   topProdutos,
+  metricaProdutos = "faturamento",
   modo = "download",
 }: {
   contexto: ContextoRelatorio;
   resumo: ResumoVendas;
   topProdutos: ProdutoRankeado[];
+  metricaProdutos?: "faturamento" | "lucro";
   modo?: "download" | "imprimir";
 }) {
   const { jsPDF, autoTable } = await carregarPdfLibs();
@@ -211,11 +213,12 @@ export async function exportarPdfDashboard({
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(...CORES.dark);
-  doc.text("Top Produtos por Faturamento", 14, currentY);
+  const rotuloMetricaProdutos = metricaProdutos === "lucro" ? "Lucro Bruto" : "Faturamento";
+  doc.text(`Top Produtos por ${rotuloMetricaProdutos}`, 14, currentY);
 
   autoTable(doc, {
     startY: currentY + 2,
-    head: [["#", "Código", "Descrição do Produto", "Qtd", "Faturamento", "Part. %"]],
+    head: [["#", "Código", "Descrição do Produto", "Qtd", rotuloMetricaProdutos, "Part. %"]],
     body: topProdutos.map((p, idx) => [
       String(idx + 1),
       p.codigo || "—",

@@ -11,9 +11,11 @@ export interface ReportChartPoint {
 export function ReportChart({
   points,
   temporal = false,
+  rotulo = "Faturamento",
 }: {
   points: ReportChartPoint[];
   temporal?: boolean;
+  rotulo?: string;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   if (!points.length) return null;
@@ -27,10 +29,10 @@ export function ReportChart({
   return (
     <figure
       className="min-w-0 rounded-md border p-4"
-      aria-label="Gráfico de faturamento"
+      aria-label={`Gráfico de ${rotulo.toLowerCase()}`}
     >
       <figcaption className="mb-3 flex flex-wrap justify-between gap-2 text-xs">
-        <strong>Faturamento</strong>
+        <strong>{rotulo}</strong>
         <span aria-live="polite">
           {active.label}: {formatarMoeda(active.value)}
         </span>
@@ -41,7 +43,7 @@ export function ReportChart({
             viewBox="0 0 900 245"
             className="h-64 w-full"
             role="group"
-            aria-label="Evolução do faturamento; detalhes na tabela abaixo"
+            aria-label={`Evolução de ${rotulo.toLowerCase()}; detalhes na tabela abaixo`}
           >
             {[min, (min + max) / 2, max].map((value) => (
               <g key={value}>
@@ -96,7 +98,7 @@ export function ReportChart({
                 }}
               >
                 <title>
-                  {point.label}: {formatarMoeda(point.value)}
+                  {`${point.label}: ${formatarMoeda(point.value)}`}
                 </title>
               </circle>
             ))}

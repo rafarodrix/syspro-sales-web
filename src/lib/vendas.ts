@@ -15,6 +15,14 @@ import {
 export { calcularVariacao, paraNumero } from "@/lib/metricas-negocio";
 export type { VariacaoMetrica } from "@/lib/metricas-negocio";
 
+export interface IndicadoresRentabilidade {
+  custoReposicao: number;
+  lucroBruto: number;
+  margemBruta: number;
+  faturamentoComCusto: number;
+  coberturaCusto: number;
+}
+
 export interface VendaAgrupada {
   id: string;
   numero: string;
@@ -45,13 +53,14 @@ export interface PontoFaturamento {
   totalAnterior?: number;
 }
 
-export interface ProdutoRankeado {
+export interface ProdutoRankeado extends IndicadoresRentabilidade {
   id: string;
   codigo: string;
   produto: string;
   departamento?: string;
   un: string;
   quantidade: number;
+  faturamento: number;
   total: number;
   percentual: number;
 }
@@ -103,7 +112,9 @@ export interface DestaquesPeriodo {
 // Tipos para Relatórios Avançados
 // ==========================================
 
-export interface ItemCurvaABC {
+export type MetricaCurvaABC = "faturamento" | "lucro" | "quantidade" | "custo";
+
+export interface ItemCurvaABC extends IndicadoresRentabilidade {
   id: string;
   codigoReferencia: string;
   produto: string;
@@ -114,19 +125,21 @@ export interface ItemCurvaABC {
   precoMedio: number;
   percentual: number;
   percentualAcumulado: number;
+  valorClassificacao: number;
   classe: "A" | "B" | "C";
 }
 
 export interface RelatorioCurvaABC {
   itens: ItemCurvaABC[];
-  faturamentoTotal: number;
+  metrica: MetricaCurvaABC;
+  valorTotal: number;
   totalItens: number;
-  resumoA: { faturamento: number; itens: number; percentualFaturamento: number; percentualItens: number };
-  resumoB: { faturamento: number; itens: number; percentualFaturamento: number; percentualItens: number };
-  resumoC: { faturamento: number; itens: number; percentualFaturamento: number; percentualItens: number };
+  resumoA: { valor: number; itens: number; percentualValor: number; percentualItens: number };
+  resumoB: { valor: number; itens: number; percentualValor: number; percentualItens: number };
+  resumoC: { valor: number; itens: number; percentualValor: number; percentualItens: number };
 }
 
-export interface ItemDepartamentoAnalise {
+export interface ItemDepartamentoAnalise extends IndicadoresRentabilidade {
   nome: string;
   faturamento: number;
   percentual: number;
@@ -143,10 +156,15 @@ export interface ItemDepartamentoAnalise {
     total: number;
     precoMedio: number;
     percentual: number;
+    custoReposicao: number;
+    lucroBruto: number;
+    margemBruta: number;
+    faturamentoComCusto: number;
+    coberturaCusto: number;
   }[];
 }
 
-export interface ItemVendedorAnalise {
+export interface ItemVendedorAnalise extends IndicadoresRentabilidade {
   nome: string;
   faturamento: number;
   percentual: number;
@@ -160,7 +178,7 @@ export interface ItemVendedorAnalise {
   principalProduto?: string;
 }
 
-export interface ItemClienteAnalise {
+export interface ItemClienteAnalise extends IndicadoresRentabilidade {
   nome: string;
   cidade: string;
   uf: string;
@@ -197,7 +215,7 @@ export interface RelatorioDescontos {
   porFormaPagamento: ItemDescontoAnalise[];
 }
 
-export interface ItemDiaSemanaAnalise {
+export interface ItemDiaSemanaAnalise extends IndicadoresRentabilidade {
   dia: string;
   indice: number;
   faturamento: number;
@@ -211,16 +229,16 @@ export interface ItemDiaSemanaAnalise {
 
 export interface RelatorioSazonalidade {
   porDiaSemana: ItemDiaSemanaAnalise[];
-  porQuinzena: {
+  porQuinzena: (IndicadoresRentabilidade & {
     quinzena: string;
     faturamento: number;
     pedidos: number;
     ticketMedio: number;
     percentual: number;
-  }[];
+  })[];
 }
 
-export interface ItemEvolucaoVendas {
+export interface ItemEvolucaoVendas extends IndicadoresRentabilidade {
   periodo: string;
   faturamento: number;
   pedidos: number;
@@ -234,7 +252,7 @@ export interface RelatorioEvolucaoVendas {
   mensal: ItemEvolucaoVendas[];
 }
 
-export interface ItemProdutoPorDimensao {
+export interface ItemProdutoPorDimensao extends IndicadoresRentabilidade {
   dimensao: string;
   produtoId: string;
   codigoReferencia: string;
@@ -248,7 +266,7 @@ export interface ItemProdutoPorDimensao {
 }
 
 /** Resultado comparável de cada empresa dentro de uma consulta consolidada. */
-export interface ItemEmpresaAnalise {
+export interface ItemEmpresaAnalise extends IndicadoresRentabilidade {
   id: string;
   nome: string;
   cnpj?: string;
@@ -261,7 +279,7 @@ export interface ItemEmpresaAnalise {
   percentual: number;
 }
 
-export interface ItemGeograficoAnalise {
+export interface ItemGeograficoAnalise extends IndicadoresRentabilidade {
   cidade: string;
   uf: string;
   faturamento: number;
@@ -272,7 +290,7 @@ export interface ItemGeograficoAnalise {
   ticketMedio: number;
 }
 
-export interface ItemFinanceiroAnalise {
+export interface ItemFinanceiroAnalise extends IndicadoresRentabilidade {
   nome: string;
   total: number;
   percentual: number;
@@ -286,36 +304,52 @@ export function valorItem(venda: VendaProduto): number {
   return valorLiquidoItem(venda);
 }
 
-export interface ResumoMargens {
-  custoReposicao: number;
-  lucroBruto: number;
-  margemBruta: number;
+export type ResumoMargens = IndicadoresRentabilidade;
+
+interface AcumuladorRentabilidade {
+  faturamento: number;
   faturamentoComCusto: number;
-  coberturaCusto: number;
+  custoReposicao: number;
+}
+
+function novoAcumuladorRentabilidade(): AcumuladorRentabilidade {
+  return { faturamento: 0, faturamentoComCusto: 0, custoReposicao: 0 };
+}
+
+function acumularRentabilidade(
+  acumulador: AcumuladorRentabilidade,
+  venda: VendaProduto,
+): void {
+  const margem = calcularMargemItem(venda);
+  acumulador.faturamento += margem.receita;
+  if (margem.custoTotal !== null) {
+    acumulador.faturamentoComCusto += margem.receita;
+    acumulador.custoReposicao += margem.custoTotal;
+  }
+}
+
+function finalizarRentabilidade(
+  acumulador: AcumuladorRentabilidade,
+): IndicadoresRentabilidade {
+  const lucroBruto = acumulador.faturamentoComCusto - acumulador.custoReposicao;
+  return {
+    custoReposicao: acumulador.custoReposicao,
+    lucroBruto,
+    margemBruta: calcularPercentual(lucroBruto, acumulador.faturamentoComCusto),
+    faturamentoComCusto: acumulador.faturamentoComCusto,
+    coberturaCusto: calcularPercentual(
+      acumulador.faturamentoComCusto,
+      acumulador.faturamento,
+    ),
+  };
 }
 
 export function resumirMargens(vendas: VendaProduto[]): ResumoMargens {
-  let faturamento = 0;
-  let faturamentoComCusto = 0;
-  let custoReposicao = 0;
-
+  const acumulador = novoAcumuladorRentabilidade();
   for (const venda of vendas) {
-    const margem = calcularMargemItem(venda);
-    faturamento += margem.receita;
-    if (margem.custoTotal !== null) {
-      faturamentoComCusto += margem.receita;
-      custoReposicao += margem.custoTotal;
-    }
+    acumularRentabilidade(acumulador, venda);
   }
-
-  const lucroBruto = faturamentoComCusto - custoReposicao;
-  return {
-    custoReposicao,
-    lucroBruto,
-    margemBruta: calcularPercentual(lucroBruto, faturamentoComCusto),
-    faturamentoComCusto,
-    coberturaCusto: calcularPercentual(faturamentoComCusto, faturamento),
-  };
+  return finalizarRentabilidade(acumulador);
 }
 
 export function chaveDaNota(venda: VendaProduto | VendaComEmpresa): string {
@@ -509,13 +543,21 @@ export function resumoVendas(vendas: VendaProduto[]): ResumoVendas {
 export function produtosMaisVendidos(
   vendas: VendaProduto[],
   limite = 6,
+  metrica: "faturamento" | "lucro" = "faturamento",
 ): ProdutoRankeado[] {
   const produtosMap = new Map<
     string,
-    { id: string; codigo: string; produto: string; total: number; quantidade: number; departamento?: string; un: string }
+    {
+      id: string;
+      codigo: string;
+      produto: string;
+      faturamento: number;
+      quantidade: number;
+      departamento?: string;
+      un: string;
+      rentabilidade: AcumuladorRentabilidade;
+    }
   >();
-
-  let faturamentoTotal = 0;
 
   for (const venda of vendas) {
     const id = normalizarCodigoProduto(venda.produto_id);
@@ -523,30 +565,45 @@ export function produtosMaisVendidos(
     const chave = id;
     const total = valorItem(venda);
     const qtd = paraNumero(venda.produto_qtde);
-    faturamentoTotal += total;
 
     const atual = produtosMap.get(chave);
     if (atual) {
-      atual.total += total;
+      atual.faturamento += total;
       atual.quantidade += qtd;
+      acumularRentabilidade(atual.rentabilidade, venda);
     } else {
+      const rentabilidade = novoAcumuladorRentabilidade();
+      acumularRentabilidade(rentabilidade, venda);
       produtosMap.set(chave, {
         id,
         codigo: venda.produto_codigo_auxiliar?.trim() || "",
         produto: nome,
-        total,
+        faturamento: total,
         quantidade: qtd,
         departamento: venda.produto_departamento?.trim(),
         un: venda.produto_un?.trim() || "UN",
+        rentabilidade,
       });
     }
   }
 
-  return [...produtosMap.values()]
-    .map((p) => ({
-      ...p,
-      percentual: calcularPercentual(p.total, faturamentoTotal),
-    }))
+  const consolidados = [...produtosMap.values()].map(({ rentabilidade, ...p }) => ({
+    ...p,
+    ...finalizarRentabilidade(rentabilidade),
+  }));
+  const totalMetrica = consolidados.reduce(
+    (total, item) => total + Math.max(0, metrica === "lucro" ? item.lucroBruto : item.faturamento),
+    0,
+  );
+  return consolidados
+    .map((p) => {
+      const total = metrica === "lucro" ? p.lucroBruto : p.faturamento;
+      return {
+        ...p,
+        total,
+        percentual: calcularPercentual(Math.max(0, total), totalMetrica),
+      };
+    })
     .sort((a, b) => b.total - a.total)
     .slice(0, limite);
 }
@@ -555,7 +612,10 @@ export function produtosMaisVendidos(
 // Funções Analíticas Especializadas
 // ==========================================
 
-export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
+export function calcularCurvaABC(
+  vendas: VendaProduto[],
+  metrica: MetricaCurvaABC = "faturamento",
+): RelatorioCurvaABC {
   const produtosMap = new Map<
     string,
     {
@@ -566,10 +626,9 @@ export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
       un: string;
       quantidade: number;
       total: number;
+      rentabilidade: AcumuladorRentabilidade;
     }
   >();
-
-  let faturamentoTotal = 0;
 
   for (const venda of vendas) {
     const id = normalizarCodigoProduto(venda.produto_id);
@@ -578,13 +637,14 @@ export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
     const total = valorItem(venda);
     const qtd = paraNumero(venda.produto_qtde);
 
-    faturamentoTotal += total;
-
     const atual = produtosMap.get(chave);
     if (atual) {
       atual.total += total;
       atual.quantidade += qtd;
+      acumularRentabilidade(atual.rentabilidade, venda);
     } else {
+      const rentabilidade = novoAcumuladorRentabilidade();
+      acumularRentabilidade(rentabilidade, venda);
       produtosMap.set(chave, {
         id,
         codigoReferencia: venda.produto_codigo_auxiliar?.trim() || "",
@@ -593,34 +653,56 @@ export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
         un: venda.produto_un?.trim() || "UN",
         quantidade: qtd,
         total,
+        rentabilidade,
       });
     }
   }
 
-  const produtosOrdenados = [...produtosMap.values()].sort((a, b) => b.total - a.total);
+  const valorDaMetrica = (
+    item: { total: number; quantidade: number } & IndicadoresRentabilidade,
+  ) => {
+    if (metrica === "lucro") return Math.max(0, item.lucroBruto);
+    if (metrica === "quantidade") return Math.max(0, item.quantidade);
+    if (metrica === "custo") return Math.max(0, item.custoReposicao);
+    return Math.max(0, item.total);
+  };
+  const produtosOrdenados = [...produtosMap.values()]
+    .map(({ rentabilidade, ...produto }) => {
+      const indicadores = finalizarRentabilidade(rentabilidade);
+      return {
+        ...produto,
+        ...indicadores,
+        valorClassificacao: valorDaMetrica({ ...produto, ...indicadores }),
+      };
+    })
+    .sort((a, b) => b.valorClassificacao - a.valorClassificacao);
+  const valorTotal = produtosOrdenados.reduce(
+    (total, produto) => total + produto.valorClassificacao,
+    0,
+  );
 
   let acumulado = 0;
-  let fatA = 0, itensA = 0;
-  let fatB = 0, itensB = 0;
-  let fatC = 0, itensC = 0;
+  let valorA = 0, itensA = 0;
+  let valorB = 0, itensB = 0;
+  let valorC = 0, itensC = 0;
 
   const itensABC: ItemCurvaABC[] = produtosOrdenados.map((p) => {
-    acumulado += p.total;
-    const percentual = faturamentoTotal > 0 ? (p.total / faturamentoTotal) * 100 : 0;
-    const percentualAcumulado = faturamentoTotal > 0 ? (acumulado / faturamentoTotal) * 100 : 0;
+    acumulado += p.valorClassificacao;
+    const percentual = calcularPercentual(p.valorClassificacao, valorTotal);
+    const percentualAcumulado = calcularPercentual(acumulado, valorTotal);
 
-    const percentualAnterior = faturamentoTotal > 0
-      ? ((acumulado - p.total) / faturamentoTotal) * 100
+    const percentualAnterior = valorTotal > 0
+      ? ((acumulado - p.valorClassificacao) / valorTotal) * 100
       : 100;
     const classe = classificarCurvaABC(percentualAnterior);
     if (classe === "A") {
-      fatA += p.total;
+      valorA += p.valorClassificacao;
       itensA += 1;
     } else if (classe === "B") {
-      fatB += p.total;
+      valorB += p.valorClassificacao;
       itensB += 1;
     } else {
-      fatC += p.total;
+      valorC += p.valorClassificacao;
       itensC += 1;
     }
 
@@ -639,25 +721,26 @@ export function calcularCurvaABC(vendas: VendaProduto[]): RelatorioCurvaABC {
 
   return {
     itens: itensABC,
-    faturamentoTotal,
+    metrica,
+    valorTotal,
     totalItens: itensABC.length,
     resumoA: {
-      faturamento: fatA,
+      valor: valorA,
       itens: itensA,
-      percentualFaturamento: faturamentoTotal > 0 ? (fatA / faturamentoTotal) * 100 : 0,
-      percentualItens: (itensA / totalItens) * 100,
+      percentualValor: calcularPercentual(valorA, valorTotal),
+      percentualItens: calcularPercentual(itensA, totalItens),
     },
     resumoB: {
-      faturamento: fatB,
+      valor: valorB,
       itens: itensB,
-      percentualFaturamento: faturamentoTotal > 0 ? (fatB / faturamentoTotal) * 100 : 0,
-      percentualItens: (itensB / totalItens) * 100,
+      percentualValor: calcularPercentual(valorB, valorTotal),
+      percentualItens: calcularPercentual(itensB, totalItens),
     },
     resumoC: {
-      faturamento: fatC,
+      valor: valorC,
       itens: itensC,
-      percentualFaturamento: faturamentoTotal > 0 ? (fatC / faturamentoTotal) * 100 : 0,
-      percentualItens: (itensC / totalItens) * 100,
+      percentualValor: calcularPercentual(valorC, valorTotal),
+      percentualItens: calcularPercentual(itensC, totalItens),
     },
   };
 }
@@ -670,7 +753,16 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
       faturamento: number;
       quantidadeItens: number;
       notas: Set<string>;
-      produtosMap: Map<string, { id: string; codigoReferencia: string; produto: string; un: string; quantidade: number; total: number }>;
+      rentabilidade: AcumuladorRentabilidade;
+      produtosMap: Map<string, {
+        id: string;
+        codigoReferencia: string;
+        produto: string;
+        un: string;
+        quantidade: number;
+        total: number;
+        rentabilidade: AcumuladorRentabilidade;
+      }>;
     }
   >();
 
@@ -693,6 +785,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
         faturamento: 0,
         quantidadeItens: 0,
         notas: new Set(),
+        rentabilidade: novoAcumuladorRentabilidade(),
         produtosMap: new Map(),
       };
       deptosMap.set(nomeDepto, depto);
@@ -701,12 +794,16 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
     depto.faturamento += total;
     depto.quantidadeItens += qtd;
     depto.notas.add(chaveDaNota(venda));
+    acumularRentabilidade(depto.rentabilidade, venda);
 
     const prodAtual = depto.produtosMap.get(chaveProd);
     if (prodAtual) {
       prodAtual.total += total;
       prodAtual.quantidade += qtd;
+      acumularRentabilidade(prodAtual.rentabilidade, venda);
     } else {
+      const rentabilidade = novoAcumuladorRentabilidade();
+      acumularRentabilidade(rentabilidade, venda);
       depto.produtosMap.set(chaveProd, {
         id: idProd,
         codigoReferencia: venda.produto_codigo_auxiliar?.trim() || "",
@@ -714,6 +811,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
         un: venda.produto_un?.trim() || "UN",
         quantidade: qtd,
         total,
+        rentabilidade,
       });
     }
   }
@@ -721,8 +819,9 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
   return [...deptosMap.values()]
     .map((d) => {
       const produtos = [...d.produtosMap.values()]
-        .map((p) => ({
+        .map(({ rentabilidade, ...p }) => ({
           ...p,
+          ...finalizarRentabilidade(rentabilidade),
           precoMedio: p.quantidade > 0 ? p.total / p.quantidade : 0,
           percentual: d.faturamento > 0 ? (p.total / d.faturamento) * 100 : 0,
         }))
@@ -736,6 +835,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
         quantidadeProdutosDistintos: produtos.length,
         pedidos: d.notas.size,
         ticketMedio: d.notas.size > 0 ? d.faturamento / d.notas.size : 0,
+        ...finalizarRentabilidade(d.rentabilidade),
         produtos,
       };
     })
@@ -754,6 +854,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
       notas: Set<string>;
       clientes: Set<string>;
       produtosMap: Map<string, number>;
+      rentabilidade: AcumuladorRentabilidade;
     }
   >();
 
@@ -782,6 +883,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
         notas: new Set(),
         clientes: new Set(),
         produtosMap: new Map(),
+        rentabilidade: novoAcumuladorRentabilidade(),
       };
       vendedoresMap.set(nomeVend, vend);
     }
@@ -791,6 +893,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
     vend.desconto += desc;
     vend.quantidadeItens += qtd;
     vend.notas.add(chaveNota);
+    acumularRentabilidade(vend.rentabilidade, venda);
     if (cliente && !isClienteConsumidorGenerico(cliente)) {
       vend.clientes.add(cliente);
     }
@@ -815,6 +918,7 @@ export function analiseVendedores(vendas: VendaProduto[]): ItemVendedorAnalise[]
         descontoConcedido: v.desconto,
         taxaDesconto,
         principalProduto: topProd ? topProd[0] : undefined,
+        ...finalizarRentabilidade(v.rentabilidade),
       };
     })
     .sort((a, b) => b.faturamento - a.faturamento);
@@ -832,6 +936,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
       quantidadeItens: number;
       notas: Set<string>;
       produtos: Set<string>;
+      rentabilidade: AcumuladorRentabilidade;
     }
   >();
 
@@ -857,6 +962,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
         quantidadeItens: 0,
         notas: new Set(),
         produtos: new Set(),
+        rentabilidade: novoAcumuladorRentabilidade(),
       };
       clientesMap.set(nome, cli);
     }
@@ -865,6 +971,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
     cli.descontos += desc;
     cli.quantidadeItens += qtd;
     cli.notas.add(chaveNota);
+    acumularRentabilidade(cli.rentabilidade, venda);
     cli.produtos.add(
       `${String(venda.produto_id ?? "").trim()}|${venda.produto_descricao?.trim() ?? ""}`,
     );
@@ -894,6 +1001,7 @@ export function analiseClientes(vendas: VendaProduto[]): RelatorioClientes {
       percentual,
       percentualAcumulado,
       classe,
+      ...finalizarRentabilidade(c.rentabilidade),
     };
   });
 
@@ -910,8 +1018,12 @@ export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): Ite
     string,
     Omit<
       ItemEmpresaAnalise,
-      "pedidos" | "ticketMedio" | "percentual" | "produtosDistintos"
-    > & { notas: Set<string>; produtos: Set<string> }
+      "pedidos" | "ticketMedio" | "percentual" | "produtosDistintos" | keyof IndicadoresRentabilidade
+    > & {
+      notas: Set<string>;
+      produtos: Set<string>;
+      rentabilidade: AcumuladorRentabilidade;
+    }
   >();
 
   for (const venda of vendas) {
@@ -926,12 +1038,14 @@ export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): Ite
       descontos: 0,
       notas: new Set<string>(),
       produtos: new Set<string>(),
+      rentabilidade: novoAcumuladorRentabilidade(),
     };
 
     atual.faturamento += valorItem(venda);
     atual.quantidadeItens += paraNumero(venda.produto_qtde);
     atual.descontos += paraNumero(venda.produto_vlr_desconto);
     atual.notas.add(chaveDaNota(venda));
+    acumularRentabilidade(atual.rentabilidade, venda);
     atual.produtos.add(
       `${String(venda.produto_id ?? "").trim()}|${venda.produto_descricao?.trim() ?? ""}`,
     );
@@ -940,8 +1054,9 @@ export function analiseEmpresas(vendas: (VendaProduto | VendaComEmpresa)[]): Ite
 
   const faturamentoTotal = [...empresas.values()].reduce((total, empresa) => total + empresa.faturamento, 0);
   return [...empresas.values()]
-    .map(({ notas, produtos, ...empresa }) => ({
+    .map(({ notas, produtos, rentabilidade, ...empresa }) => ({
       ...empresa,
+      ...finalizarRentabilidade(rentabilidade),
       pedidos: notas.size,
       produtosDistintos: produtos.size,
       ticketMedio: notas.size > 0 ? empresa.faturamento / notas.size : 0,
@@ -1133,10 +1248,20 @@ export function analiseSazonalidade(
 
   const diasSemanaMap = new Map<
     number,
-    { faturamento: number; notas: Set<string>; ocorrencias: number }
+    {
+      faturamento: number;
+      notas: Set<string>;
+      ocorrencias: number;
+      rentabilidade: AcumuladorRentabilidade;
+    }
   >();
   for (let i = 0; i < 7; i++) {
-    diasSemanaMap.set(i, { faturamento: 0, notas: new Set(), ocorrencias: 0 });
+    diasSemanaMap.set(i, {
+      faturamento: 0,
+      notas: new Set(),
+      ocorrencias: 0,
+      rentabilidade: novoAcumuladorRentabilidade(),
+    });
   }
 
   if (periodo) {
@@ -1149,8 +1274,16 @@ export function analiseSazonalidade(
     }
   }
 
-  const quinzena1 = { faturamento: 0, notas: new Set<string>() };
-  const quinzena2 = { faturamento: 0, notas: new Set<string>() };
+  const quinzena1 = {
+    faturamento: 0,
+    notas: new Set<string>(),
+    rentabilidade: novoAcumuladorRentabilidade(),
+  };
+  const quinzena2 = {
+    faturamento: 0,
+    notas: new Set<string>(),
+    rentabilidade: novoAcumuladorRentabilidade(),
+  };
 
   let faturamentoTotal = 0;
 
@@ -1166,14 +1299,17 @@ export function analiseSazonalidade(
       if (diaData) {
         diaData.faturamento += total;
         diaData.notas.add(chaveNota);
+        acumularRentabilidade(diaData.rentabilidade, venda);
       }
 
       if (infoData.dia <= 15) {
         quinzena1.faturamento += total;
         quinzena1.notas.add(chaveNota);
+        acumularRentabilidade(quinzena1.rentabilidade, venda);
       } else {
         quinzena2.faturamento += total;
         quinzena2.notas.add(chaveNota);
+        acumularRentabilidade(quinzena2.rentabilidade, venda);
       }
     }
   }
@@ -1193,6 +1329,7 @@ export function analiseSazonalidade(
       ocorrencias,
       faturamentoMedioPorOcorrencia: d.faturamento / ocorrencias,
       pedidosMediosPorOcorrencia: pedidos / ocorrencias,
+      ...finalizarRentabilidade(d.rentabilidade),
     };
   });
 
@@ -1203,6 +1340,7 @@ export function analiseSazonalidade(
       pedidos: quinzena1.notas.size,
       ticketMedio: quinzena1.notas.size > 0 ? quinzena1.faturamento / quinzena1.notas.size : 0,
       percentual: faturamentoTotal > 0 ? (quinzena1.faturamento / faturamentoTotal) * 100 : 0,
+      ...finalizarRentabilidade(quinzena1.rentabilidade),
     },
     {
       quinzena: "2ª Quinzena (Dias 16 em diante)",
@@ -1210,6 +1348,7 @@ export function analiseSazonalidade(
       pedidos: quinzena2.notas.size,
       ticketMedio: quinzena2.notas.size > 0 ? quinzena2.faturamento / quinzena2.notas.size : 0,
       percentual: faturamentoTotal > 0 ? (quinzena2.faturamento / faturamentoTotal) * 100 : 0,
+      ...finalizarRentabilidade(quinzena2.rentabilidade),
     },
   ];
 
@@ -1221,8 +1360,14 @@ export function analiseSazonalidade(
 
 /** Agrega a evolução cronológica usando exclusivamente a data de emissão da NF. */
 export function analiseEvolucaoVendas(vendas: VendaProduto[]): RelatorioEvolucaoVendas {
-  const diario = new Map<string, { faturamento: number; descontos: number; notas: Set<string> }>();
-  const mensal = new Map<string, { faturamento: number; descontos: number; notas: Set<string> }>();
+  type AcumuladorEvolucao = {
+    faturamento: number;
+    descontos: number;
+    notas: Set<string>;
+    rentabilidade: AcumuladorRentabilidade;
+  };
+  const diario = new Map<string, AcumuladorEvolucao>();
+  const mensal = new Map<string, AcumuladorEvolucao>();
   let faturamentoComData = 0;
 
   for (const venda of vendas) {
@@ -1237,15 +1382,21 @@ export function analiseEvolucaoVendas(vendas: VendaProduto[]): RelatorioEvolucao
     faturamentoComData += total;
 
     for (const [chave, mapa] of [[chaveDia, diario], [chaveMes, mensal]] as const) {
-      const atual = mapa.get(chave) ?? { faturamento: 0, descontos: 0, notas: new Set<string>() };
+      const atual = mapa.get(chave) ?? {
+        faturamento: 0,
+        descontos: 0,
+        notas: new Set<string>(),
+        rentabilidade: novoAcumuladorRentabilidade(),
+      };
       atual.faturamento += total;
       atual.descontos += desconto;
       atual.notas.add(nota);
+      acumularRentabilidade(atual.rentabilidade, venda);
       mapa.set(chave, atual);
     }
   }
 
-  const montar = (mapa: Map<string, { faturamento: number; descontos: number; notas: Set<string> }>) =>
+  const montar = (mapa: Map<string, AcumuladorEvolucao>) =>
     [...mapa.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([periodo, dados]) => ({
       periodo,
       faturamento: dados.faturamento,
@@ -1253,6 +1404,7 @@ export function analiseEvolucaoVendas(vendas: VendaProduto[]): RelatorioEvolucao
       ticketMedio: dados.notas.size > 0 ? dados.faturamento / dados.notas.size : 0,
       descontos: dados.descontos,
       percentual: faturamentoComData > 0 ? (dados.faturamento / faturamentoComData) * 100 : 0,
+      ...finalizarRentabilidade(dados.rentabilidade),
     }));
 
   return { diario: montar(diario), mensal: montar(mensal) };
@@ -1263,7 +1415,13 @@ export function analiseProdutosPorDimensao(
   vendas: VendaProduto[],
   dimensao: "cliente" | "vendedor",
 ): ItemProdutoPorDimensao[] {
-  const mapa = new Map<string, ItemProdutoPorDimensao & { notas: Set<string> }>();
+  const mapa = new Map<
+    string,
+    Omit<ItemProdutoPorDimensao, keyof IndicadoresRentabilidade> & {
+      notas: Set<string>;
+      rentabilidade: AcumuladorRentabilidade;
+    }
+  >();
 
   for (const venda of vendas) {
     const nomeDimensao = dimensao === "cliente"
@@ -1284,17 +1442,23 @@ export function analiseProdutosPorDimensao(
       descontos: 0,
       faturamento: 0,
       notas: new Set<string>(),
+      rentabilidade: novoAcumuladorRentabilidade(),
     };
 
     atual.quantidade += paraNumero(venda.produto_qtde);
     atual.descontos += paraNumero(venda.produto_vlr_desconto);
     atual.faturamento += valorItem(venda);
     atual.notas.add(chaveDaNota(venda));
+    acumularRentabilidade(atual.rentabilidade, venda);
     mapa.set(chave, atual);
   }
 
   return [...mapa.values()]
-    .map(({ notas, ...item }) => ({ ...item, pedidos: notas.size }))
+    .map(({ notas, rentabilidade, ...item }) => ({
+      ...item,
+      ...finalizarRentabilidade(rentabilidade),
+      pedidos: notas.size,
+    }))
     .sort((a, b) => b.faturamento - a.faturamento);
 }
 
@@ -1308,6 +1472,7 @@ export function analiseGeografica(vendas: VendaProduto[]): ItemGeograficoAnalise
       frete: number;
       notas: Set<string>;
       clientes: Set<string>;
+      rentabilidade: AcumuladorRentabilidade;
     }
   >();
 
@@ -1333,6 +1498,7 @@ export function analiseGeografica(vendas: VendaProduto[]): ItemGeograficoAnalise
         frete: 0,
         notas: new Set(),
         clientes: new Set(),
+        rentabilidade: novoAcumuladorRentabilidade(),
       };
       pracaMap.set(chave, praca);
     }
@@ -1340,6 +1506,7 @@ export function analiseGeografica(vendas: VendaProduto[]): ItemGeograficoAnalise
     praca.faturamento += total;
     praca.frete += freteItem;
     praca.notas.add(chaveNota);
+    acumularRentabilidade(praca.rentabilidade, venda);
     if (cliente && !isClienteConsumidorGenerico(cliente)) {
       praca.clientes.add(cliente);
     }
@@ -1355,6 +1522,7 @@ export function analiseGeografica(vendas: VendaProduto[]): ItemGeograficoAnalise
       pedidos: p.notas.size,
       clientes: p.clientes.size,
       ticketMedio: p.notas.size > 0 ? p.faturamento / p.notas.size : 0,
+      ...finalizarRentabilidade(p.rentabilidade),
     }))
     .sort((a, b) => b.faturamento - a.faturamento);
 }
@@ -1363,8 +1531,13 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
   formasPagamento: ItemFinanceiroAnalise[];
   modelosDocumento: ItemFinanceiroAnalise[];
 } {
-  const fpMap = new Map<string, { faturamento: number; notas: Set<string> }>();
-  const modMap = new Map<string, { faturamento: number; notas: Set<string> }>();
+  type AcumuladoFinanceiro = {
+    faturamento: number;
+    notas: Set<string>;
+    rentabilidade: AcumuladorRentabilidade;
+  };
+  const fpMap = new Map<string, AcumuladoFinanceiro>();
+  const modMap = new Map<string, AcumuladoFinanceiro>();
 
   let faturamentoTotal = 0;
 
@@ -1378,19 +1551,21 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
 
     let atualFp = fpMap.get(fp);
     if (!atualFp) {
-      atualFp = { faturamento: 0, notas: new Set() };
+      atualFp = { faturamento: 0, notas: new Set(), rentabilidade: novoAcumuladorRentabilidade() };
       fpMap.set(fp, atualFp);
     }
     atualFp.faturamento += total;
     atualFp.notas.add(chaveNota);
+    acumularRentabilidade(atualFp.rentabilidade, venda);
 
     let atualMod = modMap.get(mod);
     if (!atualMod) {
-      atualMod = { faturamento: 0, notas: new Set() };
+      atualMod = { faturamento: 0, notas: new Set(), rentabilidade: novoAcumuladorRentabilidade() };
       modMap.set(mod, atualMod);
     }
     atualMod.faturamento += total;
     atualMod.notas.add(chaveNota);
+    acumularRentabilidade(atualMod.rentabilidade, venda);
   }
 
   const formasPagamento = [...fpMap.entries()]
@@ -1400,6 +1575,7 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
       percentual: faturamentoTotal > 0 ? (dados.faturamento / faturamentoTotal) * 100 : 0,
       pedidos: dados.notas.size,
       ticketMedio: dados.notas.size > 0 ? dados.faturamento / dados.notas.size : 0,
+      ...finalizarRentabilidade(dados.rentabilidade),
     }))
     .sort((a, b) => b.total - a.total);
 
@@ -1410,6 +1586,7 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
       percentual: faturamentoTotal > 0 ? (dados.faturamento / faturamentoTotal) * 100 : 0,
       pedidos: dados.notas.size,
       ticketMedio: dados.notas.size > 0 ? dados.faturamento / dados.notas.size : 0,
+      ...finalizarRentabilidade(dados.rentabilidade),
     }))
     .sort((a, b) => b.total - a.total);
 
@@ -2197,7 +2374,7 @@ export function maioresCrescimentosProdutos(
 // Distribuição geográfica por UF
 // ==========================================
 
-export interface ItemUFVendas {
+export interface ItemUFVendas extends IndicadoresRentabilidade {
   uf: string;
   faturamento: number;
   frete: number;
@@ -2212,7 +2389,15 @@ export interface ItemUFVendas {
 export function analiseUFs(vendas: VendaProduto[]): ItemUFVendas[] {
   const porUf = new Map<
     string,
-    { uf: string; faturamento: number; frete: number; notas: Set<string>; clientes: Set<string>; cidades: Set<string> }
+    {
+      uf: string;
+      faturamento: number;
+      frete: number;
+      notas: Set<string>;
+      clientes: Set<string>;
+      cidades: Set<string>;
+      rentabilidade: AcumuladorRentabilidade;
+    }
   >();
   let faturamentoTotal = 0;
 
@@ -2221,10 +2406,19 @@ export function analiseUFs(vendas: VendaProduto[]): ItemUFVendas[] {
     const uf = venda.cliente_uf?.trim().toUpperCase() || "—";
     faturamentoTotal += total;
 
-    const atual = porUf.get(uf) ?? { uf, faturamento: 0, frete: 0, notas: new Set(), clientes: new Set(), cidades: new Set() };
+    const atual = porUf.get(uf) ?? {
+      uf,
+      faturamento: 0,
+      frete: 0,
+      notas: new Set(),
+      clientes: new Set(),
+      cidades: new Set(),
+      rentabilidade: novoAcumuladorRentabilidade(),
+    };
     atual.faturamento += total;
     atual.frete += paraNumero(venda.produto_vlr_frete);
     atual.notas.add(chaveDaNota(venda));
+    acumularRentabilidade(atual.rentabilidade, venda);
     if (
       venda.cliente_nome?.trim() &&
       !isClienteConsumidorGenerico(venda.cliente_nome)
@@ -2247,6 +2441,7 @@ export function analiseUFs(vendas: VendaProduto[]): ItemUFVendas[] {
         clientes: dados.clientes.size,
         cidades: dados.cidades.size,
         ticketMedio: pedidos > 0 ? dados.faturamento / pedidos : 0,
+        ...finalizarRentabilidade(dados.rentabilidade),
       };
     })
     .sort((a, b) => b.faturamento - a.faturamento);

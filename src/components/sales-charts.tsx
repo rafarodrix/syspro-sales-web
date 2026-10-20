@@ -350,7 +350,15 @@ export function GraficoFaturamento({
 /**
  * Top Produtos com Barras Ranqueadas Bklit UI + Badges de Pódio (#1, #2, #3)
  */
-export function GraficoProdutos({ dados, empresaId }: { dados: ProdutoRankeado[]; empresaId?: string }) {
+export function GraficoProdutos({
+  dados,
+  empresaId,
+  rotuloMetrica = "faturamento",
+}: {
+  dados: ProdutoRankeado[];
+  empresaId?: string;
+  rotuloMetrica?: string;
+}) {
   if (!dados.length) return <EstadoVazio />;
 
   const maiorValor = Math.max(...dados.map((item) => item.total), 1);
@@ -390,7 +398,7 @@ export function GraficoProdutos({ dados, empresaId }: { dados: ProdutoRankeado[]
   return (
     <div
       className="flex flex-col justify-between gap-4"
-      aria-label="Produtos com maior faturamento"
+      aria-label={`Produtos com maior ${rotuloMetrica}`}
     >
       <div className="flex flex-col gap-3 py-1">
         {dados.map((item, index) => {
@@ -432,7 +440,7 @@ export function GraficoProdutos({ dados, empresaId }: { dados: ProdutoRankeado[]
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 group-hover/prod:brightness-115"
                   style={{
-                    width: `${Math.min((item.total / maiorValor) * 100, 100)}%`,
+                    width: `${Math.max(0, Math.min((item.total / maiorValor) * 100, 100))}%`,
                   }}
                 />
               </div>

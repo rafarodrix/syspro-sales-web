@@ -50,8 +50,8 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
           {dimensoes.map((dimensao) => <option key={dimensao} value={dimensao}>{dimensao}</option>)}
         </select>
         {contextoExportacao ? <ExportarVisao titulo={`${dimensaoPlural} - Produtos`} contexto={contextoExportacao}
-          colunas={[dimensaoRotulo, "Código", "Produto", "Departamento", "Notas", "Quantidade", "Unidade", "Desconto", "Faturamento"]}
-          linhas={itensFiltrados.map((item) => [item.dimensao, item.codigoReferencia, item.produto, item.departamento, item.pedidos, formatarNumero(item.quantidade, 2), item.un, formatarMoeda(item.descontos), formatarMoeda(item.faturamento)])}
+          colunas={[dimensaoRotulo, "Código", "Produto", "Departamento", "Notas", "Quantidade", "Unidade", "Desconto", "Faturamento", "Custo reposição", "Lucro bruto", "Margem", "Cobertura custo"]}
+          linhas={itensFiltrados.map((item) => [item.dimensao, item.codigoReferencia, item.produto, item.departamento, item.pedidos, formatarNumero(item.quantidade, 2), item.un, formatarMoeda(item.descontos), formatarMoeda(item.faturamento), formatarMoeda(item.custoReposicao), formatarMoeda(item.lucroBruto), `${formatarNumero(item.margemBruta, 1)}%`, `${formatarNumero(item.coberturaCusto, 1)}%`])}
         /> : null}
       </div>
 
@@ -66,11 +66,14 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
               <th className="p-3 text-right">Quantidade</th>
               <th className="p-3 text-right">Desconto</th>
               <th className="p-3 text-right">Faturamento</th>
+              <th className="p-3 text-right">Lucro bruto</th>
+              <th className="p-3 text-right">Margem</th>
+              <th className="p-3 text-right">Cobertura custo</th>
             </tr>
           </thead>
           <tbody>
             {itensPaginados.length === 0 ? (
-              <tr><td colSpan={dimensaoSelecionada ? 7 : 8} className="p-8 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
+              <tr><td colSpan={dimensaoSelecionada ? 10 : 11} className="p-8 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
             ) : itensPaginados.map((item) => (
               <tr key={`${item.dimensao}-${item.produtoId}-${item.produto}`} className="border-b last:border-0 hover:bg-muted/20">
                 {!dimensaoSelecionada && <td className="max-w-52 truncate p-3 font-semibold" title={item.dimensao}>{item.dimensao}</td>}
@@ -81,6 +84,9 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
                 <td className="p-3 text-right font-mono">{formatarNumero(item.quantidade, 2)} {item.un}</td>
                 <td className="p-3 text-right font-mono text-rose-600 dark:text-rose-400">{formatarMoeda(item.descontos)}</td>
                 <td className="p-3 text-right font-mono font-bold">{formatarMoeda(item.faturamento)}</td>
+                <td className="p-3 text-right font-mono">{formatarMoeda(item.lucroBruto)}</td>
+                <td className="p-3 text-right font-mono">{item.coberturaCusto > 0 ? `${formatarNumero(item.margemBruta, 1)}%` : "—"}</td>
+                <td className="p-3 text-right font-mono">{formatarNumero(item.coberturaCusto, 1)}%</td>
               </tr>
             ))}
           </tbody>

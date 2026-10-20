@@ -5,6 +5,8 @@ import {
   analiseDriversVendedores,
   classeAPerdendoParticipacao,
   mudancaMixTopProdutos,
+  produtosMaisVendidos,
+  resumirMargens,
 } from "@/lib/vendas";
 
 export type NivelAlertaGerencial = "atencao" | "informativo";
@@ -21,9 +23,55 @@ export function gerarAlertasGerenciais(
   vendasAtuais: VendaProduto[],
   vendasAnteriores: VendaProduto[],
 ): AlertaGerencial[] {
-  if (!vendasAnteriores.length) return [];
-
   const alertas: AlertaGerencial[] = [];
+
+  const resumo = resumirMargens(vendasAtuais);
+  if (vendasAtuais.length && resumo.coberturaCusto < 100) {
+    alertas.push({
+      id: "custo-incompleto",
+      titulo: "Cobertura de custo incompleta",
+      detalhe: `${resumo.coberturaCusto.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do faturamento possui custo de reposição informado.`,
+      nivel: "atencao",
+      relatorio: "descontos",
+    });
+  }
+
+  const produtos = produtosMaisVendidos(
+    vendasAtuais,
+    Number.MAX_SAFE_INTEGER,
+    "faturamento",
+  );
+  const negativos = produtos.filter(
+    (item) => item.coberturaCusto > 0 && item.lucroBruto < 0,
+  );
+  if (negativos.length) {
+    const prejuizo = negativos.reduce((total, item) => total + item.lucroBruto, 0);
+    alertas.push({
+      id: "produtos-margem-negativa",
+      titulo: `${negativos.length} produto${negativos.length === 1 ? "" : "s"} com margem negativa`,
+      detalhe: `Prejuízo bruto coberto de ${Math.abs(prejuizo).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.`,
+      nivel: "atencao",
+      relatorio: "curva-abc",
+    });
+  }
+
+  const faturamentoMedio = produtos.length
+    ? produtos.reduce((total, item) => total + item.faturamento, 0) / produtos.length
+    : 0;
+  const altoVolumeBaixaMargem = produtos.filter(
+    (item) => item.faturamento >= faturamentoMedio && item.coberturaCusto >= 90 && item.margemBruta < 10,
+  );
+  if (altoVolumeBaixaMargem.length) {
+    alertas.push({
+      id: "alto-volume-baixa-margem",
+      titulo: `${altoVolumeBaixaMargem.length} produto${altoVolumeBaixaMargem.length === 1 ? "" : "s"} de alto volume com margem abaixo de 10%`,
+      detalhe: `Maior faturamento no grupo: ${altoVolumeBaixaMargem[0].produto}.`,
+      nivel: "atencao",
+      relatorio: "curva-abc",
+    });
+  }
+
+  if (!vendasAnteriores.length) return alertas;
 
   const clientes = analiseContribuicaoVariacao(
     vendasAtuais,

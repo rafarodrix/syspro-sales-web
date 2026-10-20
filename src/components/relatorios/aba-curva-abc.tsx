@@ -7,36 +7,31 @@ import {
   formatarNumero,
   formatarPercentual,
 } from "@/lib/formatters";
-import type { ConcentracaoTop, ItemCurvaABC } from "@/lib/vendas";
+import type {
+  ConcentracaoTop,
+  ItemCurvaABC,
+  MetricaCurvaABC,
+  RelatorioCurvaABC,
+} from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { TermoExplicado } from "@/components/relatorio-guia";
+import { FiltroRelatorio } from "./filtro-relatorio";
 
 interface AbaCurvaABCProps {
-  relatorioABC: {
-    itens: ItemCurvaABC[];
-    resumoA: {
-      faturamento: number;
-      itens: number;
-      percentualFaturamento: number;
-      percentualItens: number;
-    };
-    resumoB: {
-      faturamento: number;
-      itens: number;
-      percentualFaturamento: number;
-      percentualItens: number;
-    };
-    resumoC: {
-      faturamento: number;
-      itens: number;
-      percentualFaturamento: number;
-      percentualItens: number;
-    };
-  };
+  relatorioABC: RelatorioCurvaABC;
   itensFiltrados: ItemCurvaABC[];
   concentracaoTop10: ConcentracaoTop | null;
   concentracaoTop20: ConcentracaoTop | null;
+  metrica: MetricaCurvaABC;
+  onMetricaChange: (metrica: MetricaCurvaABC) => void;
 }
+
+const ROTULOS_METRICA: Record<MetricaCurvaABC, string> = {
+  faturamento: "Faturamento",
+  lucro: "Lucro bruto",
+  quantidade: "Quantidade",
+  custo: "Custo de reposição",
+};
 
 export function ResumoCurvaAbcCard({
   relatorioABC,
@@ -48,6 +43,9 @@ export function ResumoCurvaAbcCard({
     { label: "B", resumo: relatorioABC.resumoB, tone: "text-blue-700 dark:text-blue-400" },
     { label: "C", resumo: relatorioABC.resumoC, tone: "text-amber-700 dark:text-amber-400" },
   ];
+  const formatarValor = (valor: number) => relatorioABC.metrica === "quantidade"
+    ? formatarNumero(valor, 2)
+    : formatarMoeda(valor);
 
   return (
     <Card className="border-border/60 bg-card/90 shadow-2xs">
@@ -58,10 +56,10 @@ export function ResumoCurvaAbcCard({
             <div key={label} className="min-w-0">
               <div className={`text-xs font-bold ${tone}`}>Classe {label}</div>
               <div className="truncate font-mono text-base font-extrabold tabular-nums text-foreground">
-                {formatarMoeda(resumo.faturamento)}
+                {formatarValor(resumo.valor)}
               </div>
               <div className="text-[10px] text-muted-foreground">
-                {formatarPercentual(resumo.percentualFaturamento, 1)} · {resumo.itens} itens
+                {formatarPercentual(resumo.percentualValor, 1)} · {resumo.itens} itens
               </div>
             </div>
           ))}
@@ -75,9 +73,21 @@ export function AbaCurvaABC({
   itensFiltrados,
   concentracaoTop10,
   concentracaoTop20,
+  metrica,
+  onMetricaChange,
 }: AbaCurvaABCProps) {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <FiltroRelatorio
+          rotulo="Classificar curva por"
+          valor={metrica}
+          onChange={(valor) => onMetricaChange(valor as MetricaCurvaABC)}
+          opcoes={(Object.entries(ROTULOS_METRICA) as [MetricaCurvaABC, string][]).map(
+            ([valor, rotulo]) => ({ valor, rotulo }),
+          )}
+        />
+      </div>
       {/* Tabela Curva ABC */}
       <ReportTable
         caption="Curva ABC de produtos"
@@ -160,8 +170,31 @@ export function AbaCurvaABC({
             cell: (item) => <>{formatarMoeda(item.total)}</>,
           },
           {
+            id: "custoReposicao",
+            header: <>Custo reposição</>,
+            kind: "currency",
+            value: (item) => item.custoReposicao,
+            cell: (item) => <>{formatarMoeda(item.custoReposicao)}</>,
+          },
+          {
+            id: "lucroBruto",
+            header: <>Lucro bruto</>,
+            kind: "currency",
+            value: (item) => item.lucroBruto,
+            cell: (item) => <>{formatarMoeda(item.lucroBruto)}</>,
+          },
+          {
+            id: "margemBruta",
+            header: <>Margem</>,
+            kind: "percent",
+            value: (item) => item.margemBruta,
+            cell: (item) => item.coberturaCusto > 0
+              ? <>{formatarPercentual(item.margemBruta, 1)}</>
+              : <>—</>,
+          },
+          {
             id: "percentual",
-            header: <>% Fat.</>,
+            header: <>% {ROTULOS_METRICA[metrica]}</>,
             kind: "percent",
             value: (item) => item.percentual,
             cell: (item) => (
@@ -199,7 +232,7 @@ export function AbaCurvaABC({
         <div className="flex items-center justify-between gap-2">
           <TermoExplicado
             termo="Dependência do portfólio"
-            definicao="% do faturamento concentrado nos 10 e nos 20 produtos mais vendidos. Acima de 80% no Top 20 indica portfólio concentrado — variação nesses itens afeta a receita toda."
+            definicao={`% de ${ROTULOS_METRICA[metrica].toLowerCase()} concentrado nos 10 e nos 20 primeiros produtos da classificação.`}
           />
           <div className="text-right">
             <div className="font-mono text-lg font-extrabold text-foreground">
@@ -214,7 +247,7 @@ export function AbaCurvaABC({
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">
           {concentracaoTop10?.itensNoTop ?? 0} produtos respondem por{" "}
-          {formatarPercentual(concentracaoTop10?.percentualTop ?? 0, 1)} da receita
+          {formatarPercentual(concentracaoTop10?.percentualTop ?? 0, 1)} de {ROTULOS_METRICA[metrica].toLowerCase()}
         </p>
       </div>
     </div>

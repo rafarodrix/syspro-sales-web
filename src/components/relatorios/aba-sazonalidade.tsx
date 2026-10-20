@@ -10,14 +10,21 @@ import {
 } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
+import { FiltroRelatorio } from "./filtro-relatorio";
 
 type VisaoSazonalidade = "dia-semana" | "quinzena" | "diario" | "mensal";
+type MetricaSazonalidade = "faturamento" | "lucro";
 
 interface ItemSazonalidadeBase {
   pedidos: number;
   ticketMedio: number;
   faturamento: number;
   percentual: number;
+  custoReposicao: number;
+  lucroBruto: number;
+  margemBruta: number;
+  faturamentoComCusto: number;
+  coberturaCusto: number;
   ocorrencias?: number;
   faturamentoMedioPorOcorrencia?: number;
   pedidosMediosPorOcorrencia?: number;
@@ -124,6 +131,27 @@ function TabelaSazonalidade({
           cell: (item) => <>{formatarMoeda(item.faturamento)}</>,
         },
         {
+          id: "lucroBruto",
+          header: <>Lucro bruto</>,
+          kind: "currency",
+          value: (item) => item.lucroBruto,
+          cell: (item) => <>{formatarMoeda(item.lucroBruto)}</>,
+        },
+        {
+          id: "margemBruta",
+          header: <>Margem</>,
+          kind: "percent",
+          value: (item) => item.margemBruta,
+          cell: (item) => <>{formatarPercentual(item.margemBruta, 1)}</>,
+        },
+        {
+          id: "coberturaCusto",
+          header: <>Cobertura custo</>,
+          kind: "percent",
+          value: (item) => item.coberturaCusto,
+          cell: (item) => <>{formatarPercentual(item.coberturaCusto, 1)}</>,
+        },
+        {
           id: "percentual",
           header: <>Participação</>,
           kind: "percent",
@@ -200,6 +228,27 @@ function TabelaEvolucao({
           cell: (item) => <>{formatarMoeda(item.faturamento)}</>,
         },
         {
+          id: "lucroBruto",
+          header: <>Lucro bruto</>,
+          kind: "currency",
+          value: (item) => item.lucroBruto,
+          cell: (item) => <>{formatarMoeda(item.lucroBruto)}</>,
+        },
+        {
+          id: "margemBruta",
+          header: <>Margem</>,
+          kind: "percent",
+          value: (item) => item.margemBruta,
+          cell: (item) => <>{formatarPercentual(item.margemBruta, 1)}</>,
+        },
+        {
+          id: "coberturaCusto",
+          header: <>Cobertura custo</>,
+          kind: "percent",
+          value: (item) => item.coberturaCusto,
+          cell: (item) => <>{formatarPercentual(item.coberturaCusto, 1)}</>,
+        },
+        {
           id: "percentual",
           header: <>Participação</>,
           kind: "percent",
@@ -225,6 +274,7 @@ export function AbaSazonalidade({
   periodo,
 }: AbaSazonalidadeProps) {
   const [visao, setVisao] = useState<VisaoSazonalidade>("diario");
+  const [metrica, setMetrica] = useState<MetricaSazonalidade>("faturamento");
   const porDiaSemana = relatorioSazonalidade.porDiaSemana.map(
     ({ dia, ...item }) => ({ ...item, rotulo: dia }),
   );
@@ -242,7 +292,10 @@ export function AbaSazonalidade({
   const mensal = visao === "mensal";
   const valores = new Map(
     (mensal ? relatorioEvolucao.mensal : relatorioEvolucao.diario).map(
-      (item) => [item.periodo, item.faturamento],
+      (item) => [
+        item.periodo,
+        metrica === "lucro" ? item.lucroBruto : item.faturamento,
+      ],
     ),
   );
   const cursor = new Date(`${periodo.inicial}T00:00:00Z`);
@@ -260,19 +313,31 @@ export function AbaSazonalidade({
   }
   return (
     <div className="space-y-4">
-      <ReportViewSelector
-        view={visao}
-        onViewChange={setVisao}
-        options={[
-          { value: "diario", label: "Diário", icon: ChartLine },
-          { value: "mensal", label: "Mensal", icon: CalendarRange },
-          { value: "dia-semana", label: "Dia da semana", icon: CalendarDays },
-          { value: "quinzena", label: "Quinzena", icon: CalendarRange },
-        ]}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ReportViewSelector
+          view={visao}
+          onViewChange={setVisao}
+          options={[
+            { value: "diario", label: "Diário", icon: ChartLine },
+            { value: "mensal", label: "Mensal", icon: CalendarRange },
+            { value: "dia-semana", label: "Dia da semana", icon: CalendarDays },
+            { value: "quinzena", label: "Quinzena", icon: CalendarRange },
+          ]}
+        />
+        <FiltroRelatorio
+          rotulo="Métrica do gráfico"
+          valor={metrica}
+          opcoes={[
+            { valor: "faturamento", rotulo: "Faturamento" },
+            { valor: "lucro", rotulo: "Lucro bruto" },
+          ]}
+          onChange={(valor) => setMetrica(valor as MetricaSazonalidade)}
+        />
+      </div>
       <ReportChart
-        key={visao}
+        key={`${visao}-${metrica}`}
         temporal={exibeEvolucao}
+        rotulo={metrica === "lucro" ? "Lucro bruto" : "Faturamento"}
         points={
           exibeEvolucao
             ? serie
@@ -280,14 +345,22 @@ export function AbaSazonalidade({
                 label: item.rotulo,
                 value:
                   exibeDiaSemana
-                    ? item.faturamentoMedioPorOcorrencia ?? 0
-                    : item.faturamento,
+                    ? metrica === "lucro"
+                      ? item.lucroBruto / Math.max(item.ocorrencias ?? 1, 1)
+                      : item.faturamentoMedioPorOcorrencia ?? 0
+                    : metrica === "lucro"
+                      ? item.lucroBruto
+                      : item.faturamento,
                 percentual:
-                  exibeDiaSemana && somaMediasDiaSemana > 0
+                  metrica === "faturamento" &&
+                  exibeDiaSemana &&
+                  somaMediasDiaSemana > 0
                     ? ((item.faturamentoMedioPorOcorrencia ?? 0) /
                         somaMediasDiaSemana) *
                       100
-                    : item.percentual,
+                    : metrica === "faturamento"
+                      ? item.percentual
+                      : undefined,
               }))
         }
       />

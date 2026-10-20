@@ -133,6 +133,22 @@ export function AbaGeografico({
               cell: (item) => <>{formatarMoeda(item.faturamento)}</>,
             },
             {
+              id: "lucroBruto",
+              header: <>Lucro bruto</>,
+              kind: "currency",
+              value: (item) => item.lucroBruto,
+              cell: (item) => <>{formatarMoeda(item.lucroBruto)}</>,
+            },
+            {
+              id: "margemBruta",
+              header: <>Margem</>,
+              kind: "percent",
+              value: (item) => item.margemBruta,
+              cell: (item) => item.coberturaCusto > 0
+                ? <>{formatarPercentual(item.margemBruta, 1)}</>
+                : <>—</>,
+            },
+            {
               id: "percentual",
               header: <>Participação</>,
               kind: "percent",
@@ -223,6 +239,22 @@ export function AbaGeografico({
                 kind: "currency",
                 value: (cidade) => cidade.faturamento,
                 cell: (cidade) => <>{formatarMoeda(cidade.faturamento)}</>,
+              },
+              {
+                id: "lucroBruto",
+                header: <>Lucro bruto</>,
+                kind: "currency",
+                value: (cidade) => cidade.lucroBruto,
+                cell: (cidade) => <>{formatarMoeda(cidade.lucroBruto)}</>,
+              },
+              {
+                id: "margemBruta",
+                header: <>Margem</>,
+                kind: "percent",
+                value: (cidade) => cidade.margemBruta,
+                cell: (cidade) => cidade.coberturaCusto > 0
+                  ? <>{formatarPercentual(cidade.margemBruta, 1)}</>
+                  : <>—</>,
               },
               {
                 id: "percentual",

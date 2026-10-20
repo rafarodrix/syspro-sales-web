@@ -30,7 +30,15 @@ function venda(campos: Partial<VendaProduto> = {}): VendaProduto {
 
 describe("alertas gerenciais", () => {
   it("não cria alertas comparativos sem período anterior", () => {
-    expect(gerarAlertasGerenciais([venda()], [])).toEqual([]);
+    expect(gerarAlertasGerenciais([
+      venda({ produto_vlr_custo_reposicao: 70 }),
+    ], [])).toEqual([]);
+  });
+
+  it("alerta sobre cobertura de custo mesmo sem período comparativo", () => {
+    expect(gerarAlertasGerenciais([venda()], [])).toEqual([
+      expect.objectContaining({ id: "custo-incompleto", nivel: "atencao" }),
+    ]);
   });
 
   it("reutiliza diagnósticos e cria links de atenção a partir de sinais reais", () => {

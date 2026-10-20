@@ -49,6 +49,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ComparacaoPeriodo } from "@/components/relatorios/comparacao-periodo";
 import { DashboardAlerts } from "@/components/dashboard-alerts";
+import { FiltroRelatorio } from "@/components/relatorios/filtro-relatorio";
 import { gerarAlertasGerenciais } from "@/lib/alertas-gerenciais";
 import {
   resolverComparacao,
@@ -113,6 +114,8 @@ export function DashboardView({
   );
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
+  const [metricaTopProdutos, setMetricaTopProdutos] =
+    useState<"faturamento" | "lucro">("faturamento");
   const [modoComparacao, setModoComparacao] =
     useState<ModoComparacao>(initialModoComparacao);
   const [modoConsultado, setModoConsultado] =
@@ -213,7 +216,10 @@ export function DashboardView({
     ],
   );
 
-  const topProdutos = useMemo(() => produtosMaisVendidos(vendas, 5), [vendas]);
+  const topProdutos = useMemo(
+    () => produtosMaisVendidos(vendas, 5, metricaTopProdutos),
+    [vendas, metricaTopProdutos],
+  );
   const destaques = useMemo(() => calcularDestaques(vendas, resumo), [vendas, resumo]);
   const sparklineFaturamento = useMemo(() => {
     return dadosPorMetrica(vendas, "faturamento").map((p) => p.total);
@@ -226,10 +232,10 @@ export function DashboardView({
   const rankingPorEmpresa = useMemo(() => analiseEmpresas(vendas), [vendas]);
 
   const alertasGerenciais = useMemo(
-    () =>
-      comparacaoDisponivel
-        ? gerarAlertasGerenciais(vendas, vendasAnteriores)
-        : [],
+    () => gerarAlertasGerenciais(
+      vendas,
+      comparacaoDisponivel ? vendasAnteriores : [],
+    ),
     [vendas, vendasAnteriores, comparacaoDisponivel],
   );
 
@@ -316,6 +322,7 @@ export function DashboardView({
       },
       resumo,
       topProdutos,
+      metricaProdutos: metricaTopProdutos,
       modo,
     });
     if (modo === "download") {
@@ -819,7 +826,7 @@ export function DashboardView({
                       {formatarMoeda(emp.faturamento)}
                     </span>
                     <span className="text-[11px] text-muted-foreground">
-                      {emp.pedidos} NF
+                      {emp.pedidos} NF · margem {emp.coberturaCusto > 0 ? formatarPercentual(emp.margemBruta, 1) : "—"}
                     </span>
                   </div>
                   {/* Barra de Progresso Visual */}
@@ -844,18 +851,28 @@ export function DashboardView({
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold text-foreground">
-                  Top Produtos por Faturamento
+                  Top Produtos por {metricaTopProdutos === "lucro" ? "Lucro" : "Faturamento"}
                 </CardTitle>
-                <Badge variant="secondary" className="text-[10px]">
-                  Mais representativos
-                </Badge>
+                <FiltroRelatorio
+                  rotulo="Métrica dos produtos"
+                  valor={metricaTopProdutos}
+                  onChange={(valor) => setMetricaTopProdutos(valor as "faturamento" | "lucro")}
+                  opcoes={[
+                    { valor: "faturamento", rotulo: "Faturamento" },
+                    { valor: "lucro", rotulo: "Lucro bruto" },
+                  ]}
+                />
               </div>
               <CardDescription className="text-xs">
-                Produtos com maior volume financeiro vendido no período.
+                Produtos com maior {metricaTopProdutos === "lucro" ? "contribuição ao lucro" : "volume financeiro vendido"} no período.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <GraficoProdutos dados={topProdutos} empresaId={empresaId} />
+              <GraficoProdutos
+                dados={topProdutos}
+                empresaId={empresaId}
+                rotuloMetrica={metricaTopProdutos === "lucro" ? "lucro bruto" : "faturamento"}
+              />
             </CardContent>
           </Card>
         </div>
