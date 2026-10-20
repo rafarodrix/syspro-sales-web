@@ -126,7 +126,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     <div className="flex flex-col gap-6">
       <Card className="border-border/60 shadow-sm">
         <CardHeader><CardTitle className="flex items-center gap-2 text-xl"><PackageSearch className="size-5 text-primary" />Posição e Saúde do Estoque</CardTitle><CardDescription>Saldo, demanda líquida, custos, cobertura e movimentações por empresa. Período máximo de 31 dias.</CardDescription></CardHeader>
-        <CardContent><DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} /></CardContent>
+        <CardContent><DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} maximoDias={31} /></CardContent>
       </Card>
 
       {erro ? <Card className="border-destructive/50 bg-destructive/5"><CardContent className="pt-6 text-sm font-medium text-destructive">{erro}</CardContent></Card> : null}

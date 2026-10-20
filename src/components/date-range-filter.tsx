@@ -77,6 +77,7 @@ export function DateRangeFilter({
   loading = false,
   compact = false,
   persistirCookie = true,
+  maximoDias,
 }: {
   value: Periodo;
   onChange: (periodo: Periodo) => void;
@@ -84,8 +85,13 @@ export function DateRangeFilter({
   loading?: boolean;
   compact?: boolean;
   persistirCookie?: boolean;
+  maximoDias?: number;
 }) {
-  const erro = erroPeriodo(value);
+  const erroBase = erroPeriodo(value);
+  const diferencaDias = value.inicial && value.final
+    ? Math.floor((Date.parse(`${value.final}T00:00:00Z`) - Date.parse(`${value.inicial}T00:00:00Z`)) / 86_400_000)
+    : 0;
+  const erro = erroBase ?? (maximoDias !== undefined && diferencaDias >= maximoDias ? `O período máximo é de ${maximoDias} dias.` : null);
   const presets: { label: string; value: Periodo }[] = [
     { label: "Hoje", value: periodoHoje() },
     { label: "Ontem", value: periodoOntem() },
@@ -94,7 +100,10 @@ export function DateRangeFilter({
     { label: "Mês anterior", value: periodoMesAnterior() },
     { label: "30 dias", value: periodoUltimos30Dias() },
     { label: "90 dias", value: periodoUltimos90Dias() },
-  ];
+  ].filter((preset) => {
+    const dias = Math.floor((Date.parse(`${preset.value.final}T00:00:00Z`) - Date.parse(`${preset.value.inicial}T00:00:00Z`)) / 86_400_000) + 1;
+    return maximoDias === undefined || dias <= maximoDias;
+  });
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
