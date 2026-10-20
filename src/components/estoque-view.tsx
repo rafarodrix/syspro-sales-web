@@ -7,6 +7,7 @@ import type { MovimentoKardexPublico } from "@/lib/kardex";
 import type { PosicaoEstoque, ResumoSaudeEstoque, SituacaoEstoque } from "@/lib/estoque-saude";
 import { dataInputParaSyspro } from "@/lib/vendas";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { useTablePagination } from "@/hooks/use-table-pagination";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/date-range-filter";
 import { EstoqueMetricas } from "@/components/estoque/estoque-metricas";
@@ -62,8 +63,6 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const [filtroGrupo, setFiltroGrupo] = useState("todos");
   const [filtroSituacao, setFiltroSituacao] = useState("todas");
   const [aba, setAba] = useState("visao-geral");
-  const [pagina, setPagina] = useState(1);
-  const [porPagina, setPorPagina] = useState(25);
 
   useEffect(() => {
     if (!empresaInicial) return;
@@ -86,7 +85,10 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       setMovimentos(dados.movimentos ?? []);
       setPosicoes(dados.posicoes ?? []);
       setResumoSaude(dados.resumo ?? null);
-      setPagina(1);
+      movimentosPaginacao.reiniciar();
+      posicoesPaginacao.reiniciar();
+      devolucoesPaginacao.reiniciar();
+      transferenciasPaginacao.reiniciar();
       setAba("visao-geral");
       toast.success(`${dados.posicoes?.length ?? 0} produtos e ${dados.movimentos?.length ?? 0} movimentações carregados.`);
     } catch (causa) {
@@ -110,16 +112,24 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const alertas = useMemo(() => posicoesFiltradas.filter((item) => item.situacao !== "saudavel").slice(0, 20), [posicoesFiltradas]);
   const devolucoes = useMemo(() => movimentosFiltrados.filter((item) => item.classificacao.categoria === "devolucao_venda" || item.classificacao.categoria === "devolucao_compra"), [movimentosFiltrados]);
   const transferencias = useMemo(() => movimentosFiltrados.filter((item) => item.classificacao.categoria === "transferencia"), [movimentosFiltrados]);
-  const totalPaginas = Math.max(1, Math.ceil(movimentosFiltrados.length / porPagina));
-  const paginaAtual = Math.min(pagina, totalPaginas);
-  const paginaMovimentos = movimentosFiltrados.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina);
+  const movimentosPaginacao = useTablePagination(movimentosFiltrados);
+  const posicoesPaginacao = useTablePagination(posicoesFiltradas);
+  const devolucoesPaginacao = useTablePagination(devolucoes);
+  const transferenciasPaginacao = useTablePagination(transferencias);
+
+  function reiniciarPaginacoes() {
+    movimentosPaginacao.reiniciar();
+    posicoesPaginacao.reiniciar();
+    devolucoesPaginacao.reiniciar();
+    transferenciasPaginacao.reiniciar();
+  }
 
   function abrirKardex(item: PosicaoEstoque) {
     setBusca(item.codigo === "Sem código" ? item.produto : item.codigo);
-    setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); setPagina(1); setAba("movimentacoes");
+    setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); movimentosPaginacao.reiniciar(); setAba("movimentacoes");
   }
   const filtrosAtivos = Boolean(busca) || filtroDirecao !== "todas" || filtroCategoria !== "todas" || filtroGrupo !== "todos" || filtroSituacao !== "todas";
-  function limparFiltros() { setBusca(""); setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); setFiltroSituacao("todas"); setPagina(1); }
+  function limparFiltros() { setBusca(""); setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); setFiltroSituacao("todas"); reiniciarPaginacoes(); }
 
   return (
     <div className="flex flex-col gap-6">
@@ -139,11 +149,11 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       <Tabs value={aba} onValueChange={setAba} className="gap-4">
         <div className="overflow-x-auto pb-1"><TabsList className="min-w-max"><TabsTrigger value="visao-geral">Visão geral</TabsTrigger><TabsTrigger value="posicao">Posição por produto</TabsTrigger><TabsTrigger value="movimentacoes">Movimentações</TabsTrigger><TabsTrigger value="devolucoes">Devoluções</TabsTrigger><TabsTrigger value="transferencias">Transferências</TabsTrigger></TabsList></div>
 
-        <DataFilterBar busca={busca} onBuscaChange={(valor) => { setBusca(valor); setPagina(1); }} placeholder="Buscar código, produto, marca, documento ou participante..." temFiltrosAtivos={filtrosAtivos} onLimpar={limparFiltros}>
-          {aba === "visao-geral" || aba === "posicao" ? <div className="w-40 sm:w-44"><Select value={filtroSituacao} onValueChange={setFiltroSituacao}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Situação" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as situações</SelectItem>{Object.entries(rotulosSituacao).map(([valor, rotulo]) => <SelectItem key={valor} value={valor}>{rotulo}</SelectItem>)}</SelectContent></Select></div> : <>
-            <div className="w-40 sm:w-44"><Select value={filtroDirecao} onValueChange={(valor) => { setFiltroDirecao(valor); setPagina(1); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Entrada / saída" /></SelectTrigger><SelectContent><SelectItem value="todas">Entradas e saídas</SelectItem><SelectItem value="entrada">Somente entradas</SelectItem><SelectItem value="saida">Somente saídas</SelectItem></SelectContent></Select></div>
-            <div className="w-40 sm:w-44"><Select value={filtroCategoria} onValueChange={(valor) => { setFiltroCategoria(valor); setPagina(1); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as categorias</SelectItem><SelectItem value="venda">Vendas</SelectItem><SelectItem value="devolucao_venda">Devoluções de venda</SelectItem><SelectItem value="compra">Compras</SelectItem><SelectItem value="devolucao_compra">Devoluções de compra</SelectItem><SelectItem value="transferencia">Transferências</SelectItem><SelectItem value="bonificacao">Bonificações</SelectItem><SelectItem value="outros">Outros movimentos</SelectItem></SelectContent></Select></div>
-            <div className="w-40 sm:w-44"><Select value={filtroGrupo} onValueChange={(valor) => { setFiltroGrupo(valor); setPagina(1); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Grupo" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os grupos</SelectItem>{gruposDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}</SelectContent></Select></div>
+        <DataFilterBar busca={busca} onBuscaChange={(valor) => { setBusca(valor); reiniciarPaginacoes(); }} placeholder="Buscar código, produto, marca, documento ou participante..." temFiltrosAtivos={filtrosAtivos} onLimpar={limparFiltros}>
+          {aba === "visao-geral" || aba === "posicao" ? <div className="w-40 sm:w-44"><Select value={filtroSituacao} onValueChange={(valor) => { setFiltroSituacao(valor); posicoesPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Situação" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as situações</SelectItem>{Object.entries(rotulosSituacao).map(([valor, rotulo]) => <SelectItem key={valor} value={valor}>{rotulo}</SelectItem>)}</SelectContent></Select></div> : <>
+            <div className="w-40 sm:w-44"><Select value={filtroDirecao} onValueChange={(valor) => { setFiltroDirecao(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Entrada / saída" /></SelectTrigger><SelectContent><SelectItem value="todas">Entradas e saídas</SelectItem><SelectItem value="entrada">Somente entradas</SelectItem><SelectItem value="saida">Somente saídas</SelectItem></SelectContent></Select></div>
+            <div className="w-40 sm:w-44"><Select value={filtroCategoria} onValueChange={(valor) => { setFiltroCategoria(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as categorias</SelectItem><SelectItem value="venda">Vendas</SelectItem><SelectItem value="devolucao_venda">Devoluções de venda</SelectItem><SelectItem value="compra">Compras</SelectItem><SelectItem value="devolucao_compra">Devoluções de compra</SelectItem><SelectItem value="transferencia">Transferências</SelectItem><SelectItem value="bonificacao">Bonificações</SelectItem><SelectItem value="outros">Outros movimentos</SelectItem></SelectContent></Select></div>
+            <div className="w-40 sm:w-44"><Select value={filtroGrupo} onValueChange={(valor) => { setFiltroGrupo(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Grupo" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os grupos</SelectItem>{gruposDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}</SelectContent></Select></div>
           </>}
         </DataFilterBar>
 
@@ -158,7 +168,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
           <Card><CardHeader><CardTitle className="text-base">Posição por produto</CardTitle><CardDescription>{posicoesFiltradas.length} produto(s). Custos médios consideram apenas itens com custo informado no período.</CardDescription></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table>
             <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Marca</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Estoque</TableHead><TableHead className="text-right">Venda</TableHead><TableHead className="text-right">EDV</TableHead><TableHead className="text-right">Demanda líquida</TableHead><TableHead className="text-right">Cobertura</TableHead><TableHead className="text-right">Custo aquisição</TableHead><TableHead className="text-right">Custo reposição</TableHead><TableHead className="text-right">Valor reposição</TableHead><TableHead>Último movimento</TableHead><TableHead /></TableRow></TableHeader>
             <TableBody>
-              {posicoesFiltradas.length ? posicoesFiltradas.map((item, indice) => (
+              {posicoesPaginacao.itensPaginados.length ? posicoesPaginacao.itensPaginados.map((item, indice) => (
                 <TableRow key={`${item.codigo}-${item.produto}-${indice}`}>
                   <ProdutoCell item={item} />
                   <TableCell className="text-xs">{item.marca}</TableCell>
@@ -183,18 +193,18 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
                 <TableRow><TableCell colSpan={13} className="h-28 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</TableCell></TableRow>
               )}
             </TableBody>
-          </Table></div></CardContent></Card>
+          </Table></div>{posicoesFiltradas.length > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={posicoesPaginacao.paginaAtual} totalItens={posicoesFiltradas.length} itensPorPagina={posicoesPaginacao.itensPorPagina} onPaginaChange={posicoesPaginacao.setPagina} onItensPorPaginaChange={posicoesPaginacao.setItensPorPagina} labelItens="produtos" /></div> : null}</CardContent></Card>
         </TabsContent>
 
         <TabsContent value="movimentacoes" className="space-y-6">
           <Card><CardHeader><CardTitle className="text-base">Kardex detalhado</CardTitle><CardDescription>{movimentosFiltrados.length} movimento(s) no período filtrado.</CardDescription></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table>
             <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Grupo</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Movimento</TableHead><TableHead className="text-right">Saldo</TableHead></TableRow></TableHeader>
-            <TableBody>{paginaMovimentos.length ? paginaMovimentos.map((item, indice) => <TableRow key={`${item.documento}-${item.produtoCodigoAuxiliar}-${item.dataMovimento}-${indice}`}><TableCell className="whitespace-nowrap text-xs">{dataVisual(item.dataMovimento)}</TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? "border-emerald-500/40 text-emerald-700" : "border-rose-500/40 text-rose-700"}>{item.grupoDocumento || "—"} · {item.classificacao.rotulo}</Badge></TableCell><TableCell className="max-w-44 truncate text-xs">{item.participante || "—"}</TableCell><TableCell className={`text-right font-semibold ${item.direcao === "entrada" ? "text-emerald-600" : "text-rose-600"}`}>{item.direcao === "entrada" ? "+" : "−"}{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell><TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell></TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{loading ? "Consultando o Kardex..." : "Nenhuma movimentação encontrada."}</TableCell></TableRow>}</TableBody>
-          </Table></div>{movimentosFiltrados.length > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={paginaAtual} totalItens={movimentosFiltrados.length} itensPorPagina={porPagina} onPaginaChange={setPagina} onItensPorPaginaChange={(valor) => { setPorPagina(valor); setPagina(1); }} /></div> : null}</CardContent></Card>
+            <TableBody>{movimentosPaginacao.itensPaginados.length ? movimentosPaginacao.itensPaginados.map((item, indice) => <TableRow key={`${item.documento}-${item.produtoCodigoAuxiliar}-${item.dataMovimento}-${indice}`}><TableCell className="whitespace-nowrap text-xs">{dataVisual(item.dataMovimento)}</TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? "border-emerald-500/40 text-emerald-700" : "border-rose-500/40 text-rose-700"}>{item.grupoDocumento || "—"} · {item.classificacao.rotulo}</Badge></TableCell><TableCell className="max-w-44 truncate text-xs">{item.participante || "—"}</TableCell><TableCell className={`text-right font-semibold ${item.direcao === "entrada" ? "text-emerald-600" : "text-rose-600"}`}>{item.direcao === "entrada" ? "+" : "−"}{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell><TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell></TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{loading ? "Consultando o Kardex..." : "Nenhuma movimentação encontrada."}</TableCell></TableRow>}</TableBody>
+          </Table></div>{movimentosFiltrados.length > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={movimentosPaginacao.paginaAtual} totalItens={movimentosFiltrados.length} itensPorPagina={movimentosPaginacao.itensPorPagina} onPaginaChange={movimentosPaginacao.setPagina} onItensPorPaginaChange={movimentosPaginacao.setItensPorPagina} labelItens="movimentos" /></div> : null}</CardContent></Card>
         </TabsContent>
 
-        <TabsContent value="devolucoes"><Card><CardHeader><CardTitle className="text-base">Devoluções de vendas e compras</CardTitle><CardDescription>EDV reduz vendas; EDC representa devolução de compra e permanece separada.</CardDescription></CardHeader><CardContent className="p-0"><MovimentosEspeciais itens={devolucoes} vazio="Nenhuma devolução encontrada." mostrarValor /></CardContent></Card></TabsContent>
-        <TabsContent value="transferencias"><Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><ArrowLeftRight className="size-4" />Transferências</CardTitle><CardDescription>Movimentações de entrada e saída classificadas como transferência.</CardDescription></CardHeader><CardContent className="p-0"><MovimentosEspeciais itens={transferencias} vazio="Nenhuma transferência encontrada." /></CardContent></Card></TabsContent>
+        <TabsContent value="devolucoes"><Card><CardHeader><CardTitle className="text-base">Devoluções de vendas e compras</CardTitle><CardDescription>EDV reduz vendas; EDC representa devolução de compra e permanece separada.</CardDescription></CardHeader><CardContent className="p-0"><MovimentosEspeciais itens={devolucoesPaginacao.itensPaginados} totalItens={devolucoes.length} paginacao={devolucoesPaginacao} vazio="Nenhuma devolução encontrada." mostrarValor /></CardContent></Card></TabsContent>
+        <TabsContent value="transferencias"><Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><ArrowLeftRight className="size-4" />Transferências</CardTitle><CardDescription>Movimentações de entrada e saída classificadas como transferência.</CardDescription></CardHeader><CardContent className="p-0"><MovimentosEspeciais itens={transferenciasPaginacao.itensPaginados} totalItens={transferencias.length} paginacao={transferenciasPaginacao} vazio="Nenhuma transferência encontrada." /></CardContent></Card></TabsContent>
       </Tabs>
     </div>
   );
@@ -208,6 +218,6 @@ function MovimentoProdutoCell({ item }: { item: MovimentoKardexPublico }) {
   return <TableCell><p className="min-w-48 text-xs font-medium">{item.produtoDescricao}</p><p className="font-mono text-[10px] text-muted-foreground">{item.produtoCodigoAuxiliar || "Sem código"}</p></TableCell>;
 }
 
-function MovimentosEspeciais({ itens, vazio, mostrarValor = false }: { itens: MovimentoKardexPublico[]; vazio: string; mostrarValor?: boolean }) {
-  return <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Quantidade</TableHead>{mostrarValor ? <TableHead className="text-right">Valor</TableHead> : <TableHead className="text-right">Saldo</TableHead>}</TableRow></TableHeader><TableBody>{itens.length ? itens.map((item, indice) => <TableRow key={`${item.documento}-${item.dataMovimento}-${indice}`}><TableCell className="text-xs">{dataVisual(item.dataMovimento)}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? classesSituacao.saudavel : classesSituacao.ruptura}>{item.grupoDocumento} · {item.direcao === "entrada" ? "Entrada" : "Saída"}</Badge></TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell className="text-xs">{item.participante || "—"}</TableCell><TableCell className="text-right">{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell>{mostrarValor ? <TableCell className="text-right font-medium">{formatarMoeda(Math.abs(item.valorTotal))}</TableCell> : <TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell>}</TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{vazio}</TableCell></TableRow>}</TableBody></Table></div>;
+function MovimentosEspeciais({ itens, totalItens, paginacao, vazio, mostrarValor = false }: { itens: MovimentoKardexPublico[]; totalItens: number; paginacao: ReturnType<typeof useTablePagination<MovimentoKardexPublico>>; vazio: string; mostrarValor?: boolean }) {
+  return <><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Quantidade</TableHead>{mostrarValor ? <TableHead className="text-right">Valor</TableHead> : <TableHead className="text-right">Saldo</TableHead>}</TableRow></TableHeader><TableBody>{itens.length ? itens.map((item, indice) => <TableRow key={`${item.documento}-${item.dataMovimento}-${indice}`}><TableCell className="text-xs">{dataVisual(item.dataMovimento)}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? classesSituacao.saudavel : classesSituacao.ruptura}>{item.grupoDocumento} · {item.direcao === "entrada" ? "Entrada" : "Saída"}</Badge></TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell className="text-xs">{item.participante || "—"}</TableCell><TableCell className="text-right">{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell>{mostrarValor ? <TableCell className="text-right font-medium">{formatarMoeda(Math.abs(item.valorTotal))}</TableCell> : <TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell>}</TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{vazio}</TableCell></TableRow>}</TableBody></Table></div>{totalItens > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={paginacao.paginaAtual} totalItens={totalItens} itensPorPagina={paginacao.itensPorPagina} onPaginaChange={paginacao.setPagina} onItensPorPaginaChange={paginacao.setItensPorPagina} labelItens="movimentos" /></div> : null}</>;
 }

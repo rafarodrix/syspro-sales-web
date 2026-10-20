@@ -332,7 +332,7 @@ export function VisaoFrequenciaClientes({
             visitas físicas.
           </p>
           <p>
-            A coluna "Dias no comparativo" mostra quantos dias distintos tiveram compra na janela comparada. Variações de frequência e faturamento comparam as janelas completas.
+            A coluna &ldquo;Dias no comparativo&rdquo; mostra quantos dias distintos tiveram compra na janela comparada. Variações de frequência e faturamento comparam as janelas completas.
             A variação de frequência usa taxas por 30 dias. — indica comparação
             sem base ou dado indisponível.
           </p>
