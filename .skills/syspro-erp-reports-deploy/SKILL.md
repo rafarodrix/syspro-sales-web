@@ -37,6 +37,9 @@ pm2 restart syspro-erp-reports
 ```
 (ou rodar o `instalar-servico.bat` de novo — é idempotente).
 
+## Armadilha de build (Windows)
+- **NUNCA rodar `npm run build` com o servidor de produção no ar.** O Next apaga/regenera `.next` (incluindo `.next/standalone`), então o processo antigo continua de pé em memória mas o app quebra na hora (HTTP 500, sem chunks/estáticos). Se precisar validar build, pare o processo primeiro (`netstat -ano | grep :3000` → `taskkill /PID <pid> /F`), rode o build, copie `.next/static`, `public` e `.env` para `.next/standalone` e só então suba com `node start-prod.js`.
+
 ## Acesso interno E externo — o ponto crítico
 O app atende **dois públicos** com origens diferentes (ex.: IP local `192.168.x` + externo via Radmin/Tailscale). Isso cria um desafio no Better Auth:
 

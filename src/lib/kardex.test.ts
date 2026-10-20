@@ -52,6 +52,19 @@ describe("Kardex", () => {
     });
   });
 
+  it("distingue venda NF-e (ENP) de venda PDV (EVP)", () => {
+    expect(classificarMovimentoKardex("ENP", "S")).toEqual({
+      categoria: "venda",
+      direcao: "saida",
+      rotulo: "Venda NF-e",
+    });
+    expect(classificarMovimentoKardex("EVP", "S")).toEqual({
+      categoria: "venda",
+      direcao: "saida",
+      rotulo: "Venda PDV",
+    });
+  });
+
   it("classifica transferência, bonificação e ajuste pelos códigos reais", () => {
     expect(classificarMovimentoKardex("EST", "S")).toMatchObject({ categoria: "transferencia", direcao: "saida" });
     expect(classificarMovimentoKardex("EET", "E")).toMatchObject({ categoria: "transferencia", direcao: "entrada" });
