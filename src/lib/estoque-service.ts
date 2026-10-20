@@ -6,6 +6,7 @@ import {
 } from "@/lib/kardex";
 import { dataInputParaSyspro } from "@/lib/vendas";
 import type { EmpresaInfo } from "@/lib/sales-service";
+import { consultarSysproAdaptativamente } from "@/lib/syspro-consulta-adaptativa";
 
 export class EstoqueQueryError extends Error {
   constructor(message: string, public status: 400 | 429) {
@@ -33,13 +34,16 @@ export async function obterMovimentosEstoque({
   }
 
   const paraSyspro = (data: string) => data.includes("-") ? dataInputParaSyspro(data) : data;
-  const dados = await consultarKardex({
-    baseUrl: empresa.sysproBaseUrl,
-    useIis: empresa.sysproUseIis === true,
-  }, {
-    dtInicial: paraSyspro(dtInicial),
-    dtFinal: paraSyspro(dtFinal),
-  }, signal);
+  const dados = await consultarSysproAdaptativamente(
+    { inicial: dtInicial, final: dtFinal },
+    (janela) => consultarKardex({
+      baseUrl: empresa.sysproBaseUrl!,
+      useIis: empresa.sysproUseIis === true,
+    }, {
+      dtInicial: paraSyspro(janela.inicial),
+      dtFinal: paraSyspro(janela.final),
+    }, signal),
+  );
 
   return dados
     .map(normalizarMovimentoKardex)

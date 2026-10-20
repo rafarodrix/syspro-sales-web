@@ -1,6 +1,7 @@
 import { consultarVendas, type VendaComEmpresa } from "@/lib/syspro-api";
 import { dataInputParaSyspro } from "@/lib/vendas";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { consultarSysproAdaptativamente } from "@/lib/syspro-consulta-adaptativa";
 
 export interface EmpresaInfo {
   id: string;
@@ -133,10 +134,13 @@ export async function obterVendas({
         useIis: emp.sysproUseIis === true,
       };
 
-      const dados = await consultarVendas(config, {
-        dtInicial: dtIniNormalizada,
-        dtFinal: dtFimNormalizada,
-      }, signal);
+      const dados = await consultarSysproAdaptativamente(
+        { inicial: dtIniNormalizada, final: dtFimNormalizada },
+        (janela) => consultarVendas(config, {
+          dtInicial: janela.inicial,
+          dtFinal: janela.final,
+        }, signal),
+      );
 
       const filtradas: VendaComEmpresa[] = dados
         .filter((v) => v.empresa_codigo === emp.empresaCodigo)
