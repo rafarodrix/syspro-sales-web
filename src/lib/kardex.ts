@@ -40,6 +40,7 @@ export interface MovimentoKardex {
 }
 
 export interface ResumoProdutoKardex {
+  chaveInterna: string;
   codigo: string;
   produto: string;
   saidasVenda: number;
@@ -83,8 +84,10 @@ export function normalizarMovimentoKardex(item: unknown): MovimentoKardex {
 export function resumirProdutosKardex(movimentos: MovimentoKardex[]) {
   const porProduto = new Map<string, ResumoProdutoKardex>();
   for (const movimento of movimentos) {
+    const chaveInterna = String(movimento.produtoIdProduto ?? "").trim();
+    if (!chaveInterna) continue;
     const codigo = movimento.produtoCodigoAuxiliar || "Sem código";
-    const atual = porProduto.get(codigo) ?? { codigo, produto: movimento.produtoDescricao || "Produto sem descrição", saidasVenda: 0, devolucoesVenda: 0, entradasCompra: 0, transferenciasEntrada: 0, transferenciasSaida: 0 };
+    const atual = porProduto.get(chaveInterna) ?? { chaveInterna, codigo, produto: movimento.produtoDescricao || "Produto sem descrição", saidasVenda: 0, devolucoesVenda: 0, entradasCompra: 0, transferenciasEntrada: 0, transferenciasSaida: 0 };
     const quantidade = Math.abs(movimento.quantidadeMovimentada);
     const direcao = movimento.direcao ?? movimento.classificacao.direcao;
     if (movimento.classificacao.categoria === "venda" && direcao === "saida") atual.saidasVenda += quantidade;
@@ -92,7 +95,7 @@ export function resumirProdutosKardex(movimentos: MovimentoKardex[]) {
     if (movimento.classificacao.categoria === "compra" && direcao === "entrada") atual.entradasCompra += quantidade;
     if (movimento.classificacao.categoria === "transferencia" && direcao === "entrada") atual.transferenciasEntrada += quantidade;
     if (movimento.classificacao.categoria === "transferencia" && direcao === "saida") atual.transferenciasSaida += quantidade;
-    porProduto.set(codigo, atual);
+    porProduto.set(chaveInterna, atual);
   }
   const todos = Array.from(porProduto.values());
   return {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { aplicarLimite, autenticarApi, buscarEmpresaAutorizada, validarJson } from "@/lib/api-route";
 import { SysproApiError } from "@/lib/syspro-api";
 import { obterMovimentosEstoque, EstoqueQueryError } from "@/lib/estoque-service";
+import { montarSaudeEstoque } from "@/lib/estoque-saude";
+import { obterVendas, SalesIntegrationError, SalesQueryError } from "@/lib/sales-service";
 import { kardexQuerySchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
@@ -26,17 +28,26 @@ export async function POST(request: NextRequest) {
     const empresa = await buscarEmpresaAutorizada(session, empresaId);
     if (!empresa) return NextResponse.json({ error: "Empresa não encontrada ou não liberada." }, { status: 403 });
 
-    const movimentos = await obterMovimentosEstoque({ empresa, dtInicial, dtFinal });
-    const resumo = movimentos.reduce((acc, movimento) => {
-      if (movimento.direcao === "entrada") acc.entradas += Math.abs(movimento.quantidadeMovimentada);
-      if (movimento.direcao === "saida") acc.saidas += Math.abs(movimento.quantidadeMovimentada);
-      if (movimento.classificacao.categoria === "devolucao_venda") acc.devolucoesVenda += Math.abs(movimento.quantidadeMovimentada);
-      return acc;
-    }, { entradas: 0, saidas: 0, devolucoesVenda: 0 });
-
-    return NextResponse.json({ movimentos, resumo });
+    const [movimentos, vendas] = await Promise.all([
+      obterMovimentosEstoque({ empresa, dtInicial, dtFinal, signal: request.signal }),
+      obterVendas({
+        actorId: session.user.id,
+        empresasLiberadas: [empresa],
+        empresaSelecionadaId: empresa.id,
+        dtInicial,
+        dtFinal,
+        signal: request.signal,
+        enforceRateLimit: false,
+      }),
+    ]);
+    const saude = montarSaudeEstoque(movimentos, vendas, { inicial: dtInicial, final: dtFinal });
+    return NextResponse.json({ movimentos, ...saude }, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (error) {
     if (error instanceof EstoqueQueryError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof SalesQueryError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof SalesIntegrationError) return NextResponse.json({ error: error.message }, { status: 502 });
     if (error instanceof SysproApiError) return NextResponse.json({ error: error.message }, { status: error.status ?? 502 });
     console.error("[api/estoque] Erro ao consultar Kardex:", error);
     return NextResponse.json({ error: "Erro ao consultar movimentações de estoque." }, { status: 502 });

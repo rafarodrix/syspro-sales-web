@@ -67,10 +67,10 @@ describe("Kardex", () => {
 
   it("agrega saídas, devoluções, entradas e transferências por produto", () => {
     const resumo = resumirProdutosKardex([
-      { produtoCodigoAuxiliar: "10", produtoDescricao: "Produto A", quantidadeMovimentada: -4, classificacao: { categoria: "venda", direcao: "saida", rotulo: "Venda PDV" } },
-      { produtoCodigoAuxiliar: "10", produtoDescricao: "Produto A", quantidadeMovimentada: 1, classificacao: { categoria: "devolucao_venda", direcao: "entrada", rotulo: "Devolução de venda" } },
-      { produtoCodigoAuxiliar: "20", produtoDescricao: "Produto B", quantidadeMovimentada: 7, classificacao: { categoria: "compra", direcao: "entrada", rotulo: "Recebimento" } },
-      { produtoCodigoAuxiliar: "20", produtoDescricao: "Produto B", quantidadeMovimentada: -2, classificacao: { categoria: "transferencia", direcao: "saida", rotulo: "Transferência" } },
+      { produtoIdProduto: "1", produtoCodigoAuxiliar: "10", produtoDescricao: "Produto A", quantidadeMovimentada: -4, classificacao: { categoria: "venda", direcao: "saida", rotulo: "Venda PDV" } },
+      { produtoIdProduto: "1", produtoCodigoAuxiliar: "10", produtoDescricao: "Produto A", quantidadeMovimentada: 1, classificacao: { categoria: "devolucao_venda", direcao: "entrada", rotulo: "Devolução de venda" } },
+      { produtoIdProduto: "2", produtoCodigoAuxiliar: "20", produtoDescricao: "Produto B", quantidadeMovimentada: 7, classificacao: { categoria: "compra", direcao: "entrada", rotulo: "Recebimento" } },
+      { produtoIdProduto: "2", produtoCodigoAuxiliar: "20", produtoDescricao: "Produto B", quantidadeMovimentada: -2, classificacao: { categoria: "transferencia", direcao: "saida", rotulo: "Transferência" } },
     ] as MovimentoKardex[]);
 
     expect(resumo.saidasEDevolucoes[0]).toMatchObject({ codigo: "10", saidasVenda: 4, devolucoesVenda: 1 });
