@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   COLUNAS_EXPORTACAO_COMPRAS,
   montarLinhasExportacaoCompras,
+  numeroPtBr,
+  numeroPtBrEnxuto,
 } from "@/lib/exportar-compras";
 import type { ItemRelatorioCompras } from "@/lib/relatorio-compras";
 
@@ -29,20 +31,64 @@ const item: ItemRelatorioCompras = {
   custoReposicaoMedio: 2.6051,
   custoTotalMercadorias: 974.3074,
   margemBrutaPercentual: 47.1716096,
+  custoEstoqueAquisicao: 132.6,
+  custoEstoqueReposicao: 156.306,
 };
+
+const colunas: string[] = [...COLUNAS_EXPORTACAO_COMPRAS];
+const valor = (linha: (string | number)[], coluna: string) => linha[colunas.indexOf(coluna)];
 
 describe("exportacao do relatorio de compras", () => {
   it("coloca codigo e unidade em colunas proprias", () => {
-    const colunas = [...COLUNAS_EXPORTACAO_COMPRAS];
     expect(colunas.slice(0, 3)).toEqual(["Código", "Descrição", "Unidade"]);
-    expect(colunas).toContain("Custo total mercadorias");
-    expect(colunas).toContain("Margem %");
+    expect(colunas).toContain("Estoque a custo aquisição");
+    expect(colunas).toContain("Estoque a custo reposição");
+  });
+
+  it("mantem estoque atual ao lado da demanda para compras", () => {
+    const indiceDemanda = colunas.indexOf("Demanda para compras");
+    expect(colunas[indiceDemanda + 1]).toBe("Estoque atual");
+  });
+
+  it("exporta numeros com virgula decimal no padrao pt-BR", () => {
+    const [linha] = montarLinhasExportacaoCompras([item], 30);
+    expect(valor(linha, "Custo reposição")).toBe("2,61");
+    expect(valor(linha, "Estoque a custo aquisição")).toBe("132,60");
+    expect(valor(linha, "Estoque a custo reposição")).toBe("156,31");
+    expect(valor(linha, "Venda líquida real")).toBe("1844,28");
+    expect(valor(linha, "Margem %")).toBe("47,17");
+    expect(valor(linha, "Cobertura (dias)")).toBe("3");
+  });
+
+  it("formata inteiros sem decimais e nulos como vazio", () => {
+    const [linha] = montarLinhasExportacaoCompras([item], 30);
+    expect(valor(linha, "Estoque atual")).toBe("60");
+    expect(valor(linha, "Vendas no período")).toBe("376");
+
+    const [semValor] = montarLinhasExportacaoCompras(
+      [{ ...item, estoqueAtual: null, custoEstoqueAquisicao: null, margemBrutaPercentual: null }],
+      30,
+    );
+    expect(valor(semValor, "Estoque atual")).toBe("");
+    expect(valor(semValor, "Estoque a custo aquisição")).toBe("");
+    expect(valor(semValor, "Margem %")).toBe("");
+    expect(valor(semValor, "Situação")).toBe("Sem saldo localizado");
+  });
+
+  it("inclui situacao e sugestao calculadas pela cobertura alvo", () => {
+    const [linha30] = montarLinhasExportacaoCompras([item], 30);
+    expect(valor(linha30, "Situação")).toBe("Crítica");
+    expect(valor(linha30, "Sugestão de compra")).toBe("534");
+    expect(valor(linha30, "Custo sugestão")).toBe("1391,12");
+
+    const [linha90] = montarLinhasExportacaoCompras([item], 90);
+    expect(valor(linha90, "Situação")).toBe("Crítica");
+    expect(valor(linha90, "Sugestão de compra")).toBe("1722");
   });
 
   it("mantem a mesma quantidade de colunas e valores por linha", () => {
-    const linhas = montarLinhasExportacaoCompras([item]);
-    expect(linhas).toHaveLength(1);
-    expect(linhas[0]).toHaveLength(COLUNAS_EXPORTACAO_COMPRAS.length);
+    const linhas = montarLinhasExportacaoCompras([item], 30);
+    expect(linhas[0]).toHaveLength(colunas.length);
     expect(linhas[0].slice(0, 4)).toEqual([
       "RQ1010",
       "AGUA BIDESMINERALIZADA 1 L RADNAQ",
@@ -51,19 +97,12 @@ describe("exportacao do relatorio de compras", () => {
     ]);
   });
 
-  it("exporta numeros arredondados e usa vazio quando nao ha valor", () => {
-    const linhas = montarLinhasExportacaoCompras([
-      { ...item, estoqueAtual: null, margemBrutaPercentual: null, custoTotalMercadorias: null },
-    ]);
-    const indiceEstoque = COLUNAS_EXPORTACAO_COMPRAS.indexOf("Estoque atual");
-    const indiceMargem = COLUNAS_EXPORTACAO_COMPRAS.indexOf("Margem %");
-    const indiceCustoTotal = COLUNAS_EXPORTACAO_COMPRAS.indexOf("Custo total mercadorias");
-    const indiceCobertura = COLUNAS_EXPORTACAO_COMPRAS.indexOf("Cobertura (dias)");
-
-    expect(linhas[0][indiceEstoque]).toBe("");
-    expect(linhas[0][indiceMargem]).toBe("");
-    expect(linhas[0][indiceCustoTotal]).toBe("");
-    expect(linhas[0][indiceCobertura]).toBe(3);
-    expect(linhas[0][COLUNAS_EXPORTACAO_COMPRAS.indexOf("Venda líquida real")]).toBe(1844.28);
+  it("formata numeros pt-BR sem separador de milhar", () => {
+    expect(numeroPtBr(1234.567)).toBe("1234,57");
+    expect(numeroPtBr(-3.5, 1)).toBe("-3,5");
+    expect(numeroPtBr(null)).toBe("");
+    expect(numeroPtBrEnxuto(18.95, 3)).toBe("18,95");
+    expect(numeroPtBrEnxuto(60, 3)).toBe("60");
+    expect(numeroPtBrEnxuto(null)).toBe("");
   });
 });

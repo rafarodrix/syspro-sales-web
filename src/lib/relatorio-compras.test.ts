@@ -181,6 +181,49 @@ describe("relatorio de compras", () => {
     expect(relatorio.resumo.coberturaCusto).toBe(0);
   });
 
+  it("valoriza o estoque atual pelo custo de aquisição e de reposição", () => {
+    const relatorio = montarRelatorioCompras(
+      [{
+        ...venda("AUX-6", 10, "Produto com estoque"),
+        produto_id: "GUID-6",
+        produto_codigo_auxiliar: "AUX-6",
+        produto_vlr_total_liquido: 200,
+        produto_vlr_custo_aquisicao: 10,
+        produto_vlr_custo_reposicao: 15,
+      }],
+      [movimento("GUID-6", "2026-10-10", "EVP", -40, 40)],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({
+      estoqueAtual: 40,
+      custoEstoqueAquisicao: 400,
+      custoEstoqueReposicao: 600,
+    });
+    expect(relatorio.resumo).toMatchObject({
+      custoEstoqueAquisicao: 400,
+      custoEstoqueReposicao: 600,
+    });
+  });
+
+  it("mantém valores de estoque nulos quando não há saldo localizado", () => {
+    const relatorio = montarRelatorioCompras(
+      [{
+        ...venda("AUX-5", 3, "Produto sem saldo"),
+        produto_id: "GUID-5",
+        produto_vlr_custo_aquisicao: 7,
+        produto_vlr_custo_reposicao: 9,
+      }],
+      [],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.itens[0].custoEstoqueAquisicao).toBeNull();
+    expect(relatorio.itens[0].custoEstoqueReposicao).toBeNull();
+    expect(relatorio.resumo.custoEstoqueAquisicao).toBe(0);
+    expect(relatorio.resumo.custoEstoqueReposicao).toBe(0);
+  });
+
   it("não deixa a cobertura de custo passar de 100% com produto só de devolução", () => {
     const relatorio = montarRelatorioCompras(
       [{

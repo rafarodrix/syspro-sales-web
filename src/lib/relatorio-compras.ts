@@ -40,6 +40,10 @@ export interface ItemRelatorioCompras {
   custoTotalMercadorias?: number | null;
   /** (venda líquida real − custo total mercadorias) / venda líquida real × 100. */
   margemBrutaPercentual?: number | null;
+  /** Custo de aquisição médio × estoque atual (capital imobilizado). */
+  custoEstoqueAquisicao?: number | null;
+  /** Custo de reposição médio × estoque atual (valor de reposição do estoque). */
+  custoEstoqueReposicao?: number | null;
 }
 
 export interface ResumoRelatorioCompras {
@@ -60,6 +64,10 @@ export interface ResumoRelatorioCompras {
   margemBrutaPercentual: number;
   /** Percentual da demanda de compras que possui custo informado pela API. */
   coberturaCusto: number;
+  /** Soma do estoque atual valorizado pelo custo de aquisição. */
+  custoEstoqueAquisicao: number;
+  /** Soma do estoque atual valorizado pelo custo de reposição. */
+  custoEstoqueReposicao: number;
 }
 
 export interface RelatorioCompras {
@@ -219,6 +227,12 @@ export function montarRelatorioCompras(
     item.margemBrutaPercentual = item.custoTotalMercadorias !== null && item.valorVendaLiquida > 0
       ? ((item.valorVendaLiquida - item.custoTotalMercadorias) / item.valorVendaLiquida) * 100
       : null;
+    item.custoEstoqueAquisicao = item.estoqueAtual === null || item.custoAquisicaoMedio == null
+      ? null
+      : item.custoAquisicaoMedio * item.estoqueAtual;
+    item.custoEstoqueReposicao = item.estoqueAtual === null || item.custoReposicaoMedio == null
+      ? null
+      : item.custoReposicaoMedio * item.estoqueAtual;
   }
 
   const ordenados = [...porProduto.values()].sort(
@@ -260,9 +274,20 @@ export function montarRelatorioCompras(
       custoReposicaoMedio: item.custoReposicaoMedio,
       custoTotalMercadorias: item.custoTotalMercadorias,
       margemBrutaPercentual: item.margemBrutaPercentual,
+      custoEstoqueAquisicao: item.custoEstoqueAquisicao,
+      custoEstoqueReposicao: item.custoEstoqueReposicao,
       curva,
     };
   });
+
+  const totalCustoEstoqueAquisicao = itens.reduce(
+    (total, item) => total + (item.custoEstoqueAquisicao ?? 0),
+    0,
+  );
+  const totalCustoEstoqueReposicao = itens.reduce(
+    (total, item) => total + (item.custoEstoqueReposicao ?? 0),
+    0,
+  );
 
   const totalCustoMercadorias = itens.reduce(
     (total, item) => total + (item.custoTotalMercadorias ?? 0),
@@ -295,6 +320,8 @@ export function montarRelatorioCompras(
       margemBruta,
       margemBrutaPercentual: totalVendaLiquida > 0 ? (margemBruta / totalVendaLiquida) * 100 : 0,
       coberturaCusto: calcularPercentual(quantidadeLiquidaComCusto, totalDemandaLiquida),
+      custoEstoqueAquisicao: totalCustoEstoqueAquisicao,
+      custoEstoqueReposicao: totalCustoEstoqueReposicao,
     },
   };
 }
