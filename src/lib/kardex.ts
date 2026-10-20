@@ -39,16 +39,21 @@ export interface MovimentoKardex {
   empresaCnpj?: string;
 }
 
-export interface ResumoProdutoKardex {
-  chaveInterna: string;
-  codigo: string;
-  produto: string;
-  saidasVenda: number;
-  devolucoesVenda: number;
-  entradasCompra: number;
-  transferenciasEntrada: number;
-  transferenciasSaida: number;
-}
+export type MovimentoKardexPublico = Pick<
+  MovimentoKardex,
+  | "participante"
+  | "produtoCodigoAuxiliar"
+  | "produtoDescricao"
+  | "valorTotal"
+  | "dataMovimento"
+  | "quantidadeMovimentada"
+  | "saldo"
+  | "documento"
+  | "grupoDocumento"
+  | "descricaoGrupoDocumento"
+  | "direcao"
+  | "classificacao"
+>;
 
 export function paraNumero(valor: unknown): number {
   if (typeof valor === "number") return Number.isFinite(valor) ? valor : 0;
@@ -81,26 +86,20 @@ export function normalizarMovimentoKardex(item: unknown): MovimentoKardex {
   return { empresaCodigo: texto("empresa_codigo"), empresaNome: texto("empresa_nome"), participante: texto("participante_nome"), produtoIdProduto: texto("produto_id_produto"), produtoCodigoAuxiliar: texto("produto_codigo_auxiliar"), produtoMarca: texto("produto_marca"), produtoDescricao: texto("produto_descricao"), valorTotal: paraNumero(registro.produto_vlr_total), dataMovimento: texto("kardex_data_movimento"), quantidadeAnterior: paraNumero(registro.kardex_qtde_anterior), quantidadeMovimentada: paraNumero(registro.kardex_qtde_movimento), saldo: paraNumero(registro.kardex_qtde_saldo), documento: texto("kardex_nro_documento"), grupoDocumento, descricaoGrupoDocumento, operacaoSyspro, modeloDocumento: texto("kardex_modelo_documento"), direcao: classificacao.direcao, classificacao };
 }
 
-export function resumirProdutosKardex(movimentos: MovimentoKardex[]) {
-  const porProduto = new Map<string, ResumoProdutoKardex>();
-  for (const movimento of movimentos) {
-    const chaveInterna = String(movimento.produtoIdProduto ?? "").trim();
-    if (!chaveInterna) continue;
-    const codigo = movimento.produtoCodigoAuxiliar || "Sem código";
-    const atual = porProduto.get(chaveInterna) ?? { chaveInterna, codigo, produto: movimento.produtoDescricao || "Produto sem descrição", saidasVenda: 0, devolucoesVenda: 0, entradasCompra: 0, transferenciasEntrada: 0, transferenciasSaida: 0 };
-    const quantidade = Math.abs(movimento.quantidadeMovimentada);
-    const direcao = movimento.direcao ?? movimento.classificacao.direcao;
-    if (movimento.classificacao.categoria === "venda" && direcao === "saida") atual.saidasVenda += quantidade;
-    if (movimento.classificacao.categoria === "devolucao_venda") atual.devolucoesVenda += quantidade;
-    if (movimento.classificacao.categoria === "compra" && direcao === "entrada") atual.entradasCompra += quantidade;
-    if (movimento.classificacao.categoria === "transferencia" && direcao === "entrada") atual.transferenciasEntrada += quantidade;
-    if (movimento.classificacao.categoria === "transferencia" && direcao === "saida") atual.transferenciasSaida += quantidade;
-    porProduto.set(chaveInterna, atual);
-  }
-  const todos = Array.from(porProduto.values());
+export function projetarMovimentoKardex(movimento: MovimentoKardex): MovimentoKardexPublico {
   return {
-    saidasEDevolucoes: todos.filter((item) => item.saidasVenda || item.devolucoesVenda).sort((a, b) => (b.saidasVenda + b.devolucoesVenda) - (a.saidasVenda + a.devolucoesVenda)),
-    entradasETransferencias: todos.filter((item) => item.entradasCompra || item.transferenciasEntrada || item.transferenciasSaida).sort((a, b) => (b.entradasCompra + b.transferenciasEntrada + b.transferenciasSaida) - (a.entradasCompra + a.transferenciasEntrada + a.transferenciasSaida)),
+    participante: movimento.participante,
+    produtoCodigoAuxiliar: movimento.produtoCodigoAuxiliar,
+    produtoDescricao: movimento.produtoDescricao,
+    valorTotal: movimento.valorTotal,
+    dataMovimento: movimento.dataMovimento,
+    quantidadeMovimentada: movimento.quantidadeMovimentada,
+    saldo: movimento.saldo,
+    documento: movimento.documento,
+    grupoDocumento: movimento.grupoDocumento,
+    descricaoGrupoDocumento: movimento.descricaoGrupoDocumento,
+    direcao: movimento.direcao,
+    classificacao: movimento.classificacao,
   };
 }
 

@@ -6,8 +6,10 @@ import {
   calcularPercentual,
   normalizarCodigoProduto,
   paraNumero,
+  valorLiquidoItem,
 } from "@/lib/metricas-negocio";
 import type { VendaProduto } from "@/lib/syspro-api";
+import { normalizarDataIso } from "@/lib/periodo";
 
 export type SituacaoEstoque = "ruptura" | "critico" | "atencao" | "saudavel" | "excesso" | "sem_giro";
 
@@ -18,6 +20,10 @@ export interface PosicaoEstoque {
   estoqueAtual: number;
   quantidadeVendida: number;
   quantidadeDevolvida: number;
+  valorVendido: number;
+  valorDevolvido: number;
+  taxaDevolucaoQuantidade: number;
+  taxaDevolucaoValor: number;
   demandaLiquida: number;
   mediaDiaria: number;
   coberturaDias: number | null;
@@ -43,6 +49,10 @@ export interface ResumoSaudeEstoque {
   baixaCobertura: number;
   excesso: number;
   semGiro: number;
+  saldosNegativos: number;
+  capitalExcesso: number;
+  taxaDevolucaoQuantidade: number;
+  taxaDevolucaoValor: number;
   devolucoesVendaQuantidade: number;
   devolucoesVendaValor: number;
   movimentosSemProdutoId: number;
@@ -60,6 +70,7 @@ interface AcumuladorProduto {
   estoqueAtual: number;
   quantidadeVendida: number;
   quantidadeDevolvida: number;
+  valorVendido: number;
   devolucoesVendaValor: number;
   ultimaEntrada: string | null;
   ultimaSaida: string | null;
@@ -74,12 +85,6 @@ interface AcumuladorProduto {
 const LIMITE_CRITICO_DIAS = 7;
 const LIMITE_ATENCAO_DIAS = 15;
 const LIMITE_EXCESSO_DIAS = 90;
-
-function normalizarDataIso(valor: string): string {
-  const texto = String(valor ?? "").trim();
-  const brasileira = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
-  return brasileira ? `${brasileira[3]}-${brasileira[2]}-${brasileira[1]}` : texto.slice(0, 10);
-}
 
 function dataMaisRecente(atual: string | null, candidata: string): string | null {
   const normalizada = normalizarDataIso(candidata);
@@ -104,6 +109,7 @@ function novoAcumulador(movimento: MovimentoKardex): AcumuladorProduto {
     estoqueAtual: movimento.saldo,
     quantidadeVendida: 0,
     quantidadeDevolvida: 0,
+    valorVendido: 0,
     devolucoesVendaValor: 0,
     ultimaEntrada: null,
     ultimaSaida: null,
@@ -165,6 +171,7 @@ export function montarSaudeEstoque(
     const quantidade = Math.abs(paraNumero(venda.produto_qtde));
     const custoAquisicao = paraNumero(venda.produto_vlr_custo_aquisicao);
     const custoReposicao = paraNumero(venda.produto_vlr_custo_reposicao);
+    atual.valorVendido += Math.abs(valorLiquidoItem(venda));
     if (custoAquisicao > 0 && quantidade > 0) {
       atual.totalCustoAquisicao += custoAquisicao * quantidade;
       atual.quantidadeComCustoAquisicao += quantidade;
@@ -188,6 +195,8 @@ export function montarSaudeEstoque(
       ? item.totalCustoReposicao / item.quantidadeComCustoReposicao
       : null;
     const estoqueValorizavel = Math.max(0, item.estoqueAtual);
+    const taxaDevolucaoQuantidade = calcularPercentual(item.quantidadeDevolvida, item.quantidadeVendida);
+    const taxaDevolucaoValor = calcularPercentual(item.devolucoesVendaValor, item.valorVendido);
 
     return {
       codigo: item.codigo,
@@ -196,6 +205,10 @@ export function montarSaudeEstoque(
       estoqueAtual: item.estoqueAtual,
       quantidadeVendida: item.quantidadeVendida,
       quantidadeDevolvida: item.quantidadeDevolvida,
+      valorVendido: item.valorVendido,
+      valorDevolvido: item.devolucoesVendaValor,
+      taxaDevolucaoQuantidade,
+      taxaDevolucaoValor,
       demandaLiquida,
       mediaDiaria,
       coberturaDias,
@@ -215,6 +228,10 @@ export function montarSaudeEstoque(
 
   const produtosComCustoAquisicao = posicoes.filter((item) => item.custoAquisicaoMedio !== null).length;
   const produtosComCustoReposicao = posicoes.filter((item) => item.custoReposicaoMedio !== null).length;
+  const quantidadeVendida = posicoes.reduce((total, item) => total + item.quantidadeVendida, 0);
+  const quantidadeDevolvida = posicoes.reduce((total, item) => total + item.quantidadeDevolvida, 0);
+  const valorVendido = posicoes.reduce((total, item) => total + item.valorVendido, 0);
+  const valorDevolvido = posicoes.reduce((total, item) => total + item.valorDevolvido, 0);
 
   return {
     posicoes,
@@ -230,8 +247,14 @@ export function montarSaudeEstoque(
       baixaCobertura: posicoes.filter((item) => item.situacao === "critico" || item.situacao === "atencao").length,
       excesso: posicoes.filter((item) => item.situacao === "excesso").length,
       semGiro: posicoes.filter((item) => item.situacao === "sem_giro").length,
-      devolucoesVendaQuantidade: posicoes.reduce((total, item) => total + item.quantidadeDevolvida, 0),
-      devolucoesVendaValor: [...porProduto.values()].reduce((total, item) => total + item.devolucoesVendaValor, 0),
+      saldosNegativos: posicoes.filter((item) => item.estoqueAtual < 0).length,
+      capitalExcesso: posicoes
+        .filter((item) => item.situacao === "excesso")
+        .reduce((total, item) => total + (item.valorReposicao ?? 0), 0),
+      taxaDevolucaoQuantidade: calcularPercentual(quantidadeDevolvida, quantidadeVendida),
+      taxaDevolucaoValor: calcularPercentual(valorDevolvido, valorVendido),
+      devolucoesVendaQuantidade: quantidadeDevolvida,
+      devolucoesVendaValor: valorDevolvido,
       movimentosSemProdutoId,
     },
   };

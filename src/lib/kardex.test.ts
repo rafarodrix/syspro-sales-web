@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   classificarMovimentoKardex,
   normalizarMovimentoKardex,
-  resumirProdutosKardex,
+  projetarMovimentoKardex,
   validarPeriodoKardex,
-  type MovimentoKardex,
 } from "@/lib/kardex";
 
 describe("Kardex", () => {
@@ -65,16 +64,25 @@ describe("Kardex", () => {
     expect(classificarMovimentoKardex("EOS", "S", "EMISSAO POR OUTRAS SAIDAS")).toMatchObject({ categoria: "outros", rotulo: "Outras saídas" });
   });
 
-  it("agrega saídas, devoluções, entradas e transferências por produto", () => {
-    const resumo = resumirProdutosKardex([
-      { produtoIdProduto: "1", produtoCodigoAuxiliar: "10", produtoDescricao: "Produto A", quantidadeMovimentada: -4, classificacao: { categoria: "venda", direcao: "saida", rotulo: "Venda PDV" } },
-      { produtoIdProduto: "1", produtoCodigoAuxiliar: "10", produtoDescricao: "Produto A", quantidadeMovimentada: 1, classificacao: { categoria: "devolucao_venda", direcao: "entrada", rotulo: "Devolução de venda" } },
-      { produtoIdProduto: "2", produtoCodigoAuxiliar: "20", produtoDescricao: "Produto B", quantidadeMovimentada: 7, classificacao: { categoria: "compra", direcao: "entrada", rotulo: "Recebimento" } },
-      { produtoIdProduto: "2", produtoCodigoAuxiliar: "20", produtoDescricao: "Produto B", quantidadeMovimentada: -2, classificacao: { categoria: "transferencia", direcao: "saida", rotulo: "Transferência" } },
-    ] as MovimentoKardex[]);
+  it("remove identificadores internos e campos redundantes da projeção para o frontend", () => {
+    const movimento = normalizarMovimentoKardex({
+      empresa_codigo: "1",
+      empresa_nome: "Empresa",
+      produto_id_produto: "ID-INTERNO",
+      produto_codigo_auxiliar: "REF-10",
+      produto_descricao: "Produto A",
+      kardex_data_movimento: "2026-10-01",
+      kardex_qtde_movimento: -4,
+      kardex_qtde_saldo: 6,
+      kardex_cd_grupo_documento: "EVP",
+      kardex_operacao: "S",
+    });
+    const publico = projetarMovimentoKardex(movimento);
 
-    expect(resumo.saidasEDevolucoes[0]).toMatchObject({ codigo: "10", saidasVenda: 4, devolucoesVenda: 1 });
-    expect(resumo.entradasETransferencias[0]).toMatchObject({ codigo: "20", entradasCompra: 7, transferenciasSaida: 2 });
+    expect(publico).toMatchObject({ produtoCodigoAuxiliar: "REF-10", quantidadeMovimentada: -4, saldo: 6 });
+    expect(publico).not.toHaveProperty("produtoIdProduto");
+    expect(publico).not.toHaveProperty("empresaCodigo");
+    expect(publico).not.toHaveProperty("empresaCnpj");
   });
 
   it("aceita no máximo 31 dias de Kardex", () => {

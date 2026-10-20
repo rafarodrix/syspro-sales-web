@@ -1,14 +1,9 @@
 import { SysproApiError } from "@/lib/syspro-api";
+import { normalizarDataIso } from "@/lib/periodo";
 
 export interface JanelaConsulta {
   inicial: string;
   final: string;
-}
-
-function normalizarDataIso(valor: string): string {
-  const texto = String(valor ?? "").trim();
-  const brasileira = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
-  return brasileira ? `${brasileira[3]}-${brasileira[2]}-${brasileira[1]}` : texto;
 }
 
 export function excedeuLimiteRespostaSyspro(error: unknown): boolean {

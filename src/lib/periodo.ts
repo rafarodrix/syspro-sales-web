@@ -3,6 +3,13 @@ export interface Periodo {
   final: string;
 }
 
+/** Aceita AAAA-MM-DD ou DD/MM/AAAA e devolve sempre AAAA-MM-DD. */
+export function normalizarDataIso(valor: string): string {
+  const texto = String(valor ?? "").trim();
+  const brasileira = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
+  return brasileira ? `${brasileira[3]}-${brasileira[2]}-${brasileira[1]}` : texto.slice(0, 10);
+}
+
 /** Mesmo limite aceito pela API: datas reais, ordem crescente e até 366 dias. */
 export function erroPeriodo(periodo: Periodo): string | null {
   const parse = (valor: string) => {

@@ -1,5 +1,7 @@
 import type { MovimentoKardex } from "@/lib/kardex";
 import type { VendaProduto } from "@/lib/syspro-api";
+import { normalizarDataIso } from "@/lib/periodo";
+export { normalizarDataIso } from "@/lib/periodo";
 import {
   calcularCoberturaEstoque,
   calcularDemandaLiquida,
@@ -324,14 +326,6 @@ export function montarRelatorioCompras(
       custoEstoqueReposicao: totalCustoEstoqueReposicao,
     },
   };
-}
-
-/** Aceita AAAA-MM-DD ou DD/MM/AAAA e devolve sempre AAAA-MM-DD. */
-export function normalizarDataIso(valor: string): string {
-  const texto = String(valor ?? "").trim();
-  const br = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
-  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
-  return texto;
 }
 
 export function dividirPeriodoKardex(inicialBruto: string, finalBruto: string) {

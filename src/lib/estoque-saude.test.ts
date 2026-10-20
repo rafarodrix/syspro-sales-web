@@ -53,13 +53,17 @@ describe("saúde do estoque", () => {
       movimento({ produtoIdProduto: "1", quantidadeMovimentada: -10, saldo: 20, dataMovimento: "2026-10-02" }),
       movimento({ produtoIdProduto: "1", grupoDocumento: "EDV", quantidadeMovimentada: 2, saldo: 22, valorTotal: 30, dataMovimento: "2026-10-03", direcao: "entrada", classificacao: { categoria: "devolucao_venda", direcao: "entrada", rotulo: "Devolução" } }),
     ], [
-      venda({ produto_id: "1", produto_qtde: 10, produto_vlr_custo_aquisicao: 4, produto_vlr_custo_reposicao: 5 }),
+      venda({ produto_id: "1", produto_qtde: 10, produto_vlr_total_item: 200, produto_vlr_custo_aquisicao: 4, produto_vlr_custo_reposicao: 5 }),
     ], { inicial: "01/10/2026", final: "10/10/2026" });
 
     expect(resultado.posicoes[0]).toMatchObject({
       estoqueAtual: 22,
       quantidadeVendida: 10,
       quantidadeDevolvida: 2,
+      valorVendido: 200,
+      valorDevolvido: 30,
+      taxaDevolucaoQuantidade: 20,
+      taxaDevolucaoValor: 15,
       demandaLiquida: 8,
       mediaDiaria: 0.8,
       coberturaDias: 27.5,
@@ -70,6 +74,26 @@ describe("saúde do estoque", () => {
       situacao: "saudavel",
     });
     expect(resultado.resumo.devolucoesVendaValor).toBe(30);
+    expect(resultado.resumo).toMatchObject({
+      taxaDevolucaoQuantidade: 20,
+      taxaDevolucaoValor: 15,
+      saldosNegativos: 0,
+    });
+  });
+
+  it("mede saldo negativo e capital em excesso pelo custo de reposição", () => {
+    const resultado = montarSaudeEstoque([
+      movimento({ produtoIdProduto: "1", quantidadeMovimentada: -1, saldo: 100 }),
+      movimento({ produtoIdProduto: "2", quantidadeMovimentada: -2, saldo: -2 }),
+    ], [
+      venda({ produto_id: "1", produto_qtde: 1, produto_vlr_custo_reposicao: 5 }),
+      venda({ produto_id: "2", produto_qtde: 2, produto_vlr_custo_reposicao: 7 }),
+    ], { inicial: "01/10/2026", final: "10/10/2026" });
+
+    expect(resultado.posicoes.find((item) => item.estoqueAtual === 100)?.situacao).toBe("excesso");
+    expect(resultado.posicoes.find((item) => item.estoqueAtual === -2)?.situacao).toBe("ruptura");
+    expect(resultado.resumo.capitalExcesso).toBe(500);
+    expect(resultado.resumo.saldosNegativos).toBe(1);
   });
 
   it("não considera movimentos sem ID no agrupamento e informa a inconsistência", () => {

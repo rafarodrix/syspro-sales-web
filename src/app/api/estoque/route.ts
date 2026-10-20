@@ -3,6 +3,7 @@ import { aplicarLimite, autenticarApi, buscarEmpresaAutorizada, validarJson } fr
 import { SysproApiError } from "@/lib/syspro-api";
 import { obterMovimentosEstoque, EstoqueQueryError } from "@/lib/estoque-service";
 import { montarSaudeEstoque } from "@/lib/estoque-saude";
+import { projetarMovimentoKardex } from "@/lib/kardex";
 import { obterVendas, SalesIntegrationError, SalesQueryError } from "@/lib/sales-service";
 import { kardexQuerySchema } from "@/lib/validations";
 
@@ -41,7 +42,8 @@ export async function POST(request: NextRequest) {
       }),
     ]);
     const saude = montarSaudeEstoque(movimentos, vendas, { inicial: dtInicial, final: dtFinal });
-    return NextResponse.json({ movimentos, ...saude }, {
+    const movimentosPublicos = movimentos.map(projetarMovimentoKardex);
+    return NextResponse.json({ movimentos: movimentosPublicos, ...saude }, {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {

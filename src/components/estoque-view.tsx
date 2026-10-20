@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowLeftRight, Boxes, CircleDollarSign, PackageSearch, RotateCcw, ShieldAlert, WalletCards } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, PackageSearch, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { resumirProdutosKardex, type MovimentoKardex } from "@/lib/kardex";
+import type { MovimentoKardexPublico } from "@/lib/kardex";
 import type { PosicaoEstoque, ResumoSaudeEstoque, SituacaoEstoque } from "@/lib/estoque-saude";
 import { dataInputParaSyspro } from "@/lib/vendas";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/date-range-filter";
-import { MetricaCard } from "@/components/metrica-card";
+import { EstoqueMetricas } from "@/components/estoque/estoque-metricas";
 import { TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface EmpresaOption { id: string; cnpj: string; razaoSocial: string }
-interface RespostaEstoque { movimentos: MovimentoKardex[]; posicoes: PosicaoEstoque[]; resumo: ResumoSaudeEstoque }
+interface RespostaEstoque { movimentos: MovimentoKardexPublico[]; posicoes: PosicaoEstoque[]; resumo: ResumoSaudeEstoque }
 
 const rotulosSituacao: Record<SituacaoEstoque, string> = {
   ruptura: "Ruptura", critico: "Crítico", atencao: "Atenção", saudavel: "Saudável", excesso: "Excesso", sem_giro: "Sem saída",
@@ -51,7 +51,7 @@ function coberturaVisual(valor: number | null, demanda: number): string {
 export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOption[]; empresaInicial?: string }) {
   const [empresaId, setEmpresaId] = useState(empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial) ? empresaInicial : (empresas[0]?.id ?? ""));
   const [periodo, setPeriodo] = useState<Periodo>(periodoMesAtual());
-  const [movimentos, setMovimentos] = useState<MovimentoKardex[]>([]);
+  const [movimentos, setMovimentos] = useState<MovimentoKardexPublico[]>([]);
   const [posicoes, setPosicoes] = useState<PosicaoEstoque[]>([]);
   const [resumoSaude, setResumoSaude] = useState<ResumoSaudeEstoque | null>(null);
   const [loading, setLoading] = useState(false);
@@ -110,7 +110,6 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const alertas = useMemo(() => posicoesFiltradas.filter((item) => item.situacao !== "saudavel").slice(0, 20), [posicoesFiltradas]);
   const devolucoes = useMemo(() => movimentosFiltrados.filter((item) => item.classificacao.categoria === "devolucao_venda" || item.classificacao.categoria === "devolucao_compra"), [movimentosFiltrados]);
   const transferencias = useMemo(() => movimentosFiltrados.filter((item) => item.classificacao.categoria === "transferencia"), [movimentosFiltrados]);
-  const relatoriosProdutos = useMemo(() => resumirProdutosKardex(movimentosFiltrados), [movimentosFiltrados]);
   const totalPaginas = Math.max(1, Math.ceil(movimentosFiltrados.length / porPagina));
   const paginaAtual = Math.min(pagina, totalPaginas);
   const paginaMovimentos = movimentosFiltrados.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina);
@@ -132,15 +131,9 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       {erro ? <Card className="border-destructive/50 bg-destructive/5"><CardContent className="pt-6 text-sm font-medium text-destructive">{erro}</CardContent></Card> : null}
 
       {resumoSaude ? <>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-          <MetricaCard rotulo="Capital em aquisição" definicao="Saldo positivo valorizado pelo custo médio de aquisição disponível no período. É uma estimativa operacional, não uma valorização contábil por lote." valor={formatarMoeda(resumoSaude.valorAquisicao)} rodape={`${formatarPercentual(resumoSaude.coberturaCustoAquisicao)} dos produtos com custo`} icone={WalletCards} destaque="primario" />
-          <MetricaCard rotulo="Valor de reposição" definicao="Saldo positivo valorizado pelo custo de reposição, que inclui impostos, frete e outras despesas." valor={formatarMoeda(resumoSaude.valorReposicao)} rodape={`${formatarPercentual(resumoSaude.coberturaCustoReposicao)} dos produtos com custo`} icone={CircleDollarSign} />
-          <MetricaCard rotulo="Rupturas" definicao="Produtos com demanda líquida positiva e saldo atual menor ou igual a zero." valor={formatarNumero(resumoSaude.rupturas)} rodape="Exigem reposição ou transferência" icone={ShieldAlert} destaque={resumoSaude.rupturas > 0 ? "negativo" : "positivo"} />
-          <MetricaCard rotulo="Baixa cobertura" definicao="Produtos com demanda e menos de 15 dias de cobertura; abaixo de 7 dias são classificados como críticos." valor={formatarNumero(resumoSaude.baixaCobertura)} rodape="Críticos e em atenção" icone={AlertTriangle} destaque={resumoSaude.baixaCobertura > 0 ? "amarelo" : "positivo"} />
-          <MetricaCard rotulo="Sem saída" definicao="Produtos com saldo positivo, mas sem demanda líquida no período consultado." valor={formatarNumero(resumoSaude.semGiro)} rodape={`${formatarNumero(resumoSaude.excesso)} com cobertura acima de 90 dias`} icone={Boxes} />
-          <MetricaCard rotulo="Devoluções EDV" definicao="Quantidade e valor de devoluções de vendas identificadas no Kardex pelo grupo EDV." valor={formatarNumero(resumoSaude.devolucoesVendaQuantidade)} rodape={formatarMoeda(resumoSaude.devolucoesVendaValor)} icone={RotateCcw} destaque={resumoSaude.devolucoesVendaQuantidade > 0 ? "amarelo" : "neutro"} />
-        </div>
+        <EstoqueMetricas resumo={resumoSaude} />
         {resumoSaude.movimentosSemProdutoId > 0 ? <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300" role="alert"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span>{formatarNumero(resumoSaude.movimentosSemProdutoId)} movimentação(ões) sem ID de produto ficaram fora dos agrupamentos, para evitar vínculos incorretos.</span></div> : null}
+        {resumoSaude.saldosNegativos > 0 ? <div className="flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-800 dark:text-rose-300" role="alert"><ShieldAlert className="mt-0.5 size-4 shrink-0" /><span>{formatarNumero(resumoSaude.saldosNegativos)} produto(s) apresentam saldo negativo e precisam de conferência no Kardex.</span></div> : null}
       </> : null}
 
       <Tabs value={aba} onValueChange={setAba} className="gap-4">
@@ -163,8 +156,33 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
 
         <TabsContent value="posicao">
           <Card><CardHeader><CardTitle className="text-base">Posição por produto</CardTitle><CardDescription>{posicoesFiltradas.length} produto(s). Custos médios consideram apenas itens com custo informado no período.</CardDescription></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-            <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Marca</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Estoque</TableHead><TableHead className="text-right">Venda</TableHead><TableHead className="text-right">EDV</TableHead><TableHead className="text-right">Demanda líquida</TableHead><TableHead className="text-right">Cobertura</TableHead><TableHead className="text-right">Custo aquisição</TableHead><TableHead className="text-right">Custo reposição</TableHead><TableHead className="text-right">Valor reposição</TableHead><TableHead /></TableRow></TableHeader>
-            <TableBody>{posicoesFiltradas.length ? posicoesFiltradas.map((item, indice) => <TableRow key={`${item.codigo}-${item.produto}-${indice}`}><ProdutoCell item={item} /><TableCell className="text-xs">{item.marca}</TableCell><TableCell><SituacaoBadge situacao={item.situacao} /></TableCell><TableCell className="text-right font-semibold">{formatarNumero(item.estoqueAtual, 2)}</TableCell><TableCell className="text-right">{formatarNumero(item.quantidadeVendida, 2)}</TableCell><TableCell className="text-right text-amber-600">{formatarNumero(item.quantidadeDevolvida, 2)}</TableCell><TableCell className="text-right font-medium">{formatarNumero(item.demandaLiquida, 2)}</TableCell><TableCell className="text-right">{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</TableCell><TableCell className="text-right">{item.custoAquisicaoMedio === null ? "—" : formatarMoeda(item.custoAquisicaoMedio)}</TableCell><TableCell className="text-right">{item.custoReposicaoMedio === null ? "—" : formatarMoeda(item.custoReposicaoMedio)}</TableCell><TableCell className="text-right font-medium">{item.valorReposicao === null ? "—" : formatarMoeda(item.valorReposicao)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>Kardex</Button></TableCell></TableRow>) : <TableRow><TableCell colSpan={12} className="h-28 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</TableCell></TableRow>}</TableBody>
+            <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Marca</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Estoque</TableHead><TableHead className="text-right">Venda</TableHead><TableHead className="text-right">EDV</TableHead><TableHead className="text-right">Demanda líquida</TableHead><TableHead className="text-right">Cobertura</TableHead><TableHead className="text-right">Custo aquisição</TableHead><TableHead className="text-right">Custo reposição</TableHead><TableHead className="text-right">Valor reposição</TableHead><TableHead>Último movimento</TableHead><TableHead /></TableRow></TableHeader>
+            <TableBody>
+              {posicoesFiltradas.length ? posicoesFiltradas.map((item, indice) => (
+                <TableRow key={`${item.codigo}-${item.produto}-${indice}`}>
+                  <ProdutoCell item={item} />
+                  <TableCell className="text-xs">{item.marca}</TableCell>
+                  <TableCell><SituacaoBadge situacao={item.situacao} /></TableCell>
+                  <TableCell className="text-right font-semibold">{formatarNumero(item.estoqueAtual, 2)}</TableCell>
+                  <TableCell className="text-right">{formatarNumero(item.quantidadeVendida, 2)}</TableCell>
+                  <TableCell
+                    className="whitespace-nowrap text-right text-amber-600"
+                    title={`Valor devolvido: ${formatarMoeda(item.valorDevolvido)} (${formatarPercentual(item.taxaDevolucaoValor)})`}
+                  >
+                    {formatarNumero(item.quantidadeDevolvida, 2)} · {formatarPercentual(item.taxaDevolucaoQuantidade)}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">{formatarNumero(item.demandaLiquida, 2)}</TableCell>
+                  <TableCell className="text-right">{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</TableCell>
+                  <TableCell className="text-right">{item.custoAquisicaoMedio === null ? "—" : formatarMoeda(item.custoAquisicaoMedio)}</TableCell>
+                  <TableCell className="text-right">{item.custoReposicaoMedio === null ? "—" : formatarMoeda(item.custoReposicaoMedio)}</TableCell>
+                  <TableCell className="text-right font-medium">{item.valorReposicao === null ? "—" : formatarMoeda(item.valorReposicao)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs">{dataVisual(item.ultimoMovimento)}</TableCell>
+                  <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>Kardex</Button></TableCell>
+                </TableRow>
+              )) : (
+                <TableRow><TableCell colSpan={13} className="h-28 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</TableCell></TableRow>
+              )}
+            </TableBody>
           </Table></div></CardContent></Card>
         </TabsContent>
 
@@ -173,7 +191,6 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
             <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Grupo</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Movimento</TableHead><TableHead className="text-right">Saldo</TableHead></TableRow></TableHeader>
             <TableBody>{paginaMovimentos.length ? paginaMovimentos.map((item, indice) => <TableRow key={`${item.documento}-${item.produtoCodigoAuxiliar}-${item.dataMovimento}-${indice}`}><TableCell className="whitespace-nowrap text-xs">{dataVisual(item.dataMovimento)}</TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? "border-emerald-500/40 text-emerald-700" : "border-rose-500/40 text-rose-700"}>{item.grupoDocumento || "—"} · {item.classificacao.rotulo}</Badge></TableCell><TableCell className="max-w-44 truncate text-xs">{item.participante || "—"}</TableCell><TableCell className={`text-right font-semibold ${item.direcao === "entrada" ? "text-emerald-600" : "text-rose-600"}`}>{item.direcao === "entrada" ? "+" : "−"}{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell><TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell></TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{loading ? "Consultando o Kardex..." : "Nenhuma movimentação encontrada."}</TableCell></TableRow>}</TableBody>
           </Table></div>{movimentosFiltrados.length > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={paginaAtual} totalItens={movimentosFiltrados.length} itensPorPagina={porPagina} onPaginaChange={setPagina} onItensPorPaginaChange={(valor) => { setPorPagina(valor); setPagina(1); }} /></div> : null}</CardContent></Card>
-          <div className="grid gap-6 xl:grid-cols-2"><ResumoProdutos titulo="Saídas e devoluções por produto" descricao="Vendas e EDV no período filtrado." itens={relatoriosProdutos.saidasEDevolucoes} tipo="saidas" /><ResumoProdutos titulo="Entradas e transferências por produto" descricao="Compras recebidas e transferências no período filtrado." itens={relatoriosProdutos.entradasETransferencias} tipo="entradas" /></div>
         </TabsContent>
 
         <TabsContent value="devolucoes"><Card><CardHeader><CardTitle className="text-base">Devoluções de vendas e compras</CardTitle><CardDescription>EDV reduz vendas; EDC representa devolução de compra e permanece separada.</CardDescription></CardHeader><CardContent className="p-0"><MovimentosEspeciais itens={devolucoes} vazio="Nenhuma devolução encontrada." mostrarValor /></CardContent></Card></TabsContent>
@@ -187,14 +204,10 @@ function ProdutoCell({ item }: { item: PosicaoEstoque }) {
   return <TableCell><p className="min-w-48 text-xs font-medium">{item.produto}</p><p className="font-mono text-[10px] text-muted-foreground">{item.codigo}</p></TableCell>;
 }
 
-function MovimentoProdutoCell({ item }: { item: MovimentoKardex }) {
+function MovimentoProdutoCell({ item }: { item: MovimentoKardexPublico }) {
   return <TableCell><p className="min-w-48 text-xs font-medium">{item.produtoDescricao}</p><p className="font-mono text-[10px] text-muted-foreground">{item.produtoCodigoAuxiliar || "Sem código"}</p></TableCell>;
 }
 
-function ResumoProdutos({ titulo, descricao, itens, tipo }: { titulo: string; descricao: string; itens: ReturnType<typeof resumirProdutosKardex>["saidasEDevolucoes"]; tipo: "saidas" | "entradas" }) {
-  return <Card><CardHeader><CardTitle className="text-base">{titulo}</CardTitle><CardDescription>{descricao}</CardDescription></CardHeader><CardContent className="p-0"><div className="max-h-96 overflow-auto"><Table><TableHeader><TableRow><TableHead>Produto</TableHead>{tipo === "saidas" ? <><TableHead className="text-right">Saídas</TableHead><TableHead className="text-right">EDV</TableHead></> : <><TableHead className="text-right">Compras</TableHead><TableHead className="text-right">Transf. E/S</TableHead></>}</TableRow></TableHeader><TableBody>{itens.slice(0, 20).map((item) => <TableRow key={item.chaveInterna}><TableCell><p className="text-xs font-medium">{item.produto}</p><p className="font-mono text-[10px] text-muted-foreground">{item.codigo}</p></TableCell>{tipo === "saidas" ? <><TableCell className="text-right text-rose-600">{formatarNumero(item.saidasVenda, 2)}</TableCell><TableCell className="text-right text-amber-600">{formatarNumero(item.devolucoesVenda, 2)}</TableCell></> : <><TableCell className="text-right text-emerald-600">{formatarNumero(item.entradasCompra, 2)}</TableCell><TableCell className="text-right">{formatarNumero(item.transferenciasEntrada, 2)} / {formatarNumero(item.transferenciasSaida, 2)}</TableCell></>}</TableRow>)}</TableBody></Table></div></CardContent></Card>;
-}
-
-function MovimentosEspeciais({ itens, vazio, mostrarValor = false }: { itens: MovimentoKardex[]; vazio: string; mostrarValor?: boolean }) {
+function MovimentosEspeciais({ itens, vazio, mostrarValor = false }: { itens: MovimentoKardexPublico[]; vazio: string; mostrarValor?: boolean }) {
   return <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Quantidade</TableHead>{mostrarValor ? <TableHead className="text-right">Valor</TableHead> : <TableHead className="text-right">Saldo</TableHead>}</TableRow></TableHeader><TableBody>{itens.length ? itens.map((item, indice) => <TableRow key={`${item.documento}-${item.dataMovimento}-${indice}`}><TableCell className="text-xs">{dataVisual(item.dataMovimento)}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? classesSituacao.saudavel : classesSituacao.ruptura}>{item.grupoDocumento} · {item.direcao === "entrada" ? "Entrada" : "Saída"}</Badge></TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell className="text-xs">{item.participante || "—"}</TableCell><TableCell className="text-right">{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell>{mostrarValor ? <TableCell className="text-right font-medium">{formatarMoeda(Math.abs(item.valorTotal))}</TableCell> : <TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell>}</TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{vazio}</TableCell></TableRow>}</TableBody></Table></div>;
 }
