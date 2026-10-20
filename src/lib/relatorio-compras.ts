@@ -36,6 +36,10 @@ export interface ItemRelatorioCompras {
   marca?: string;
   custoAquisicaoMedio?: number | null;
   custoReposicaoMedio?: number | null;
+  /** Custo de reposição médio × quantidade líquida real (CMV de reposição). */
+  custoTotalMercadorias?: number | null;
+  /** (venda líquida real − custo total mercadorias) / venda líquida real × 100. */
+  margemBrutaPercentual?: number | null;
 }
 
 export interface ResumoRelatorioCompras {
@@ -51,6 +55,11 @@ export interface ResumoRelatorioCompras {
   taxaDevolucaoValor: number;
   produtosSemSaldo: number;
   produtosSemSaldoLocalizado: number;
+  custoTotalMercadorias: number;
+  margemBruta: number;
+  margemBrutaPercentual: number;
+  /** Percentual da demanda de compras que possui custo informado pela API. */
+  coberturaCusto: number;
 }
 
 export interface RelatorioCompras {
@@ -203,6 +212,13 @@ export function montarRelatorioCompras(
     item.custoReposicaoMedio = item.quantidadeComCustoReposicao > 0
       ? item.totalCustoReposicao / item.quantidadeComCustoReposicao
       : null;
+    const custoUnitario = item.custoReposicaoMedio ?? item.custoAquisicaoMedio ?? null;
+    item.custoTotalMercadorias = custoUnitario === null
+      ? null
+      : custoUnitario * item.quantidadeLiquidaReal;
+    item.margemBrutaPercentual = item.custoTotalMercadorias !== null && item.valorVendaLiquida > 0
+      ? ((item.valorVendaLiquida - item.custoTotalMercadorias) / item.valorVendaLiquida) * 100
+      : null;
   }
 
   const ordenados = [...porProduto.values()].sort(
@@ -242,9 +258,23 @@ export function montarRelatorioCompras(
       marca: item.marca,
       custoAquisicaoMedio: item.custoAquisicaoMedio,
       custoReposicaoMedio: item.custoReposicaoMedio,
+      custoTotalMercadorias: item.custoTotalMercadorias,
+      margemBrutaPercentual: item.margemBrutaPercentual,
       curva,
     };
   });
+
+  const totalCustoMercadorias = itens.reduce(
+    (total, item) => total + (item.custoTotalMercadorias ?? 0),
+    0,
+  );
+  const totalVendaLiquida = totalValorVendido - totalValorDevolvido;
+  const totalQuantidadeLiquida = totalVendido - totalDevolvido;
+  const quantidadeLiquidaComCusto = itens.reduce(
+    (total, item) => total + (item.custoTotalMercadorias == null ? 0 : item.demandaLiquida),
+    0,
+  );
+  const margemBruta = totalVendaLiquida - totalCustoMercadorias;
 
   return {
     itens,
@@ -252,15 +282,19 @@ export function montarRelatorioCompras(
       totalProdutos: itens.length,
       quantidadeVendida: totalVendido,
       quantidadeDevolvida: totalDevolvido,
-      quantidadeLiquidaReal: totalVendido - totalDevolvido,
+      quantidadeLiquidaReal: totalQuantidadeLiquida,
       demandaLiquida: totalDemandaLiquida,
       taxaDevolucao: calcularPercentual(totalDevolvido, totalVendido),
       valorVendido: totalValorVendido,
       valorDevolvido: totalValorDevolvido,
-      valorVendaLiquida: totalValorVendido - totalValorDevolvido,
+      valorVendaLiquida: totalVendaLiquida,
       taxaDevolucaoValor: calcularPercentual(totalValorDevolvido, totalValorVendido),
       produtosSemSaldo: itens.filter((item) => item.estoqueAtual !== null && item.estoqueAtual <= 0).length,
       produtosSemSaldoLocalizado: itens.filter((item) => item.estoqueAtual === null).length,
+      custoTotalMercadorias: totalCustoMercadorias,
+      margemBruta,
+      margemBrutaPercentual: totalVendaLiquida > 0 ? (margemBruta / totalVendaLiquida) * 100 : 0,
+      coberturaCusto: calcularPercentual(quantidadeLiquidaComCusto, totalDemandaLiquida),
     },
   };
 }

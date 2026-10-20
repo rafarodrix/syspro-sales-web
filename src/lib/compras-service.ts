@@ -39,9 +39,60 @@ function dividirJanelaAoMeio(janela: JanelaConsulta): [JanelaConsulta, JanelaCon
 }
 
 function excedeuLimiteResposta(error: unknown): boolean {
-  return error instanceof SysproApiError
-    && error.status === 502
-    && error.message.includes("excede o limite");
+  let atual: unknown = error;
+  for (let profundidade = 0; profundidade < 5 && atual; profundidade += 1) {
+    if (atual instanceof SysproApiError
+      && atual.status === 502
+      && atual.message.includes("excede o limite")) {
+      return true;
+    }
+    atual = (atual as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+async function obterVendasAdaptativo({
+  actorId,
+  empresa,
+  janela,
+  forcarAtualizacao,
+  signal,
+}: {
+  actorId: string;
+  empresa: EmpresaInfo;
+  janela: JanelaConsulta;
+  forcarAtualizacao: boolean;
+  signal?: AbortSignal;
+}) {
+  try {
+    return await obterVendas({
+      actorId,
+      empresasLiberadas: [empresa],
+      empresaSelecionadaId: empresa.id,
+      dtInicial: janela.inicial,
+      dtFinal: janela.final,
+      forcarAtualizacao,
+      signal,
+      enforceRateLimit: false,
+    });
+  } catch (error) {
+    if (!excedeuLimiteResposta(error)) throw error;
+
+    const partes = dividirJanelaAoMeio(janela);
+    if (!partes) throw error;
+
+    const vendas: Awaited<ReturnType<typeof obterVendas>> = [];
+    for (const parte of partes) {
+      vendas.push(...await obterVendasAdaptativo({
+        actorId,
+        empresa,
+        janela: parte,
+        forcarAtualizacao,
+        signal,
+      }));
+    }
+    return vendas;
+  }
 }
 
 async function obterMovimentosAdaptativo({
@@ -115,15 +166,12 @@ export async function obterRelatorioCompras({
     : finalIso;
   const janelasKardex = dividirPeriodoKardex(inicialIso, finalEstoque);
 
-  const vendas = await obterVendas({
+  const vendas = await obterVendasAdaptativo({
     actorId,
-    empresasLiberadas: [empresa],
-    empresaSelecionadaId: empresa.id,
-    dtInicial,
-    dtFinal,
+    empresa,
+    janela: { inicial: inicialIso, final: finalIso },
     forcarAtualizacao,
     signal,
-    enforceRateLimit: false,
   });
   const idsProdutos = new Set(
     vendas

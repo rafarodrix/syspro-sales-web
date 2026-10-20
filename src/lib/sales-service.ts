@@ -84,8 +84,8 @@ export class SalesQueryError extends Error {
 }
 
 export class SalesIntegrationError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
     this.name = "SalesIntegrationError";
   }
 }
@@ -151,7 +151,7 @@ export async function obterVendas({
       return filtradas;
     } catch (err) {
       console.error(`[sales-service] Erro ao consultar vendas da empresa ${emp.razaoSocial} (${emp.cnpj}):`, err);
-      throw new SalesIntegrationError(`Não foi possível consultar a filial ${emp.razaoSocial}. A consolidação não foi gerada para evitar totais incompletos.`);
+      throw new SalesIntegrationError(`Não foi possível consultar a filial ${emp.razaoSocial}. A consolidação não foi gerada para evitar totais incompletos.`, { cause: err });
     }
   };
 

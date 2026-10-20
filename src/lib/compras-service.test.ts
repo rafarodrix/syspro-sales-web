@@ -24,6 +24,12 @@ vi.mock("@/lib/relatorio-compras", async () => {
 vi.mock("@/lib/sales-service", () => ({
   obterVendas: mocks.obterVendas,
   periodoConsultaValido: mocks.periodoConsultaValido,
+  SalesIntegrationError: class SalesIntegrationError extends Error {
+    constructor(message: string, options?: { cause?: unknown }) {
+      super(message, options);
+      this.name = "SalesIntegrationError";
+    }
+  },
   SalesQueryError: class SalesQueryError extends Error {
     constructor(message: string, public status: number) {
       super(message);
@@ -34,6 +40,7 @@ vi.mock("@/lib/sales-service", () => ({
 
 import { obterRelatorioCompras } from "@/lib/compras-service";
 import { SysproApiError } from "@/lib/syspro-api";
+import { SalesIntegrationError } from "@/lib/sales-service";
 
 const empresa = {
   id: "empresa-1",
@@ -134,6 +141,35 @@ describe("orquestração do relatório de compras", () => {
       expect.any(Array),
       [],
       { inicial: "2027-01-01", final: "2027-01-31" },
+    );
+  });
+
+  it("subdivide a janela de vendas quando a resposta excede o limite", async () => {
+    mocks.obterVendas.mockReset().mockImplementation(({ dtInicial, dtFinal }) => {
+      if (dtInicial === "2026-07-19" && dtFinal === "2026-10-16") {
+        return Promise.reject(new SalesIntegrationError(
+          "Não foi possível consultar a filial Empire.",
+          { cause: new SysproApiError("A resposta da API Syspro excede o limite permitido.", 502) },
+        ));
+      }
+      return Promise.resolve([{ empresa_codigo: "1", nf_numero: "10", produto_id: "P1" }]);
+    });
+
+    await obterRelatorioCompras({
+      actorId: "usuario-1",
+      empresa,
+      dtInicial: "2026-07-19",
+      dtFinal: "2026-10-16",
+    });
+
+    expect(mocks.obterVendas).toHaveBeenCalledTimes(3);
+    expect(mocks.obterVendas).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ dtInicial: "2026-07-19", dtFinal: "2026-09-01" }),
+    );
+    expect(mocks.obterVendas).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ dtInicial: "2026-09-02", dtFinal: "2026-10-16" }),
     );
   });
 

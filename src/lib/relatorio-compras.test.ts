@@ -137,6 +137,69 @@ describe("relatorio de compras", () => {
       estoqueAtual: 8,
     });
   });
+  it("calcula custo total das mercadorias e margem com custo de reposição", () => {
+    const relatorio = montarRelatorioCompras(
+      [{
+        ...venda("AUX-9", 10, "Produto margem"),
+        produto_id: "GUID-9",
+        produto_codigo_auxiliar: "AUX-9",
+        produto_vlr_total_liquido: 200,
+        produto_vlr_custo_aquisicao: 10,
+        produto_vlr_custo_reposicao: 15,
+      }],
+      [],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({
+      custoReposicaoMedio: 15,
+      custoTotalMercadorias: 150,
+      margemBrutaPercentual: 25,
+    });
+    expect(relatorio.resumo).toMatchObject({
+      custoTotalMercadorias: 150,
+      valorVendaLiquida: 200,
+      margemBruta: 50,
+      margemBrutaPercentual: 25,
+      coberturaCusto: 100,
+    });
+  });
+
+  it("mantém custo total e margem nulos quando a API não informa custo", () => {
+    const relatorio = montarRelatorioCompras(
+      [{
+        ...venda("AUX-8", 4, "Produto sem custo"),
+        produto_id: "GUID-8",
+        produto_vlr_total_liquido: 120,
+      }],
+      [],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.itens[0].custoTotalMercadorias).toBeNull();
+    expect(relatorio.itens[0].margemBrutaPercentual).toBeNull();
+    expect(relatorio.resumo.coberturaCusto).toBe(0);
+  });
+
+  it("não deixa a cobertura de custo passar de 100% com produto só de devolução", () => {
+    const relatorio = montarRelatorioCompras(
+      [{
+        ...venda("AUX-7", 5, "Produto com venda"),
+        produto_id: "GUID-7",
+        produto_codigo_auxiliar: "AUX-7",
+        produto_vlr_total_liquido: 100,
+        produto_vlr_custo_reposicao: 8,
+      }],
+      [
+        { ...movimento("GUID-SEM-VENDA", "2026-10-10", "EDV", 3, 4, 30), produtoIdProduto: "GUID-SEM-VENDA" },
+      ],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.resumo.coberturaCusto).toBeLessThanOrEqual(100);
+    expect(relatorio.resumo.coberturaCusto).toBe(100);
+  });
+
   it("nao soma EDV fora do periodo de vendas, mas usa o movimento no saldo atual", () => {
     const relatorio = montarRelatorioCompras(
       [venda("10", 5)],

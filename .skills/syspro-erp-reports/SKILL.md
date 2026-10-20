@@ -73,6 +73,9 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Formato de data:** a API Syspro exige `DD/MM/AAAA`, mas os cálculos internos (janelas do Kardex, comparação de período, detecção de EDV) trabalham em `AAAA-MM-DD`. Normalize com `normalizarDataIso` antes de dividir janelas — data BR sem normalizar gera janela vazia e o Kardex volta sem saldo/marca, silenciosamente.
 - **Devoluções:** `EDV` é devolução de venda e reduz quantidade/valor vendido. `EDC` é devolução de compra e nunca deve reduzir vendas. A rota `produto/venda` pode não retornar EDV; consulte o Kardex para obter essas devoluções.
 - **Custos de venda:** `produto_vlr_custo_aquisicao` e `produto_vlr_custo_reposicao` são preservados pelo normalizador e exibidos como custos médios no relatório de Compras; não tratar esses campos como preço de venda.
+- **Limite de resposta da API:** períodos longos (ex.: 90 dias) estouram o tamanho máximo da resposta. `compras-service` divide a janela pela metade recursivamente para vendas **e** Kardex; o erro original chega embrulhado em `SalesIntegrationError` com `cause`, por isso `excedeuLimiteResposta` caminha pela cadeia de `cause` (não checar só `instanceof SysproApiError`).
+- **Relatório de Compras:** `demandaLiquida` = `max(0, vendida − devolvida)` alimenta curva ABC e cobertura e é a única coluna de quantidade exibida; `quantidadeLiquidaReal` (vendida − devolvida, pode ser negativa) permanece só no payload. `custoTotalMercadorias` = custo de reposição médio × quantidade líquida real, `margemBrutaPercentual` deriva dele e `coberturaCusto` mede a fatia da demanda com custo informado (máx. 100%, denominador = demanda).
+- **Exportação:** `src/lib/exportar-compras.ts` concentra colunas/linhas (código e unidade em colunas próprias) e `exportarParaCSV` gera CSV UTF-8 com BOM e `;`, que abre direto no Excel pt-BR.
 
 ## Fluxo de dados (segurança)
 ```

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { RotateCcw, ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
 import { DataFilterBar } from "@/components/data-filter-bar";
+import { ExportDropdown } from "@/components/export-dropdown";
 import {
   DateRangeFilter,
   periodoUltimos90Dias,
@@ -25,6 +26,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { exportarParaCSV } from "@/lib/exportar-csv";
+import { COLUNAS_EXPORTACAO_COMPRAS, montarLinhasExportacaoCompras } from "@/lib/exportar-compras";
 import type { ClasseCurvaCompras, RelatorioCompras } from "@/lib/relatorio-compras";
 
 const RELATORIO_VAZIO: RelatorioCompras = {
@@ -42,6 +45,10 @@ const RELATORIO_VAZIO: RelatorioCompras = {
     taxaDevolucaoValor: 0,
     produtosSemSaldo: 0,
     produtosSemSaldoLocalizado: 0,
+    custoTotalMercadorias: 0,
+    margemBruta: 0,
+    margemBrutaPercentual: 0,
+    coberturaCusto: 0,
   },
 };
 
@@ -134,9 +141,26 @@ export function ComprasView({
         (curva === "todas" || item.curva === curva) &&
         (!termo ||
           item.codigo.toLowerCase().includes(termo) ||
-          item.produto.toLowerCase().includes(termo)),
+          item.produto.toLowerCase().includes(termo) ||
+          (item.marca ?? "").toLowerCase().includes(termo)),
     );
   }, [busca, curva, relatorio.itens]);
+
+  function exportarExcel() {
+    if (itensFiltrados.length === 0) {
+      toast.error("Nada para exportar com os filtros atuais.");
+      return;
+    }
+    const periodo = periodoConsultado
+      ? `${periodoConsultado.inicial}_a_${periodoConsultado.final}`
+      : new Date().toISOString().slice(0, 10);
+    exportarParaCSV(
+      `relatorio-compras-${empresaNome.replace(/[^\w-]+/g, "-").toLowerCase()}-${periodo}`,
+      [...COLUNAS_EXPORTACAO_COMPRAS],
+      montarLinhasExportacaoCompras(itensFiltrados),
+    );
+    toast.success(`${itensFiltrados.length} produto(s) exportado(s).`);
+  }
 
   const totalPaginas = Math.max(1, Math.ceil(itensFiltrados.length / porPagina));
   const paginaAtual = Math.min(pagina, totalPaginas);
@@ -189,14 +213,9 @@ export function ComprasView({
             descricao={`EDV · ${formatarPercentual(relatorio.resumo.taxaDevolucao, 1)} das unidades`}
           />
           <ResumoCard
-            titulo="Quantidade líquida real"
-            valor={formatarNumero(relatorio.resumo.quantidadeLiquidaReal, 0)}
-            descricao="Quantidade vendida menos todas as devoluções EDV"
-          />
-          <ResumoCard
             titulo="Demanda para compras"
             valor={formatarNumero(relatorio.resumo.demandaLiquida, 0)}
-            descricao="Demanda líquida por produto, limitada ao mínimo zero"
+            descricao="Vendido menos devoluções EDV, sem ficar negativo"
           />
           <ResumoCard
             titulo="Valor vendido"
@@ -211,7 +230,17 @@ export function ComprasView({
           <ResumoCard
             titulo="Venda líquida real"
             valor={formatarMoeda(relatorio.resumo.valorVendaLiquida)}
-            descricao="Valor vendido menos devoluções EDV"
+            descricao={`${formatarNumero(relatorio.resumo.quantidadeLiquidaReal, 0)} un líquidas · valor vendido menos EDV`}
+          />
+          <ResumoCard
+            titulo="Custo total mercadorias"
+            valor={formatarMoeda(relatorio.resumo.custoTotalMercadorias)}
+            descricao={`Reposição × qtd líquida · custo em ${formatarPercentual(relatorio.resumo.coberturaCusto, 1)} da demanda`}
+          />
+          <ResumoCard
+            titulo="Margem bruta"
+            valor={formatarMoeda(relatorio.resumo.margemBruta)}
+            descricao={`${formatarPercentual(relatorio.resumo.margemBrutaPercentual, 1)} sobre a venda líquida`}
           />
           <ResumoCard
             titulo="Sem estoque"
@@ -223,11 +252,20 @@ export function ComprasView({
 
       <Card>
         <CardHeader>
-          <CardTitle>Produtos para analise de compra</CardTitle>
-          <CardDescription>
-            Curva ABC calculada pela demanda líquida. O estoque usa o saldo do movimento mais
-            recente encontrado até hoje.
-          </CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1.5">
+              <CardTitle>Produtos para analise de compra</CardTitle>
+              <CardDescription>
+                Curva ABC calculada pela demanda líquida. O estoque usa o saldo do movimento mais
+                recente encontrado até hoje.
+              </CardDescription>
+            </div>
+            <ExportDropdown
+              onExportarCsv={exportarExcel}
+              disabled={loading || itensFiltrados.length === 0}
+              label="Exportar Excel"
+            />
+          </div>
           <DataFilterBar
             busca={busca}
             onBuscaChange={(valor) => {
@@ -276,18 +314,21 @@ export function ComprasView({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Produto</TableHead>
+                      <TableHead>Código</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead className="text-center">Un.</TableHead>
                       <TableHead>Marca</TableHead>
                       <TableHead className="text-center">Curva</TableHead>
                       <TableHead className="text-right">Vendas no periodo</TableHead>
                       <TableHead className="text-right">Devoluções EDV</TableHead>
-                      <TableHead className="text-right">Qtde líquida real</TableHead>
-                      <TableHead className="text-right">Demanda para compras</TableHead>
+                      <TableHead className="text-right" title="Vendido menos devoluções EDV, limitado ao mínimo zero">Demanda para compras</TableHead>
                       <TableHead className="text-right">Valor vendido</TableHead>
                       <TableHead className="text-right">Valor devolvido</TableHead>
                       <TableHead className="text-right">Venda líquida real</TableHead>
                       <TableHead className="text-right">Custo aquisição</TableHead>
                       <TableHead className="text-right">Custo reposição</TableHead>
+                      <TableHead className="text-right" title="Custo de reposição médio × quantidade líquida real">Custo total mercadorias</TableHead>
+                      <TableHead className="text-right" title="(venda líquida real − custo total mercadorias) ÷ venda líquida real">Margem</TableHead>
                       <TableHead className="text-right">Estoque atual</TableHead>
                       <TableHead className="text-right">Cobertura</TableHead>
                     </TableRow>
@@ -295,13 +336,9 @@ export function ComprasView({
                   <TableBody>
                     {itensDaPagina.map((item) => (
                       <TableRow key={item.produtoId}>
-                        <TableCell>
-                          <p className="font-medium">{item.produto}</p>
-                          <p className="text-xs text-muted-foreground">{item.unidade}</p>
-                          <p className="font-mono text-[10px] text-muted-foreground" title="Código auxiliar">
-                            Código: {item.codigo || "—"}
-                          </p>
-                        </TableCell>
+                        <TableCell className="font-mono text-xs">{item.codigo || "—"}</TableCell>
+                        <TableCell className="font-medium">{item.produto}</TableCell>
+                        <TableCell className="text-center text-xs text-muted-foreground">{item.unidade}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {item.marca || "Não informada"}
                         </TableCell>
@@ -316,9 +353,6 @@ export function ComprasView({
                           <span className="block text-[10px] text-muted-foreground">
                             {formatarPercentual(item.taxaDevolucao, 1)}
                           </span>
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold">
-                          {formatarNumero(item.quantidadeLiquidaReal, 0)}
                         </TableCell>
                         <TableCell className="text-right font-mono font-semibold">
                           {formatarNumero(item.demandaLiquida, 0)}
@@ -340,6 +374,20 @@ export function ComprasView({
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {item.custoReposicaoMedio == null ? "-" : formatarMoeda(item.custoReposicaoMedio)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-semibold">
+                          {item.custoTotalMercadorias == null ? "-" : formatarMoeda(item.custoTotalMercadorias)}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-mono ${
+                            item.margemBrutaPercentual != null && item.margemBrutaPercentual < 0
+                              ? "text-destructive"
+                              : ""
+                          }`}
+                        >
+                          {item.margemBrutaPercentual == null
+                            ? "-"
+                            : formatarPercentual(item.margemBrutaPercentual, 1)}
                         </TableCell>
                         <TableCell className="text-right font-mono font-semibold">
                           {item.estoqueAtual === null ? "-" : formatarNumero(item.estoqueAtual, 0)}
@@ -386,8 +434,11 @@ export function ComprasView({
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <RotateCcw className="size-3.5" aria-hidden="true" />
-        Devoluções consideram exclusivamente o grupo EDV do Kardex. EDC é devolução de compra e não reduz vendas.
-        Produtos são relacionados exclusivamente pelo ID interno; o código auxiliar é usado para exibição.
+        Demanda para compras = quantidade vendida menos devoluções EDV, limitada ao mínimo zero (produto
+        só com devolução fica em zero). Custo total mercadorias usa o custo de reposição médio, que inclui
+        impostos e frete. Devoluções consideram exclusivamente o grupo EDV do Kardex; EDC é devolução de
+        compra e não reduz vendas. Produtos são relacionados exclusivamente pelo ID interno; o código
+        auxiliar é usado para exibição.
       </p>
     </div>
   );
