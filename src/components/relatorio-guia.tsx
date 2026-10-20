@@ -37,7 +37,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     ],
     dica: "Use a classe A como base para reposição prioritária e para negociar com fornecedores (são os itens que mais movimentam).",
     glossario: [
-      { termo: "Curva ABC / Pareto", definicao: "Método 80/20: uma minoria dos produtos concentra a maior parte do faturamento." },
+      { termo: "Curva ABC / Pareto", definicao: "Método 80/20: uma minoria dos produtos concentra a maior parte do faturamento. Fórmula: produtos em ordem decrescente de faturamento; olhando o percentual acumulado antes do item, < 80% = classe A, < 95% = classe B, restante = classe C." },
       { termo: "Faturamento líquido", definicao: "Valor final da venda já com desconto abatido (e frete/outros somados)." },
       { termo: "Dependência do portfólio (Top 10/20)", definicao: "% da receita concentrada nos 10 e nos 20 produtos mais vendidos. Acima de 80% no Top 20, o resultado depende de poucos itens." },
       { termo: "Produtos em alta", definicao: "Produtos que venderam nos dois períodos (atual e anterior) e tiveram o maior crescimento de receita em R$ no atual." },
@@ -143,6 +143,36 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "Visão analítica", definicao: "Detalhe no nível da nota fiscal, filtrável por cidade." },
     ],
   },
+  compras: {
+    resumo:
+      "Cruza as vendas do período com as devoluções de venda (EDV) e o saldo do Kardex para decidir o que comprar: demanda, estoque, cobertura, valorização e sugestão de compra.",
+    comoLer: [
+      "A curva ABC aqui é calculada pela demanda líquida (quantidade), não pelo faturamento — nas compras o que importa é quanto repor, não quanto rendeu.",
+      "Ruptura e crítica são o foco do dia: produto com demanda e estoque zerado já está perdendo venda.",
+      "Capital parado indica onde o dinheiro está travado (cobertura acima do dobro do alvo ou produto sem demanda no período).",
+      "A cobertura alvo é escolhida na tela (15 a 90 dias) e é a única premissa do relatório: a sugestão de compra depende dela.",
+      "Os cards de decisão respeitam os filtros aplicados na tabela; os números da faixa de base são do período inteiro.",
+    ],
+    dica: "Comece pelas rupturas de curva A, depois críticas — e use o excesso/sem demanda para negociar devolução ou queima antes de comprar mais.",
+    glossario: [
+      { termo: "Demanda para compras", definicao: "Fórmula: máximo entre 0 e (quantidade vendida − quantidade devolvida em EDV). Limitar a zero evita que produto só devolvido apareça como demanda negativa." },
+      { termo: "Curva ABC (por demanda)", definicao: "Fórmula: percorre os produtos em ordem decrescente de demanda líquida e olha o percentual já acumulado antes do item. Acumulado < 80% = A; < 95% = B; restante = C." },
+      { termo: "Estoque atual", definicao: "Saldo (kardex_qtde_saldo) do movimento mais recente encontrado no Kardex até hoje, inclusive depois do fim do período consultado. Produto sem movimento aparece como 'sem saldo localizado'." },
+      { termo: "Média diária", definicao: "Fórmula: demanda líquida ÷ dias do período (inclusive o dia final). Base para cobertura e sugestão." },
+      { termo: "Cobertura", definicao: "Fórmula: estoque atual ÷ média diária, em dias. Mostra quanto tempo o saldo atende a demanda no ritmo do período. Sem demanda ou sem saldo, fica vazia." },
+      { termo: "Cobertura alvo", definicao: "Premissa informada na tela (15, 30, 45, 60 ou 90 dias). Não vem do Syspro: é o horizonte de atendimento desejado para a compra." },
+      { termo: "Situação de estoque", definicao: "Ruptura = estoque ≤ 0 com demanda; Crítica = cobertura abaixo de metade da alvo; Abaixo do alvo = cobertura menor que a alvo; Saudável = entre a alvo e o dobro; Excesso = acima do dobro da alvo; Sem demanda = nenhuma demanda no período; Sem saldo = Kardex sem saldo para o produto." },
+      { termo: "Sugestão de compra (un)", definicao: "Fórmula: arredonda para cima (média diária × cobertura alvo − estoque atual), nunca abaixo de zero." },
+      { termo: "Custo sugestão", definicao: "Fórmula: sugestão de compra × custo de reposição médio. Estimativa do investimento para atingir a cobertura alvo." },
+      { termo: "Custo aquisição / reposição (médio)", definicao: "Média ponderada do custo por unidade vendida no período (produto_vlr_custo_aquisicao e produto_vlr_custo_reposicao). Aquisição é o custo puro do item; reposição inclui impostos, frete e demais despesas." },
+      { termo: "Estoque a custo aquisição / reposição", definicao: "Fórmula: custo médio (aquisição ou reposição) × estoque atual. Valoriza o saldo parado nas duas óticas; o total aparece no rodapé da tabela." },
+      { termo: "Venda líquida real", definicao: "Fórmula: valor vendido − valor devolvido em EDV, usando o total líquido do item (desconto abatido, frete/outros somados)." },
+      { termo: "Margem", definicao: "Fórmula: (venda líquida real − custo de reposição × quantidade líquida) ÷ venda líquida real. Usa reposição porque é o custo de repor o que foi vendido." },
+      { termo: "Capital parado", definicao: "Soma do estoque a custo de reposição dos produtos em excesso e sem demanda. É dinheiro imobilizado sem giro no período." },
+      { termo: "Devoluções EDV", definicao: "Somente o grupo EDV (emissão de devolução de venda) reduz quantidade e valor vendidos. EDC é devolução de compra e não abate vendas." },
+      { termo: "Vínculo venda ↔ Kardex", definicao: "Feito exclusivamente pelo ID interno do produto (produto_id ↔ produto_id_produto). Código auxiliar e descrição aparecem na tela, mas não são usados para casar registros." },
+    ],
+  },
   financeiro: {
     resumo:
       "Separa o faturamento por forma de pagamento declarada e por tipo de documento fiscal, em visões independentes.",
@@ -172,7 +202,9 @@ const TERMOS_PANORAMA = [
 ];
 
 // Todo relatório usa o Panorama, então todo guia ganha os termos correspondentes.
-for (const guia of Object.values(GUIAS_RELATORIOS)) {
+// Exceção: Compras não tem Panorama (página própria), então não herda esses termos.
+for (const [chave, guia] of Object.entries(GUIAS_RELATORIOS)) {
+  if (chave === "compras") continue;
   const existentes = new Set((guia.glossario ?? []).map((item) => item.termo));
   guia.glossario = [
     ...(guia.glossario ?? []),

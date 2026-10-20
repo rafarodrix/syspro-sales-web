@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { RotateCcw, ShoppingBasket } from "lucide-react";
+import { ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
 import {
   DateRangeFilter,
   periodoUltimos90Dias,
@@ -31,6 +32,7 @@ import { COLUNAS_EXPORTACAO_COMPRAS, montarLinhasExportacaoCompras } from "@/lib
 import {
   CRITERIOS_ORDENACAO_COMPRAS,
   SITUACOES_COMPRA,
+  custoSugestaoCompra,
   ordenarItensCompras,
   resumirDecisaoCompra,
   rotuloSituacao,
@@ -69,19 +71,68 @@ function ResumoCard({
   titulo,
   valor,
   descricao,
+  onClick,
+  acaoTitulo,
 }: {
   titulo: string;
   valor: string;
   descricao: string;
+  onClick?: () => void;
+  acaoTitulo?: string;
 }) {
+  const clicavel = Boolean(onClick);
   return (
-    <Card size="sm">
+    <Card
+      size="sm"
+      onClick={onClick}
+      role={clicavel ? "button" : undefined}
+      tabIndex={clicavel ? 0 : undefined}
+      title={clicavel ? acaoTitulo : undefined}
+      onKeyDown={
+        clicavel
+          ? (evento) => {
+              if (evento.key === "Enter" || evento.key === " ") {
+                evento.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      className={
+        clicavel
+          ? "cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          : undefined
+      }
+    >
       <CardHeader>
         <CardDescription>{titulo}</CardDescription>
         <CardTitle className="font-mono text-2xl">{valor}</CardTitle>
       </CardHeader>
       <CardContent className="text-xs text-muted-foreground">{descricao}</CardContent>
     </Card>
+  );
+}
+
+/** Faixa compacta de métricas — evita uma grade de cards para números de contexto. */
+function FaixaLinha({
+  itens,
+}: {
+  itens: Array<{ rotulo: string; valor: string; detalhe?: string }>;
+}) {
+  return (
+    <div className="flex flex-wrap divide-border rounded-lg border bg-card sm:divide-x">
+      {itens.map((item) => (
+        <div key={item.rotulo} className="flex min-w-[9.5rem] flex-1 flex-col gap-0.5 px-3 py-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {item.rotulo}
+          </span>
+          <span className="font-mono text-sm font-semibold text-foreground">{item.valor}</span>
+          {item.detalhe ? (
+            <span className="text-[10px] leading-tight text-muted-foreground">{item.detalhe}</span>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -278,86 +329,91 @@ export function ComprasView({
               titulo="Sugestão de compra"
               valor={formatarMoeda(resumoDecisao.custoSugestao)}
               descricao={`${formatarNumero(resumoDecisao.unidadesSugeridas, 0)} un para cobrir ${alvoDias} dias`}
+              onClick={() => {
+                setSituacao("todas");
+                setOrdenacao("sugestao");
+                setPagina(1);
+              }}
+              acaoTitulo="Ordenar a tabela pela maior sugestão de compra"
             />
             <ResumoCard
               titulo="Rupturas"
               valor={formatarNumero(resumoDecisao.rupturas, 0)}
               descricao="Com demanda no período e estoque zerado ou negativo"
+              onClick={() => {
+                setSituacao("ruptura");
+                setPagina(1);
+              }}
+              acaoTitulo="Filtrar somente produtos em ruptura"
             />
             <ResumoCard
               titulo="Críticas"
               valor={formatarNumero(resumoDecisao.criticos, 0)}
               descricao={`Cobertura abaixo de ${formatarNumero(alvoDias / 2, 0)} dias`}
+              onClick={() => {
+                setSituacao("critica");
+                setPagina(1);
+              }}
+              acaoTitulo="Filtrar somente produtos com cobertura crítica"
             />
             <ResumoCard
               titulo="Capital parado"
               valor={formatarMoeda(resumoDecisao.excessoCapital + resumoDecisao.semDemandaCapital)}
               descricao={`${resumoDecisao.excessoProdutos} em excesso + ${resumoDecisao.semDemandaProdutos} sem demanda`}
+              onClick={() => {
+                setSituacao("excesso");
+                setOrdenacao("estoque-valor");
+                setPagina(1);
+              }}
+              acaoTitulo="Filtrar produtos em excesso ordenando pelo maior capital em estoque"
             />
           </div>
         </section>
       ) : null}
 
       {periodoConsultado ? (
-        <section className="space-y-3">
-          <div>
+        <section className="space-y-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-semibold text-foreground">Base do período</h2>
             <p className="text-xs text-muted-foreground">
-              Totais de vendas, devoluções e estoque da consulta, sem os filtros da tabela.
+              Período completo, sem os filtros da tabela · custo informado em{" "}
+              {formatarPercentual(relatorio.resumo.coberturaCusto, 1)} da demanda
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <ResumoCard
-              titulo="Quantidade vendida"
-              valor={formatarNumero(relatorio.resumo.quantidadeVendida, 0)}
-              descricao="Origem: consulta de vendas"
-            />
-          <ResumoCard
-            titulo="Quantidade devolvida"
-            valor={formatarNumero(relatorio.resumo.quantidadeDevolvida, 0)}
-            descricao={`EDV · ${formatarPercentual(relatorio.resumo.taxaDevolucao, 1)} das unidades`}
+          <FaixaLinha
+            itens={[
+              {
+                rotulo: "Vendido",
+                valor: formatarMoeda(relatorio.resumo.valorVendido),
+                detalhe: `${formatarNumero(relatorio.resumo.quantidadeVendida, 0)} un`,
+              },
+              {
+                rotulo: "Devolvido (EDV)",
+                valor: formatarMoeda(relatorio.resumo.valorDevolvido),
+                detalhe: `${formatarPercentual(relatorio.resumo.taxaDevolucaoValor, 1)} do valor`,
+              },
+              {
+                rotulo: "Venda líquida",
+                valor: formatarMoeda(relatorio.resumo.valorVendaLiquida),
+                detalhe: `${formatarNumero(relatorio.resumo.quantidadeLiquidaReal, 0)} un líquidas`,
+              },
+              {
+                rotulo: "Margem bruta",
+                valor: formatarMoeda(relatorio.resumo.margemBruta),
+                detalhe: `${formatarPercentual(relatorio.resumo.margemBrutaPercentual, 1)} sobre a líquida`,
+              },
+              {
+                rotulo: "Estoque a custo aquisição",
+                valor: formatarMoeda(relatorio.resumo.custoEstoqueAquisicao),
+                detalhe: `${relatorio.resumo.produtosSemSaldo} sem saldo`,
+              },
+              {
+                rotulo: "Estoque a custo reposição",
+                valor: formatarMoeda(relatorio.resumo.custoEstoqueReposicao),
+                detalhe: `${relatorio.resumo.produtosSemSaldoLocalizado} sem saldo localizado`,
+              },
+            ]}
           />
-          <ResumoCard
-            titulo="Demanda para compras"
-            valor={formatarNumero(relatorio.resumo.demandaLiquida, 0)}
-            descricao="Vendido menos devoluções EDV, sem ficar negativo"
-          />
-          <ResumoCard
-            titulo="Valor vendido"
-            valor={formatarMoeda(relatorio.resumo.valorVendido)}
-            descricao="Venda líquida fiscal antes das devoluções"
-          />
-          <ResumoCard
-            titulo="Valor devolvido"
-            valor={formatarMoeda(relatorio.resumo.valorDevolvido)}
-            descricao={`EDV · ${formatarPercentual(relatorio.resumo.taxaDevolucaoValor, 1)} do valor vendido`}
-          />
-          <ResumoCard
-            titulo="Venda líquida real"
-            valor={formatarMoeda(relatorio.resumo.valorVendaLiquida)}
-            descricao={`${formatarNumero(relatorio.resumo.quantidadeLiquidaReal, 0)} un líquidas · valor vendido menos EDV`}
-          />
-          <ResumoCard
-            titulo="Estoque a custo aquisição"
-            valor={formatarMoeda(relatorio.resumo.custoEstoqueAquisicao)}
-            descricao="Custo de aquisição × estoque atual"
-          />
-          <ResumoCard
-            titulo="Estoque a custo reposição"
-            valor={formatarMoeda(relatorio.resumo.custoEstoqueReposicao)}
-            descricao={`Custo de reposição × estoque atual · custo em ${formatarPercentual(relatorio.resumo.coberturaCusto, 1)} da demanda`}
-          />
-          <ResumoCard
-            titulo="Margem bruta"
-            valor={formatarMoeda(relatorio.resumo.margemBruta)}
-            descricao={`${formatarPercentual(relatorio.resumo.margemBrutaPercentual, 1)} sobre a venda líquida`}
-          />
-          <ResumoCard
-            titulo="Sem estoque"
-            valor={formatarNumero(relatorio.resumo.produtosSemSaldo, 0)}
-            descricao={`${relatorio.resumo.produtosSemSaldoLocalizado} sem saldo localizado`}
-          />
-          </div>
         </section>
       ) : null}
 
@@ -527,6 +583,7 @@ export function ComprasView({
                       <TableHead className="text-right" title="Dias de atendimento com o estoque atual e a média diária de demanda">Cobertura</TableHead>
                       <TableHead className="text-center" title="Classificação pela cobertura alvo escolhida na tela">Situação</TableHead>
                       <TableHead className="text-right" title="Quantidade para atingir a cobertura alvo descontando o estoque atual">Sugestão</TableHead>
+                      <TableHead className="text-right" title="Sugestão de compra × custo de reposição médio">Custo sugestão</TableHead>
                       <TableHead className="text-right">Custo aquisição</TableHead>
                       <TableHead className="text-right">Custo reposição</TableHead>
                       <TableHead className="text-right" title="Custo de aquisição médio × estoque atual">Estoque a custo aquisição</TableHead>
@@ -576,6 +633,11 @@ export function ComprasView({
                         </TableCell>
                         <TableCell className="text-right font-mono font-semibold">
                           {formatarNumero(sugestaoCompra(item, alvoDias), 0)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {custoSugestaoCompra(item, alvoDias) == null
+                            ? "-"
+                            : formatarMoeda(custoSugestaoCompra(item, alvoDias) ?? 0)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {item.custoAquisicaoMedio == null ? "-" : formatarMoeda(item.custoAquisicaoMedio)}
@@ -636,6 +698,9 @@ export function ComprasView({
                       <TableCell className="text-right font-mono">—</TableCell>
                       <TableCell className="text-right font-mono font-semibold">
                         {formatarNumero(totais.sugestaoUnidades, 0)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono font-semibold">
+                        {formatarMoeda(resumoDecisao.custoSugestao)}
                       </TableCell>
                       <TableCell className="text-right font-mono">—</TableCell>
                       <TableCell className="text-right font-mono">—</TableCell>
@@ -699,15 +764,11 @@ export function ComprasView({
         </CardContent>
       </Card>
 
-      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <RotateCcw className="size-3.5" aria-hidden="true" />
-        Demanda para compras = quantidade vendida menos devoluções EDV, limitada ao mínimo zero (produto
-        só com devolução fica em zero). Estoque a custo aquisição/reposição = custo médio × estoque atual.
-        Custo de reposição inclui impostos e frete. Margem usa o custo de reposição das unidades líquidas
-        vendidas. Devoluções consideram exclusivamente o grupo EDV do Kardex; EDC é devolução de compra e
-        não reduz vendas. Produtos são relacionados exclusivamente pelo ID interno; o código auxiliar é
-        usado para exibição.
-      </p>
+      <GlossarioRelatorio
+        itens={GUIAS_RELATORIOS.compras.glossario ?? []}
+        guia={GUIAS_RELATORIOS.compras}
+        relatorioLabel="Relatório de Compras"
+      />
     </div>
   );
 }
