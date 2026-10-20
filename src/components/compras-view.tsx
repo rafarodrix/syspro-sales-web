@@ -33,8 +33,13 @@ const RELATORIO_VAZIO: RelatorioCompras = {
     totalProdutos: 0,
     quantidadeVendida: 0,
     quantidadeDevolvida: 0,
+    quantidadeLiquidaReal: 0,
     demandaLiquida: 0,
     taxaDevolucao: 0,
+    valorVendido: 0,
+    valorDevolvido: 0,
+    valorVendaLiquida: 0,
+    taxaDevolucaoValor: 0,
     produtosSemSaldo: 0,
     produtosSemSaldoLocalizado: 0,
   },
@@ -149,7 +154,7 @@ export function ComprasView({
             Relatório de Compras
           </CardTitle>
           <CardDescription>
-            Vendas, devoluções de venda EDC e estoque atual por produto em {empresaNome}.
+            Vendas, devoluções de venda EDV e estoque atual por produto em {empresaNome}.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -172,26 +177,41 @@ export function ComprasView({
       ) : null}
 
       {periodoConsultado ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <ResumoCard
-            titulo="Produtos analisados"
-            valor={formatarNumero(relatorio.resumo.totalProdutos, 0)}
-            descricao="Produtos com vendas no período"
-          />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <ResumoCard
             titulo="Quantidade vendida"
             valor={formatarNumero(relatorio.resumo.quantidadeVendida, 0)}
             descricao="Origem: consulta de vendas"
           />
           <ResumoCard
-            titulo="Demanda líquida"
-            valor={formatarNumero(relatorio.resumo.demandaLiquida, 0)}
-            descricao="Vendas menos devoluções EDC"
+            titulo="Quantidade devolvida"
+            valor={formatarNumero(relatorio.resumo.quantidadeDevolvida, 0)}
+            descricao={`EDV · ${formatarPercentual(relatorio.resumo.taxaDevolucao, 1)} das unidades`}
           />
           <ResumoCard
-            titulo="Taxa de devolução"
-            valor={formatarPercentual(relatorio.resumo.taxaDevolucao, 1)}
-            descricao={`${formatarNumero(relatorio.resumo.quantidadeDevolvida, 0)} unidade(s) devolvida(s)`}
+            titulo="Quantidade líquida real"
+            valor={formatarNumero(relatorio.resumo.quantidadeLiquidaReal, 0)}
+            descricao="Quantidade vendida menos todas as devoluções EDV"
+          />
+          <ResumoCard
+            titulo="Demanda para compras"
+            valor={formatarNumero(relatorio.resumo.demandaLiquida, 0)}
+            descricao="Demanda líquida por produto, limitada ao mínimo zero"
+          />
+          <ResumoCard
+            titulo="Valor vendido"
+            valor={formatarMoeda(relatorio.resumo.valorVendido)}
+            descricao="Venda líquida fiscal antes das devoluções"
+          />
+          <ResumoCard
+            titulo="Valor devolvido"
+            valor={formatarMoeda(relatorio.resumo.valorDevolvido)}
+            descricao={`EDV · ${formatarPercentual(relatorio.resumo.taxaDevolucaoValor, 1)} do valor vendido`}
+          />
+          <ResumoCard
+            titulo="Venda líquida real"
+            valor={formatarMoeda(relatorio.resumo.valorVendaLiquida)}
+            descricao="Valor vendido menos devoluções EDV"
           />
           <ResumoCard
             titulo="Sem estoque"
@@ -260,8 +280,12 @@ export function ComprasView({
                       <TableHead>Marca</TableHead>
                       <TableHead className="text-center">Curva</TableHead>
                       <TableHead className="text-right">Vendas no periodo</TableHead>
-                      <TableHead className="text-right">Devoluções EDC</TableHead>
-                      <TableHead className="text-right">Demanda líquida</TableHead>
+                      <TableHead className="text-right">Devoluções EDV</TableHead>
+                      <TableHead className="text-right">Qtde líquida real</TableHead>
+                      <TableHead className="text-right">Demanda para compras</TableHead>
+                      <TableHead className="text-right">Valor vendido</TableHead>
+                      <TableHead className="text-right">Valor devolvido</TableHead>
+                      <TableHead className="text-right">Venda líquida real</TableHead>
                       <TableHead className="text-right">Custo aquisição</TableHead>
                       <TableHead className="text-right">Custo reposição</TableHead>
                       <TableHead className="text-right">Estoque atual</TableHead>
@@ -294,7 +318,22 @@ export function ComprasView({
                           </span>
                         </TableCell>
                         <TableCell className="text-right font-mono font-semibold">
+                          {formatarNumero(item.quantidadeLiquidaReal, 0)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-semibold">
                           {formatarNumero(item.demandaLiquida, 0)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatarMoeda(item.valorVendido)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatarMoeda(item.valorDevolvido)}
+                          <span className="block text-[10px] text-muted-foreground">
+                            {formatarPercentual(item.taxaDevolucaoValor, 1)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-semibold">
+                          {formatarMoeda(item.valorVendaLiquida)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {item.custoAquisicaoMedio == null ? "-" : formatarMoeda(item.custoAquisicaoMedio)}
@@ -347,7 +386,7 @@ export function ComprasView({
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <RotateCcw className="size-3.5" aria-hidden="true" />
-        Devoluções consideram exclusivamente o grupo EDC e não estornam receita sem valor fiscal.
+        Devoluções consideram exclusivamente o grupo EDV do Kardex. EDC é devolução de compra e não reduz vendas.
         Produtos são relacionados exclusivamente pelo ID interno; o código auxiliar é usado para exibição.
       </p>
     </div>

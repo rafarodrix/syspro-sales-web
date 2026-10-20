@@ -189,7 +189,7 @@ describe("orquestração do relatório de compras", () => {
     );
   });
 
-  it("evita consultar o Kardex quando nao existem produtos vendidos", async () => {
+  it("consulta o Kardex mesmo sem vendas para localizar devolucoes EDV", async () => {
     mocks.obterVendas.mockResolvedValue([]);
 
     await obterRelatorioCompras({
@@ -199,10 +199,43 @@ describe("orquestração do relatório de compras", () => {
       dtFinal: "2026-09-30",
     });
 
-    expect(mocks.obterMovimentosEstoque).not.toHaveBeenCalled();
+    expect(mocks.obterMovimentosEstoque).toHaveBeenCalledTimes(2);
     expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
       [],
       [],
+      { inicial: "2026-09-01", final: "2026-09-30" },
+    );
+  });
+
+  it("inclui EDV de produto sem venda no período e acompanha seus movimentos seguintes", async () => {
+    mocks.obterVendas.mockResolvedValue([]);
+    mocks.obterMovimentosEstoque.mockReset()
+      .mockResolvedValueOnce([{
+        documento: "DEV-1",
+        grupoDocumento: "EDV",
+        produtoIdProduto: "P-DEV",
+        produtoCodigoAuxiliar: "REF-DEV",
+      }])
+      .mockResolvedValueOnce([{
+        documento: "MOV-POSTERIOR",
+        grupoDocumento: "EVD",
+        produtoIdProduto: "P-DEV",
+        produtoCodigoAuxiliar: "REF-DEV",
+      }]);
+
+    await obterRelatorioCompras({
+      actorId: "usuario-1",
+      empresa,
+      dtInicial: "2026-09-01",
+      dtFinal: "2026-09-30",
+    });
+
+    expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
+      [],
+      [
+        expect.objectContaining({ documento: "DEV-1", produtoIdProduto: "P-DEV" }),
+        expect.objectContaining({ documento: "MOV-POSTERIOR", produtoIdProduto: "P-DEV" }),
+      ],
       { inicial: "2026-09-01", final: "2026-09-30" },
     );
   });

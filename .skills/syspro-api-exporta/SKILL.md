@@ -41,6 +41,8 @@ API REST do Syspro ERP para **consultar dados** (vendas, estoque, produção, t�
 
 No relatório de Compras, o vínculo venda↔Kardex usa exclusivamente o ID do produto (`produto_id` ↔ `produto_id_produto`). O ID não é exibido; o código auxiliar é a referência visual em telas e relatórios. O custo de aquisição representa o custo puro do item e fica reservado a análises de compras/fornecedores. Margens de venda usam sempre o custo de reposição, que inclui impostos, frete e outras despesas.
 
+Devoluções de venda são movimentos `EDV` do Kardex e devem reduzir quantidade e valor vendido. `EDC` representa devolução de compra e não deve ser abatido das vendas. Não presuma que `produto/venda` contenha EDV; na Mundial essa rota retorna vendas EVP, enquanto EDV está no Kardex.
+
 ## Descobrir a configuração do cliente
 1. `appcmd list sites` (Windows/IIS) mostra o site (ex.: site "Syspro", porta 1234, physicalPath `C:\Syspro\Server` com `SysproServer.exe`/`SysproServerISAPI.dll`).
 2. Testar os dois prefixos e ver qual responde 200.

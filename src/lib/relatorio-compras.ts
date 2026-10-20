@@ -8,6 +8,7 @@ import {
   classificarCurvaABC,
   normalizarCodigoProduto,
   paraNumero,
+  valorLiquidoItem,
   type ClasseCurvaABC,
 } from "@/lib/metricas-negocio";
 
@@ -20,8 +21,13 @@ export interface ItemRelatorioCompras {
   curva: ClasseCurvaCompras;
   quantidadeVendida: number;
   quantidadeDevolvida: number;
+  quantidadeLiquidaReal: number;
   demandaLiquida: number;
   taxaDevolucao: number;
+  valorVendido: number;
+  valorDevolvido: number;
+  valorVendaLiquida: number;
+  taxaDevolucaoValor: number;
   estoqueAtual: number | null;
   mediaDiaria: number;
   coberturaDias: number | null;
@@ -36,8 +42,13 @@ export interface ResumoRelatorioCompras {
   totalProdutos: number;
   quantidadeVendida: number;
   quantidadeDevolvida: number;
+  quantidadeLiquidaReal: number;
   demandaLiquida: number;
   taxaDevolucao: number;
+  valorVendido: number;
+  valorDevolvido: number;
+  valorVendaLiquida: number;
+  taxaDevolucaoValor: number;
   produtosSemSaldo: number;
   produtosSemSaldoLocalizado: number;
 }
@@ -81,8 +92,13 @@ export function montarRelatorioCompras(
       unidade: venda.produto_un?.trim() || "-",
       quantidadeVendida: 0,
       quantidadeDevolvida: 0,
+      quantidadeLiquidaReal: 0,
       demandaLiquida: 0,
       taxaDevolucao: 0,
+      valorVendido: 0,
+      valorDevolvido: 0,
+      valorVendaLiquida: 0,
+      taxaDevolucaoValor: 0,
       estoqueAtual: null,
       mediaDiaria: 0,
       coberturaDias: null,
@@ -99,6 +115,7 @@ export function montarRelatorioCompras(
     };
     const quantidade = paraNumero(venda.produto_qtde);
     atual.quantidadeVendida += quantidade;
+    atual.valorVendido += valorLiquidoItem(venda);
     const custoAquisicao = paraNumero(venda.produto_vlr_custo_aquisicao);
     const custoReposicao = paraNumero(venda.produto_vlr_custo_reposicao);
     if (custoAquisicao > 0) {
@@ -116,15 +133,49 @@ export function montarRelatorioCompras(
 
   movimentos.forEach((movimento, indice) => {
     const codigoId = normalizarCodigoProduto(movimento.produtoIdProduto, "");
-    const chave = chavePorId.get(codigoId);
-    const atual = chave ? porProduto.get(chave) : undefined;
+    const ehDevolucaoVendaNoPeriodo =
+      movimento.grupoDocumento.trim().toUpperCase() === "EDV" &&
+      estaNoPeriodo(movimento.dataMovimento, periodo.inicial, periodo.final);
+    let chave = chavePorId.get(codigoId);
+    let atual = chave ? porProduto.get(chave) : undefined;
+
+    if (!atual && codigoId && ehDevolucaoVendaNoPeriodo) {
+      chave = codigoId;
+      atual = {
+        codigo: movimento.produtoCodigoAuxiliar?.trim() || "",
+        produto: movimento.produtoDescricao?.trim() || "Produto sem descrição",
+        unidade: "-",
+        quantidadeVendida: 0,
+        quantidadeDevolvida: 0,
+        quantidadeLiquidaReal: 0,
+        demandaLiquida: 0,
+        taxaDevolucao: 0,
+        valorVendido: 0,
+        valorDevolvido: 0,
+        valorVendaLiquida: 0,
+        taxaDevolucaoValor: 0,
+        estoqueAtual: null,
+        mediaDiaria: 0,
+        coberturaDias: null,
+        dataUltimoMovimento: null,
+        produtoId: movimento.produtoIdProduto?.trim(),
+        marca: movimento.produtoMarca?.trim() || undefined,
+        custoAquisicaoMedio: null,
+        custoReposicaoMedio: null,
+        totalCustoAquisicao: 0,
+        totalCustoReposicao: 0,
+        quantidadeComCustoAquisicao: 0,
+        quantidadeComCustoReposicao: 0,
+        ordemUltimoMovimento: -1,
+      };
+      chavePorId.set(codigoId, chave);
+      porProduto.set(chave, atual);
+    }
     if (!atual) return;
 
-    if (
-      movimento.grupoDocumento.trim().toUpperCase() === "EDC" &&
-      estaNoPeriodo(movimento.dataMovimento, periodo.inicial, periodo.final)
-    ) {
+    if (ehDevolucaoVendaNoPeriodo) {
       atual.quantidadeDevolvida += Math.abs(movimento.quantidadeMovimentada);
+      atual.valorDevolvido += Math.abs(movimento.valorTotal);
     }
 
     const dataAtual = movimento.dataMovimento.slice(0, 10);
@@ -139,8 +190,11 @@ export function montarRelatorioCompras(
 
   const diasPeriodo = calcularDiasInclusivos(periodo.inicial, periodo.final);
   for (const item of porProduto.values()) {
+    item.quantidadeLiquidaReal = item.quantidadeVendida - item.quantidadeDevolvida;
     item.demandaLiquida = calcularDemandaLiquida(item.quantidadeVendida, item.quantidadeDevolvida);
     item.taxaDevolucao = calcularPercentual(item.quantidadeDevolvida, item.quantidadeVendida);
+    item.valorVendaLiquida = item.valorVendido - item.valorDevolvido;
+    item.taxaDevolucaoValor = calcularPercentual(item.valorDevolvido, item.valorVendido);
     item.mediaDiaria = diasPeriodo > 0 ? item.demandaLiquida / diasPeriodo : 0;
     item.coberturaDias = calcularCoberturaEstoque(item.estoqueAtual, item.demandaLiquida, diasPeriodo);
     item.custoAquisicaoMedio = item.quantidadeComCustoAquisicao > 0
@@ -157,6 +211,8 @@ export function montarRelatorioCompras(
   const totalVendido = ordenados.reduce((total, item) => total + item.quantidadeVendida, 0);
   const totalDevolvido = ordenados.reduce((total, item) => total + item.quantidadeDevolvida, 0);
   const totalDemandaLiquida = ordenados.reduce((total, item) => total + item.demandaLiquida, 0);
+  const totalValorVendido = ordenados.reduce((total, item) => total + item.valorVendido, 0);
+  const totalValorDevolvido = ordenados.reduce((total, item) => total + item.valorDevolvido, 0);
   let acumulado = 0;
 
   const itens = ordenados.map((item) => {
@@ -171,8 +227,13 @@ export function montarRelatorioCompras(
       unidade: item.unidade,
       quantidadeVendida: item.quantidadeVendida,
       quantidadeDevolvida: item.quantidadeDevolvida,
+      quantidadeLiquidaReal: item.quantidadeLiquidaReal,
       demandaLiquida: item.demandaLiquida,
       taxaDevolucao: item.taxaDevolucao,
+      valorVendido: item.valorVendido,
+      valorDevolvido: item.valorDevolvido,
+      valorVendaLiquida: item.valorVendaLiquida,
+      taxaDevolucaoValor: item.taxaDevolucaoValor,
       estoqueAtual: item.estoqueAtual,
       mediaDiaria: item.mediaDiaria,
       coberturaDias: item.coberturaDias,
@@ -191,8 +252,13 @@ export function montarRelatorioCompras(
       totalProdutos: itens.length,
       quantidadeVendida: totalVendido,
       quantidadeDevolvida: totalDevolvido,
+      quantidadeLiquidaReal: totalVendido - totalDevolvido,
       demandaLiquida: totalDemandaLiquida,
       taxaDevolucao: calcularPercentual(totalDevolvido, totalVendido),
+      valorVendido: totalValorVendido,
+      valorDevolvido: totalValorDevolvido,
+      valorVendaLiquida: totalValorVendido - totalValorDevolvido,
+      taxaDevolucaoValor: calcularPercentual(totalValorDevolvido, totalValorVendido),
       produtosSemSaldo: itens.filter((item) => item.estoqueAtual !== null && item.estoqueAtual <= 0).length,
       produtosSemSaldoLocalizado: itens.filter((item) => item.estoqueAtual === null).length,
     },

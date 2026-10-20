@@ -10,6 +10,7 @@ function venda(codigo: string, quantidade: number, descricao = `Produto ${codigo
     produto_descricao: descricao,
     produto_un: "UN",
     produto_qtde: quantidade,
+    produto_vlr_total_liquido: quantidade * 10,
   } as VendaProduto;
 }
 
@@ -19,6 +20,7 @@ function movimento(
   grupo: string,
   quantidade: number,
   saldo: number,
+  valorTotal = 0,
 ) {
   return {
     produtoIdProduto: codigo,
@@ -27,18 +29,19 @@ function movimento(
     dataMovimento: data,
     grupoDocumento: grupo,
     quantidadeMovimentada: quantidade,
+    valorTotal,
     saldo,
   } as MovimentoKardex;
 }
 
 describe("relatorio de compras", () => {
-  it("combina vendas, devolucoes EDC e o saldo do movimento mais recente", () => {
+  it("combina vendas, devolucoes EDV e o saldo do movimento mais recente", () => {
     const relatorio = montarRelatorioCompras(
       [venda("SP1002A", 20), venda("SP1002A", 12), venda("SK202", 8)],
       [
-        movimento("SP1002A", "2026-09-10", "EDC", -3, 17),
+        movimento("SP1002A", "2026-09-10", "EDV", 3, 17, 45),
         movimento("SP1002A", "2026-10-15", "EVD", -1, 20),
-        movimento("SK202", "2026-10-14", "EDC", -1, 8),
+        movimento("SK202", "2026-10-14", "EDV", 1, 8, 12),
       ],
       { inicial: "2026-08-01", final: "2026-10-16" },
     );
@@ -47,8 +50,12 @@ describe("relatorio de compras", () => {
       codigo: "SP1002A",
       quantidadeVendida: 32,
       quantidadeDevolvida: 3,
+      quantidadeLiquidaReal: 29,
       demandaLiquida: 29,
       taxaDevolucao: 9.375,
+      valorVendido: 320,
+      valorDevolvido: 45,
+      valorVendaLiquida: 275,
       estoqueAtual: 20,
       dataUltimoMovimento: "2026-10-15",
       curva: "A",
@@ -57,8 +64,13 @@ describe("relatorio de compras", () => {
       totalProdutos: 2,
       quantidadeVendida: 40,
       quantidadeDevolvida: 4,
+      quantidadeLiquidaReal: 36,
       demandaLiquida: 36,
       taxaDevolucao: 10,
+      valorVendido: 400,
+      valorDevolvido: 57,
+      valorVendaLiquida: 343,
+      taxaDevolucaoValor: expect.closeTo(14.25, 5),
       produtosSemSaldo: 0,
       produtosSemSaldoLocalizado: 0,
     });
@@ -72,7 +84,7 @@ describe("relatorio de compras", () => {
     const relatorio = montarRelatorioCompras(
       [itemVendido],
       [{
-        ...movimento("OUTRO-ID", "2026-10-10", "EDC", -2, 8),
+        ...movimento("OUTRO-ID", "2026-10-10", "EDV", 2, 8, 20),
         produtoCodigoAuxiliar: "1263",
       }],
       { inicial: "2026-10-01", final: "2026-10-31" },
@@ -81,6 +93,7 @@ describe("relatorio de compras", () => {
     expect(relatorio.itens[0]).toMatchObject({
       codigo: "1263",
       quantidadeDevolvida: 0,
+      quantidadeLiquidaReal: 10,
       estoqueAtual: null,
     });
   });
@@ -89,7 +102,7 @@ describe("relatorio de compras", () => {
     const relatorio = montarRelatorioCompras(
       [venda("{47E770D8-EE38-474E-AFF3-3A1A51E3EDC4}", 10, "Água  desmineralizada")],
       [{
-        ...movimento("OUTRO-ID", "2026-10-10", "EDC", -2, 8),
+        ...movimento("OUTRO-ID", "2026-10-10", "EDV", 2, 8, 20),
         produtoCodigoAuxiliar: "1263",
         produtoDescricao: "AGUA DESMINERALIZADA",
       }],
@@ -124,10 +137,10 @@ describe("relatorio de compras", () => {
       estoqueAtual: 8,
     });
   });
-  it("nao soma EDC fora do periodo de vendas, mas usa o movimento no saldo atual", () => {
+  it("nao soma EDV fora do periodo de vendas, mas usa o movimento no saldo atual", () => {
     const relatorio = montarRelatorioCompras(
       [venda("10", 5)],
-      [movimento("10", "2026-10-10", "EDC", -2, 9)],
+      [movimento("10", "2026-10-10", "EDV", 2, 9, 20)],
       { inicial: "2026-09-01", final: "2026-09-30" },
     );
 
@@ -137,11 +150,53 @@ describe("relatorio de compras", () => {
   it("classifica como C quando as devolucoes anulam toda a demanda", () => {
     const relatorio = montarRelatorioCompras(
       [venda("10", 5)],
-      [movimento("10", "2026-10-10", "EDC", -5, 5)],
+      [movimento("10", "2026-10-10", "EDV", 5, 5, 50)],
       { inicial: "2026-10-01", final: "2026-10-10" },
     );
 
     expect(relatorio.itens[0]).toMatchObject({ demandaLiquida: 0, curva: "C" });
+  });
+
+  it("ignora EDC porque representa devolução de compra", () => {
+    const relatorio = montarRelatorioCompras(
+      [venda("10", 5)],
+      [movimento("10", "2026-10-10", "EDC", 2, 9, 20)],
+      { inicial: "2026-10-01", final: "2026-10-10" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({
+      quantidadeDevolvida: 0,
+      quantidadeLiquidaReal: 5,
+      valorDevolvido: 0,
+      demandaLiquida: 5,
+      valorVendaLiquida: 50,
+    });
+  });
+
+  it("inclui EDV mesmo quando o produto não teve venda no período", () => {
+    const relatorio = montarRelatorioCompras(
+      [],
+      [movimento("DEV-1", "2026-10-10", "EDV", 2, 7, 35)],
+      { inicial: "2026-10-01", final: "2026-10-10" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({
+      codigo: "DEV-1",
+      quantidadeVendida: 0,
+      quantidadeDevolvida: 2,
+      quantidadeLiquidaReal: -2,
+      demandaLiquida: 0,
+      valorVendido: 0,
+      valorDevolvido: 35,
+      valorVendaLiquida: -35,
+      curva: "C",
+    });
+    expect(relatorio.resumo).toMatchObject({
+      valorVendido: 0,
+      valorDevolvido: 35,
+      valorVendaLiquida: -35,
+      quantidadeLiquidaReal: -2,
+    });
   });
 
   it("calcula demanda, cobertura e separa estoque zerado de saldo não localizado", () => {

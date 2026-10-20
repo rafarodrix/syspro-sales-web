@@ -18,23 +18,6 @@ function hojeEmSaoPaulo(): string {
   }).format(new Date());
 }
 
-async function executarComPool<T, R>(
-  itens: T[],
-  limite: number,
-  executar: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const resultados = new Array<R>(itens.length);
-  let proximo = 0;
-  async function trabalhador() {
-    while (proximo < itens.length) {
-      const indice = proximo++;
-      resultados[indice] = await executar(itens[indice]);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limite, itens.length) }, trabalhador));
-  return resultados;
-}
-
 interface JanelaConsulta {
   inicial: string;
   final: string;
@@ -79,6 +62,11 @@ async function obterMovimentosAdaptativo({
       dtFinal: janela.final,
       signal,
     });
+    for (const movimento of movimentos) {
+      if (String(movimento.grupoDocumento ?? "").trim().toUpperCase() !== "EDV") continue;
+      const id = normalizarCodigoProduto(movimento.produtoIdProduto, "");
+      if (id) idsProdutos.add(id);
+    }
     return movimentos.filter((movimento) =>
       idsProdutos.has(normalizarCodigoProduto(movimento.produtoIdProduto, "")),
     );
@@ -142,16 +130,17 @@ export async function obterRelatorioCompras({
       .map((venda) => normalizarCodigoProduto(venda.produto_id, ""))
       .filter(Boolean),
   );
-  const movimentos = idsProdutos.size > 0
-    ? await executarComPool(janelasKardex, 2, (janela) =>
-        obterMovimentosAdaptativo({
-          empresa,
-          janela,
-          idsProdutos,
-          signal,
-        }),
-      ).then((resultados) => resultados.flat())
-    : [];
+  const movimentos: Awaited<ReturnType<typeof obterMovimentosEstoque>> = [];
+  // As janelas são cronológicas: um EDV pode revelar um produto sem venda no período,
+  // cujo saldo precisa continuar sendo acompanhado nas janelas seguintes.
+  for (const janela of janelasKardex) {
+    movimentos.push(...await obterMovimentosAdaptativo({
+      empresa,
+      janela,
+      idsProdutos,
+      signal,
+    }));
+  }
 
   return montarRelatorioCompras(vendas, movimentos, { inicial: inicialIso, final: finalIso });
 }
