@@ -48,6 +48,28 @@ describe("saúde do estoque", () => {
     expect(resultado.posicoes[0]).not.toHaveProperty("produtoId");
   });
 
+  it("usa a quantidade da rota produto/venda e ignora linha duplicada do Kardex e ENP fiscal", () => {
+    const resultado = montarSaudeEstoque([
+      movimento({ produtoIdProduto: "1", quantidadeMovimentada: -6, saldo: 10 }),
+      movimento({ produtoIdProduto: "1", quantidadeMovimentada: -6, saldo: 4 }),
+      movimento({
+        produtoIdProduto: "1",
+        grupoDocumento: "ENP",
+        quantidadeMovimentada: -3,
+        saldo: 1,
+        classificacao: { categoria: "fiscal", direcao: "saida", rotulo: "Emissão fiscal de venda (NF-e)" },
+      }),
+    ], [
+      venda({ produto_id: "1", produto_qtde: 5, produto_vlr_total_item: 100 }),
+    ], { inicial: "01/10/2026", final: "10/10/2026" });
+
+    expect(resultado.posicoes[0]).toMatchObject({
+      quantidadeVendida: 5,
+      estoqueAtual: 1,
+      demandaLiquida: 5,
+    });
+  });
+
   it("calcula demanda líquida, cobertura e valores sem misturar aquisição e reposição", () => {
     const resultado = montarSaudeEstoque([
       movimento({ produtoIdProduto: "1", quantidadeMovimentada: -10, saldo: 20, dataMovimento: "2026-10-02" }),

@@ -52,11 +52,16 @@ describe("Kardex", () => {
     });
   });
 
-  it("distingue venda NF-e (ENP) de venda PDV (EVP)", () => {
+  it("trata ENP como emissão fiscal, nunca como venda, e EVD como venda", () => {
     expect(classificarMovimentoKardex("ENP", "S")).toEqual({
+      categoria: "fiscal",
+      direcao: "saida",
+      rotulo: "Emissão fiscal de venda (NF-e)",
+    });
+    expect(classificarMovimentoKardex("EVD", "S")).toEqual({
       categoria: "venda",
       direcao: "saida",
-      rotulo: "Venda NF-e",
+      rotulo: "Venda direta",
     });
     expect(classificarMovimentoKardex("EVP", "S")).toEqual({
       categoria: "venda",
