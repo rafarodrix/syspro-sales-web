@@ -142,9 +142,9 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     posicoesPaginacao.reiniciar();
     setAba("posicao");
   }
-  function abrirDevolucoes() {
+  function abrirDevolucoesVenda() {
     setFiltroDirecao("todas");
-    setFiltroCategoria("todas");
+    setFiltroCategoria("devolucao_venda");
     setFiltroGrupo("todos");
     devolucoesPaginacao.reiniciar();
     setAba("devolucoes");
@@ -167,7 +167,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
           onRupturas={() => abrirPosicaoComSituacao("ruptura")}
           onBaixaCobertura={() => abrirPosicaoComSituacao("baixa_cobertura")}
           onExcesso={() => abrirPosicaoComSituacao("excesso")}
-          onDevolucoes={abrirDevolucoes}
+          onDevolucoes={abrirDevolucoesVenda}
         />
         {resumoSaude.movimentosSemProdutoId > 0 ? <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300" role="alert"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span>{formatarNumero(resumoSaude.movimentosSemProdutoId)} movimentação(ões) sem ID de produto ficaram fora dos agrupamentos, para evitar vínculos incorretos.</span></div> : null}
         {resumoSaude.saldosNegativos > 0 ? <div className="flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-800 dark:text-rose-300" role="alert"><ShieldAlert className="mt-0.5 size-4 shrink-0" /><span>{formatarNumero(resumoSaude.saldosNegativos)} produto(s) apresentam saldo negativo e precisam de conferência no Kardex.</span></div> : null}

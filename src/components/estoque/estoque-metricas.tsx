@@ -54,7 +54,7 @@ export function EstoqueMetricas({
             valor={formatarPercentual(resumo.taxaDevolucaoQuantidade)}
             descricao={`${formatarPercentual(resumo.taxaDevolucaoValor)} do valor · ${formatarMoeda(resumo.devolucoesVendaValor)}`}
             onClick={onDevolucoes}
-            acaoTitulo="Abrir as devoluções de venda e compra"
+            acaoTitulo="Abrir somente as devoluções de venda (EDV)"
           />
         </div>
       </section>
