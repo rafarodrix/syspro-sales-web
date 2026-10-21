@@ -12,10 +12,10 @@ export type CategoriaKardex =
 
 /**
  * Grupos cujo saldo representa o estoque que o cliente considera real.
- * Os demais grupos (EAQ, ENP, EPD, EOS, EAJ, EBR, ESS...) movimentam um
+ * Os demais grupos (ENP, EPD, EOS, EAJ, EBR, ESS...) movimentam um
  * estoque paralelo e NÃO devem definir o saldo atual do produto.
  */
-export const GRUPOS_SALDO_ESTOQUE = ["EVP", "EVD", "EDV", "EDC"] as const;
+export const GRUPOS_SALDO_ESTOQUE = ["EVP", "EVD", "EDV", "EDC", "EAQ"] as const;
 
 export function grupoDefineSaldo(grupoDocumento: string): boolean {
   const grupo = (grupoDocumento ?? "").trim().toUpperCase();
