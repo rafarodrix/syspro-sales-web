@@ -376,7 +376,7 @@ export function DashboardView({
       </div>
 
       {/* Filtros executivos: mesmo padrão visual da Central de Relatórios. */}
-      <Card className="no-print border-border/60 shadow-xs">
+      <Card className="no-print shadow-2xs">
         <CardContent className="space-y-3 p-3 sm:p-3.5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
             <section
@@ -651,7 +651,7 @@ export function DashboardView({
       {/* Grid Analítico Principal: Gráfico Temporal (65%) + Insights/Top Produtos (35%) */}
       <section className="grid gap-4 xl:grid-cols-12">
         {/* Gráfico de Evolução Temporal (Bklit UI Gradient Area) */}
-        <Card className="border-border/60 shadow-xs xl:col-span-8 flex flex-col justify-between">
+        <Card className="shadow-2xs xl:col-span-8 flex flex-col justify-between">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
             <div>
               <CardTitle className="text-base font-bold text-foreground">
@@ -707,7 +707,7 @@ export function DashboardView({
         </Card>
 
         {/* Destaques do Período & Performance */}
-        <Card className="border-border/60 shadow-xs xl:col-span-4 flex flex-col">
+        <Card className="shadow-2xs xl:col-span-4 flex flex-col">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Award className="size-4 text-primary" />
@@ -788,7 +788,7 @@ export function DashboardView({
 
       {/* Quebra Executiva por Empresa (Modo Consolidado) */}
       {empresaId === "todas" && rankingPorEmpresa.length > 1 && (
-        <Card className="border-border/60 shadow-xs">
+        <Card className="shadow-2xs">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -847,7 +847,7 @@ export function DashboardView({
       <section className="grid gap-4 lg:grid-cols-12">
         {/* Top Produtos */}
         <div className="lg:col-span-6 flex flex-col">
-          <Card className="border-border/60 shadow-xs h-full flex flex-col justify-between">
+          <Card className="shadow-2xs h-full flex flex-col justify-between">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold text-foreground">

@@ -237,7 +237,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
     <div className="space-y-6">
       {/* Resumo de Usuários e Permissões */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+        <Card className="bg-card/80 p-3.5 shadow-2xs">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total de Usuários</span>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="font-mono text-2xl font-extrabold text-foreground">{usuarios.length}</span>
@@ -257,7 +257,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
       </div>
 
       {/* Cadastro de Novo Usuário */}
-      <Card className="border-border/60 shadow-sm">
+      <Card className="shadow-2xs">
         <CardHeader>
           <div className="flex items-center gap-2">
             <UserPlus className="size-5 text-primary" />
@@ -333,7 +333,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
       </Card>
 
       {/* Tabela de Usuários */}
-      <Card className="border-border/60 shadow-sm">
+      <Card className="shadow-2xs">
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

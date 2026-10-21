@@ -28,7 +28,7 @@ export function ReportFilters({
   onClear?: () => void;
 }) {
   return (
-    <details className="rounded-md border p-2 text-xs">
+    <details className="rounded-lg bg-muted/25 p-2 text-xs">
       <summary className="cursor-pointer font-medium">
         Filtros{count ? ` (${count})` : ""}
       </summary>

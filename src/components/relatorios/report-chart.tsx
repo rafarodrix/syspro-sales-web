@@ -28,7 +28,7 @@ export function ReportChart({
     points[selected ?? points.length - 1] ?? points[points.length - 1];
   return (
     <figure
-      className="min-w-0 rounded-md border p-4"
+      className="min-w-0 rounded-lg bg-card p-4 ring-1 ring-border/50"
       aria-label={`Gráfico de ${rotulo.toLowerCase()}`}
     >
       <figcaption className="mb-3 flex flex-wrap justify-between gap-2 text-xs">

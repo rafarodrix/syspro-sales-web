@@ -83,7 +83,7 @@ export function SeletorMultiplo({
           setAberto((atual) => !atual);
           setBusca("");
         }}
-        className="flex h-8 w-full items-center justify-between gap-2 rounded-md border bg-background px-2 text-xs font-medium text-foreground hover:bg-muted/40"
+        className="flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-border/60 bg-background px-2 text-xs font-medium text-foreground hover:bg-muted/40"
         aria-haspopup="listbox"
         aria-expanded={aberto}
       >

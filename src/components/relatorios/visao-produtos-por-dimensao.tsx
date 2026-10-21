@@ -32,7 +32,7 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/25 p-2.5">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <PackageSearch className="size-4 text-primary" />
           <span>Produtos consolidados dentro de cada {dimensaoRotulo.toLowerCase()}.</span>
@@ -43,7 +43,7 @@ export function VisaoProdutosPorDimensao({ itens, dimensaoRotulo, dimensaoPlural
             setDimensaoSelecionada(event.target.value);
             setPaginaAtual(1);
           }}
-          className="h-8 max-w-64 rounded-md border bg-background px-2 text-xs text-foreground"
+          className="h-8 max-w-64 rounded-lg border border-border/60 bg-background px-2 text-xs text-foreground"
           aria-label={`Filtrar por ${dimensaoRotulo}`}
         >
           <option value="">Todos os {dimensaoPlural}</option>

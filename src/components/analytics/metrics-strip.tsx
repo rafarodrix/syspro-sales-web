@@ -15,7 +15,7 @@ export interface MetricsStripItem {
  */
 export function MetricsStrip({ itens }: { itens: MetricsStripItem[] }) {
   return (
-    <div className="flex flex-wrap divide-border rounded-lg border bg-card sm:divide-x">
+    <div className="flex flex-wrap divide-border/60 rounded-lg bg-card ring-1 ring-border/50 sm:divide-x">
       {itens.map((item) => (
         <div
           key={item.rotulo}

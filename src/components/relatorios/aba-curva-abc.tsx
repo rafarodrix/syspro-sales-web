@@ -147,7 +147,7 @@ export function AbaCurvaABC({
       {/* Paginação Padrão */}
 
       {/* Dependência estrutural do portfólio; variações ficam no diagnóstico comum. */}
-      <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="rounded-lg bg-muted/25 p-3">
         <div className="flex items-center justify-between gap-2">
           <TermoExplicado
             termo="Dependência do portfólio"

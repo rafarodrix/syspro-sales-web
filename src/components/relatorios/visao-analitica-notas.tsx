@@ -155,7 +155,7 @@ export function VisaoAnaliticaNotas({
   return (
     <div className="space-y-4">
       {/* Cabeçalho da visão analítica */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/25 p-2.5">
         {!ocultarNavegacao ? <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"

@@ -285,7 +285,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
     <div className="space-y-6">
       {/* Resumo Corporativo Multi-Empresa */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+        <Card className="bg-card/80 p-3.5 shadow-2xs">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             Empresas Cadastradas
           </span>
@@ -295,7 +295,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
           </div>
         </Card>
 
-        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+        <Card className="bg-card/80 p-3.5 shadow-2xs">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             Empresas Ativas
           </span>
@@ -307,7 +307,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
           </div>
         </Card>
 
-        <Card className="border-border/60 bg-card/80 p-3.5 shadow-2xs">
+        <Card className="bg-card/80 p-3.5 shadow-2xs">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             Arquitetura Multi-Tenant
           </span>
@@ -318,7 +318,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
       </div>
 
       {/* Cadastrar Nova Empresa */}
-      <Card className="border-border/60 shadow-sm">
+      <Card className="shadow-2xs">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Plus className="size-5 text-primary" />
@@ -421,7 +421,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
       </Card>
 
       {/* Lista de Empresas e Diagnóstico de Conexão */}
-      <Card className="border-border/60 shadow-sm">
+      <Card className="shadow-2xs">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>

@@ -132,7 +132,7 @@ export function PieChartCard({
       : null;
 
   return (
-    <Card className="border-border/60 shadow-xs transition-all hover:shadow-md dark:border-border/40 flex flex-col justify-between h-full">
+    <Card className="shadow-2xs transition-shadow hover:shadow-md flex flex-col justify-between h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

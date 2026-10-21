@@ -211,7 +211,7 @@ export function ReportTable<T>({
           /> : null}
           {report ? <>
             <details className="relative">
-              <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border px-3 text-xs font-medium hover:bg-muted">
+              <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg border border-border/60 px-3 text-xs font-medium hover:bg-muted">
                 <Columns3 className="size-3.5" /> <span className="hidden lg:inline">Colunas</span>
               </summary>
               <div className="absolute right-0 z-30 mt-1 min-w-56 space-y-1 rounded-md border bg-popover p-2 shadow-md">

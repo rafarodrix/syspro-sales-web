@@ -110,7 +110,7 @@ export function DateRangeFilter({
       {/* Grupo Esquerdo: Filtros Rápidos + Inputs de Data inline */}
       <div className="flex flex-wrap items-center gap-2.5">
         {/* Presets rápidos */}
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
           {presets.map((preset) => {
             const ativo =
               value.inicial === preset.value.inicial &&
@@ -126,11 +126,11 @@ export function DateRangeFilter({
                 }}
                 size="sm"
                 type="button"
-                variant={ativo ? "default" : "outline"}
+                variant={ativo ? "secondary" : "ghost"}
                 className={`h-8 px-2.5 text-xs font-semibold ${
                   ativo
-                    ? "shadow-xs font-bold"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-background font-bold text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
                 }`}
               >
                 {preset.label}
@@ -140,7 +140,7 @@ export function DateRangeFilter({
         </div>
 
         {/* Divisor Vertical */}
-        <div className="hidden h-5 w-px bg-border/80 sm:block" />
+        <div className="hidden h-5 w-px bg-border/40 sm:block" />
 
         {/* Inputs de Data Inline + Botão de Consulta na mesma linha */}
         <div className="flex flex-wrap items-center gap-2">
@@ -155,7 +155,7 @@ export function DateRangeFilter({
               onChange={(event) =>
                 onChange({ ...value, inicial: event.target.value })
               }
-              className="h-8 w-[138px] text-xs font-mono font-medium"
+              className="h-8 w-[138px] border-border/60 text-xs font-mono font-medium"
               onKeyDown={(event) => {
                 if (event.key === "Enter" && onConsultar && !erro && !loading) {
                   if (persistirCookie) salvarPeriodoCookie(value);
@@ -175,7 +175,7 @@ export function DateRangeFilter({
               onChange={(event) =>
                 onChange({ ...value, final: event.target.value })
               }
-              className="h-8 w-[138px] text-xs font-mono font-medium"
+              className="h-8 w-[138px] border-border/60 text-xs font-mono font-medium"
               onKeyDown={(event) => {
                 if (event.key === "Enter" && onConsultar && !erro && !loading) {
                   if (persistirCookie) salvarPeriodoCookie(value);

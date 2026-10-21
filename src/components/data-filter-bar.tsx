@@ -23,7 +23,7 @@ export function DataFilterBar({
   temFiltrosAtivos = false,
 }: DataFilterBarProps) {
   return (
-    <div className="no-print flex flex-wrap items-center gap-2.5 rounded-lg border bg-muted/20 p-3">
+    <div className="no-print flex flex-wrap items-center gap-2.5 rounded-lg bg-muted/25 p-2.5">
       <div className="relative min-w-[200px] flex-1 sm:min-w-[240px]">
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
         <Input

@@ -25,7 +25,7 @@ export function StatusRelatorio({
     <div
       role="status"
       className={cn(
-        "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground",
+        "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/40 pt-2 text-xs text-muted-foreground",
         className,
       )}
     >

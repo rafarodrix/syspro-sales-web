@@ -387,7 +387,7 @@ export function VendasView({
       ) : null}
 
       {/* Tabela Principal de Vendas */}
-      <Card className="border-border/60 shadow-sm">
+      <Card className="shadow-2xs">
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -593,7 +593,7 @@ export function VendasView({
               </div>
 
               {/* Seletor de Densidade */}
-              <div className="flex items-center gap-0.5 rounded-lg border bg-muted/20 p-0.5 ml-auto">
+              <div className="ml-auto flex items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
                 <Button
                   variant={densidade === "confortavel" ? "secondary" : "ghost"}
                   size="sm"

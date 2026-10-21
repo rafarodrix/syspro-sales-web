@@ -1036,7 +1036,7 @@ export function RelatoriosView({
           </select>
         </label>
         {/* Cabeçalho único: contexto do relatório, período e ações. */}
-        <Card className="no-print border-border/60 shadow-sm backdrop-blur-md">
+        <Card className="no-print shadow-xs backdrop-blur-md">
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
@@ -1083,10 +1083,10 @@ export function RelatoriosView({
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3 border-t border-border/60 pt-4">
+          <CardContent className="space-y-3 border-t border-border/40 pt-4">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
-              <section className="min-w-0 flex-1 rounded-md border p-2.5" aria-label="Período">
-                <div className="mb-2 text-xs font-semibold">Período</div>
+              <section className="min-w-0 flex-1 rounded-lg bg-muted/25 p-2.5" aria-label="Período">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Período</div>
                 <DateRangeFilter
                     value={periodo}
                     onChange={setPeriodo}
@@ -1096,8 +1096,8 @@ export function RelatoriosView({
                     persistirCookie={false}
                   />
               </section>
-              <section className="min-w-0 rounded-md border p-2.5" aria-label="Comparação">
-                <div className="mb-2 text-xs font-semibold">Comparação</div>
+              <section className="min-w-0 rounded-lg bg-muted/25 p-2.5" aria-label="Comparação">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Comparação</div>
                 <ComparacaoPeriodo
                   periodo={periodo}
                   modo={modoComparacao}
@@ -1194,7 +1194,7 @@ export function RelatoriosView({
         ) : null}
 
         {/* Card Principal do Relatório Executivo */}
-        <Card className="border-border/60 shadow-sm">
+        <Card className="shadow-2xs">
           <CardContent>
             {loading ? (
               <div className="space-y-3 py-4">

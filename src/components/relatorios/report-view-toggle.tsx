@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export interface ReportViewOption<T extends string> {
   value: T;
@@ -25,7 +26,7 @@ export function ReportViewSelector<T extends string>({
   return (
     <section className="flex flex-wrap items-center">
       <div
-        className="flex w-full flex-wrap items-center gap-1 rounded-md border bg-background p-0.5 sm:w-auto"
+        className="flex w-full flex-wrap items-center gap-0.5 rounded-lg bg-muted/50 p-0.5 sm:w-auto"
         role="group"
         aria-label={ariaLabel}
       >
@@ -37,7 +38,12 @@ export function ReportViewSelector<T extends string>({
               type="button"
               aria-pressed={active}
               variant={active ? "secondary" : "ghost"}
-              className="h-8 flex-1 gap-1.5 text-xs sm:flex-none"
+              className={cn(
+                "h-8 flex-1 gap-1.5 text-xs sm:flex-none",
+                active
+                  ? "bg-background font-semibold text-foreground shadow-2xs"
+                  : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+              )}
               onClick={() => onViewChange(value)}
             >
               <Icon className="size-3.5" />

@@ -51,7 +51,7 @@ export function ReportBarraVisao({
     <div
       className={
         className ??
-        "no-print flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/[0.06] px-2 py-1.5"
+        "no-print flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/25 px-2 py-1.5"
       }
     >
       <div className="flex min-w-0 flex-wrap items-center gap-2">{children}</div>
