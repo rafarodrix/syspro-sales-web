@@ -73,8 +73,9 @@ export function AbaDepartamentos({
   );
 
   const barraVisao = (
-    <ReportBarraVisao>
-      {seletorVisao}
+    <ReportBarraVisao
+      controlesDireita={
+        <>
       <FiltroRelatorio
         rotulo="Ordenar departamentos"
         valor={ordenacao}
@@ -86,6 +87,10 @@ export function AbaDepartamentos({
         ]}
         onChange={(valor) => setOrdenacao(valor as typeof ordenacao)}
       />
+        </>
+      }
+    >
+      {seletorVisao}
     </ReportBarraVisao>
   );
 

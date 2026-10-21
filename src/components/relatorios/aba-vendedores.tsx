@@ -91,8 +91,9 @@ export function AbaVendedores({
   );
 
   const barraVisao = (
-    <ReportBarraVisao>
-      {seletorVisao}
+    <ReportBarraVisao
+      controlesDireita={
+        <>
       <FiltroRelatorio
         rotulo="Ordenar vendedores"
         valor={ordenacao}
@@ -116,6 +117,10 @@ export function AbaVendedores({
       >
         Queda no comparativo
       </Button>
+        </>
+      }
+    >
+      {seletorVisao}
     </ReportBarraVisao>
   );
 

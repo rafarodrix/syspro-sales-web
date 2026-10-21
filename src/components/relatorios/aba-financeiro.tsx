@@ -149,9 +149,10 @@ export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
   return (
     <ReportVisaoProvider>
     <div className="space-y-4">
-      <ReportBarraVisao>
-        {seletorVisao}
-        <FiltroRelatorio
+      <ReportBarraVisao
+      controlesDireita={
+        <>
+      <FiltroRelatorio
           rotulo="Ordenar"
           valor={ordenacao}
           opcoes={[
@@ -162,7 +163,11 @@ export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
           ]}
           onChange={(valor) => setOrdenacao(valor as typeof ordenacao)}
         />
-      </ReportBarraVisao>
+        </>
+      }
+    >
+        {seletorVisao}
+        </ReportBarraVisao>
 
       <TabelaFinanceira
         itens={itensOrdenados}

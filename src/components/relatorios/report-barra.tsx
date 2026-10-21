@@ -37,9 +37,12 @@ export function ReportVisaoProvider({ children }: { children: ReactNode }) {
  */
 export function ReportBarraVisao({
   children,
+  controlesDireita,
   className,
 }: {
   children: ReactNode;
+  /** Filtros/ordenação da visão: ficam à direita, junto das ações da tabela. */
+  controlesDireita?: ReactNode;
   className?: string;
 }) {
   const contexto = useBarraRelatorio();
@@ -52,10 +55,10 @@ export function ReportBarraVisao({
       }
     >
       <div className="flex min-w-0 flex-wrap items-center gap-2">{children}</div>
-      <div
-        ref={contexto?.definirSlot}
-        className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto"
-      />
+      <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
+        {controlesDireita}
+        <div ref={contexto?.definirSlot} className="flex flex-wrap items-center gap-2" />
+      </div>
     </div>
   );
 }
