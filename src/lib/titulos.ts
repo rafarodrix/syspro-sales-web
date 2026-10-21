@@ -176,3 +176,36 @@ export function resumirTitulos(titulos: TituloNormalizado[]): ResumoTitulos {
     proximoVencimento,
   };
 }
+
+export interface FaixaAging {
+  rotulo: string;
+  valor: number;
+  quantidade: number;
+}
+
+/** Distribui o saldo em aberto por faixa de atraso (o corte que o financeiro usa). */
+export function faixasAging(titulos: TituloNormalizado[]): FaixaAging[] {
+  const faixas: FaixaAging[] = [
+    { rotulo: "A vencer", valor: 0, quantidade: 0 },
+    { rotulo: "0 a 30 dias", valor: 0, quantidade: 0 },
+    { rotulo: "31 a 60 dias", valor: 0, quantidade: 0 },
+    { rotulo: "61 a 90 dias", valor: 0, quantidade: 0 },
+    { rotulo: "acima de 90", valor: 0, quantidade: 0 },
+  ];
+  for (const titulo of titulos) {
+    if (titulo.situacao === "pago") continue;
+    const indice =
+      titulo.situacao === "aberto"
+        ? 0
+        : titulo.diasAtraso <= 30
+          ? 1
+          : titulo.diasAtraso <= 60
+            ? 2
+            : titulo.diasAtraso <= 90
+              ? 3
+              : 4;
+    faixas[indice].valor += titulo.saldo;
+    faixas[indice].quantidade += 1;
+  }
+  return faixas;
+}

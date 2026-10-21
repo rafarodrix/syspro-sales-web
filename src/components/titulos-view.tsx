@@ -5,6 +5,9 @@ import { BanknoteArrowDown, BanknoteArrowUp } from "lucide-react";
 import { toast } from "sonner";
 import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
+import { DataFilterBar } from "@/components/data-filter-bar";
+import { Button } from "@/components/ui/button";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { DateRangeFilter, periodoUltimos30Dias, type Periodo } from "@/components/date-range-filter";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { FeedbackState } from "@/components/feedback-state";
@@ -15,7 +18,7 @@ import { dataInputParaSyspro } from "@/lib/vendas";
 import { formatarDataInputParaBR } from "@/lib/vendas";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import { exportarParaCSV } from "@/lib/exportar-csv";
-import type { CategoriaTitulo, ResumoTitulos, TituloNormalizado } from "@/lib/titulos";
+import { faixasAging, type CategoriaTitulo, type ResumoTitulos, type TituloNormalizado } from "@/lib/titulos";
 
 interface RespostaTitulos {
   categoria: CategoriaTitulo;
@@ -79,6 +82,19 @@ export function TitulosView({
   }
 
   const itens = useMemo(() => dados?.itens ?? [], [dados]);
+  const aging = useMemo(() => faixasAging(itens), [itens]);
+  const [somenteVencidos, setSomenteVencidos] = useState(false);
+  const [busca, setBusca] = useState("");
+
+  const itensVisiveis = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    return itens.filter((item) => {
+      if (somenteVencidos && item.situacao !== "vencido") return false;
+      if (!termo) return true;
+      return [item.participante, item.numero, item.formaPagto ?? ""]
+        .some((valor) => String(valor).toLowerCase().includes(termo));
+    });
+  }, [busca, itens, somenteVencidos]);
 
   function exportar() {
     if (!itens.length) {
@@ -195,11 +211,68 @@ export function TitulosView({
             ]}
           />
 
+          <MetricsStrip
+            itens={aging.map((faixa) => ({
+              rotulo: faixa.rotulo,
+              valor: formatarMoeda(faixa.valor),
+              detalhe: `${formatarNumero(faixa.quantidade, 0)} título(s)`,
+              attention: faixa.rotulo !== "A vencer" && faixa.valor > 0,
+              definicao:
+                "Saldo em aberto agrupado por faixa de atraso em relação ao vencimento.",
+            }))}
+          />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <DataFilterBar
+              busca={busca}
+              onBuscaChange={setBusca}
+              placeholder="Buscar participante, título ou forma..."
+              temFiltrosAtivos={Boolean(busca) || somenteVencidos}
+              onLimpar={() => {
+                setBusca("");
+                setSomenteVencidos(false);
+              }}
+            >
+              <Button
+                type="button"
+                size="sm"
+                variant={somenteVencidos ? "default" : "outline"}
+                className="h-9 text-xs"
+                aria-pressed={somenteVencidos}
+                onClick={() => setSomenteVencidos((atual) => !atual)}
+              >
+                Somente vencidos
+              </Button>
+            </DataFilterBar>
+          </div>
+
           <ReportTable<TituloNormalizado>
             label="títulos"
             caption={`${titulo} por vencimento`}
-            data={itens}
+            data={itensVisiveis}
             rowKey={(item) => `${item.empresaCodigo}-${item.numero}-${item.vencimento ?? ""}`}
+            rodape={() => {
+              const total = itensVisiveis.reduce(
+                (acc, item) => ({
+                  valor: acc.valor + item.valor,
+                  pago: acc.pago + item.valorPago,
+                  saldo: acc.saldo + item.saldo,
+                }),
+                { valor: 0, pago: 0, saldo: 0 },
+              );
+              return (
+                <TableRow>
+                  <TableCell className="font-semibold">Total</TableCell>
+                  <TableCell colSpan={3} className="text-muted-foreground">
+                    {formatarNumero(itensVisiveis.length, 0)} título(s)
+                  </TableCell>
+                  <TableCell className="text-right">{formatarMoeda(total.valor)}</TableCell>
+                  <TableCell className="text-right">{formatarMoeda(total.pago)}</TableCell>
+                  <TableCell className="text-right">{formatarMoeda(total.saldo)}</TableCell>
+                  <TableCell colSpan={2} />
+                </TableRow>
+              );
+            }}
             showExport={false}
             acoesExtras={
               <ExportDropdown onExportarCsv={exportar} disabled={!itens.length} label="Exportar" />

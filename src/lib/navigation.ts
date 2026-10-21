@@ -51,12 +51,12 @@ export const relatoriosVendas: ItemNavegacao[] = [
   { id: "vendedores", label: "Vendedores", titulo: "Vendedores", categoria: "Relatórios", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500", permissao: "relatorios:visualizar" },
   { id: "geografico", label: "Cidade e UF", titulo: "Cidade e UF", categoria: "Relatórios", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500", permissao: "relatorios:visualizar" },
   { id: "financeiro", label: "Financeiro & Fiscal", titulo: "Financeiro & Formas de Pagto", categoria: "Relatórios", href: "/relatorios?aba=financeiro", icone: CreditCard, cor: "text-orange-500", permissao: "relatorios:visualizar" },
+  { id: "producao", label: "Produção", titulo: "Produção", categoria: "Relatórios", href: "/producao", icone: Factory, permissao: "relatorios:visualizar" },
 ];
 
 export const itensRelatorios: ItemNavegacao[] = [
   ...relatoriosVendas,
   { id: "compras", label: "Análise de Compras", titulo: "Análise de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "estoque:visualizar" },
-  { id: "producao", label: "Produção", titulo: "Produção", categoria: "Relatórios", href: "/producao", icone: Factory, permissao: "relatorios:visualizar" },
 ];
 
 export const itensAdministracao: ItemNavegacao[] = [

@@ -1,4 +1,4 @@
-import { GRUPOS_SALDO_ESTOQUE, grupoDefineSaldo, type MovimentoKardex } from "@/lib/kardex";
+import { grupoDefineSaldo, type MovimentoKardex } from "@/lib/kardex";
 import {
   calcularCoberturaEstoque,
   calcularDemandaLiquida,
