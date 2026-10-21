@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       return `${dia}/${mes}/${data.getUTCFullYear()}`;
     };
     const hoje = new Date();
-    const inicioPadrao = new Date(Date.UTC(hoje.getUTCFullYear() - 2, hoje.getUTCMonth(), hoje.getUTCDate()));
+    const inicioPadrao = new Date(Date.UTC(hoje.getUTCFullYear() - 1, hoje.getUTCMonth(), hoje.getUTCDate()));
     const fimPadrao = new Date(Date.UTC(hoje.getUTCFullYear() + 1, hoje.getUTCMonth(), hoje.getUTCDate()));
     const dtInicial = json.value.dtInicial ?? formatar(inicioPadrao);
     const dtFinal = json.value.dtFinal ?? formatar(fimPadrao);
