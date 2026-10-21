@@ -180,7 +180,7 @@ export function AbaGeografico({
             },
           ]}
         />
-      ) : (
+      ) : visao === "cidade" ? (
         <>
           {uf ? (
             <Button
@@ -289,7 +289,7 @@ export function AbaGeografico({
             ]}
           />
         </>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -129,7 +129,7 @@ export function AbaDepartamentos({
             ]}
           />
         </>
-      ) : (
+      ) : visao === "sintetico" ? (
         <ReportTable
           caption="Resumo por departamento"
           data={deptosFiltrados}
@@ -235,7 +235,7 @@ export function AbaDepartamentos({
             },
           ]}
         />
-      )}
+      ) : null}
     </div>
   );
 }
