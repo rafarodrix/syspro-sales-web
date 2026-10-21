@@ -15,6 +15,7 @@ import { DataFilterBar } from "@/components/data-filter-bar";
 import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/date-range-filter";
 import { EstoqueMetricas } from "@/components/estoque/estoque-metricas";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { ReportTable } from "./relatorios/report-table";
 import { TableEmptyState } from "@/components/table-empty-state";
 import { TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
@@ -290,35 +291,136 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         </TabsContent>
 
         <TabsContent value="posicao">
-          <Card><CardHeader><CardTitle className="text-base">Posição por produto</CardTitle><CardDescription>{posicoesFiltradas.length} produto(s). Custos médios consideram apenas itens com custo informado no período.</CardDescription></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-            <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Marca</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Estoque</TableHead><TableHead className="text-right">Venda</TableHead><TableHead className="text-right">EDV</TableHead><TableHead className="text-right">Demanda líquida</TableHead><TableHead className="text-right">Cobertura</TableHead><TableHead className="text-right">Custo aquisição</TableHead><TableHead className="text-right">Custo reposição</TableHead><TableHead className="text-right">Valor reposição</TableHead><TableHead>Último movimento</TableHead><TableHead /></TableRow></TableHeader>
-            <TableBody>
-              {posicoesPaginacao.itensPaginados.length ? posicoesPaginacao.itensPaginados.map((item, indice) => (
-                <TableRow key={`${item.codigo}-${item.produto}-${indice}`}>
-                  <ProdutoCell item={item} />
-                  <TableCell className="text-xs">{item.marca}</TableCell>
-                  <TableCell><SituacaoBadge situacao={item.situacao} /></TableCell>
-                  <TableCell className="text-right font-semibold">{formatarNumero(item.estoqueAtual, 2)}</TableCell>
-                  <TableCell className="text-right">{formatarNumero(item.quantidadeVendida, 2)}</TableCell>
-                  <TableCell
-                    className="whitespace-nowrap text-right text-amber-600"
-                    title={`Valor devolvido: ${formatarMoeda(item.valorDevolvido)} (${formatarPercentual(item.taxaDevolucaoValor)})`}
-                  >
-                    {formatarNumero(item.quantidadeDevolvida, 2)} · {formatarPercentual(item.taxaDevolucaoQuantidade)}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">{formatarNumero(item.demandaLiquida, 2)}</TableCell>
-                  <TableCell className="text-right">{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</TableCell>
-                  <TableCell className="text-right">{item.custoAquisicaoMedio === null ? "—" : formatarMoeda(item.custoAquisicaoMedio)}</TableCell>
-                  <TableCell className="text-right">{item.custoReposicaoMedio === null ? "—" : formatarMoeda(item.custoReposicaoMedio)}</TableCell>
-                  <TableCell className="text-right font-medium">{item.valorReposicao === null ? "—" : formatarMoeda(item.valorReposicao)}</TableCell>
-                  <TableCell className="whitespace-nowrap text-xs">{dataVisual(item.ultimoMovimento)}</TableCell>
-                  <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>Kardex</Button></TableCell>
-                </TableRow>
-              )) : (
-                <TableEmptyState colSpan={13} title="Nenhum produto encontrado" description="Ajuste a busca ou os filtros de situação." />
-              )}
-            </TableBody>
-          </Table></div>{posicoesFiltradas.length > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={posicoesPaginacao.paginaAtual} totalItens={posicoesFiltradas.length} itensPorPagina={posicoesPaginacao.itensPorPagina} onPaginaChange={posicoesPaginacao.setPagina} onItensPorPaginaChange={posicoesPaginacao.setItensPorPagina} labelItens="produtos" /></div> : null}</CardContent></Card>
+          <Card><CardHeader><CardTitle className="text-base">Posição por produto</CardTitle><CardDescription>{posicoesFiltradas.length} produto(s). Custos médios consideram apenas itens com custo informado no período.</CardDescription></CardHeader>
+            <CardContent className="p-0">
+              <div className="px-3 pb-3">
+                <ReportTable<PosicaoEstoque>
+                  label="produtos"
+                  caption="Posição por produto"
+                  data={posicoesFiltradas}
+                  rowKey={(item) => `${item.codigo}-${item.produto}`}
+                  acoesExtras={
+                    <ExportDropdown
+                      onExportarCsv={exportarVisaoAtual}
+                      disabled={loading || posicoesFiltradas.length === 0}
+                      label="Exportar visão"
+                    />
+                  }
+                  columns={[
+                    {
+                      id: "produto",
+                      header: <>Produto</>,
+                      kind: "name",
+                      value: (item) => item.produto,
+                      cell: (item) => (
+                        <>
+                          <p className="text-xs font-medium">{item.produto}</p>
+                          <p className="font-mono text-[10px] text-muted-foreground">{item.codigo}</p>
+                        </>
+                      ),
+                    },
+                    {
+                      id: "marca",
+                      header: <>Marca</>,
+                      kind: "name",
+                      value: (item) => item.marca ?? "",
+                      cell: (item) => <span className="text-xs">{item.marca}</span>,
+                    },
+                    {
+                      id: "situacao",
+                      header: <>Situação</>,
+                      kind: "name",
+                      value: (item) => item.situacao,
+                      cell: (item) => <SituacaoBadge situacao={item.situacao} />,
+                    },
+                    {
+                      id: "estoque",
+                      header: <>Estoque</>,
+                      kind: "number",
+                      value: (item) => item.estoqueAtual,
+                      cell: (item) => <span className="font-semibold">{formatarNumero(item.estoqueAtual, 2)}</span>,
+                    },
+                    {
+                      id: "venda",
+                      header: <>Venda</>,
+                      kind: "number",
+                      value: (item) => item.quantidadeVendida,
+                      cell: (item) => <>{formatarNumero(item.quantidadeVendida, 2)}</>,
+                    },
+                    {
+                      id: "edv",
+                      header: <>EDV</>,
+                      kind: "number",
+                      value: (item) => item.quantidadeDevolvida,
+                      cell: (item) => (
+                        <span
+                          className="whitespace-nowrap text-amber-600"
+                          title={`Valor devolvido: ${formatarMoeda(item.valorDevolvido)} (${formatarPercentual(item.taxaDevolucaoValor)})`}
+                        >
+                          {formatarNumero(item.quantidadeDevolvida, 2)} · {formatarPercentual(item.taxaDevolucaoQuantidade)}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: "demanda",
+                      header: <>Demanda líquida</>,
+                      kind: "number",
+                      value: (item) => item.demandaLiquida,
+                      cell: (item) => <span className="font-medium">{formatarNumero(item.demandaLiquida, 2)}</span>,
+                    },
+                    {
+                      id: "cobertura",
+                      header: <>Cobertura</>,
+                      kind: "number",
+                      value: (item) => item.coberturaDias,
+                      cell: (item) => <>{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</>,
+                    },
+                    {
+                      id: "custoAquisicao",
+                      header: <>Custo aquisição</>,
+                      kind: "currency",
+                      value: (item) => item.custoAquisicaoMedio,
+                      cell: (item) => <>{item.custoAquisicaoMedio === null ? "—" : formatarMoeda(item.custoAquisicaoMedio)}</>,
+                    },
+                    {
+                      id: "custoReposicao",
+                      header: <>Custo reposição</>,
+                      kind: "currency",
+                      value: (item) => item.custoReposicaoMedio,
+                      cell: (item) => <>{item.custoReposicaoMedio === null ? "—" : formatarMoeda(item.custoReposicaoMedio)}</>,
+                    },
+                    {
+                      id: "valorReposicao",
+                      header: <>Valor reposição</>,
+                      kind: "currency",
+                      value: (item) => item.valorReposicao,
+                      cell: (item) => (
+                        <span className="font-medium">
+                          {item.valorReposicao === null ? "—" : formatarMoeda(item.valorReposicao)}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: "ultimoMovimento",
+                      header: <>Último movimento</>,
+                      kind: "date",
+                      value: (item) => item.ultimoMovimento,
+                      cell: (item) => <span className="whitespace-nowrap text-xs">{dataVisual(item.ultimoMovimento)}</span>,
+                    },
+                    {
+                      id: "acoes",
+                      header: <></>,
+                      cell: (item) => (
+                        <Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>
+                          Kardex
+                        </Button>
+                      ),
+                    },
+                  ]}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="movimentacoes" className="space-y-6">
