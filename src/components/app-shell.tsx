@@ -7,6 +7,8 @@ import {
   LayoutDashboard,
   ShoppingCart,
   ShoppingBasket,
+  BanknoteArrowDown,
+  BanknoteArrowUp,
   PackageSearch,
   BarChart3,
   UserCog,
@@ -236,6 +238,35 @@ export function AppShell({
                 {!collapsed && <span>Estoque</span>}
               </Link>
             )}
+
+            {podeVerRelatorios ? (
+              <>
+                <Link
+                  href={criarLinkComEmpresa("/financeiro/pagar")}
+                  title="Contas a Pagar"
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                    pathname === "/financeiro/pagar"
+                      ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  } ${collapsed ? "justify-center px-2" : ""}`}
+                >
+                  <BanknoteArrowDown className="size-4 shrink-0" />
+                  {!collapsed && <span>Contas a Pagar</span>}
+                </Link>
+                <Link
+                  href={criarLinkComEmpresa("/financeiro/receber")}
+                  title="Contas a Receber"
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                    pathname === "/financeiro/receber"
+                      ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  } ${collapsed ? "justify-center px-2" : ""}`}
+                >
+                  <BanknoteArrowUp className="size-4 shrink-0" />
+                  {!collapsed && <span>Contas a Receber</span>}
+                </Link>
+              </>
+            ) : null}
           </div>
 
           {/* Grupo 2: Inteligência & Relatórios */}
