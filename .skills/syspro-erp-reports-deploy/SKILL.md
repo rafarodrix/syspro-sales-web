@@ -37,6 +37,12 @@ pm2 restart syspro-erp-reports
 ```
 (ou rodar o `instalar-servico.bat` de novo — é idempotente).
 
+### Deploy local em um comando (recomendado aqui)
+`scripts/deploy-local.sh` (ou `scripts\deploy-local.bat` no Windows) faz a sequência segura:
+parar servidor → `git pull --ff-only` → `prisma generate` + `prisma migrate deploy` → build →
+copiar `.next/static`/`public`/`.env` para `.next/standalone` → subir `start-prod.js` → health check em `/login`.
+Flags: `--no-pull` (usa o código local) e `--no-build` (só reinicia). `PORTA=3001` muda a porta.
+
 ## Armadilha de build (Windows)
 - **NUNCA rodar `npm run build` com o servidor de produção no ar.** O Next apaga/regenera `.next` (incluindo `.next/standalone`), então o processo antigo continua de pé em memória mas o app quebra na hora (HTTP 500, sem chunks/estáticos). Se precisar validar build, pare o processo primeiro (`netstat -ano | grep :3000` → `taskkill /PID <pid> /F`), rode o build, copie `.next/static`, `public` e `.env` para `.next/standalone` e só então suba com `node start-prod.js`.
 
