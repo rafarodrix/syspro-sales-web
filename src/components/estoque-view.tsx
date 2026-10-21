@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeftRight, PackageSearch, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -7,7 +9,7 @@ import type { MovimentoKardexPublico } from "@/lib/kardex";
 import type { PosicaoEstoque, ResumoSaudeEstoque, SituacaoEstoque } from "@/lib/estoque-saude";
 import type { LimitesEstoque } from "@/lib/estoque-saude";
 import { dataInputParaSyspro } from "@/lib/vendas";
-import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { formatarMoeda, formatarNumero, } from "@/lib/formatters";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { useTablePagination } from "@/hooks/use-table-pagination";
 import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
@@ -109,8 +111,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       setResumoSaude(dados.resumo ?? null);
       if (dados.limites) setLimites(dados.limites);
       movimentosPaginacao.reiniciar();
-      posicoesPaginacao.reiniciar();
-      devolucoesPaginacao.reiniciar();
+        devolucoesPaginacao.reiniciar();
       transferenciasPaginacao.reiniciar();
       setAba("visao-geral");
       toast.success(`${dados.posicoes?.length ?? 0} produtos e ${dados.movimentos?.length ?? 0} movimentações carregados.`);
@@ -144,14 +145,11 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const devolucoes = useMemo(() => movimentosFiltrados.filter((item) => item.classificacao.categoria === "devolucao_venda" || item.classificacao.categoria === "devolucao_compra"), [movimentosFiltrados]);
   const transferencias = useMemo(() => movimentosFiltrados.filter((item) => item.classificacao.categoria === "transferencia"), [movimentosFiltrados]);
   const movimentosPaginacao = useTablePagination(movimentosFiltrados);
-  const posicoesPaginacao = useTablePagination(posicoesFiltradas);
   const devolucoesPaginacao = useTablePagination(devolucoes);
   const transferenciasPaginacao = useTablePagination(transferencias);
   const totalVisaoAtual = aba === "visao-geral"
     ? posicoesFiltradas.filter((item) => item.situacao !== "saudavel").length
-    : aba === "posicao"
-      ? posicoesFiltradas.length
-      : aba === "devolucoes"
+    : aba === "devolucoes"
         ? devolucoes.length
         : aba === "transferencias"
           ? transferencias.length
@@ -159,7 +157,6 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
 
   function reiniciarPaginacoes() {
     movimentosPaginacao.reiniciar();
-    posicoesPaginacao.reiniciar();
     devolucoesPaginacao.reiniciar();
     transferenciasPaginacao.reiniciar();
   }
@@ -168,10 +165,9 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     setBusca(item.codigo === "Sem código" ? item.produto : item.codigo);
     setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); movimentosPaginacao.reiniciar(); setAba("movimentacoes");
   }
-  function abrirPosicaoComSituacao(situacao: FiltroSituacao) {
+  function abrirFilaComSituacao(situacao: FiltroSituacao) {
     setFiltroSituacao(situacao);
-    posicoesPaginacao.reiniciar();
-    setAba("posicao");
+    setAba("visao-geral");
   }
   function abrirDevolucoesVenda() {
     setFiltroDirecao("todas");
@@ -188,10 +184,8 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       .toLowerCase();
     const sufixo = `${periodo.inicial}-a-${periodo.final}`;
 
-    if (aba === "visao-geral" || aba === "posicao") {
-      const itens = aba === "visao-geral"
-        ? posicoesFiltradas.filter((item) => item.situacao !== "saudavel")
-        : posicoesFiltradas;
+    if (aba === "visao-geral") {
+      const itens = posicoesFiltradas.filter((item) => item.situacao !== "saudavel");
       exportarParaCSV(
         `estoque-${aba}-${nomeEmpresa}-${sufixo}`,
         ["Código auxiliar", "Produto", "Marca", "Situação", "Estoque", "Venda", "EDV", "Demanda líquida", "Cobertura (dias)", "Custo aquisição", "Custo reposição", "Valor reposição", "Último movimento"],
@@ -260,9 +254,9 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         <EstoqueMetricas
           resumo={resumoSaude}
           limites={limites}
-          onRupturas={() => abrirPosicaoComSituacao("ruptura")}
-          onBaixaCobertura={() => abrirPosicaoComSituacao("baixa_cobertura")}
-          onExcesso={() => abrirPosicaoComSituacao("excesso")}
+          onRupturas={() => abrirFilaComSituacao("ruptura")}
+          onBaixaCobertura={() => abrirFilaComSituacao("baixa_cobertura")}
+          onExcesso={() => abrirFilaComSituacao("excesso")}
           onDevolucoes={abrirDevolucoesVenda}
         />
         {resumoSaude.movimentosSemProdutoId > 0 ? <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300" role="alert"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span>{formatarNumero(resumoSaude.movimentosSemProdutoId)} movimentação(ões) sem ID de produto ficaram fora dos agrupamentos, para evitar vínculos incorretos.</span></div> : null}
@@ -270,10 +264,10 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       </> : null}
 
       <Tabs value={aba} onValueChange={setAba} className="gap-4">
-        <div className="overflow-x-auto pb-1"><TabsList className="min-w-max"><TabsTrigger value="visao-geral">Visão geral</TabsTrigger><TabsTrigger value="posicao">Posição por produto</TabsTrigger><TabsTrigger value="movimentacoes">Movimentações</TabsTrigger><TabsTrigger value="devolucoes">Devoluções</TabsTrigger><TabsTrigger value="transferencias">Transferências</TabsTrigger></TabsList></div>
+        <div className="overflow-x-auto pb-1"><TabsList className="min-w-max"><TabsTrigger value="visao-geral">Visão geral</TabsTrigger><TabsTrigger value="movimentacoes">Movimentações</TabsTrigger><TabsTrigger value="devolucoes">Devoluções</TabsTrigger><TabsTrigger value="transferencias">Transferências</TabsTrigger></TabsList></div>
 
         <DataFilterBar busca={busca} onBuscaChange={(valor) => { setBusca(valor); reiniciarPaginacoes(); }} placeholder="Buscar código, produto, marca, documento ou participante..." temFiltrosAtivos={filtrosAtivos} onLimpar={limparFiltros}>
-          {aba === "visao-geral" || aba === "posicao" ? <div className="w-40 sm:w-44"><Select value={filtroSituacao} onValueChange={(valor) => { setFiltroSituacao(valor as FiltroSituacao); posicoesPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Situação" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as situações</SelectItem><SelectItem value="baixa_cobertura">Baixa cobertura</SelectItem>{Object.entries(rotulosSituacao).map(([valor, rotulo]) => <SelectItem key={valor} value={valor}>{rotulo}</SelectItem>)}</SelectContent></Select></div> : <>
+          {aba === "visao-geral" ? <div className="w-40 sm:w-44"><Select value={filtroSituacao} onValueChange={(valor) => { setFiltroSituacao(valor as FiltroSituacao); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Situação" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as situações</SelectItem><SelectItem value="baixa_cobertura">Baixa cobertura</SelectItem>{Object.entries(rotulosSituacao).map(([valor, rotulo]) => <SelectItem key={valor} value={valor}>{rotulo}</SelectItem>)}</SelectContent></Select></div> : <>
             <div className="w-40 sm:w-44"><Select value={filtroDirecao} onValueChange={(valor) => { setFiltroDirecao(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Entrada / saída" /></SelectTrigger><SelectContent><SelectItem value="todas">Entradas e saídas</SelectItem><SelectItem value="entrada">Somente entradas</SelectItem><SelectItem value="saida">Somente saídas</SelectItem></SelectContent></Select></div>
             <div className="w-40 sm:w-44"><Select value={filtroCategoria} onValueChange={(valor) => { setFiltroCategoria(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as categorias</SelectItem><SelectItem value="venda">Vendas</SelectItem><SelectItem value="devolucao_venda">Devoluções de venda</SelectItem><SelectItem value="compra">Compras</SelectItem><SelectItem value="devolucao_compra">Devoluções de compra</SelectItem><SelectItem value="transferencia">Transferências</SelectItem><SelectItem value="bonificacao">Bonificações</SelectItem><SelectItem value="fiscal">Emissões fiscais (NF-e)</SelectItem><SelectItem value="outros">Outros movimentos</SelectItem></SelectContent></Select></div>
             <div className="w-40 sm:w-44"><Select value={filtroGrupo} onValueChange={(valor) => { setFiltroGrupo(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Grupo" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os grupos</SelectItem>{gruposDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}</SelectContent></Select></div>
@@ -281,7 +275,14 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         </DataFilterBar>
 
         <TabsContent value="visao-geral">
-          <Card>
+          <p className="text-xs text-muted-foreground">
+          Posição por produto, saúde do estoque e decisão de compra ficam em{" "}
+          <Link href="/relatorios/compras" className="font-semibold text-primary underline-offset-2 hover:underline">
+            Análise de Compras
+          </Link>
+          . Aqui ficam o Kardex, as devoluções e as transferências.
+        </p>
+        <Card>
             <CardHeader>
               <CardTitle className="text-base">Fila de atenção</CardTitle>
               <CardDescription>
@@ -360,139 +361,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
           </Card>
         </TabsContent>
 
-        <TabsContent value="posicao">
-          <Card><CardHeader><CardTitle className="text-base">Posição por produto</CardTitle><CardDescription>{posicoesFiltradas.length} produto(s). Custos médios consideram apenas itens com custo informado no período.</CardDescription></CardHeader>
-            <CardContent className="p-0">
-              <div className="px-3 pb-3">
-                <ReportTable<PosicaoEstoque>
-                  label="produtos"
-                  caption="Posição por produto"
-                  data={posicoesFiltradas}
-                  rowKey={(item) => `${item.codigo}-${item.produto}`}
-                  acoesExtras={
-                    <ExportDropdown
-                      onExportarCsv={exportarVisaoAtual}
-                      disabled={loading || posicoesFiltradas.length === 0}
-                      label="Exportar visão"
-                    />
-                  }
-                  columns={[
-                    {
-                      id: "produto",
-                      header: <>Produto</>,
-                      kind: "name",
-                      value: (item) => item.produto,
-                      cell: (item) => (
-                        <>
-                          <p className="text-xs font-medium">{item.produto}</p>
-                          <p className="font-mono text-[10px] text-muted-foreground">{item.codigo}</p>
-                        </>
-                      ),
-                    },
-                    {
-                      id: "marca",
-                      header: <>Marca</>,
-                      kind: "name",
-                      value: (item) => item.marca ?? "",
-                      cell: (item) => <span className="text-xs">{item.marca}</span>,
-                    },
-                    {
-                      id: "situacao",
-                      header: <>Situação</>,
-                      kind: "name",
-                      value: (item) => item.situacao,
-                      cell: (item) => <SituacaoBadge situacao={item.situacao} />,
-                    },
-                    {
-                      id: "estoque",
-                      header: <>Estoque</>,
-                      kind: "number",
-                      value: (item) => item.estoqueAtual,
-                      cell: (item) => <span className="font-semibold">{formatarNumero(item.estoqueAtual, 2)}</span>,
-                    },
-                    {
-                      id: "venda",
-                      header: <>Venda</>,
-                      kind: "number",
-                      value: (item) => item.quantidadeVendida,
-                      cell: (item) => <>{formatarNumero(item.quantidadeVendida, 2)}</>,
-                    },
-                    {
-                      id: "edv",
-                      header: <>EDV</>,
-                      kind: "number",
-                      value: (item) => item.quantidadeDevolvida,
-                      cell: (item) => (
-                        <span
-                          className="whitespace-nowrap text-amber-600"
-                          title={`Valor devolvido: ${formatarMoeda(item.valorDevolvido)} (${formatarPercentual(item.taxaDevolucaoValor)})`}
-                        >
-                          {formatarNumero(item.quantidadeDevolvida, 2)} · {formatarPercentual(item.taxaDevolucaoQuantidade)}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: "demanda",
-                      header: <>Demanda líquida</>,
-                      kind: "number",
-                      value: (item) => item.demandaLiquida,
-                      cell: (item) => <span className="font-medium">{formatarNumero(item.demandaLiquida, 2)}</span>,
-                    },
-                    {
-                      id: "cobertura",
-                      header: <>Cobertura</>,
-                      kind: "number",
-                      value: (item) => item.coberturaDias,
-                      cell: (item) => <>{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</>,
-                    },
-                    {
-                      id: "custoAquisicao",
-                      header: <>Custo aquisição</>,
-                      kind: "currency",
-                      value: (item) => item.custoAquisicaoMedio,
-                      cell: (item) => <>{item.custoAquisicaoMedio === null ? "—" : formatarMoeda(item.custoAquisicaoMedio)}</>,
-                    },
-                    {
-                      id: "custoReposicao",
-                      header: <>Custo reposição</>,
-                      kind: "currency",
-                      value: (item) => item.custoReposicaoMedio,
-                      cell: (item) => <>{item.custoReposicaoMedio === null ? "—" : formatarMoeda(item.custoReposicaoMedio)}</>,
-                    },
-                    {
-                      id: "valorReposicao",
-                      header: <>Valor reposição</>,
-                      kind: "currency",
-                      value: (item) => item.valorReposicao,
-                      cell: (item) => (
-                        <span className="font-medium">
-                          {item.valorReposicao === null ? "—" : formatarMoeda(item.valorReposicao)}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: "ultimoMovimento",
-                      header: <>Último movimento</>,
-                      kind: "date",
-                      value: (item) => item.ultimoMovimento,
-                      cell: (item) => <span className="whitespace-nowrap text-xs">{dataVisual(item.ultimoMovimento)}</span>,
-                    },
-                    {
-                      id: "acoes",
-                      header: <></>,
-                      cell: (item) => (
-                        <Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>
-                          Kardex
-                        </Button>
-                      ),
-                    },
-                  ]}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
+        
         <TabsContent value="movimentacoes" className="space-y-6">
           <Card>
             <CardHeader>
