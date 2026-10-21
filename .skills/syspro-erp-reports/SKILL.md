@@ -79,6 +79,13 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Exportação:** `src/lib/exportar-compras.ts` concentra colunas/linhas (código e unidade em colunas próprias) e `exportarParaCSV` gera CSV UTF-8 com BOM e `;`. Números saem no padrão pt-BR (`1234,56`), sem separador de milhar, e o sanitizador de CSV injection libera números negativos (`-12,5`) — sem isso o Excel trata o valor como texto.
 - **Decisão de compra (`src/lib/compras-compra.ts`):** `sugestaoCompra` = `max(0, médiaDiária × alvoDias − estoqueAtual)`, `situacaoEstoque` classifica em ruptura/crítica/abaixo/saudável/excesso/sem-demanda/sem-saldo e `resumirDecisaoCompra` soma sugestão, rupturas e capital parado. A cobertura alvo (15–90 dias) é parâmetro da tela, não vem do Syspro — sempre exibir que é premissa.
 
+## Padrão único de indicadores (não criar variantes)
+- **Faixa de contexto:** `@/components/analytics/metrics-strip` (`MetricsStrip`) é a ÚNICA faixa de indicadores do app — usada em Compras, Estoque, `/vendas`, panorama dos relatórios e visões analíticas. `ReportMetricStrip` (em `relatorios/report-toolbar.tsx`) é só um wrapper e delega para ela; `metrica-card.tsx` foi removido, não reintroduzir.
+- **Card de decisão:** `@/components/analytics/action-metric-card` (`ActionMetricCard` = título/valor/descrição + `onClick` opcional). Use quando o número pede ação (clicar filtra a tabela); números de contexto vão na faixa.
+- **Explicação obrigatória:** todo item da faixa passa `definicao` (vira tooltip). Métrica sem explicação de cálculo não entra.
+- **Relatórios de vendas:** cada aba tem no máximo 3 indicadores de contexto na faixa (além do panorama) e, quando faz sentido, um bloco `ReportDiagnostics`. A visão de comparação entre períodos é `VisaoComparativoDimensao` + `src/lib/comparativo-dimensao.ts` (variação em valor/%, participação atual/anterior e Δ participação, com ordenação por impacto/crescimento/queda/participação). Reutilize-a para qualquer dimensão (departamento, UF, forma de pagamento) em vez de escrever tabela nova.
+- **Sem relatório redundante:** antes de criar aba nova, verifique se a informação já vive numa aba existente. Descontos & Margem foi eliminada porque suas três visões (vendedor, departamento, forma de pagamento) duplicavam abas próprias — desconto virou coluna em Vendedores/Departamentos/Financeiro, e margem por produto vive em Vendas & Margem. Curva ABC não repete custo/lucro/margem.
+
 ## Fluxo de dados (segurança)
 ```
 Usuário loga → seleciona CNPJ autorizado → Next identifica empresa_codigo
