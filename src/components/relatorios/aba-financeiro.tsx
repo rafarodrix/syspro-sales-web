@@ -8,7 +8,7 @@ import {
 } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
-import { ReportBarraVisao } from "./report-barra";
+import { ReportBarraVisao, ReportVisaoProvider } from "./report-barra";
 import { FiltroRelatorio } from "./filtro-relatorio";
 import type { ItemFinanceiroAnalise } from "@/lib/vendas";
 
@@ -147,6 +147,7 @@ export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
   );
 
   return (
+    <ReportVisaoProvider>
     <div className="space-y-4">
       <ReportBarraVisao>
         {seletorVisao}
@@ -168,5 +169,6 @@ export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
         rotulo={exibePagamentos ? "Forma de pagamento" : "Documento fiscal"}
       />
     </div>
+    </ReportVisaoProvider>
   );
 }

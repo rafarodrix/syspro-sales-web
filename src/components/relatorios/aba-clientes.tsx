@@ -11,7 +11,7 @@ import {
 import type { ItemClienteAnalise, VendaAgrupada } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
-import { ReportBarraVisao } from "./report-barra";
+import { ReportBarraVisao, ReportVisaoProvider } from "./report-barra";
 import { DetalhamentoClientes } from "./detalhamento-clientes";
 import type { Periodo } from "@/lib/periodo";
 import { formatarDataInputParaBR } from "@/lib/vendas";
@@ -133,6 +133,7 @@ export function AbaClientes({
   );
 
   return (
+    <ReportVisaoProvider>
     <div className="flex flex-col gap-4">
       {barraVisao}
 
@@ -359,5 +360,6 @@ export function AbaClientes({
         />
       </div>
     </div>
+    </ReportVisaoProvider>
   );
 }

@@ -15,7 +15,7 @@ import type {
 import { DataBarPercent } from "./data-bar-percent";
 import { TermoExplicado } from "@/components/relatorio-guia";
 import { FiltroRelatorio } from "./filtro-relatorio";
-import { ReportBarraVisao } from "./report-barra";
+import { ReportBarraVisao, ReportVisaoProvider } from "./report-barra";
 
 interface AbaCurvaABCProps {
   relatorioABC: RelatorioCurvaABC;
@@ -41,6 +41,7 @@ export function AbaCurvaABC({
   onMetricaChange,
 }: AbaCurvaABCProps) {
   return (
+    <ReportVisaoProvider>
     <div className="flex flex-col gap-4">
       <ReportBarraVisao>
         <FiltroRelatorio
@@ -173,5 +174,6 @@ export function AbaCurvaABC({
         onde aparecem antes e depois das devoluções (EDV).
       </p>
     </div>
+    </ReportVisaoProvider>
   );
 }

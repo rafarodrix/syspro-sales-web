@@ -10,7 +10,7 @@ import {
 import type { ItemDepartamentoAnalise } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
-import { ReportBarraVisao } from "./report-barra";
+import { ReportBarraVisao, ReportVisaoProvider } from "./report-barra";
 import { VisaoComparativoDimensao } from "./visao-comparativo-dimensao";
 import { FiltroRelatorio } from "./filtro-relatorio";
 
@@ -90,6 +90,7 @@ export function AbaDepartamentos({
   );
 
   return (
+    <ReportVisaoProvider>
     <div className="space-y-4">
       {barraVisao}
 
@@ -277,5 +278,6 @@ export function AbaDepartamentos({
         />
       ) : null}
     </div>
+    </ReportVisaoProvider>
   );
 }

@@ -10,7 +10,7 @@ import {
 } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
-import { ReportBarraVisao } from "./report-barra";
+import { ReportBarraVisao, ReportVisaoProvider } from "./report-barra";
 import { FiltroRelatorio } from "./filtro-relatorio";
 
 type VisaoSazonalidade = "evolucao" | "dia-semana" | "quinzena";
@@ -314,6 +314,7 @@ export function AbaSazonalidade({
     else cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return (
+    <ReportVisaoProvider>
     <div className="space-y-4">
       <ReportBarraVisao>
         <ReportViewSelector
@@ -392,5 +393,6 @@ export function AbaSazonalidade({
         />
       )}
     </div>
+    </ReportVisaoProvider>
   );
 }

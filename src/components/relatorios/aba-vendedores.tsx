@@ -15,7 +15,7 @@ import {
 import { DataBarPercent } from "./data-bar-percent";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
-import { ReportBarraVisao } from "./report-barra";
+import { ReportBarraVisao, ReportVisaoProvider } from "./report-barra";
 import type {
   ItemProdutoPorDimensao,
   ItemVendedorAnalise,
@@ -120,6 +120,7 @@ export function AbaVendedores({
   );
 
   return (
+    <ReportVisaoProvider>
     <div className="space-y-4">
       {barraVisao}
 
@@ -269,5 +270,6 @@ export function AbaVendedores({
         />
       )}
     </div>
+    </ReportVisaoProvider>
   );
 }

@@ -16,7 +16,7 @@ import type {
 } from "@/lib/vendas";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
-import { ReportBarraVisao } from "./report-barra";
+import { ReportBarraVisao, ReportVisaoProvider } from "./report-barra";
 import { VisaoComparativoDimensao } from "./visao-comparativo-dimensao";
 
 export function AbaGeografico({
@@ -70,6 +70,7 @@ export function AbaGeografico({
   );
 
   return (
+    <ReportVisaoProvider>
     <div className="space-y-4">
       {barraVisao}
 
@@ -301,5 +302,6 @@ export function AbaGeografico({
         </>
       ) : null}
     </div>
+    </ReportVisaoProvider>
   );
 }

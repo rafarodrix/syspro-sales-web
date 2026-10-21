@@ -3,8 +3,8 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 
 interface BarraRelatorioContexto {
-  /** Elemento onde a tabela ativa injeta as ações (exportar, colunas, densidade). */
   slot: HTMLElement | null;
+  definirSlot: (elemento: HTMLElement | null) => void;
 }
 
 const BarraRelatorioContext = createContext<BarraRelatorioContexto | null>(null);
@@ -14,12 +14,26 @@ export function useBarraRelatorio() {
 }
 
 /**
- * Barra persistente de uma visão de relatório: controles da visão à esquerda e,
- * à direita, as ações da tabela ativa (injetadas por portal pelo `ReportTable`).
+ * Envolve a visão do relatório (barra + conteúdo). A tabela ativa injeta as
+ * ações (exportar, colunas, densidade) na barra por portal, mantendo tudo em
+ * uma linha só — mesmo quando a visão atual não renderiza tabela.
+ */
+export function ReportVisaoProvider({ children }: { children: ReactNode }) {
+  const [slot, definirSlot] = useState<HTMLElement | null>(null);
+  return (
+    <BarraRelatorioContext.Provider value={{ slot, definirSlot }}>
+      {children}
+    </BarraRelatorioContext.Provider>
+  );
+}
+
+/**
+ * Barra de controles da visão atual: controles à esquerda (seletor de visão,
+ * ordenação, filtros da visão) e ações da tabela à direita.
  *
- * Fica FORA do bloco condicional da visão — assim o seletor continua visível
- * mesmo quando a visão atual não renderiza tabela (estado vazio, comparativo
- * sem período, carregando), e o usuário nunca fica preso sem poder voltar.
+ * Fica FORA do bloco condicional — o seletor continua acessível em qualquer
+ * estado (carregando, vazio, comparativo sem período), então o usuário nunca
+ * fica preso sem conseguir voltar.
  */
 export function ReportBarraVisao({
   children,
@@ -28,19 +42,20 @@ export function ReportBarraVisao({
   children: ReactNode;
   className?: string;
 }) {
-  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const contexto = useBarraRelatorio();
 
   return (
-    <BarraRelatorioContext.Provider value={{ slot }}>
+    <div
+      className={
+        className ??
+        "no-print flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/[0.06] px-2 py-1.5"
+      }
+    >
+      <div className="flex min-w-0 flex-wrap items-center gap-2">{children}</div>
       <div
-        className={
-          className ??
-          "no-print flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/[0.06] px-2 py-1.5"
-        }
-      >
-        <div className="flex min-w-0 flex-wrap items-center gap-2">{children}</div>
-        <div ref={setSlot} className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto" />
-      </div>
-    </BarraRelatorioContext.Provider>
+        ref={contexto?.definirSlot}
+        className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto"
+      />
+    </div>
   );
 }
