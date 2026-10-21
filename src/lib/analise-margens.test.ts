@@ -104,4 +104,52 @@ describe("análise de margens", () => {
     });
     expect(analise.resumo.margemDepoisEdv).toBeCloseTo(46.6666667);
   });
+
+  it("não deixa a cobertura de custo passar de 100% com item só de devolução", () => {
+    const base = {
+      codigo: "P1",
+      produto: "Com venda",
+      unidade: "UN",
+      curva: "A" as const,
+      quantidadeVendida: 10,
+      quantidadeDevolvida: 0,
+      quantidadeLiquidaReal: 10,
+      demandaLiquida: 10,
+      taxaDevolucao: 0,
+      valorVendido: 200,
+      valorDevolvido: 0,
+      valorVendaLiquida: 200,
+      taxaDevolucaoValor: 0,
+      estoqueAtual: null,
+      mediaDiaria: 0,
+      coberturaDias: null,
+      dataUltimoMovimento: null,
+      custoReposicaoMedio: 10,
+    };
+    const soDevolucao = {
+      ...base,
+      codigo: "P2",
+      produto: "Só devolução",
+      curva: "C" as const,
+      quantidadeVendida: 0,
+      quantidadeDevolvida: 5,
+      quantidadeLiquidaReal: -5,
+      demandaLiquida: 0,
+      valorVendido: 0,
+      valorDevolvido: 50,
+      valorVendaLiquida: -50,
+      custoReposicaoMedio: null,
+    };
+
+    const analise = montarAnaliseMargens([
+      {
+        empresaId: "e1",
+        empresaNome: "Empresa",
+        relatorio: { itens: [base, soDevolucao], resumo: {} as never },
+      },
+    ]);
+
+    expect(analise.resumo.coberturaCusto).toBeLessThanOrEqual(100);
+    expect(analise.resumo.coberturaCusto).toBe(100);
+  });
 });

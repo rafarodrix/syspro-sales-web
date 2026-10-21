@@ -125,9 +125,11 @@ export function montarAnaliseMargens(
       margemAntesEdv: calcularPercentual(lucroAntesEdv, faturamentoComCustoAntesEdv),
       margemDepoisEdv: calcularPercentual(lucroDepoisEdv, faturamentoComCustoDepoisEdv),
       impactoLucroEdv: lucroDepoisEdv - lucroAntesEdv,
-      coberturaCusto: calcularPercentual(
-        faturamentoComCustoDepoisEdv,
-        faturamentoDepoisEdv,
+      // Itens só com devolução têm venda líquida negativa e reduzem o denominador;
+      // limitar a 100% evita cobertura acima do total quando isso acontece.
+      coberturaCusto: Math.min(
+        100,
+        calcularPercentual(faturamentoComCustoDepoisEdv, faturamentoDepoisEdv),
       ),
       produtosMargemNegativa: itens.filter(
         (item) => item.margemDepoisEdv !== null && item.margemDepoisEdv < 0,
