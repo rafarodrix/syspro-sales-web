@@ -35,7 +35,6 @@ export function ComparacaoPeriodo({
   return (
     <fieldset disabled={loading} className="flex flex-wrap items-center gap-2">
       <legend className="sr-only">Período de comparação</legend>
-      <span className="text-xs text-muted-foreground">Comparar com</span>
       <FiltroRelatorio
         rotulo="Comparar com"
         valor={modo}
