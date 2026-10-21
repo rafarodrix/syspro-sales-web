@@ -149,7 +149,7 @@ export function AbaMargens({
           definicao="Produtos com custo de reposição informado e margem abaixo de zero após EDV."
           valor={formatarNumero(resumo.produtosMargemNegativa, 0)}
           rodape={<>
-            <button type="button" className="underline-offset-2 hover:underline" onClick={() => { setSituacao("negativa"); setCurva("A"); setOrdenacao("margem"); }}>curva A</button>
+            <button type="button" className="underline-offset-2 hover:underline" onClick={() => { setSituacao("baixa"); setCurva("A"); setOrdenacao("margem"); }}>curva A com margem &lt;20%</button>
             {" · "}
             <button type="button" className="underline-offset-2 hover:underline" onClick={() => { setSituacao("baixa"); setCurva("todas"); }}>{formatarNumero(resumo.produtosMargemBaixa, 0)} abaixo de 20%</button>
           </>}
