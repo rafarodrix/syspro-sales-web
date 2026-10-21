@@ -1,10 +1,11 @@
 "use client";
 
-import { isValidElement, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, isValidElement, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Columns3, Rows3 } from "lucide-react";
+import { ChevronDown, Columns3, Rows3 } from "lucide-react";
 import {
   TableBody,
+  TableFooter,
   TableCell,
   TableHead,
   TableHeader,
@@ -72,6 +73,9 @@ export function ReportTable<T>({
   showExport = true,
   exportObservacoes,
   acoes,
+  acoesExtras,
+  rodape,
+  renderDetalhe,
 }: {
   data: T[];
   columns: ReportColumn<T>[];
@@ -84,9 +88,16 @@ export function ReportTable<T>({
   exportObservacoes?: string;
   /** Controles renderizados à esquerda da barra da tabela (ex.: seletor de visão). */
   acoes?: ReactNode;
+  /** Ações extras à direita (ex.: exportação com formato próprio). */
+  acoesExtras?: ReactNode;
+  /** Linha de totais; recebe o conjunto filtrado completo, não só a página. */
+  rodape?: (linhas: T[]) => ReactNode;
+  /** Conteúdo de detalhe exibido ao expandir a linha. */
+  renderDetalhe?: (row: T) => ReactNode;
 }) {
   const report = useReportContext();
   const barra = useBarraRelatorio();
+  const [detalhesAbertos, setDetalhesAbertos] = useState<Record<string, boolean>>({});
   const [sort, setSort] = useState<{ id: string; descending: boolean } | null>(
     null,
   );
@@ -243,6 +254,7 @@ export function ReportTable<T>({
               <Rows3 className="size-3.5" /> <span className="hidden xl:inline">{density === "compacta" ? "Compacta" : "Confortável"}</span>
             </Button>
           </> : null}
+          {acoesExtras}
         </ReportToolbar>
         ); return barra?.slot ? createPortal(conteudo, barra.slot) : conteudo; })()}
       <ReportTableFrame label={caption ?? `Tabela de ${label}`}>
@@ -298,21 +310,50 @@ export function ReportTable<T>({
         </TableHeader>
         <TableBody>
           {rows.length ? (
-            rows.map((row, rowIndex) => (
-              <TableRow key={rowKey(row, rowIndex)}>
+            rows.map((row, rowIndex) => {
+              const chave = rowKey(row, rowIndex);
+              const aberta = Boolean(detalhesAbertos[chave]);
+              return (
+              <Fragment key={chave}>
+              <TableRow>
                 {visibleColumns.map((column, index) => (
                   <TableCell key={column.id} className={cn(classes(column, index), density === "compacta" && "py-1")}>
                     {column.cell(row, rowIndex)}
                   </TableCell>
                 ))}
+                {renderDetalhe ? (
+                  <TableCell className="w-8 px-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      aria-expanded={aberta}
+                      title={aberta ? "Recolher detalhe" : "Expandir detalhe"}
+                      onClick={() => setDetalhesAbertos((atual) => ({ ...atual, [chave]: !atual[chave] }))}
+                    >
+                      <ChevronDown className={cn("size-3.5 transition-transform", aberta && "rotate-180")} />
+                    </Button>
+                  </TableCell>
+                ) : null}
               </TableRow>
-            ))
+              {renderDetalhe && aberta ? (
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableCell colSpan={visibleColumns.length + 1} className="p-0">
+                    {renderDetalhe(row)}
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              </Fragment>
+              );
+            })
           ) : <TableEmptyState
             colSpan={visibleColumns.length}
             title="Nenhum registro neste recorte"
             description="Ajuste a busca ou os filtros aplicados nesta visão."
           />}
         </TableBody>
+        {rodape ? <TableFooter className="bg-muted/40 font-semibold">{rodape(sorted)}</TableFooter> : null}
       </ReportTableFrame>
       {pagination ? (
         <TablePagination

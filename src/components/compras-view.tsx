@@ -11,6 +11,9 @@ import { SecaoTitulo } from "./relatorios/ui/secao-titulo";
 import { FiltroRelatorio } from "./relatorios/filtro-relatorio";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { ReportTable } from "./relatorios/report-table";
+import type { ItemRelatorioCompras } from "@/lib/relatorio-compras";
+import { ClasseBadge } from "./relatorios/ui/classe-badge";
 import { GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
 import {
   DateRangeFilter,
@@ -19,13 +22,12 @@ import {
   type Periodo,
 } from "@/components/date-range-filter";
 import { FeedbackState } from "@/components/feedback-state";
-import { TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { formatarDataInputParaBR } from "@/lib/vendas";
 import { exportarParaCSV } from "@/lib/exportar-csv";
@@ -70,11 +72,6 @@ const RELATORIO_VAZIO: RelatorioCompras = {
 };
 
 /** Faixa compacta de métricas — evita uma grade de cards para números de contexto. */
-function badgeCurva(curva: ClasseCurvaCompras) {
-  if (curva === "A") return "default" as const;
-  if (curva === "B") return "secondary" as const;
-  return "outline" as const;
-}
 
 function badgeSituacao(situacao: SituacaoCompra) {
   if (situacao === "ruptura") return "destructive" as const;
@@ -106,8 +103,6 @@ export function ComprasView({
   const [situacao, setSituacao] = useState<"todas" | SituacaoCompra>("todas");
   const [ordenacao, setOrdenacao] = useState<CriterioOrdenacaoCompras>("demanda");
   const [alvoDias, setAlvoDias] = useState(coberturaAlvoInicial);
-  const [pagina, setPagina] = useState(1);
-  const [porPagina, setPorPagina] = useState(25);
   const opcoesCobertura = useMemo(
     () => [...new Set([coberturaAlvoInicial, 15, 30, 45, 60, 90])].sort((a, b) => a - b),
     [coberturaAlvoInicial],
@@ -149,7 +144,6 @@ export function ComprasView({
       setRelatorio(dados);
       setPeriodoConsultado({ ...proximoPeriodo });
       salvarPeriodoCookie(proximoPeriodo);
-      setPagina(1);
       toast.success(`${dados.resumo.totalProdutos} produto(s) analisado(s).`);
     } catch (causa) {
       const mensagem = causa instanceof Error ? causa.message : "Erro ao gerar o relatório.";
@@ -220,12 +214,7 @@ export function ComprasView({
     toast.success(`${itensFiltrados.length} produto(s) exportado(s).`);
   }
 
-  const totalPaginas = Math.max(1, Math.ceil(itensFiltrados.length / porPagina));
-  const paginaAtual = Math.min(pagina, totalPaginas);
-  const itensDaPagina = itensFiltrados.slice(
-    (paginaAtual - 1) * porPagina,
-    paginaAtual * porPagina,
-  );
+  // paginação agora é responsabilidade do ReportTable
 
   return (
     <div className="flex flex-col gap-6">
@@ -267,7 +256,6 @@ export function ComprasView({
               onClick={() => {
                 setSituacao("todas");
                 setOrdenacao("sugestao");
-                setPagina(1);
               }}
               acaoTitulo="Ordenar a tabela pela maior sugestão de compra"
             />
@@ -277,7 +265,6 @@ export function ComprasView({
               descricao="Com demanda no período e estoque zerado ou negativo"
               onClick={() => {
                 setSituacao("ruptura");
-                setPagina(1);
               }}
               acaoTitulo="Filtrar somente produtos em ruptura"
             />
@@ -287,7 +274,6 @@ export function ComprasView({
               descricao={`Cobertura abaixo de ${formatarNumero(limitesCobertura?.criticoDias ?? alvoDias / 2, 0)} dias`}
               onClick={() => {
                 setSituacao("critica");
-                setPagina(1);
               }}
               acaoTitulo="Filtrar somente produtos com cobertura crítica"
             />
@@ -298,7 +284,6 @@ export function ComprasView({
               onClick={() => {
                 setSituacao("excesso");
                 setOrdenacao("estoque-valor");
-                setPagina(1);
               }}
               acaoTitulo="Filtrar produtos em excesso ordenando pelo maior capital em estoque"
             />
@@ -370,7 +355,6 @@ export function ComprasView({
             busca={busca}
             onBuscaChange={(valor) => {
               setBusca(valor);
-              setPagina(1);
             }}
             placeholder="Buscar por descrição, código ou marca..."
             temFiltrosAtivos={
@@ -381,7 +365,6 @@ export function ComprasView({
               setCurva("todas");
               setMarca("todas");
               setSituacao("todas");
-              setPagina(1);
             }}
           >
             <FiltroRelatorio
@@ -395,7 +378,6 @@ export function ComprasView({
               ]}
               onChange={(valor) => {
                 setCurva(valor as "todas" | ClasseCurvaCompras);
-                setPagina(1);
               }}
             />
             <FiltroRelatorio
@@ -407,7 +389,6 @@ export function ComprasView({
               ]}
               onChange={(valor) => {
                 setMarca(valor);
-                setPagina(1);
               }}
             />
             <FiltroRelatorio
@@ -419,7 +400,6 @@ export function ComprasView({
               ]}
               onChange={(valor) => {
                 setSituacao(valor as "todas" | SituacaoCompra);
-                setPagina(1);
               }}
             />
             <FiltroRelatorio
@@ -428,7 +408,6 @@ export function ComprasView({
               opcoes={opcoesCobertura.map((dias) => ({ valor: String(dias), rotulo: `Alvo ${dias} dias` }))}
               onChange={(valor) => {
                 setAlvoDias(Number(valor));
-                setPagina(1);
               }}
             />
             <FiltroRelatorio
@@ -440,7 +419,6 @@ export function ComprasView({
               }))}
               onChange={(valor) => {
                 setOrdenacao(valor as CriterioOrdenacaoCompras);
-                setPagina(1);
               }}
             />
           </DataFilterBar>
@@ -454,184 +432,235 @@ export function ComprasView({
             </div>
           ) : periodoConsultado && itensFiltrados.length > 0 ? (
             <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead className="text-center">Un.</TableHead>
-                      <TableHead>Marca</TableHead>
-                      <TableHead className="text-center">Curva</TableHead>
-                      <TableHead className="text-right">Vendas no periodo</TableHead>
-                      <TableHead className="text-right">Devoluções EDV</TableHead>
-                      <TableHead className="text-right" title="Vendido menos devoluções EDV, limitado ao mínimo zero">Demanda para compras</TableHead>
-                      <TableHead className="text-right" title="Saldo do movimento mais recente encontrado no Kardex até hoje">Estoque atual</TableHead>
-                      <TableHead className="text-right" title="Dias de atendimento com o estoque atual e a média diária de demanda">Cobertura</TableHead>
-                      <TableHead className="text-center" title="Classificação pela cobertura alvo escolhida na tela">Situação</TableHead>
-                      <TableHead className="text-right" title="Quantidade para atingir a cobertura alvo descontando o estoque atual">Sugestão</TableHead>
-                      <TableHead className="text-right" title="Sugestão de compra × custo de reposição médio">Custo sugestão</TableHead>
-                      <TableHead className="text-right">Custo aquisição</TableHead>
-                      <TableHead className="text-right">Custo reposição</TableHead>
-                      <TableHead className="text-right" title="Custo de aquisição médio × estoque atual">Estoque a custo aquisição</TableHead>
-                      <TableHead className="text-right" title="Custo de reposição médio × estoque atual">Estoque a custo reposição</TableHead>
-                      <TableHead className="text-right">Valor vendido</TableHead>
-                      <TableHead className="text-right">Valor devolvido</TableHead>
-                      <TableHead className="text-right">Venda líquida real</TableHead>
-                      <TableHead className="text-right" title="(venda líquida real − custo de reposição das unidades líquidas) ÷ venda líquida real">Margem</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {itensDaPagina.map((item) => (
-                      <TableRow key={item.produtoId ?? `${item.codigo}-${item.produto}`}>
-                        <TableCell className="font-mono text-xs">{item.codigo || "—"}</TableCell>
-                        <TableCell className="font-medium">{item.produto}</TableCell>
-                        <TableCell className="text-center text-xs text-muted-foreground">{item.unidade}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {item.marca || "Não informada"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={badgeCurva(item.curva)}>{item.curva}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold">
-                          {formatarNumero(item.quantidadeVendida, 0)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatarNumero(item.quantidadeDevolvida, 0)}
-                          <span className="block text-[10px] text-muted-foreground">
-                            {formatarPercentual(item.taxaDevolucao, 1)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold">
-                          {formatarNumero(item.demandaLiquida, 0)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold">
-                          {item.estoqueAtual === null ? "-" : formatarNumero(item.estoqueAtual, 0)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {item.coberturaDias === null
-                            ? "-"
-                            : `${formatarNumero(item.coberturaDias, 1)} dias`}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={badgeSituacao(situacaoEstoque(item, alvoDias, limitesCobertura))}>
-                            {rotuloSituacao(situacaoEstoque(item, alvoDias, limitesCobertura))}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold">
-                          {formatarNumero(sugestaoCompra(item, alvoDias), 0)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {custoSugestaoCompra(item, alvoDias) == null
-                            ? "-"
-                            : formatarMoeda(custoSugestaoCompra(item, alvoDias) ?? 0)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {item.custoAquisicaoMedio == null ? "-" : formatarMoeda(item.custoAquisicaoMedio)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {item.custoReposicaoMedio == null ? "-" : formatarMoeda(item.custoReposicaoMedio)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {item.custoEstoqueAquisicao == null ? "-" : formatarMoeda(item.custoEstoqueAquisicao)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold">
+              <div className="px-3 pb-3">
+                <ReportTable<ItemRelatorioCompras>
+                  label="produtos"
+                  caption="Produtos para análise de compra"
+                  data={itensFiltrados}
+                  rowKey={(item) => `${item.produtoId ?? item.codigo}-${item.produto}`}
+                  showExport={false}
+                  acoesExtras={
+                    <ExportDropdown
+                      onExportarCsv={exportarExcel}
+                      disabled={loading || itensFiltrados.length === 0}
+                      label="Exportar Excel"
+                    />
+                  }
+                  columns={[
+                    {
+                      id: "codigo",
+                      header: <>Código</>,
+                      kind: "name",
+                      value: (item) => item.codigo,
+                      cell: (item) => <span className="font-mono">{item.codigo}</span>,
+                    },
+                    {
+                      id: "produto",
+                      header: <>Descrição</>,
+                      kind: "name",
+                      value: (item) => item.produto,
+                      cell: (item) => <>{item.produto}</>,
+                    },
+                    {
+                      id: "un",
+                      header: <>Un.</>,
+                      kind: "name",
+                      value: (item) => item.unidade,
+                      cell: (item) => <span className="text-muted-foreground">{item.unidade}</span>,
+                    },
+                    {
+                      id: "marca",
+                      header: <>Marca</>,
+                      kind: "name",
+                      value: (item) => item.marca ?? "",
+                      cell: (item) => <>{item.marca || "—"}</>,
+                    },
+                    {
+                      id: "curva",
+                      header: <>Curva</>,
+                      kind: "name",
+                      value: (item) => item.curva,
+                      cell: (item) => <ClasseBadge classe={item.curva} />,
+                    },
+                    {
+                      id: "vendas",
+                      header: <>Vendas no período</>,
+                      kind: "number",
+                      value: (item) => item.quantidadeVendida,
+                      cell: (item) => <>{formatarNumero(item.quantidadeVendida, 0)}</>,
+                    },
+                    {
+                      id: "edv",
+                      header: <>Devoluções EDV</>,
+                      kind: "number",
+                      value: (item) => item.quantidadeDevolvida,
+                      cell: (item) => <>{formatarNumero(item.quantidadeDevolvida, 0)}</>,
+                    },
+                    {
+                      id: "demanda",
+                      header: <span title="Vendido menos devoluções EDV, limitado ao mínimo zero">Demanda</span>,
+                      kind: "number",
+                      value: (item) => item.demandaLiquida,
+                      cell: (item) => <span className="font-semibold">{formatarNumero(item.demandaLiquida, 0)}</span>,
+                    },
+                    {
+                      id: "estoque",
+                      header: <span title="Saldo do movimento mais recente encontrado no Kardex até hoje">Estoque</span>,
+                      kind: "number",
+                      value: (item) => item.estoqueAtual,
+                      cell: (item) => <>{item.estoqueAtual === null ? "-" : formatarNumero(item.estoqueAtual, 0)}</>,
+                    },
+                    {
+                      id: "cobertura",
+                      header: <span title="Dias de atendimento com o estoque atual e a média diária de demanda">Cobertura</span>,
+                      kind: "number",
+                      value: (item) => item.coberturaDias,
+                      cell: (item) => (
+                        <>{item.coberturaDias === null ? "-" : `${formatarNumero(item.coberturaDias, 1)} d`}</>
+                      ),
+                    },
+                    {
+                      id: "situacao",
+                      header: <span title="Classificação pela cobertura alvo escolhida na tela">Situação</span>,
+                      kind: "name",
+                      value: (item) => situacaoEstoque(item, alvoDias, limitesCobertura),
+                      cell: (item) => (
+                        <Badge variant={badgeSituacao(situacaoEstoque(item, alvoDias, limitesCobertura))}>
+                          {rotuloSituacao(situacaoEstoque(item, alvoDias, limitesCobertura))}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      id: "sugestao",
+                      header: <span title="Quantidade para atingir a cobertura alvo descontando o estoque atual">Sugestão</span>,
+                      kind: "number",
+                      value: (item) => sugestaoCompra(item, alvoDias),
+                      cell: (item) => (
+                        <span className="font-semibold">{formatarNumero(sugestaoCompra(item, alvoDias), 0)}</span>
+                      ),
+                    },
+                    {
+                      id: "custoSugestao",
+                      header: <span title="Sugestão de compra × custo de reposição médio">Custo sugestão</span>,
+                      kind: "currency",
+                      value: (item) => custoSugestaoCompra(item, alvoDias),
+                      cell: (item) => (
+                        <>{custoSugestaoCompra(item, alvoDias) == null ? "-" : formatarMoeda(custoSugestaoCompra(item, alvoDias) ?? 0)}</>
+                      ),
+                    },
+                    {
+                      id: "custoAquisicao",
+                      header: <>Custo aquisição</>,
+                      kind: "currency",
+                      value: (item) => item.custoAquisicaoMedio,
+                      cell: (item) => <>{item.custoAquisicaoMedio == null ? "-" : formatarMoeda(item.custoAquisicaoMedio)}</>,
+                    },
+                    {
+                      id: "custoReposicao",
+                      header: <>Custo reposição</>,
+                      kind: "currency",
+                      value: (item) => item.custoReposicaoMedio,
+                      cell: (item) => <>{item.custoReposicaoMedio == null ? "-" : formatarMoeda(item.custoReposicaoMedio)}</>,
+                    },
+                    {
+                      id: "estoqueAquisicao",
+                      header: <span title="Custo de aquisição médio × estoque atual">Estoque (aquis.)</span>,
+                      kind: "currency",
+                      value: (item) => item.custoEstoqueAquisicao,
+                      cell: (item) => <>{item.custoEstoqueAquisicao == null ? "-" : formatarMoeda(item.custoEstoqueAquisicao)}</>,
+                    },
+                    {
+                      id: "estoqueReposicao",
+                      header: <span title="Custo de reposição médio × estoque atual">Estoque (repos.)</span>,
+                      kind: "currency",
+                      value: (item) => item.custoEstoqueReposicao,
+                      cell: (item) => (
+                        <span className="font-semibold">
                           {item.custoEstoqueReposicao == null ? "-" : formatarMoeda(item.custoEstoqueReposicao)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatarMoeda(item.valorVendido)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
+                        </span>
+                      ),
+                    },
+                    {
+                      id: "valorVendido",
+                      header: <>Valor vendido</>,
+                      kind: "currency",
+                      value: (item) => item.valorVendido,
+                      cell: (item) => <>{formatarMoeda(item.valorVendido)}</>,
+                    },
+                    {
+                      id: "valorDevolvido",
+                      header: <>Valor devolvido</>,
+                      kind: "currency",
+                      value: (item) => item.valorDevolvido,
+                      cell: (item) => (
+                        <>
                           {formatarMoeda(item.valorDevolvido)}
                           <span className="block text-[10px] text-muted-foreground">
                             {formatarPercentual(item.taxaDevolucaoValor, 1)}
                           </span>
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold">
-                          {formatarMoeda(item.valorVendaLiquida)}
-                        </TableCell>
-                        <TableCell
-                          className={`text-right font-mono ${
+                        </>
+                      ),
+                    },
+                    {
+                      id: "vendaLiquida",
+                      header: <>Venda líquida</>,
+                      kind: "currency",
+                      value: (item) => item.valorVendaLiquida,
+                      cell: (item) => (
+                        <span className="font-semibold">{formatarMoeda(item.valorVendaLiquida)}</span>
+                      ),
+                    },
+                    {
+                      id: "margem",
+                      header: (
+                        <span title="(venda líquida real − custo de reposição das unidades líquidas) ÷ venda líquida real">
+                          Margem
+                        </span>
+                      ),
+                      kind: "percent",
+                      value: (item) => item.margemBrutaPercentual,
+                      cell: (item) => (
+                        <span
+                          className={
                             item.margemBrutaPercentual != null && item.margemBrutaPercentual < 0
-                              ? "text-destructive"
-                              : ""
-                          }`}
+                              ? "font-semibold text-destructive"
+                              : "font-semibold"
+                          }
                         >
                           {item.margemBrutaPercentual == null
                             ? "-"
                             : formatarPercentual(item.margemBrutaPercentual, 1)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                  <TableFooter>
+                        </span>
+                      ),
+                    },
+                  ]}
+                  rodape={() => (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-xs font-semibold">
-                        Total ({itensFiltrados.length} produto{itensFiltrados.length === 1 ? "" : "s"})
+                      <TableCell className="font-semibold">Total</TableCell>
+                      <TableCell colSpan={3} className="text-muted-foreground">
+                        {formatarNumero(itensFiltrados.length, 0)} produto(s) no recorte
                       </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatarNumero(totais.quantidadeVendida, 0)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatarNumero(totais.quantidadeDevolvida, 0)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatarNumero(totais.demandaLiquida, 0)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatarNumero(totais.estoqueAtual, 0)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">—</TableCell>
-                      <TableCell className="text-right font-mono">—</TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatarNumero(totais.sugestaoUnidades, 0)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatarMoeda(resumoDecisao.custoSugestao)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">—</TableCell>
-                      <TableCell className="text-right font-mono">—</TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatarMoeda(totais.custoEstoqueAquisicao)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatarMoeda(totais.custoEstoqueReposicao)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatarMoeda(totais.valorVendido)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatarMoeda(totais.valorDevolvido)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatarMoeda(totais.valorVendaLiquida)}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-mono font-semibold ${
-                          totais.margemPercentual != null && totais.margemPercentual < 0
-                            ? "text-destructive"
-                            : ""
-                        }`}
-                      >
-                        {totais.margemPercentual == null
-                          ? "-"
-                          : formatarPercentual(totais.margemPercentual, 1)}
+                      <TableCell />
+                      <TableCell className="text-right">{formatarNumero(totais.quantidadeVendida, 0)}</TableCell>
+                      <TableCell className="text-right">{formatarNumero(totais.quantidadeDevolvida, 0)}</TableCell>
+                      <TableCell className="text-right">{formatarNumero(totais.demandaLiquida, 0)}</TableCell>
+                      <TableCell className="text-right">{formatarNumero(totais.estoqueAtual, 0)}</TableCell>
+                      <TableCell />
+                      <TableCell />
+                      <TableCell className="text-right">{formatarNumero(totais.sugestaoUnidades, 0)}</TableCell>
+                      <TableCell />
+                      <TableCell />
+                      <TableCell />
+                      <TableCell className="text-right">{formatarMoeda(totais.custoEstoqueAquisicao)}</TableCell>
+                      <TableCell className="text-right">{formatarMoeda(totais.custoEstoqueReposicao)}</TableCell>
+                      <TableCell className="text-right">{formatarMoeda(totais.valorVendido)}</TableCell>
+                      <TableCell className="text-right">{formatarMoeda(totais.valorDevolvido)}</TableCell>
+                      <TableCell className="text-right">{formatarMoeda(totais.valorVendaLiquida)}</TableCell>
+                      <TableCell className="text-right">
+                        {totais.margemPercentual == null ? "-" : formatarPercentual(totais.margemPercentual, 1)}
                       </TableCell>
                     </TableRow>
-                  </TableFooter>
-                </Table>
-              </div>
-              <div className="border-t p-3">
-                <TablePagination
-                  paginaAtual={paginaAtual}
-                  totalItens={itensFiltrados.length}
-                  itensPorPagina={porPagina}
-                  labelItens="produtos"
-                  onPaginaChange={setPagina}
-                  onItensPorPaginaChange={(valor) => {
-                    setPorPagina(valor);
-                    setPagina(1);
-                  }}
+                  )}
                 />
               </div>
               <StatusRelatorio
