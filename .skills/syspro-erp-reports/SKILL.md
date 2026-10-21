@@ -110,8 +110,8 @@ Capacidades da `src/components/relatorios/report-table.tsx` — use antes de mon
 - `renderDetalhe={(row) => Node}` para linha expansível (usada por nota em Vendas).
 Sem `ReportProvider` (contexto do relatório) as ações de colunas/densidade não renderizam — em telas fora de `/relatorios` só a exportação aparece: comportamento esperado.
 
-**Migrados:** Compras (21 colunas + totais + export Excel próprio) e Estoque → Posição por produto.
-**Falta migrar:** `/vendas` (tabela de notas com expansão de itens) e as outras 4 tabelas do Estoque (fila de atenção, Kardex detalhado, devoluções, transferências) — a base técnica (`renderDetalhe`, `acoesExtras`) já está pronta.
+**Migrados:** Compras (21 colunas + totais + export Excel próprio), Estoque (posição por produto, fila de atenção, Kardex detalhado, devoluções e transferências) e **Vendas** (notas com `renderDetalhe` abrindo os itens, `modoDetalhe` para Expandir/Recolher todas).
+Nenhuma tabela manual restante: as telas não têm mais `<Table>` próprio, paginação paralela nem ordenação por clique duplicada.
 
 ## Fluxo de dados (segurança)
 ```
