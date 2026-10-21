@@ -1,4 +1,4 @@
-import type { MovimentoKardex } from "@/lib/kardex";
+import { GRUPOS_SALDO_ESTOQUE, grupoDefineSaldo, type MovimentoKardex } from "@/lib/kardex";
 import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
 export { normalizarDataIso } from "@/lib/periodo";
@@ -197,6 +197,8 @@ export function montarRelatorioCompras(
       atual.valorDevolvido += Math.abs(movimento.valorTotal);
     }
 
+    // Saldo atual: somente movimentos de EVP/EVD/EDV/EDC (estoque real do produto).
+    if (!grupoDefineSaldo(movimento.grupoDocumento)) return;
     const dataAtual = movimento.dataMovimento.slice(0, 10);
     const dataAnterior = atual.dataUltimoMovimento?.slice(0, 10) ?? "";
     if (dataAtual > dataAnterior || (dataAtual === dataAnterior && indice > atual.ordemUltimoMovimento)) {

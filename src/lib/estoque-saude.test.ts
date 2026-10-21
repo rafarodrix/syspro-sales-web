@@ -59,6 +59,7 @@ describe("saúde do estoque", () => {
         saldo: 1,
         classificacao: { categoria: "fiscal", direcao: "saida", rotulo: "Emissão fiscal de venda (NF-e)" },
       }),
+      movimento({ produtoIdProduto: "1", grupoDocumento: "EVP", quantidadeMovimentada: -3, saldo: 1, dataMovimento: "2026-10-05" }),
     ], [
       venda({ produto_id: "1", produto_qtde: 5, produto_vlr_total_item: 100 }),
     ], { inicial: "01/10/2026", final: "10/10/2026" });

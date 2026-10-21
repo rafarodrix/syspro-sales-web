@@ -1,4 +1,4 @@
-import type { MovimentoKardex } from "@/lib/kardex";
+import { GRUPOS_SALDO_ESTOQUE, grupoDefineSaldo, type MovimentoKardex } from "@/lib/kardex";
 import {
   calcularCoberturaEstoque,
   calcularDemandaLiquida,
@@ -163,6 +163,8 @@ export function montarSaudeEstoque(
     if (movimento.direcao === "entrada") atual.ultimaEntrada = dataMaisRecente(atual.ultimaEntrada, movimento.dataMovimento);
     if (movimento.direcao === "saida") atual.ultimaSaida = dataMaisRecente(atual.ultimaSaida, movimento.dataMovimento);
 
+    // Saldo atual: somente movimentos de EVP/EVD/EDV/EDC (estoque real do produto).
+    if (!grupoDefineSaldo(movimento.grupoDocumento)) return;
     if (dataMovimento > dataUltimo || (dataMovimento === dataUltimo && indice > atual.ordemUltimoMovimento)) {
       atual.estoqueAtual = movimento.saldo;
       atual.ultimoMovimento = movimento.dataMovimento;

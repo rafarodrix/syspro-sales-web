@@ -10,6 +10,18 @@ export type CategoriaKardex =
   | "fiscal"
   | "outros";
 
+/**
+ * Grupos cujo saldo representa o estoque que o cliente considera real.
+ * Os demais grupos (EAQ, ENP, EPD, EOS, EAJ, EBR, ESS...) movimentam um
+ * estoque paralelo e NÃO devem definir o saldo atual do produto.
+ */
+export const GRUPOS_SALDO_ESTOQUE = ["EVP", "EVD", "EDV", "EDC"] as const;
+
+export function grupoDefineSaldo(grupoDocumento: string): boolean {
+  const grupo = (grupoDocumento ?? "").trim().toUpperCase();
+  return (GRUPOS_SALDO_ESTOQUE as readonly string[]).includes(grupo);
+}
+
 export interface ClassificacaoKardex {
   categoria: CategoriaKardex;
   direcao: DirecaoKardex;
