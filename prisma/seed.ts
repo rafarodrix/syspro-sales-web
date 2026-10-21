@@ -25,8 +25,18 @@ async function main() {
 
   try {
     const totalUsuarios = await prisma.user.count();
-    if (totalUsuarios > 0) {
+    const alvoExiste = await prisma.user.findUnique({
+      where: { email: (process.env.SEED_ADMIN_EMAIL ?? "").trim().toLowerCase() },
+      select: { id: true },
+    });
+    // Idempotente por e-mail: permite rodar o seed em CI/base já existente para
+    // garantir o usuário de teste, sem recriar o administrador a cada execução.
+    if (totalUsuarios > 0 && !alvoExiste && process.env.SEED_PERMITIR_NOVO !== "1") {
       console.log("Bootstrap ignorado: ja existe usuario cadastrado.");
+      return;
+    }
+    if (alvoExiste) {
+      console.log("Usuario do seed ja existe; nada a fazer.");
       return;
     }
 

@@ -1,5 +1,8 @@
 import {
   BadgeDollarSign,
+  BanknoteArrowDown,
+  BanknoteArrowUp,
+  Factory,
   BarChart3,
   CalendarDays,
   CreditCard,
@@ -35,6 +38,8 @@ export const itensGerais: ItemNavegacao[] = [
   { id: "dashboard", label: "Dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard, permissao: "dashboard:visualizar" },
   { id: "vendas", label: "Vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart, permissao: "vendas:visualizar" },
   { id: "estoque", label: "Estoque", titulo: "Movimentações / Kardex", categoria: "Navegação", href: "/estoque", icone: PackageSearch, permissao: "estoque:visualizar" },
+  { id: "pagar", label: "Contas a Pagar", titulo: "Contas a Pagar", categoria: "Navegação", href: "/financeiro/pagar", icone: BanknoteArrowDown, permissao: "relatorios:visualizar" },
+  { id: "receber", label: "Contas a Receber", titulo: "Contas a Receber", categoria: "Navegação", href: "/financeiro/receber", icone: BanknoteArrowUp, permissao: "relatorios:visualizar" },
 ];
 
 export const relatoriosVendas: ItemNavegacao[] = [
@@ -51,6 +56,7 @@ export const relatoriosVendas: ItemNavegacao[] = [
 export const itensRelatorios: ItemNavegacao[] = [
   ...relatoriosVendas,
   { id: "compras", label: "Análise de Compras", titulo: "Análise de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "estoque:visualizar" },
+  { id: "producao", label: "Produção", titulo: "Produção", categoria: "Relatórios", href: "/producao", icone: Factory, permissao: "relatorios:visualizar" },
 ];
 
 export const itensAdministracao: ItemNavegacao[] = [

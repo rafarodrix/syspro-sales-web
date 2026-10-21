@@ -5,13 +5,38 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  quality:
+  qualidade:
+    name: Qualidade (lint, tipos, testes)
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:coverage:critical
+      - run: npm run build
+
+  e2e:
+    name: E2E (login, navegação, relatórios)
+    runs-on: ubuntu-latest
+    needs: qualidade
     env:
       BETTER_AUTH_SECRET: ci-secret-with-at-least-32-characters
       BETTER_AUTH_URL: http://127.0.0.1:31987
-      DATABASE_URL: file:./ci.db
+      DATABASE_URL: file:./e2e.db
+      SEED_ADMIN_EMAIL: e2e@trilink.local
+      SEED_ADMIN_PASSWORD: e2e-senha-forte-123
+      SEED_ADMIN_NAME: E2E
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,10 +45,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma migrate deploy
-      - run: npm run check
-      - run: npm run test:coverage:critical
-      - run: npm run build
+      - run: npx tsx prisma/seed.ts
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-        env:
-          CI: "true"
