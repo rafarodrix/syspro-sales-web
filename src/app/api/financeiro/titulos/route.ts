@@ -39,16 +39,17 @@ export async function POST(request: NextRequest) {
     if (!json.ok) return json.response;
     const { empresaId, categoria, modo } = json.value;
 
-    // "Sem data" na tela vira uma janela ampla: 24 meses atrás (cobre todo vencido
-    // real) até 12 meses à frente (cobre o a vencer). Testado: 6k títulos em ~0,5s.
+    // "Sem data" na tela vira uma janela controlada: 6 meses atrás cobre o
+    // vencido rotineiro e 6 à frente cobre o a vencer. A rota `titulo/receber`
+    // retorna muito volume em bases grandes (Mundial: 206k títulos em 3 anos).
     const formatar = (data: Date) => {
       const dia = String(data.getUTCDate()).padStart(2, "0");
       const mes = String(data.getUTCMonth() + 1).padStart(2, "0");
       return `${dia}/${mes}/${data.getUTCFullYear()}`;
     };
     const hoje = new Date();
-    const inicioPadrao = new Date(Date.UTC(hoje.getUTCFullYear() - 1, hoje.getUTCMonth(), hoje.getUTCDate()));
-    const fimPadrao = new Date(Date.UTC(hoje.getUTCFullYear() + 1, hoje.getUTCMonth(), hoje.getUTCDate()));
+    const inicioPadrao = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - 6, hoje.getUTCDate()));
+    const fimPadrao = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 6, hoje.getUTCDate()));
     const dtInicial = json.value.dtInicial ?? formatar(inicioPadrao);
     const dtFinal = json.value.dtFinal ?? formatar(fimPadrao);
 
@@ -81,6 +82,12 @@ export async function POST(request: NextRequest) {
     try {
       brutos = (await consultar(config, range, request.signal)) as unknown[];
     } catch (erro) {
+      if (erro instanceof Error && erro.name === "AbortError") {
+        return NextResponse.json(
+          { error: "A consulta demorou mais que o esperado. Reduza o período e tente novamente." },
+          { status: 504 },
+        );
+      }
       if (erro instanceof SysproApiError && erro.status === 401) {
         return NextResponse.json(
           {
