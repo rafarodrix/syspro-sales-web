@@ -8,7 +8,8 @@ import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { DateRangeFilter, periodoUltimos30Dias, type Periodo } from "@/components/date-range-filter";
+import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/date-range-filter";
+import { FiltroRelatorio } from "@/components/relatorios/filtro-relatorio";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { FeedbackState } from "@/components/feedback-state";
 import { StatusRelatorio } from "@/components/relatorios/ui/status-relatorio";
@@ -40,7 +41,9 @@ export function TitulosView({
   empresaId: string;
   categoria: CategoriaTitulo;
 }) {
-  const [periodo, setPeriodo] = useState<Periodo>(() => periodoUltimos30Dias());
+  const [modo, setModo] = useState<"aberto" | "pagos" | "todos">("aberto");
+  const [personalizado, setPersonalizado] = useState(false);
+  const [periodo, setPeriodo] = useState<Periodo>(() => periodoMesAtual());
   const [consultado, setConsultado] = useState<Periodo | null>(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -61,8 +64,13 @@ export function TitulosView({
         body: JSON.stringify({
           empresaId,
           categoria,
-          dtInicial: dataInputParaSyspro(alvo.inicial),
-          dtFinal: dataInputParaSyspro(alvo.final),
+          modo,
+          ...(personalizado
+            ? {
+                dtInicial: dataInputParaSyspro(alvo.inicial),
+                dtFinal: dataInputParaSyspro(alvo.final),
+              }
+            : {}),
         }),
       });
       const json = (await resposta.json().catch(() => ({}))) as RespostaTitulos;
@@ -147,12 +155,41 @@ export function TitulosView({
         description={`Títulos do Syspro com vencimento no período consultado.`}
         footer="Rota de exportação do Syspro: os valores vêm da própria base, sem recálculo."
       >
-        <DateRangeFilter
-          value={periodo}
-          onChange={setPeriodo}
-          onConsultar={consultar}
-          loading={loading}
-        />
+        <div className="flex flex-wrap items-end gap-2">
+          <FiltroRelatorio
+            rotulo="Situação dos títulos"
+            valor={modo}
+            largura="w-52"
+            opcoes={[
+              { valor: "aberto", rotulo: "Em aberto (vencidos + a vencer)" },
+              { valor: "pagos", rotulo: "Somente pagos" },
+              { valor: "todos", rotulo: "Todos" },
+            ]}
+            onChange={(valor) => setModo(valor as "aberto" | "pagos" | "todos")}
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant={personalizado ? "secondary" : "outline"}
+            className="h-9 text-xs"
+            aria-pressed={personalizado}
+            onClick={() => setPersonalizado((atual) => !atual)}
+          >
+            {personalizado ? "Período personalizado" : "Escolher período"}
+          </Button>
+          {personalizado ? (
+            <DateRangeFilter
+              value={periodo}
+              onChange={setPeriodo}
+              onConsultar={consultar}
+              loading={loading}
+            />
+          ) : (
+            <Button size="sm" className="h-9" disabled={loading} onClick={() => consultar()}>
+              {loading ? "Consultando..." : "Consultar"}
+            </Button>
+          )}
+        </div>
       </AnalysisQueryCard>
 
       {erro ? (

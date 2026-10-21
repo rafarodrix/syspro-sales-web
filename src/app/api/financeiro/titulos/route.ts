@@ -5,8 +5,12 @@ import { normalizarTitulo, resumirTitulos, type CategoriaTitulo } from "@/lib/ti
 import { vendasQuerySchema } from "@/lib/validations";
 import { z } from "zod";
 
-const corpoSchema = vendasQuerySchema.extend({
+const corpoSchema = z.object({
+  empresaId: z.string().min(1, "Empresa e obrigatoria."),
   categoria: z.enum(["pagar", "receber"]),
+  modo: z.enum(["aberto", "pagos", "todos"]).default("aberto"),
+  dtInicial: z.string().optional(),
+  dtFinal: z.string().optional(),
 });
 
 const ROTULOS: Record<CategoriaTitulo, string> = {
@@ -33,7 +37,20 @@ export async function POST(request: NextRequest) {
 
     const json = await validarJson(request, corpoSchema, "Parâmetros inválidos.");
     if (!json.ok) return json.response;
-    const { empresaId, dtInicial, dtFinal, categoria } = json.value;
+    const { empresaId, categoria, modo } = json.value;
+
+    // "Sem data" na tela vira uma janela ampla: 24 meses atrás (cobre todo vencido
+    // real) até 12 meses à frente (cobre o a vencer). Testado: 6k títulos em ~0,5s.
+    const formatar = (data: Date) => {
+      const dia = String(data.getUTCDate()).padStart(2, "0");
+      const mes = String(data.getUTCMonth() + 1).padStart(2, "0");
+      return `${dia}/${mes}/${data.getUTCFullYear()}`;
+    };
+    const hoje = new Date();
+    const inicioPadrao = new Date(Date.UTC(hoje.getUTCFullYear() - 2, hoje.getUTCMonth(), hoje.getUTCDate()));
+    const fimPadrao = new Date(Date.UTC(hoje.getUTCFullYear() + 1, hoje.getUTCMonth(), hoje.getUTCDate()));
+    const dtInicial = json.value.dtInicial ?? formatar(inicioPadrao);
+    const dtFinal = json.value.dtFinal ?? formatar(fimPadrao);
 
     if (empresaId === "todas" || empresaId.includes(",")) {
       return NextResponse.json(
@@ -94,12 +111,19 @@ export async function POST(request: NextRequest) {
     const baseSemFiltro = considerados.length === 0 && brutos.length > 0;
     if (baseSemFiltro) considerados = brutos;
 
-    const itens = considerados.map((item) => normalizarTitulo(item));
+    const todos = considerados.map((item) => normalizarTitulo(item));
+    const itens =
+      modo === "aberto"
+        ? todos.filter((item) => item.situacao !== "pago")
+        : modo === "pagos"
+          ? todos.filter((item) => item.situacao === "pago")
+          : todos;
     const resumo = resumirTitulos(itens);
 
     return NextResponse.json(
       {
         categoria,
+        modo,
         empresaId: empresa.id,
         empresaNome: empresa.razaoSocial,
         periodo: { inicial: dtInicial, final: dtFinal },
