@@ -142,7 +142,7 @@ export function AbaClientes({
         entra na frequência.
       </p>
 
-      <div hidden={visao !== "sintetico"}>
+      {visao === "sintetico" ? (<div>
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <FiltroRelatorio
@@ -329,7 +329,7 @@ export function AbaClientes({
           />
         </div>
       </div>
-      <div hidden={visao !== "frequencia"}>
+      ) : visao === "frequencia" ? (<div>
         <VisaoFrequenciaClientes
           relatorio={frequencia}
           busca={busca}
@@ -339,7 +339,7 @@ export function AbaClientes({
           onAbrirNotas={abrirAnaliticoDoCliente}
         />
       </div>
-      <div hidden={visao !== "analitico"}>
+      ) : visao === "analitico" ? (<div>
         <DetalhamentoClientes
           notas={notasFiltradas}
           anteriores={notasAnterioresFiltradas}
@@ -359,6 +359,7 @@ export function AbaClientes({
           }
         />
       </div>
+      ) : null}
     </div>
     </ReportVisaoProvider>
   );
