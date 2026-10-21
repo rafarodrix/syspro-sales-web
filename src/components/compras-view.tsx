@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { ActionMetricCard } from "@/components/analytics/action-metric-card";
 import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
+import { StatusRelatorio } from "./relatorios/ui/status-relatorio";
+import { SecaoTitulo } from "./relatorios/ui/secao-titulo";
+import { FiltroRelatorio } from "./relatorios/filtro-relatorio";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { GlossarioRelatorio, GUIAS_RELATORIOS } from "@/components/relatorio-guia";
@@ -20,12 +23,6 @@ import { TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -257,12 +254,11 @@ export function ComprasView({
 
       {periodoConsultado ? (
         <section className="space-y-3">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">Decisão de compra</h2>
-            <p className="text-xs text-muted-foreground">
-              Considera os filtros ativos e a cobertura alvo de {alvoDias} dias (parâmetro da tela).
-            </p>
-          </div>
+          <SecaoTitulo
+            eyebrow="Ação"
+            titulo="Decisão de compra"
+            descricao={`Considera os filtros ativos e a cobertura alvo de ${alvoDias} dias (parâmetro da tela).`}
+          />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ActionMetricCard
               titulo="Sugestão de compra"
@@ -312,13 +308,11 @@ export function ComprasView({
 
       {periodoConsultado ? (
         <section className="space-y-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-foreground">Base do período</h2>
-            <p className="text-xs text-muted-foreground">
-              Período completo, sem os filtros da tabela · custo informado em{" "}
-              {formatarPercentual(relatorio.resumo.coberturaCusto, 1)} da demanda
-            </p>
-          </div>
+          <SecaoTitulo
+            eyebrow="Contexto"
+            titulo="Base do período"
+            descricao={`Período completo, sem os filtros da tabela · custo informado em ${formatarPercentual(relatorio.resumo.coberturaCusto, 1)} da demanda`}
+          />
           <MetricsStrip
             itens={[
               {
@@ -390,111 +384,65 @@ export function ComprasView({
               setPagina(1);
             }}
           >
-            <Select
-              value={curva}
-              onValueChange={(valor) => {
+            <FiltroRelatorio
+              rotulo="Filtrar por curva ABC"
+              valor={curva}
+              opcoes={[
+                { valor: "todas", rotulo: "Todas as curvas" },
+                { valor: "A", rotulo: "Curva A" },
+                { valor: "B", rotulo: "Curva B" },
+                { valor: "C", rotulo: "Curva C" },
+              ]}
+              onChange={(valor) => {
                 setCurva(valor as "todas" | ClasseCurvaCompras);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="w-40" aria-label="Filtrar por curva ABC">
-                <SelectValue placeholder="Curva ABC" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="todas">Todas as curvas</SelectItem>
-                  <SelectItem value="A">Curva A</SelectItem>
-                  <SelectItem value="B">Curva B</SelectItem>
-                  <SelectItem value="C">Curva C</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={marca}
-              onValueChange={(valor) => {
+            />
+            <FiltroRelatorio
+              rotulo="Filtrar por marca"
+              valor={marca}
+              opcoes={[
+                { valor: "todas", rotulo: "Todas as marcas" },
+                ...marcas.map((nome) => ({ valor: nome, rotulo: nome })),
+              ]}
+              onChange={(valor) => {
                 setMarca(valor);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="w-44" aria-label="Filtrar por marca">
-                <SelectValue placeholder="Marca" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="todas">Todas as marcas</SelectItem>
-                  {marcas.map((nome) => (
-                    <SelectItem key={nome} value={nome}>
-                      {nome}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={situacao}
-              onValueChange={(valor) => {
+            />
+            <FiltroRelatorio
+              rotulo="Filtrar por situação de estoque"
+              valor={situacao}
+              opcoes={[
+                { valor: "todas", rotulo: "Todas as situações" },
+                ...SITUACOES_COMPRA.map((opcao) => ({ valor: opcao.valor, rotulo: opcao.rotulo })),
+              ]}
+              onChange={(valor) => {
                 setSituacao(valor as "todas" | SituacaoCompra);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="w-48" aria-label="Filtrar por situação de estoque">
-                <SelectValue placeholder="Situação" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="todas">Todas as situações</SelectItem>
-                  {SITUACOES_COMPRA.map((opcao) => (
-                    <SelectItem key={opcao.valor} value={opcao.valor}>
-                      {opcao.rotulo}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={String(alvoDias)}
-              onValueChange={(valor) => {
+            />
+            <FiltroRelatorio
+              rotulo="Cobertura alvo em dias"
+              valor={String(alvoDias)}
+              opcoes={opcoesCobertura.map((dias) => ({ valor: String(dias), rotulo: `Alvo ${dias} dias` }))}
+              onChange={(valor) => {
                 setAlvoDias(Number(valor));
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="w-48" aria-label="Cobertura alvo em dias">
-                <SelectValue placeholder="Cobertura alvo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {opcoesCobertura.map((dias) => (
-                    <SelectItem key={dias} value={String(dias)}>
-                      Alvo {dias} dias
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={ordenacao}
-              onValueChange={(valor) => {
+            />
+            <FiltroRelatorio
+              rotulo="Ordenar produtos"
+              valor={ordenacao}
+              opcoes={CRITERIOS_ORDENACAO_COMPRAS.map((criterio) => ({
+                valor: criterio.valor,
+                rotulo: criterio.rotulo,
+              }))}
+              onChange={(valor) => {
                 setOrdenacao(valor as CriterioOrdenacaoCompras);
                 setPagina(1);
               }}
-            >
-              <SelectTrigger className="w-52" aria-label="Ordenar produtos">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {CRITERIOS_ORDENACAO_COMPRAS.map((criterio) => (
-                    <SelectItem key={criterio.valor} value={criterio.valor}>
-                      {criterio.rotulo}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            />
           </DataFilterBar>
         </CardHeader>
         <CardContent className="p-0">
@@ -686,25 +634,35 @@ export function ComprasView({
                   }}
                 />
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-3 py-2 text-xs text-muted-foreground" role="status">
-                <span>
-                  Universo: {formatarNumero(relatorio.itens.length, 0)} produto(s) · {empresaNome}
-                </span>
-                <span className="font-mono tabular-nums">
-                  {periodoConsultado
-                    ? `${formatarDataInputParaBR(periodoConsultado.inicial)} a ${formatarDataInputParaBR(periodoConsultado.final)}`
-                    : "—"}
-                </span>
-                <span>
-                  Filtros ativos: {formatarNumero(
-                    (busca.trim() ? 1 : 0) +
-                      (curva !== "todas" ? 1 : 0) +
-                      (marca !== "todas" ? 1 : 0) +
-                      (situacao !== "todas" ? 1 : 0),
-                    0
-                  )}
-                </span>
-              </div>
+              <StatusRelatorio
+                className="border-t px-3 py-2"
+                itens={[
+                  {
+                    rotulo: "Universo",
+                    valor: `${formatarNumero(relatorio.itens.length, 0)} produto(s) · ${empresaNome}`,
+                    definicao: "Produtos retornados pela consulta de vendas e Kardex para a empresa e o período.",
+                  },
+                  {
+                    rotulo: "Período",
+                    valor: periodoConsultado
+                      ? `${formatarDataInputParaBR(periodoConsultado.inicial)} a ${formatarDataInputParaBR(periodoConsultado.final)}`
+                      : "—",
+                    definicao: "Período consultado no Syspro.",
+                  },
+                  {
+                    rotulo: "Filtros ativos",
+                    valor: formatarNumero(
+                      (busca.trim() ? 1 : 0) +
+                        (curva !== "todas" ? 1 : 0) +
+                        (marca !== "todas" ? 1 : 0) +
+                        (situacao !== "todas" ? 1 : 0),
+                      0,
+                    ),
+                    destaque: true,
+                    definicao: "Conta busca textual, curva ABC, marca e situação aplicados.",
+                  },
+                ]}
+              />
             </>
           ) : periodoConsultado ? (
             <FeedbackState

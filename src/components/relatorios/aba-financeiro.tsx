@@ -1,6 +1,5 @@
 import { ReportTable } from "./report-table";
-import { useState } from "react";
-import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { CreditCard, FileText } from "lucide-react";
 import {
   formatarMoeda,
@@ -9,6 +8,8 @@ import {
 } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
+import { ReportBarraVisao } from "./report-barra";
+import { FiltroRelatorio } from "./filtro-relatorio";
 import type { ItemFinanceiroAnalise } from "@/lib/vendas";
 
 type VisaoFinanceira = "pagamento" | "documento";
@@ -23,15 +24,12 @@ interface AbaFinanceiroProps {
 function TabelaFinanceira({
   itens,
   rotulo,
-  acoes,
 }: {
   itens: ItemFinanceiroAnalise[];
   rotulo: string;
-  acoes?: ReactNode;
 }) {
   return (
     <ReportTable
-      acoes={acoes}
       caption={rotulo}
       data={itens}
       rowKey={(item) => item.nome}
@@ -117,6 +115,25 @@ function TabelaFinanceira({
 export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
   const [visao, setVisao] = useState<VisaoFinanceira>("pagamento");
   const exibePagamentos = visao === "pagamento";
+  const [ordenacao, setOrdenacao] = useState<"total" | "desconto" | "margem" | "pedidos">("total");
+
+  const itensOrdenados = useMemo(() => {
+    const base = exibePagamentos
+      ? relatorioFinanceiro.formasPagamento
+      : relatorioFinanceiro.modelosDocumento;
+    const copia = [...base];
+    switch (ordenacao) {
+      case "desconto":
+        return copia.sort((a, b) => b.descontoConcedido - a.descontoConcedido);
+      case "margem":
+        return copia.sort((a, b) => (a.margemBruta ?? 0) - (b.margemBruta ?? 0));
+      case "pedidos":
+        return copia.sort((a, b) => b.pedidos - a.pedidos);
+      case "total":
+      default:
+        return copia.sort((a, b) => b.total - a.total);
+    }
+  }, [exibePagamentos, ordenacao, relatorioFinanceiro]);
 
   const seletorVisao = (
     <ReportViewSelector
@@ -131,14 +148,24 @@ export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
 
   return (
     <div className="space-y-4">
+      <ReportBarraVisao>
+        {seletorVisao}
+        <FiltroRelatorio
+          rotulo="Ordenar"
+          valor={ordenacao}
+          opcoes={[
+            { valor: "total", rotulo: "Maior faturamento" },
+            { valor: "pedidos", rotulo: "Mais notas" },
+            { valor: "desconto", rotulo: "Maior desconto" },
+            { valor: "margem", rotulo: "Menor margem" },
+          ]}
+          onChange={(valor) => setOrdenacao(valor as typeof ordenacao)}
+        />
+      </ReportBarraVisao>
+
       <TabelaFinanceira
-        itens={
-          exibePagamentos
-            ? relatorioFinanceiro.formasPagamento
-            : relatorioFinanceiro.modelosDocumento
-        }
+        itens={itensOrdenados}
         rotulo={exibePagamentos ? "Forma de pagamento" : "Documento fiscal"}
-        acoes={seletorVisao}
       />
     </div>
   );

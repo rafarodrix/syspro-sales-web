@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
 import { ActionMetricCard } from "@/components/analytics/action-metric-card";
@@ -13,11 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import type { Periodo } from "@/lib/periodo";
 import {
@@ -29,9 +25,22 @@ import {
 } from "@/lib/analise-margens";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { ReportTable } from "./report-table";
+import { FiltroRelatorio } from "./filtro-relatorio";
 import { ReportMetricStrip } from "./report-toolbar";
 
 type SituacaoMargem = "todas" | "negativa" | "baixa" | "saudavel" | "sem-custo";
+
+/**
+ * Cache em memória do resultado de margens. A aba é remontada a cada troca de
+ * visão no relatório; sem isso, cada acesso dispara de novo a consulta pesada
+ * (vendas + Kardex, sem saldo atual) e a tela pisca por dezenas de segundos.
+ */
+const CACHE_MARGENS = new Map<string, { dados: AnaliseMargens; em: number }>();
+const TTL_CACHE_MARGENS = 5 * 60 * 1000;
+
+function chaveCacheMargens(empresaId: string, inicial: string, final: string) {
+  return `${empresaId}|${inicial}|${final}`;
+}
 
 export function AbaMargens({
   empresaId,
@@ -46,7 +55,19 @@ export function AbaMargens({
   onBuscaChange: (valor: string) => void;
   situacaoInicial?: string;
 }) {
-  const [dados, setDados] = useState<AnaliseMargens | null>(null);
+  const [atualizarForcado, setAtualizarForcado] = useState(false);
+  const chaveCache = chaveCacheMargens(empresaId, periodo.inicial, periodo.final);
+  const [dados, setDados] = useState<AnaliseMargens | null>(
+    () => CACHE_MARGENS.get(chaveCache)?.dados ?? null,
+  );
+  const [chaveDados, setChaveDados] = useState(chaveCache);
+
+  // Troca de período/empresa: aproveita o cache na hora, sem refazer a consulta.
+  const dadosEmCache = CACHE_MARGENS.get(chaveCache);
+  if (chaveDados !== chaveCache) {
+    setChaveDados(chaveCache);
+    setDados(dadosEmCache ? dadosEmCache.dados : null);
+  }
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [produtoSelecionado, setProdutoSelecionado] = useState<ItemAnaliseMargem | null>(null);
@@ -67,6 +88,11 @@ export function AbaMargens({
 
   useEffect(() => {
     const controller = new AbortController();
+    const emCache = CACHE_MARGENS.get(chaveCache);
+    const cacheValido =
+      emCache && Date.now() - emCache.em < TTL_CACHE_MARGENS && !atualizarForcado;
+    // Cache fresco: a tela já está preenchida pelo estado derivado acima.
+    if (cacheValido) return () => controller.abort();
     async function carregar() {
       setLoading(true);
       setErro(null);
@@ -85,17 +111,21 @@ export function AbaMargens({
           error?: string;
         };
         if (!resposta.ok) throw new Error(json.error || "Erro ao consultar margens.");
+        CACHE_MARGENS.set(chaveCache, { dados: json, em: Date.now() });
         setDados(json);
       } catch (causa) {
         if (causa instanceof DOMException && causa.name === "AbortError") return;
         setErro(causa instanceof Error ? causa.message : "Erro ao consultar margens.");
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setAtualizarForcado(false);
+        }
       }
     }
     void carregar();
     return () => controller.abort();
-  }, [empresaId, periodo.inicial, periodo.final]);
+  }, [atualizarForcado, chaveCache, empresaId, periodo.inicial, periodo.final]);
 
   const itens = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
@@ -168,7 +198,23 @@ export function AbaMargens({
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <p>{itens.length} de {dados.itens.length} produto(s) no universo analisado.</p>
-        <p>Dados atualizados em {consultadoEm}</p>
+        <p className="flex items-center gap-2">
+          Dados atualizados em {consultadoEm}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs"
+            disabled={loading}
+            onClick={() => {
+              CACHE_MARGENS.delete(chaveCache);
+              setAtualizarForcado(true);
+            }}
+            title="Ignorar o cache e consultar o Syspro novamente"
+          >
+            Atualizar
+          </Button>
+        </p>
       </div>
 
       <DataFilterBar
@@ -178,35 +224,38 @@ export function AbaMargens({
         temFiltrosAtivos={Boolean(busca) || situacao !== "todas" || curva !== "todas"}
         onLimpar={() => { onBuscaChange(""); setSituacao("todas"); setCurva("todas"); }}
       >
-        <Select value={situacao} onValueChange={(valor) => setSituacao(valor as SituacaoMargem)}>
-          <SelectTrigger className="h-9 w-48 text-xs" aria-label="Situação da margem"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">Todas as margens</SelectItem>
-            <SelectItem value="negativa">Margem negativa</SelectItem>
-            <SelectItem value="baixa">Margem abaixo de 20%</SelectItem>
-            <SelectItem value="saudavel">Margem a partir de 20%</SelectItem>
-            <SelectItem value="sem-custo">Sem custo de reposição</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={curva} onValueChange={(valor) => setCurva(valor as "todas" | "A" | "B" | "C")}>
-          <SelectTrigger className="h-9 w-40 text-xs" aria-label="Curva ABC"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">Todas as curvas</SelectItem>
-            <SelectItem value="A">Curva A</SelectItem>
-            <SelectItem value="B">Curva B</SelectItem>
-            <SelectItem value="C">Curva C</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={ordenacao} onValueChange={(valor) => setOrdenacao(valor as CriterioOrdenacaoMargem)}>
-          <SelectTrigger className="h-9 w-52 text-xs" aria-label="Ordenar produtos"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {CRITERIOS_ORDENACAO_MARGEM.map((criterio) => (
-              <SelectItem key={criterio.valor} value={criterio.valor} title={criterio.descricao}>
-                {criterio.rotulo}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FiltroRelatorio
+          rotulo="Situação da margem"
+          valor={situacao}
+          opcoes={[
+            { valor: "todas", rotulo: "Todas as margens" },
+            { valor: "negativa", rotulo: "Margem negativa" },
+            { valor: "baixa", rotulo: "Margem abaixo de 20%" },
+            { valor: "saudavel", rotulo: "Margem a partir de 20%" },
+            { valor: "sem-custo", rotulo: "Sem custo de reposição" },
+          ]}
+          onChange={(valor) => setSituacao(valor as SituacaoMargem)}
+        />
+        <FiltroRelatorio
+          rotulo="Curva ABC"
+          valor={curva}
+          opcoes={[
+            { valor: "todas", rotulo: "Todas as curvas" },
+            { valor: "A", rotulo: "Curva A" },
+            { valor: "B", rotulo: "Curva B" },
+            { valor: "C", rotulo: "Curva C" },
+          ]}
+          onChange={(valor) => setCurva(valor as "todas" | "A" | "B" | "C")}
+        />
+        <FiltroRelatorio
+          rotulo="Ordenar produtos"
+          valor={ordenacao}
+          opcoes={CRITERIOS_ORDENACAO_MARGEM.map((criterio) => ({
+            valor: criterio.valor,
+            rotulo: criterio.rotulo,
+          }))}
+          onChange={(valor) => setOrdenacao(valor as CriterioOrdenacaoMargem)}
+        />
       </DataFilterBar>
 
       <ReportTable<ItemAnaliseMargem>

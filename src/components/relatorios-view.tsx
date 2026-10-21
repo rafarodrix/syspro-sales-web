@@ -76,6 +76,7 @@ import { AbaVendedores } from "./relatorios/aba-vendedores";
 import { AbaGeografico } from "./relatorios/aba-geografico";
 import { AbaFinanceiro } from "./relatorios/aba-financeiro";
 import { PanoramaPeriodo } from "./relatorios/panorama-periodo";
+import { StatusRelatorio } from "./relatorios/ui/status-relatorio";
 import { ConsolidacaoEmpresas } from "./relatorios/consolidacao-empresas";
 import {
   analisarFrequenciaClientes,
@@ -563,6 +564,13 @@ export function RelatoriosView({
         c.uf.toLowerCase().includes(termo),
     );
   }, [relatorioGeografico, busca]);
+
+  const vendedoresEmQueda = useMemo(() => {
+    if (abaAtiva !== "vendedores" || !comparacaoDisponivel) return [];
+    return analiseDriversVendedores(vendas, vendasAnteriores)
+      .filter((item) => item.diferencaFaturamento < 0)
+      .map((item) => item.vendedor);
+  }, [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores]);
 
   const deptosAnteriores = useMemo(
     () => (comparacaoDisponivel ? analiseDepartamentos(vendasAnteriores) : []),
@@ -1153,22 +1161,26 @@ export function RelatoriosView({
                 ) : null}
               </DataFilterBar>
             ) : null}
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground" role="status">
-              <span>
-                Universo: {formatarNumero(vendas.length, 0)} item(ns) de venda · {modoConsolidado ? `${empresasSelecionadas.length} empresas` : rotuloEmpresa}
-              </span>
-              <span className="font-mono tabular-nums">
-                {formatarDataInputParaBR(periodoConsultado.inicial)} a{" "}
-                {formatarDataInputParaBR(periodoConsultado.final)}
-                {rotuloPeriodoAnterior ? ` · vs. ${rotuloPeriodoAnterior}` : ""}
-                {consultadoEm
-                  ? ` · Atualizado às ${consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-                  : ""}
-              </span>
-              <span>
-                Filtros ativos: {formatarNumero((busca.trim() ? 1 : 0) + ((abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc) !== "todas" && (abaAtiva === "clientes" || abaAtiva === "curva-abc") ? 1 : 0), 0)}
-              </span>
-            </div>
+            <StatusRelatorio
+              itens={[
+                {
+                  rotulo: "Universo",
+                  valor: `${formatarNumero(vendas.length, 0)} item(ns) de venda · ${modoConsolidado ? `${empresasSelecionadas.length} empresas` : rotuloEmpresa}`,
+                  definicao: "Itens de venda retornados pela API do Syspro para o período e a empresa consultados.",
+                },
+                {
+                  rotulo: "Período",
+                  valor: `${formatarDataInputParaBR(periodoConsultado.inicial)} a ${formatarDataInputParaBR(periodoConsultado.final)}${rotuloPeriodoAnterior ? ` · vs. ${rotuloPeriodoAnterior}` : ""}${consultadoEm ? ` · atualizado às ${consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}`,
+                  definicao: "Período consultado, janela de comparação equivalente e horário da última consulta.",
+                },
+                {
+                  rotulo: "Filtros ativos",
+                  valor: formatarNumero((busca.trim() ? 1 : 0) + ((abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc) !== "todas" && (abaAtiva === "clientes" || abaAtiva === "curva-abc") ? 1 : 0), 0),
+                  destaque: true,
+                  definicao: "Conta a busca textual e o filtro de classe ABC aplicados nesta aba.",
+                },
+              ]}
+            />
           </CardContent>
         </Card>
 
@@ -1300,6 +1312,7 @@ export function RelatoriosView({
                     vendedoresFiltrados={vendedoresFiltrados}
                     produtosPorVendedor={produtosPorVendedor}
                     notasAgrupadas={notasAgrupadasRelatorio}
+                    vendedoresEmQueda={vendedoresEmQueda}
                   />
                 )}
 

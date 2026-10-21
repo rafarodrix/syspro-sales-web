@@ -37,7 +37,7 @@ export function ConsolidacaoEmpresas({ empresas, abaAtiva }: ConsolidacaoEmpresa
               <td className="p-3 text-right font-mono font-bold">{formatarMoeda(empresa.faturamento)}</td>
               <td className="p-3 text-right font-mono">{formatarMoeda(empresa.lucroBruto)}</td>
               <td className="p-3 text-right font-mono">{empresa.coberturaCusto > 0 ? formatarPercentual(empresa.margemBruta, 1) : "—"}</td>
-              <td className="p-3 text-right"><DataBarPercent valor={formatarPercentual(empresa.percentual, 1)} percentual={empresa.percentual} cor="bg-primary/20" /></td>
+              <td className="p-3 text-right"><DataBarPercent valor={formatarPercentual(empresa.percentual, 1)} percentual={empresa.percentual} /></td>
               <td className="p-3 text-right"><Link href={`/relatorios?aba=${encodeURIComponent(abaAtiva)}&empresa=${encodeURIComponent(empresa.id)}`} title={`Analisar somente ${empresa.nome}`} className="inline-flex rounded p-1 text-muted-foreground hover:bg-muted hover:text-primary"><ExternalLink className="size-3.5" /></Link></td>
             </tr>
           ))}</tbody>

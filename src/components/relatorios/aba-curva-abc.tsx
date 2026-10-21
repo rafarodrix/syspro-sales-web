@@ -1,6 +1,6 @@
 import { ReportTable } from "./report-table";
+import { ClasseBadge } from "./ui/classe-badge";
 
-import { Badge } from "@/components/ui/badge";
 import {
   formatarMoeda,
   formatarNumero,
@@ -15,6 +15,7 @@ import type {
 import { DataBarPercent } from "./data-bar-percent";
 import { TermoExplicado } from "@/components/relatorio-guia";
 import { FiltroRelatorio } from "./filtro-relatorio";
+import { ReportBarraVisao } from "./report-barra";
 
 interface AbaCurvaABCProps {
   relatorioABC: RelatorioCurvaABC;
@@ -41,7 +42,7 @@ export function AbaCurvaABC({
 }: AbaCurvaABCProps) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <ReportBarraVisao>
         <FiltroRelatorio
           rotulo="Classificar curva por"
           valor={metrica}
@@ -50,12 +51,8 @@ export function AbaCurvaABC({
             ([valor, rotulo]) => ({ valor, rotulo }),
           )}
         />
-      </div>
+      </ReportBarraVisao>
       {/* Tabela Curva ABC */}
-      <p className="text-xs text-muted-foreground">
-        Custo de reposição, lucro bruto e margem por produto ficam em <strong>Vendas & Margem</strong>, 
-        onde aparecem antes e depois das devoluções (EDV).
-      </p>
 
       <ReportTable
         caption="Curva ABC de produtos"
@@ -69,24 +66,7 @@ export function AbaCurvaABC({
             value: (item) => item.classe,
             cell: (item) => (
               <>
-                <Badge
-                  variant={
-                    item.classe === "A"
-                      ? "default"
-                      : item.classe === "B"
-                        ? "secondary"
-                        : "outline"
-                  }
-                  className={`font-bold ${
-                    item.classe === "A"
-                      ? "bg-emerald-600 text-white"
-                      : item.classe === "B"
-                        ? "bg-blue-600 text-white"
-                        : "text-amber-700 dark:text-amber-400 border-amber-500/40"
-                  }`}
-                >
-                  {item.classe}
-                </Badge>
+                <ClasseBadge classe={item.classe} />
               </>
             ),
           },
@@ -146,14 +126,7 @@ export function AbaCurvaABC({
               <>
                 <DataBarPercent
                   valor={formatarPercentual(item.percentual, 2)}
-                  percentual={item.percentual}
-                  cor={
-                    item.classe === "A"
-                      ? "bg-emerald-500/20"
-                      : item.classe === "B"
-                        ? "bg-blue-500/20"
-                        : "bg-amber-500/20"
-                  }
+                  percentual={item.percentual} classe={item.classe}
                 />
               </>
             ),
@@ -195,6 +168,10 @@ export function AbaCurvaABC({
           {formatarPercentual(concentracaoTop10?.percentualTop ?? 0, 1)} de {ROTULOS_METRICA[metrica].toLowerCase()}
         </p>
       </div>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        Custo de reposição, lucro bruto e margem por produto ficam em <strong>Vendas &amp; Margem</strong>, 
+        onde aparecem antes e depois das devoluções (EDV).
+      </p>
     </div>
   );
 }

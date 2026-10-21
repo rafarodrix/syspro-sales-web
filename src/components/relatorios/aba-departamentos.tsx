@@ -10,7 +10,9 @@ import {
 import type { ItemDepartamentoAnalise } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
+import { ReportBarraVisao } from "./report-barra";
 import { VisaoComparativoDimensao } from "./visao-comparativo-dimensao";
+import { FiltroRelatorio } from "./filtro-relatorio";
 
 export function AbaDepartamentos({
   deptosFiltrados,
@@ -25,6 +27,22 @@ export function AbaDepartamentos({
 }) {
   const [visao, setVisao] = useState<"sintetico" | "analitico" | "comparativo">("sintetico");
   const [selecionado, setSelecionado] = useState<string | null>(null);
+  const [ordenacao, setOrdenacao] = useState<"faturamento" | "desconto" | "margem" | "produtos">("faturamento");
+  const deptosOrdenados = useMemo(() => {
+    const copia = [...deptosFiltrados];
+    switch (ordenacao) {
+      case "desconto":
+        return copia.sort((a, b) => b.descontoConcedido - a.descontoConcedido);
+      case "margem":
+        return copia.sort((a, b) => (a.margemBruta ?? 0) - (b.margemBruta ?? 0));
+      case "produtos":
+        return copia.sort((a, b) => b.quantidadeProdutosDistintos - a.quantidadeProdutosDistintos);
+      case "faturamento":
+      default:
+        return copia.sort((a, b) => b.faturamento - a.faturamento);
+    }
+  }, [deptosFiltrados, ordenacao]);
+
   const itens = useMemo(
     () =>
       deptosFiltrados.flatMap((dep) =>
@@ -54,8 +72,27 @@ export function AbaDepartamentos({
       />
   );
 
+  const barraVisao = (
+    <ReportBarraVisao>
+      {seletorVisao}
+      <FiltroRelatorio
+        rotulo="Ordenar departamentos"
+        valor={ordenacao}
+        opcoes={[
+          { valor: "faturamento", rotulo: "Maior faturamento" },
+          { valor: "desconto", rotulo: "Maior desconto" },
+          { valor: "margem", rotulo: "Menor margem" },
+          { valor: "produtos", rotulo: "Mais produtos" },
+        ]}
+        onChange={(valor) => setOrdenacao(valor as typeof ordenacao)}
+      />
+    </ReportBarraVisao>
+  );
+
   return (
     <div className="space-y-4">
+      {barraVisao}
+
       {visao === "comparativo" ? (
         <VisaoComparativoDimensao
           rotuloDimensao="Departamento"
@@ -78,7 +115,6 @@ export function AbaDepartamentos({
             </Button>
           ) : null}
           <ReportTable
-            acoes={seletorVisao}
             caption="Produtos por departamento"
             data={itensVisiveis}
             rowKey={(item) => `${item.departamento}-${item.id}`}
@@ -135,9 +171,8 @@ export function AbaDepartamentos({
         </>
       ) : visao === "sintetico" ? (
         <ReportTable
-            acoes={seletorVisao}
           caption="Resumo por departamento"
-          data={deptosFiltrados}
+          data={deptosOrdenados}
           rowKey={(dep) => dep.nome}
           columns={[
             {

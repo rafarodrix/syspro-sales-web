@@ -10,6 +10,7 @@ import {
 } from "@/lib/formatters";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
+import { ReportBarraVisao } from "./report-barra";
 import { FiltroRelatorio } from "./filtro-relatorio";
 
 type VisaoSazonalidade = "evolucao" | "dia-semana" | "quinzena";
@@ -162,7 +163,6 @@ function TabelaSazonalidade({
               <DataBarPercent
                 valor={formatarPercentual(item.percentual, 1)}
                 percentual={item.percentual}
-                cor="bg-indigo-500/20"
               />
             </>
           ),
@@ -259,7 +259,6 @@ function TabelaEvolucao({
               <DataBarPercent
                 valor={formatarPercentual(item.percentual, 1)}
                 percentual={item.percentual}
-                cor="bg-indigo-500/20"
               />
             </>
           ),
@@ -316,7 +315,7 @@ export function AbaSazonalidade({
   }
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <ReportBarraVisao>
         <ReportViewSelector
           view={visao}
           onViewChange={setVisao}
@@ -348,7 +347,7 @@ export function AbaSazonalidade({
           onChange={(valor) => setMetrica(valor as MetricaSazonalidade)}
         />
         </div>
-      </div>
+      </ReportBarraVisao>
       <ReportChart
         key={`${visao}-${granularidade}-${metrica}`}
         temporal={exibeEvolucao}

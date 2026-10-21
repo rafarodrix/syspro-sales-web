@@ -1,6 +1,7 @@
 "use client";
 
 import { isValidElement, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Columns3, Rows3 } from "lucide-react";
 import {
   TableBody,
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { ExportarVisao } from "./exportar-visao";
 import { useReportContext } from "./report-context";
 import { ReportToolbar } from "./report-toolbar";
+import { useBarraRelatorio } from "./report-barra";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
 import { formatarDataInputParaBR } from "@/lib/vendas";
 import { Button } from "@/components/ui/button";
@@ -84,6 +86,7 @@ export function ReportTable<T>({
   acoes?: ReactNode;
 }) {
   const report = useReportContext();
+  const barra = useBarraRelatorio();
   const [sort, setSort] = useState<{ id: string; descending: boolean } | null>(
     null,
   );
@@ -180,7 +183,7 @@ export function ReportTable<T>({
   }
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      {(showExport && report && visibleColumns.every((column) => column.value)) || report ? (
+      {(() => { const conteudo = (
         <ReportToolbar acoes={acoes}>
           {showExport && report && visibleColumns.every((column) => column.value) ? <ExportarVisao
             titulo={`${report.titulo} - ${caption ?? headerText(columns[0]?.header)}`}
@@ -240,7 +243,7 @@ export function ReportTable<T>({
             </Button>
           </> : null}
         </ReportToolbar>
-      ) : null}
+        ); return barra?.slot ? createPortal(conteudo, barra.slot) : conteudo; })()}
       <ReportTableFrame label={caption ?? `Tabela de ${label}`}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <TableHeader className="bg-background">

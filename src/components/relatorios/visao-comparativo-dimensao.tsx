@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ReportTable } from "./report-table";
 import { FiltroRelatorio } from "./filtro-relatorio";
 import { Badge } from "@/components/ui/badge";
+import { Tendencia } from "./ui/tendencia";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import {
@@ -12,7 +13,6 @@ import {
   resumirComparativo,
   ORDENACOES_COMPARATIVO,
   type ItemDimensaoFaturamento,
-  type LinhaComparativoDimensao,
   type OrdenacaoComparativo,
 } from "@/lib/comparativo-dimensao";
 
@@ -27,29 +27,6 @@ interface VisaoComparativoDimensaoProps {
    * período anterior consultado, em vez de mostrar uma tabela vazia.
    */
   comparacaoDisponivel: boolean;
-}
-
-function BadgeVariacaoDimensao({ linha }: { linha: LinhaComparativoDimensao }) {
-  if (linha.novo) {
-    return <Badge variant="secondary">Novo</Badge>;
-  }
-  if (linha.variacaoValor === 0) {
-    return <span className="font-mono text-xs text-muted-foreground">estável</span>;
-  }
-  const positivo = linha.variacaoValor > 0;
-  return (
-    <span
-      className={`font-mono text-xs font-semibold ${
-        positivo ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
-      }`}
-    >
-      {positivo ? "+" : ""}
-      {formatarMoeda(linha.variacaoValor)}
-      {linha.variacaoPercentual === null
-        ? ""
-        : ` (${positivo ? "+" : ""}${formatarPercentual(linha.variacaoPercentual, 1)})`}
-    </span>
-  );
 }
 
 /**
@@ -177,7 +154,13 @@ export function VisaoComparativoDimensao({
             header: <>Variação</>,
             kind: "currency",
             value: (linha) => linha.variacaoValor,
-            cell: (linha) => <BadgeVariacaoDimensao linha={linha} />,
+            cell: (linha) => (
+              <Tendencia
+                valor={linha.variacaoValor}
+                percentual={linha.variacaoPercentual}
+                novo={linha.novo}
+              />
+            ),
           },
           {
             id: "participacaoAtual",

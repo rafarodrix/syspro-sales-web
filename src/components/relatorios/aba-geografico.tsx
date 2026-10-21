@@ -16,6 +16,7 @@ import type {
 } from "@/lib/vendas";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
+import { ReportBarraVisao } from "./report-barra";
 import { VisaoComparativoDimensao } from "./visao-comparativo-dimensao";
 
 export function AbaGeografico({
@@ -64,8 +65,14 @@ export function AbaGeografico({
       />
   );
 
+  const barraVisao = (
+    <ReportBarraVisao>{seletorVisao}</ReportBarraVisao>
+  );
+
   return (
     <div className="space-y-4">
+      {barraVisao}
+
       {visao === "comparativo" ? (
         <VisaoComparativoDimensao
           rotuloDimensao="UF"
@@ -88,7 +95,6 @@ export function AbaGeografico({
         />
       ) : visao === "uf" ? (
         <ReportTable
-            acoes={seletorVisao}
           caption="Resumo por UF"
           data={ufsFiltradas}
           rowKey={(item) => item.uf}
@@ -197,7 +203,6 @@ export function AbaGeografico({
             </Button>
           ) : null}
           <ReportTable
-            acoes={seletorVisao}
             data={cidades}
             rowKey={(cidade) => `${cidade.cidade}-${cidade.uf}`}
             columns={[

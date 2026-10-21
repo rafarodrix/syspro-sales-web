@@ -11,6 +11,7 @@ import {
 import type { ItemClienteAnalise, VendaAgrupada } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
+import { ReportBarraVisao } from "./report-barra";
 import { DetalhamentoClientes } from "./detalhamento-clientes";
 import type { Periodo } from "@/lib/periodo";
 import { formatarDataInputParaBR } from "@/lib/vendas";
@@ -127,8 +128,14 @@ export function AbaClientes({
     />
   );
 
+  const barraVisao = (
+    <ReportBarraVisao>{seletorVisao}</ReportBarraVisao>
+  );
+
   return (
     <div className="flex flex-col gap-4">
+      {barraVisao}
+
       <p className="text-xs text-muted-foreground">
         Identificação por nome, sujeita a homônimos. Consumidor genérico não
         entra na frequência.
@@ -152,7 +159,6 @@ export function AbaClientes({
             />          </div>
           {/* Ranking de clientes no padrão único de relatórios */}
           <ReportTable
-            acoes={seletorVisao}
             data={clientesOrdenados}
             rowKey={(cli) => cli.nome}
             label="clientes"
