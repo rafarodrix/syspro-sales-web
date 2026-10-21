@@ -102,6 +102,17 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 ## Cache de consulta pesada
 - Aba que dispara consulta custosa ao montar (ex.: **Vendas & Margem**, que roda vendas + Kardex sem saldo) precisa de cache em memória por `empresa+período` com TTL e botão **Atualizar**. Sem isso, cada troca de visão refaz a consulta e a tela pisca por dezenas de segundos. Implementação: `Map` no módulo + estado derivado durante o render (evita `setState` dentro de `useEffect`, que o lint bloqueia).
 
+## `ReportTable` é a tabela única do app
+Capacidades da `src/components/relatorios/report-table.tsx` — use antes de montar `<Table>` na mão:
+- ordenação por clique no cabeçalho (`value`), paginação interna, empty state;
+- `acoes` (controles à esquerda da barra), `acoesExtras` (ações próprias à direita, ex. `ExportDropdown` com CSV pt-BR), `showExport={false}` quando o formato de exportação é customizado;
+- `rodape={(linhas) => <TableRow>…</TableRow>}` para linha de totais — recebe o conjunto **filtrado completo**, não apenas a página;
+- `renderDetalhe={(row) => Node}` para linha expansível (usada por nota em Vendas).
+Sem `ReportProvider` (contexto do relatório) as ações de colunas/densidade não renderizam — em telas fora de `/relatorios` só a exportação aparece: comportamento esperado.
+
+**Migrados:** Compras (21 colunas + totais + export Excel próprio) e Estoque → Posição por produto.
+**Falta migrar:** `/vendas` (tabela de notas com expansão de itens) e as outras 4 tabelas do Estoque (fila de atenção, Kardex detalhado, devoluções, transferências) — a base técnica (`renderDetalhe`, `acoesExtras`) já está pronta.
+
 ## Fluxo de dados (segurança)
 ```
 Usuário loga → seleciona CNPJ autorizado → Next identifica empresa_codigo
