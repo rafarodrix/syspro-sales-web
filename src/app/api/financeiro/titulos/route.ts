@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
             error:
               `A rota de ${ROTULOS[categoria]} ainda não está autorizada no SysproServer ` +
               `(HTTP 401 "Authorization not found"). Peça a liberação da rota ` +
-              `\`${categoria === "pagar" ? "titulo/pagar" : "receber"}\` para esta instalação.`,
+              `\`${categoria === "pagar" ? "titulo/pagar" : "titulo/receber"}\` para esta instalação.`,
             rotaNaoAutorizada: true,
           },
           { status: 503 },

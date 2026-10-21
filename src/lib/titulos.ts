@@ -6,7 +6,7 @@
  * titulo_dt_vencimento, titulo_dt_baixa, titulo_valor, titulo_acrescimo,
  * titulo_desconto, titulo_vlr_pago, titulo_forma_pagto.
  *
- * A rota `receber` ainda não está autorizada no SysproServer; o normalizador é
+ * A rota `titulo/receber` retorna os títulos a receber do Syspro. Os campos são homólogos aos de `titulo/pagar`, exceto que o participante é o `cliente_nome`. o normalizador é
  * tolerante ao nome do participante para funcionar quando liberarem.
  */
 

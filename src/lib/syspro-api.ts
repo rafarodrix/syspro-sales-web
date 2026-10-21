@@ -339,7 +339,7 @@ export async function consultarTitulosReceber(
   range: SysproDateRange,
   signal?: AbortSignal,
 ): Promise<Titulo[]> {
-  return request<Titulo>(config, "receber", range, signal);
+  return request<Titulo>(config, "titulo/receber", range, signal);
 }
 
 export async function consultarTransporte(
