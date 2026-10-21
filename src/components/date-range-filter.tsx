@@ -127,7 +127,7 @@ export function DateRangeFilter({
                 size="sm"
                 type="button"
                 variant={ativo ? "secondary" : "ghost"}
-                className={`h-8 px-2.5 text-xs font-semibold ${
+                className={`h-8 px-2 text-[11px] font-semibold sm:text-xs ${
                   ativo
                     ? "bg-background font-bold text-foreground shadow-2xs"
                     : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
