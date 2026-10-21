@@ -156,9 +156,6 @@ export function montarSaudeEstoque(
     const dataMovimento = normalizarDataIso(movimento.dataMovimento);
     const dataUltimo = normalizarDataIso(atual.ultimoMovimento ?? "");
 
-    if (movimento.classificacao.categoria === "venda" && movimento.direcao === "saida") {
-      atual.quantidadeVendida += quantidade;
-    }
     if (movimento.classificacao.categoria === "devolucao_venda") {
       atual.quantidadeDevolvida += quantidade;
       atual.devolucoesVendaValor += Math.abs(movimento.valorTotal);
@@ -185,6 +182,9 @@ export function montarSaudeEstoque(
     const quantidade = Math.abs(paraNumero(venda.produto_qtde));
     const custoAquisicao = paraNumero(venda.produto_vlr_custo_aquisicao);
     const custoReposicao = paraNumero(venda.produto_vlr_custo_reposicao);
+    // Quantidade vendida vem da rota produto/venda (EVP/EVD), não do Kardex:
+    // o Kardex repete linhas de movimento e infla a quantidade; ENP é reemissão fiscal e não conta.
+    atual.quantidadeVendida += quantidade;
     atual.valorVendido += Math.abs(valorLiquidoItem(venda));
     if (custoAquisicao > 0 && quantidade > 0) {
       atual.totalCustoAquisicao += custoAquisicao * quantidade;

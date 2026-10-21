@@ -44,6 +44,8 @@ No relatório de Compras, o vínculo venda↔Kardex usa exclusivamente o ID do p
 
 Devoluções de venda são movimentos `EDV` do Kardex e devem reduzir quantidade e valor vendido. `EDC` representa devolução de compra e não deve ser abatido das vendas. Não presuma que `produto/venda` contenha EDV; na Mundial essa rota retorna vendas EVP, enquanto EDV está no Kardex.
 
+**Regra de ouro das vendas:** só `EVP` (cupom/PDV) e `EVD` (venda direta) contam como venda. `ENP` é a **emissão da NF-e de uma venda que já foi registrada** (cliente pede a nota depois do cupom) e **não entra em relatório de vendas** — contá-la duplica receita e quantidade. No app ela é classificada como categoria `fiscal` ("Emissão fiscal de venda (NF-e)") só para aparecer no Kardex, nunca somando venda.
+
 ## Descobrir a configuração do cliente
 1. `appcmd list sites` (Windows/IIS) mostra o site (ex.: site "Syspro", porta 1234, physicalPath `C:\Syspro\Server` com `SysproServer.exe`/`SysproServerISAPI.dll`).
 2. Testar os dois prefixos e ver qual responde 200.
