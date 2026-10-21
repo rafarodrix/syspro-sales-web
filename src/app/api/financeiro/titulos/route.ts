@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { aplicarLimite, autenticarApi, buscarEmpresaAutorizada, validarJson } from "@/lib/api-route";
 import { consultarTitulosPagar, consultarTitulosReceber, SysproApiError } from "@/lib/syspro-api";
 import { normalizarTitulo, resumirTitulos, type CategoriaTitulo } from "@/lib/titulos";
-import { vendasQuerySchema } from "@/lib/validations";
+
 import { z } from "zod";
 
 const corpoSchema = z.object({

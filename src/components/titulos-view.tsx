@@ -92,17 +92,51 @@ export function TitulosView({
   const itens = useMemo(() => dados?.itens ?? [], [dados]);
   const aging = useMemo(() => faixasAging(itens), [itens]);
   const [somenteVencidos, setSomenteVencidos] = useState(false);
+  const [faixa, setFaixa] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
+
+  // Compromisso da semana: o número que o financeiro abre a tela para ver.
+  const proximos7 = useMemo(() => {
+    const limite = new Date();
+    limite.setUTCDate(limite.getUTCDate() + 7);
+    const iso = limite.toISOString().slice(0, 10);
+    const hojeIso = new Date().toISOString().slice(0, 10);
+    return itens
+      .filter((item) => item.situacao !== "pago" && item.vencimento && item.vencimento >= hojeIso && item.vencimento <= iso)
+      .reduce((acc, item) => ({ valor: acc.valor + item.saldo, quantidade: acc.quantidade + 1 }), { valor: 0, quantidade: 0 });
+  }, [itens]);
+
+  // Quem mais pesa no saldo em aberto.
+  const topParticipantes = useMemo(() => {
+    const mapa = new Map<string, number>();
+    for (const item of itens) {
+      if (item.situacao === "pago") continue;
+      mapa.set(item.participante, (mapa.get(item.participante) ?? 0) + item.saldo);
+    }
+    return [...mapa.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [itens]);
 
   const itensVisiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return itens.filter((item) => {
       if (somenteVencidos && item.situacao !== "vencido") return false;
+      if (faixa) {
+        const dias = item.diasAtraso;
+        const emFaixa =
+          faixa === "A vencer"
+            ? item.situacao === "aberto"
+            : item.situacao === "vencido" &&
+              (faixa === "0 a 30 dias" ? dias <= 30
+                : faixa === "31 a 60 dias" ? dias > 30 && dias <= 60
+                  : faixa === "61 a 90 dias" ? dias > 60 && dias <= 90
+                    : dias > 90);
+        if (!emFaixa) return false;
+      }
       if (!termo) return true;
       return [item.participante, item.numero, item.formaPagto ?? ""]
         .some((valor) => String(valor).toLowerCase().includes(termo));
     });
-  }, [busca, itens, somenteVencidos]);
+  }, [busca, faixa, itens, somenteVencidos]);
 
   function exportar() {
     if (!itens.length) {
@@ -211,6 +245,13 @@ export function TitulosView({
           <MetricsStrip
             itens={[
               {
+                rotulo: "Vence em 7 dias",
+                valor: formatarMoeda(proximos7.valor),
+                detalhe: `${formatarNumero(proximos7.quantidade, 0)} título(s)`,
+                attention: proximos7.valor > 0,
+                definicao: "Saldo em aberto com vencimento entre hoje e os próximos 7 dias.",
+              },
+              {
                 rotulo: "Títulos",
                 valor: formatarNumero(dados.resumo.quantidade, 0),
                 detalhe: `${formatarNumero(dados.resumo.participantes, 0)} participante(s)`,
@@ -248,16 +289,47 @@ export function TitulosView({
             ]}
           />
 
-          <MetricsStrip
-            itens={aging.map((faixa) => ({
-              rotulo: faixa.rotulo,
-              valor: formatarMoeda(faixa.valor),
-              detalhe: `${formatarNumero(faixa.quantidade, 0)} título(s)`,
-              attention: faixa.rotulo !== "A vencer" && faixa.valor > 0,
-              definicao:
-                "Saldo em aberto agrupado por faixa de atraso em relação ao vencimento.",
-            }))}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={faixa === null ? "default" : "outline"}
+              className="h-8 text-xs"
+              onClick={() => setFaixa(null)}
+            >
+              Todas as faixas
+            </Button>
+            {aging.map((faixaItem) => (
+              <Button
+                key={faixaItem.rotulo}
+                type="button"
+                size="sm"
+                variant={faixa === faixaItem.rotulo ? "default" : "outline"}
+                className="h-8 gap-2 text-xs"
+                title={`${faixaItem.quantidade} título(s) · clique para filtrar a tabela`}
+                onClick={() => setFaixa((atual) => (atual === faixaItem.rotulo ? null : faixaItem.rotulo))}
+              >
+                <span>{faixaItem.rotulo}</span>
+                <span className="font-mono font-bold">{formatarMoeda(faixaItem.valor)}</span>
+              </Button>
+            ))}
+          </div>
+
+          {topParticipantes.length ? (
+            <div className="rounded-lg bg-muted/25 p-3">
+              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                Maiores saldos em aberto
+              </p>
+              <ul className="grid gap-1 sm:grid-cols-2 xl:grid-cols-5">
+                {topParticipantes.map(([nome, valor]) => (
+                  <li key={nome} className="flex min-w-0 flex-col">
+                    <span className="truncate text-xs font-medium text-foreground" title={nome}>{nome}</span>
+                    <span className="font-mono text-xs font-semibold tabular-nums">{formatarMoeda(valor)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap items-center gap-2">
             <DataFilterBar
