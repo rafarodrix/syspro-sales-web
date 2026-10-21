@@ -95,9 +95,9 @@ export function DateRangeFilter({
   const presets: { label: string; value: Periodo }[] = [
     { label: "Hoje", value: periodoHoje() },
     { label: "Ontem", value: periodoOntem() },
-    { label: "Últimos 7 dias", value: periodoUltimos7Dias() },
+    { label: "7 dias", value: periodoUltimos7Dias() },
     { label: "Este mês", value: periodoMesAtual() },
-    { label: "Mês anterior", value: periodoMesAnterior() },
+    { label: "Mês ant.", value: periodoMesAnterior() },
     { label: "30 dias", value: periodoUltimos30Dias() },
     { label: "90 dias", value: periodoUltimos90Dias() },
   ].filter((preset) => {
