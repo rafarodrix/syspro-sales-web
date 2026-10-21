@@ -187,6 +187,7 @@ export function ReportTable<T>({
         <ReportToolbar acoes={acoes}>
           {showExport && report && visibleColumns.every((column) => column.value) ? <ExportarVisao
             titulo={`${report.titulo} - ${caption ?? headerText(columns[0]?.header)}`}
+            rotulo="Exportar"
             contexto={report.contexto}
             colunas={visibleColumns.map((column) => headerText(column.header))}
             observacoes={exportObservacoes}
@@ -211,7 +212,7 @@ export function ReportTable<T>({
           {report ? <>
             <details className="relative">
               <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border px-3 text-xs font-medium hover:bg-muted">
-                <Columns3 className="size-3.5" /> Colunas
+                <Columns3 className="size-3.5" /> <span className="hidden lg:inline">Colunas</span>
               </summary>
               <div className="absolute right-0 z-30 mt-1 min-w-56 space-y-1 rounded-md border bg-popover p-2 shadow-md">
                 {columns.map((column) => {
@@ -239,7 +240,7 @@ export function ReportTable<T>({
               onClick={() => setDensity((atual) => atual === "compacta" ? "confortavel" : "compacta")}
               title="Alternar densidade da tabela"
             >
-              <Rows3 className="size-3.5" /> {density === "compacta" ? "Compacta" : "Confortável"}
+              <Rows3 className="size-3.5" /> <span className="hidden xl:inline">{density === "compacta" ? "Compacta" : "Confortável"}</span>
             </Button>
           </> : null}
         </ReportToolbar>

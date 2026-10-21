@@ -13,6 +13,8 @@ interface Props {
   colunas: string[];
   linhas: (string | number)[][];
   observacoes?: string;
+  /** Rótulo curto para caber na barra em uma linha. */
+  rotulo?: string;
 }
 
 /** Recebe a coleção filtrada completa, independentemente da página da tabela. */
@@ -22,6 +24,7 @@ export function ExportarVisao({
   colunas,
   linhas,
   observacoes,
+  rotulo = "Exportar esta visão",
 }: Props) {
   async function pdf(modo: "download" | "imprimir") {
     try {
@@ -40,7 +43,7 @@ export function ExportarVisao({
   }
   return (
     <ExportDropdown
-      label="Exportar esta visão"
+      label={rotulo}
       disabled={linhas.length === 0}
       onExportarCsv={() => {
         exportarParaCSV(
