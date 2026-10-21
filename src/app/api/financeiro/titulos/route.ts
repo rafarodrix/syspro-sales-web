@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aplicarLimite, autenticarApi, buscarEmpresaAutorizada, validarJson } from "@/lib/api-route";
 import { consultarTitulosPagar, consultarTitulosReceber, SysproApiError } from "@/lib/syspro-api";
+import { consultarSysproAdaptativamente } from "@/lib/syspro-consulta-adaptativa";
+import { normalizarDataIso } from "@/lib/periodo";
 import { normalizarTitulo, resumirTitulos, type CategoriaTitulo } from "@/lib/titulos";
 
 import { z } from "zod";
@@ -80,7 +82,19 @@ export async function POST(request: NextRequest) {
 
     let brutos: unknown[];
     try {
-      brutos = (await consultar(config, range, request.signal)) as unknown[];
+      const consultarParte = async (parte: { inicial: string; final: string }) => {
+        return (await consultar(
+          config,
+          { dtInicial: parte.inicial, dtFinal: parte.final },
+          request.signal,
+        )) as unknown[];
+      };
+      // Converte do formato Syspro (DD/MM/AAAA) para ISO antes de dividir.
+      const janelaIso = {
+        inicial: normalizarDataIso(dtInicial),
+        final: normalizarDataIso(dtFinal),
+      };
+      brutos = await consultarSysproAdaptativamente(janelaIso, consultarParte);
     } catch (erro) {
       if (erro instanceof Error && erro.name === "AbortError") {
         return NextResponse.json(
