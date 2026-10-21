@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BadgeDollarSign,
   CalendarDays,
   CreditCard,
   Layers,
@@ -14,6 +15,7 @@ export interface ReportDefinition {
   id:
     | "curva-abc"
     | "clientes"
+    | "margens"
     | "descontos"
     | "sazonalidade"
     | "departamentos"
@@ -43,6 +45,14 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     icone: UserCheck,
     cor: "text-emerald-500",
     desc: "Recorrência, concentração e Pareto da base de clientes",
+  },
+  {
+    id: "margens",
+    label: "Vendas & Margem",
+    menuLabel: "Vendas & Margem",
+    icone: BadgeDollarSign,
+    cor: "text-emerald-600",
+    desc: "Margem por produto, custo de reposição e impacto das EDVs",
   },
   {
     id: "descontos",

@@ -222,7 +222,9 @@ export function montarRelatorioCompras(
     item.custoReposicaoMedio = item.quantidadeComCustoReposicao > 0
       ? item.totalCustoReposicao / item.quantidadeComCustoReposicao
       : null;
-    const custoUnitario = item.custoReposicaoMedio ?? item.custoAquisicaoMedio ?? null;
+    // Margem comercial usa exclusivamente o custo de reposição. O custo de
+    // aquisição é mantido apenas para análises de compras/fornecedores.
+    const custoUnitario = item.custoReposicaoMedio;
     item.custoTotalMercadorias = custoUnitario === null
       ? null
       : custoUnitario * item.quantidadeLiquidaReal;

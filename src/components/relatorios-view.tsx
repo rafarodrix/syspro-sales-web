@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ReportContext } from "./relatorios/report-context";
 import { useRouter } from "next/navigation";
 import { FiltroRelatorio } from "./relatorios/filtro-relatorio";
@@ -15,6 +15,7 @@ import {
   MapPin,
   CreditCard,
   CalendarDays,
+  Star,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
 import {
@@ -97,6 +98,7 @@ import {
 } from "@/lib/periodo-comparacao";
 import { ComparacaoPeriodo } from "./relatorios/comparacao-periodo";
 import { ReportDiagnostics } from "./relatorios/report-diagnostics";
+import { AbaMargens } from "./relatorios/aba-margens";
 
 interface EmpresaOption {
   id: string;
@@ -116,6 +118,11 @@ interface Props {
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialComparacaoDisponivel?: boolean;
   initialError?: string;
+  userId: string;
+  buscaInicial?: string;
+  classeInicial?: string;
+  metricaInicial?: string;
+  margemInicial?: string;
 }
 
 const relatoriosOpcoes = REPORT_DEFINITIONS;
@@ -139,6 +146,11 @@ export function RelatoriosView({
   initialVendasAnteriores = [],
   initialComparacaoDisponivel = true,
   initialError,
+  userId,
+  buscaInicial = "",
+  classeInicial,
+  metricaInicial,
+  margemInicial,
 }: Props) {
   const [empresaId] = useState(() =>
     resolverEmpresaSelecionada(empresaInicial, empresas),
@@ -174,6 +186,7 @@ export function RelatoriosView({
     vendas,
     vendasAnteriores,
     comparacaoDisponivel,
+    consultadoEm,
     erro,
     loading,
     consultar: consultarVendas,
@@ -184,6 +197,15 @@ export function RelatoriosView({
     initialComparacaoDisponivel,
   );
   const [abaAtiva] = useState(abaInicial || "curva-abc");
+  const [visaoFavorita, setVisaoFavorita] = useState(false);
+  const favoriteKey = `syspro:favorite-report:${userId}:${abaAtiva}`;
+  useEffect(() => {
+    let ativo = true;
+    queueMicrotask(() => {
+      if (ativo) setVisaoFavorita(localStorage.getItem(favoriteKey) === "1");
+    });
+    return () => { ativo = false; };
+  }, [favoriteKey]);
   const vendasClientes = useMemo(
     () => (abaAtiva === "clientes" ? normalizarClientes(vendas) : []),
     [vendas, abaAtiva],
@@ -310,15 +332,31 @@ export function RelatoriosView({
   );
 
   // Filtros internos
-  const [busca, setBusca] = useState("");
+  const [busca, setBusca] = useState(buscaInicial);
   const [filtroClasseAbc, setFiltroClasseAbc] = useState<
     "todas" | "A" | "B" | "C"
-  >("todas");
+  >(["A", "B", "C"].includes(classeInicial ?? "") ? classeInicial as "A" | "B" | "C" : "todas");
   const [filtroClasseCli, setFiltroClasseCli] = useState<
     "todas" | "A" | "B" | "C"
-  >("todas");
+  >(["A", "B", "C"].includes(classeInicial ?? "") ? classeInicial as "A" | "B" | "C" : "todas");
   const [metricaCurvaABC, setMetricaCurvaABC] =
-    useState<MetricaCurvaABC>("faturamento");
+    useState<MetricaCurvaABC>(
+      ["faturamento", "lucro", "quantidade", "custo"].includes(metricaInicial ?? "")
+        ? metricaInicial as MetricaCurvaABC
+        : "faturamento",
+    );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (busca.trim()) params.set("busca", busca.trim());
+    else params.delete("busca");
+    const classe = abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc;
+    if ((abaAtiva === "clientes" || abaAtiva === "curva-abc") && classe !== "todas") params.set("classe", classe);
+    else params.delete("classe");
+    if (abaAtiva === "curva-abc" && metricaCurvaABC !== "faturamento") params.set("metrica", metricaCurvaABC);
+    else params.delete("metrica");
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  }, [abaAtiva, busca, filtroClasseAbc, filtroClasseCli, metricaCurvaABC]);
 
   const empresaAtual = useMemo(
     () => empresas.find((e) => e.id === empresaId),
@@ -937,6 +975,7 @@ export function RelatoriosView({
     <ReportContext.Provider
       value={{
         titulo: relatorioAtivo?.label ?? "Relatório",
+        preferenceScope: `${userId}:${abaAtiva}`,
         contexto: {
           empresaNome: rotuloEmpresa,
           cnpj: modoConsolidado ? undefined : empresaAtual?.cnpj,
@@ -1003,6 +1042,9 @@ export function RelatoriosView({
                     {rotuloPeriodoAnterior
                       ? ` · vs. ${rotuloPeriodoAnterior}`
                       : ""}
+                    {consultadoEm
+                      ? ` · Atualizado às ${consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                      : ""}
                   </CardDescription>
                 </div>
                 {modoConsolidado && (
@@ -1014,6 +1056,23 @@ export function RelatoriosView({
                   </Badge>
                 )}
               </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="no-print h-9 text-xs"
+                aria-pressed={visaoFavorita}
+                onClick={() => {
+                  const proximo = !visaoFavorita;
+                  setVisaoFavorita(proximo);
+                  if (proximo) localStorage.setItem(favoriteKey, "1");
+                  else localStorage.removeItem(favoriteKey);
+                  toast.success(proximo ? "Visão adicionada aos favoritos." : "Visão removida dos favoritos.");
+                }}
+              >
+                <Star className={`size-3.5 ${visaoFavorita ? "fill-current text-amber-500" : ""}`} />
+                {visaoFavorita ? "Favorita" : "Favoritar visão"}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-3 border-t border-border/60 pt-4">
@@ -1094,6 +1153,14 @@ export function RelatoriosView({
                 ) : null}
               </DataFilterBar>
             ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground" role="status">
+              <span>
+                Universo: {formatarNumero(vendas.length, 0)} item(ns) de venda · {modoConsolidado ? `${empresasSelecionadas.length} empresas` : rotuloEmpresa}
+              </span>
+              <span>
+                Filtros ativos: {formatarNumero((busca.trim() ? 1 : 0) + ((abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc) !== "todas" && (abaAtiva === "clientes" || abaAtiva === "curva-abc") ? 1 : 0), 0)}
+              </span>
+            </div>
           </CardContent>
         </Card>
 
@@ -1114,7 +1181,7 @@ export function RelatoriosView({
                 <Skeleton className="h-12 w-full rounded-lg" />
                 <Skeleton className="h-48 w-full rounded-lg" />
               </div>
-            ) : vendas.length === 0 &&
+            ) : abaAtiva !== "margens" && vendas.length === 0 &&
               !(
                 abaAtiva === "clientes" &&
                 comparacaoDisponivel &&
@@ -1130,7 +1197,7 @@ export function RelatoriosView({
             ) : (
               <>
                 {/* Panorama do período: variações vs. período anterior (métricas explicadas) */}
-                {variacoesPeriodo && (
+                {abaAtiva !== "margens" && variacoesPeriodo && (
                   <PanoramaPeriodo
                     variacoes={variacoesPeriodo}
                     rotuloPeriodoAnterior={rotuloPeriodoAnterior}
@@ -1140,7 +1207,7 @@ export function RelatoriosView({
                   />
                 )}
 
-                {diagnosticoRelatorio}
+                {abaAtiva !== "margens" ? diagnosticoRelatorio : null}
 
                 {modoConsolidado && consolidacaoEmpresas.length > 1 ? (
                   <ConsolidacaoEmpresas
@@ -1195,6 +1262,16 @@ export function RelatoriosView({
 
                 {abaAtiva === "descontos" && (
                   <AbaDescontos relatorioDescontos={relatorioDescontos} />
+                )}
+
+                {abaAtiva === "margens" && (
+                  <AbaMargens
+                    empresaId={empresaId}
+                    periodo={periodoConsultado}
+                    busca={busca}
+                    onBuscaChange={setBusca}
+                    situacaoInicial={margemInicial}
+                  />
                 )}
 
                 {abaAtiva === "sazonalidade" && (

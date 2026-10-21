@@ -1,0 +1,144 @@
+import type { ItemRelatorioCompras, RelatorioCompras } from "@/lib/relatorio-compras";
+import { calcularPercentual } from "@/lib/metricas-negocio";
+
+export interface ItemAnaliseMargem extends ItemRelatorioCompras {
+  empresaId: string;
+  empresaNome: string;
+  custoAntesEdv: number | null;
+  lucroAntesEdv: number | null;
+  margemAntesEdv: number | null;
+  custoDepoisEdv: number | null;
+  lucroDepoisEdv: number | null;
+  margemDepoisEdv: number | null;
+  impactoLucroEdv: number | null;
+}
+
+export interface ResumoAnaliseMargens {
+  faturamentoAntesEdv: number;
+  devolucoesEdv: number;
+  faturamentoDepoisEdv: number;
+  faturamentoComCustoAntesEdv: number;
+  faturamentoComCustoDepoisEdv: number;
+  faturamentoSemCusto: number;
+  custoAntesEdv: number;
+  custoDepoisEdv: number;
+  lucroAntesEdv: number;
+  lucroDepoisEdv: number;
+  margemAntesEdv: number;
+  margemDepoisEdv: number;
+  impactoLucroEdv: number;
+  coberturaCusto: number;
+  produtosMargemNegativa: number;
+  produtosMargemBaixa: number;
+}
+
+export interface AnaliseMargens {
+  itens: ItemAnaliseMargem[];
+  resumo: ResumoAnaliseMargens;
+  consultadoEm: string;
+}
+
+export function montarAnaliseMargens(
+  relatorios: Array<{ empresaId: string; empresaNome: string; relatorio: RelatorioCompras }>,
+  margemBaixaAbaixoDe = 20,
+): AnaliseMargens {
+  const itens = relatorios.flatMap(({ empresaId, empresaNome, relatorio }) =>
+    relatorio.itens.map((item): ItemAnaliseMargem => {
+      const custoUnitario = item.custoReposicaoMedio ?? null;
+      const custoAntesEdv = custoUnitario === null
+        ? null
+        : custoUnitario * item.quantidadeVendida;
+      const custoDepoisEdv = custoUnitario === null
+        ? null
+        : custoUnitario * item.quantidadeLiquidaReal;
+      const lucroAntesEdv = custoAntesEdv === null
+        ? null
+        : item.valorVendido - custoAntesEdv;
+      const lucroDepoisEdv = custoDepoisEdv === null
+        ? null
+        : item.valorVendaLiquida - custoDepoisEdv;
+      const margemAntesEdv = lucroAntesEdv === null || item.valorVendido <= 0
+        ? null
+        : calcularPercentual(lucroAntesEdv, item.valorVendido);
+      const margemDepoisEdv = lucroDepoisEdv === null || item.valorVendaLiquida <= 0
+        ? null
+        : calcularPercentual(lucroDepoisEdv, item.valorVendaLiquida);
+
+      return {
+        ...item,
+        empresaId,
+        empresaNome,
+        custoAntesEdv,
+        lucroAntesEdv,
+        margemAntesEdv,
+        custoDepoisEdv,
+        lucroDepoisEdv,
+        margemDepoisEdv,
+        impactoLucroEdv:
+          lucroAntesEdv === null || lucroDepoisEdv === null
+            ? null
+            : lucroDepoisEdv - lucroAntesEdv,
+      };
+    }),
+  );
+
+  let faturamentoAntesEdv = 0;
+  let devolucoesEdv = 0;
+  let faturamentoDepoisEdv = 0;
+  let faturamentoComCustoAntesEdv = 0;
+  let faturamentoComCustoDepoisEdv = 0;
+  let faturamentoSemCusto = 0;
+  let custoAntesEdv = 0;
+  let custoDepoisEdv = 0;
+  let lucroAntesEdv = 0;
+  let lucroDepoisEdv = 0;
+
+  for (const item of itens) {
+    faturamentoAntesEdv += item.valorVendido;
+    devolucoesEdv += item.valorDevolvido;
+    faturamentoDepoisEdv += item.valorVendaLiquida;
+    if (item.custoReposicaoMedio == null) {
+      faturamentoSemCusto += item.valorVendaLiquida;
+      continue;
+    }
+    faturamentoComCustoAntesEdv += item.valorVendido;
+    faturamentoComCustoDepoisEdv += item.valorVendaLiquida;
+    custoAntesEdv += item.custoAntesEdv ?? 0;
+    custoDepoisEdv += item.custoDepoisEdv ?? 0;
+    lucroAntesEdv += item.lucroAntesEdv ?? 0;
+    lucroDepoisEdv += item.lucroDepoisEdv ?? 0;
+  }
+
+  return {
+    itens: itens.sort((a, b) => b.valorVendido - a.valorVendido),
+    resumo: {
+      faturamentoAntesEdv,
+      devolucoesEdv,
+      faturamentoDepoisEdv,
+      faturamentoComCustoAntesEdv,
+      faturamentoComCustoDepoisEdv,
+      faturamentoSemCusto,
+      custoAntesEdv,
+      custoDepoisEdv,
+      lucroAntesEdv,
+      lucroDepoisEdv,
+      margemAntesEdv: calcularPercentual(lucroAntesEdv, faturamentoComCustoAntesEdv),
+      margemDepoisEdv: calcularPercentual(lucroDepoisEdv, faturamentoComCustoDepoisEdv),
+      impactoLucroEdv: lucroDepoisEdv - lucroAntesEdv,
+      coberturaCusto: calcularPercentual(
+        faturamentoComCustoDepoisEdv,
+        faturamentoDepoisEdv,
+      ),
+      produtosMargemNegativa: itens.filter(
+        (item) => item.margemDepoisEdv !== null && item.margemDepoisEdv < 0,
+      ).length,
+      produtosMargemBaixa: itens.filter(
+        (item) =>
+          item.margemDepoisEdv !== null &&
+          item.margemDepoisEdv >= 0 &&
+          item.margemDepoisEdv < margemBaixaAbaixoDe,
+      ).length,
+    },
+    consultadoEm: new Date().toISOString(),
+  };
+}

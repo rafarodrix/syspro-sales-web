@@ -22,6 +22,9 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
   const [erro, setErro] = useState<string | null>(initialError ?? null);
   const [loading, setLoading] = useState(false);
   const [comparacaoDisponivel, setComparacaoDisponivel] = useState(initialComparacaoDisponivel);
+  const [consultadoEm, setConsultadoEm] = useState<Date | null>(() =>
+    initialVendas.length > 0 ? new Date() : null,
+  );
   const consultaId = useRef(0);
   const abortController = useRef<AbortController | null>(null);
 
@@ -57,6 +60,7 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
       setVendas(dadosAtuais);
       setVendasAnteriores(comparacao.dados);
       setComparacaoDisponivel(comparacao.disponivel);
+      setConsultadoEm(new Date());
       salvarPeriodoCookie(periodo);
       return dadosAtuais;
     } catch (causa) {
@@ -69,5 +73,5 @@ export function useConsultaVendas(initialVendas: Venda[] = [], initialError?: st
     }
   }, []);
 
-  return { vendas, vendasAnteriores, comparacaoDisponivel, erro, loading, consultar };
+  return { vendas, vendasAnteriores, comparacaoDisponivel, consultadoEm, erro, loading, consultar };
 }

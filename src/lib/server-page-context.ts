@@ -30,6 +30,7 @@ export interface ServerPageContextOptions {
 
 export interface ServerPageContextResult {
   session: unknown;
+  userId: string;
   userRole: UserRole;
   isAdmin: boolean;
   empresas: EmpresaInfo[];
@@ -181,6 +182,7 @@ export async function resolveServerPageContext({
 
   return {
     session,
+    userId: session.user.id,
     userRole,
     isAdmin,
     empresas,

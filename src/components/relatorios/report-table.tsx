@@ -1,6 +1,7 @@
 "use client";
 
-import { isValidElement, useMemo, useState, type ReactNode } from "react";
+import { isValidElement, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Columns3, Rows3 } from "lucide-react";
 import {
   TableBody,
   TableCell,
@@ -16,6 +17,7 @@ import { useReportContext } from "./report-context";
 import { ReportToolbar } from "./report-toolbar";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatters";
 import { formatarDataInputParaBR } from "@/lib/vendas";
+import { Button } from "@/components/ui/button";
 
 function headerText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -84,6 +86,50 @@ export function ReportTable<T>({
   );
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(25);
+  const [density, setDensity] = useState<"compacta" | "confortavel">("confortavel");
+  const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>([]);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const preferenceKey = report
+    ? `syspro:report-table:${report.preferenceScope}:${caption ?? label}`
+    : null;
+  const columnIdsKey = columns.map((column) => column.id).join("|");
+
+  useEffect(() => {
+    if (!preferenceKey) return;
+    let ativo = true;
+    queueMicrotask(() => {
+      if (!ativo) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(preferenceKey) ?? "null") as {
+          sort?: { id: string; descending: boolean } | null;
+          size?: number;
+          density?: "compacta" | "confortavel";
+          visibleColumnIds?: string[];
+        } | null;
+        if (saved?.sort && columns.some((column) => column.id === saved.sort?.id)) setSort(saved.sort);
+        if ([10, 25, 50, 100].includes(saved?.size ?? 0)) setSize(saved!.size!);
+        if (saved?.density === "compacta" || saved?.density === "confortavel") setDensity(saved.density);
+        const validIds = saved?.visibleColumnIds?.filter((id) => columns.some((column) => column.id === id));
+        setVisibleColumnIds(validIds?.length ? validIds : columns.map((column) => column.id));
+      } catch {
+        setVisibleColumnIds(columns.map((column) => column.id));
+      } finally {
+        setPreferencesLoaded(true);
+      }
+    });
+    return () => { ativo = false; };
+  // A identidade das colunas, e não o array recriado pelo React, controla a leitura.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferenceKey, columnIdsKey]);
+
+  useEffect(() => {
+    if (!preferenceKey || !preferencesLoaded) return;
+    localStorage.setItem(preferenceKey, JSON.stringify({ sort, size, density, visibleColumnIds }));
+  }, [density, preferenceKey, preferencesLoaded, size, sort, visibleColumnIds]);
+
+  const visibleColumns = visibleColumnIds.length
+    ? columns.filter((column) => visibleColumnIds.includes(column.id))
+    : columns;
   const sorted = useMemo(() => {
     const value = columns.find((column) => column.id === sort?.id)?.value;
     if (!value || !sort) return data;
@@ -131,15 +177,15 @@ export function ReportTable<T>({
   }
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      {showExport && report && columns.every((column) => column.value) ? (
+      {(showExport && report && visibleColumns.every((column) => column.value)) || report ? (
         <ReportToolbar>
-          <ExportarVisao
+          {showExport && report && visibleColumns.every((column) => column.value) ? <ExportarVisao
             titulo={`${report.titulo} - ${caption ?? headerText(columns[0]?.header)}`}
             contexto={report.contexto}
-            colunas={columns.map((column) => headerText(column.header))}
+            colunas={visibleColumns.map((column) => headerText(column.header))}
             observacoes={exportObservacoes}
             linhas={sorted.map((row) =>
-              columns.map((column) => {
+              visibleColumns.map((column) => {
                 if (column.exportValue) return column.exportValue(row);
                 const value = column.value!(row);
                 return value == null
@@ -155,14 +201,48 @@ export function ReportTable<T>({
                         : value;
               }),
             )}
-          />
+          /> : null}
+          {report ? <>
+            <details className="relative">
+              <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border px-3 text-xs font-medium hover:bg-muted">
+                <Columns3 className="size-3.5" /> Colunas
+              </summary>
+              <div className="absolute right-0 z-30 mt-1 min-w-56 space-y-1 rounded-md border bg-popover p-2 shadow-md">
+                {columns.map((column) => {
+                  const checked = visibleColumns.some((item) => item.id === column.id);
+                  return <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-muted">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => setVisibleColumnIds((current) => {
+                        const base = current.length ? current : columns.map((item) => item.id);
+                        if (base.includes(column.id)) return base.length === 1 ? base : base.filter((id) => id !== column.id);
+                        return [...base, column.id];
+                      })}
+                    />
+                    {headerText(column.header)}
+                  </label>;
+                })}
+              </div>
+            </details>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 text-xs"
+              onClick={() => setDensity((atual) => atual === "compacta" ? "confortavel" : "compacta")}
+              title="Alternar densidade da tabela"
+            >
+              <Rows3 className="size-3.5" /> {density === "compacta" ? "Compacta" : "Confortável"}
+            </Button>
+          </> : null}
         </ReportToolbar>
       ) : null}
       <ReportTableFrame label={caption ?? `Tabela de ${label}`}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <TableHeader className="bg-background">
           <TableRow>
-            {columns.map((column, index) => (
+            {visibleColumns.map((column, index) => (
               <TableHead
                 key={column.id}
                 scope="col"
@@ -213,15 +293,15 @@ export function ReportTable<T>({
           {rows.length ? (
             rows.map((row, rowIndex) => (
               <TableRow key={rowKey(row, rowIndex)}>
-                {columns.map((column, index) => (
-                  <TableCell key={column.id} className={classes(column, index)}>
+                {visibleColumns.map((column, index) => (
+                  <TableCell key={column.id} className={cn(classes(column, index), density === "compacta" && "py-1")}>
                     {column.cell(row, rowIndex)}
                   </TableCell>
                 ))}
               </TableRow>
             ))
           ) : <TableEmptyState
-            colSpan={columns.length}
+            colSpan={visibleColumns.length}
             title="Nenhum registro neste recorte"
             description="Ajuste a busca ou os filtros aplicados nesta visão."
           />}

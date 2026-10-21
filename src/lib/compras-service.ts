@@ -19,6 +19,7 @@ export async function obterRelatorioCompras({
   dtInicial,
   dtFinal,
   forcarAtualizacao = false,
+  consultarSaldoAtual = true,
   signal,
 }: {
   actorId: string;
@@ -26,6 +27,8 @@ export async function obterRelatorioCompras({
   dtInicial: string;
   dtFinal: string;
   forcarAtualizacao?: boolean;
+  /** Compras precisa do saldo atual; margens consulta somente EDVs do período. */
+  consultarSaldoAtual?: boolean;
   signal?: AbortSignal;
 }) {
   if (!periodoConsultaValido(dtInicial, dtFinal)) {
@@ -34,7 +37,7 @@ export async function obterRelatorioCompras({
 
   const inicialIso = normalizarDataIso(dtInicial);
   const finalIso = normalizarDataIso(dtFinal);
-  const finalEstoque = inicialIso <= hojeEmSaoPaulo()
+  const finalEstoque = consultarSaldoAtual && inicialIso <= hojeEmSaoPaulo()
     ? [finalIso, hojeEmSaoPaulo()].sort().at(-1)!
     : finalIso;
   const janelasKardex = dividirPeriodoKardex(inicialIso, finalEstoque);

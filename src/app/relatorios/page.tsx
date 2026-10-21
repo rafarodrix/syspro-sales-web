@@ -13,8 +13,13 @@ export default async function RelatoriosPage({
     comparacao?: string;
     comparacaoInicial?: string;
     comparacaoFinal?: string;
+    busca?: string;
+    classe?: string;
+    metrica?: string;
+    margem?: string;
   }>;
 }) {
+  const params = await searchParams;
   const ctx = await resolveServerPageContext({
     permissao: "relatorios:visualizar",
     searchParams,
@@ -42,6 +47,11 @@ export default async function RelatoriosPage({
         initialVendasAnteriores={ctx.vendasAnteriores}
         initialComparacaoDisponivel={ctx.comparacaoDisponivel}
         initialError={ctx.erroInicial}
+        userId={ctx.userId}
+        buscaInicial={params.busca}
+        classeInicial={params.classe}
+        metricaInicial={params.metrica}
+        margemInicial={params.margem}
       />
     </NavApp>
   );

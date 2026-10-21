@@ -181,6 +181,27 @@ describe("relatorio de compras", () => {
     expect(relatorio.resumo.coberturaCusto).toBe(0);
   });
 
+  it("não usa custo de aquisição como fallback da margem", () => {
+    const relatorio = montarRelatorioCompras(
+      [{
+        ...venda("AUX-SEM-REP", 4, "Produto apenas com aquisição"),
+        produto_id: "GUID-SEM-REP",
+        produto_vlr_total_liquido: 120,
+        produto_vlr_custo_aquisicao: 7,
+      }],
+      [],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({
+      custoAquisicaoMedio: 7,
+      custoReposicaoMedio: null,
+      custoTotalMercadorias: null,
+      margemBrutaPercentual: null,
+    });
+    expect(relatorio.resumo.coberturaCusto).toBe(0);
+  });
+
   it("valoriza o estoque atual pelo custo de aquisição e de reposição", () => {
     const relatorio = montarRelatorioCompras(
       [{
