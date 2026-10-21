@@ -86,6 +86,11 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Relatórios de vendas:** cada aba tem no máximo 3 indicadores de contexto na faixa (além do panorama) e, quando faz sentido, um bloco `ReportDiagnostics`. A visão de comparação entre períodos é `VisaoComparativoDimensao` + `src/lib/comparativo-dimensao.ts` (variação em valor/%, participação atual/anterior e Δ participação, com ordenação por impacto/crescimento/queda/participação). Reutilize-a para qualquer dimensão (departamento, UF, forma de pagamento) em vez de escrever tabela nova.
 - **Sem relatório redundante:** antes de criar aba nova, verifique se a informação já vive numa aba existente. Descontos & Margem foi eliminada porque suas três visões (vendedor, departamento, forma de pagamento) duplicavam abas próprias — desconto virou coluna em Vendedores/Departamentos/Financeiro, e margem por produto vive em Vendas & Margem. Curva ABC não repete custo/lucro/margem.
 
+## Layout padrão das telas de relatório
+- **Uma barra, uma linha:** seletor de visão (esquerda) e ações da tabela — exportar, colunas, densidade (direita) — dividem a MESMA linha. O `ReportTable` expõe a prop `acoes` para receber o seletor; nunca renderize o seletor como bloco separado acima da tabela (gera duas linhas). `ReportToolbar` já aplica `justify-between` com o slot esquerdo e as ações à direita.
+- **Metadados no rodapé, não no cabeçalho:** período consultado, comparação e horário de atualização ficam na linha de status inferior (junto de `Universo: …` e `Filtros ativos: …`), separados por `border-t`. O título do relatório no topo não repete período.
+- Telas sem seletor de visão (Curva ABC, Margens, Compras) mantêm só as ações alinhadas à direita — não invente um seletor vazio só para preencher a esquerda.
+
 ## Fluxo de dados (segurança)
 ```
 Usuário loga → seleciona CNPJ autorizado → Next identifica empresa_codigo
