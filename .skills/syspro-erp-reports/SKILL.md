@@ -87,9 +87,20 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Sem relatório redundante:** antes de criar aba nova, verifique se a informação já vive numa aba existente. Descontos & Margem foi eliminada porque suas três visões (vendedor, departamento, forma de pagamento) duplicavam abas próprias — desconto virou coluna em Vendedores/Departamentos/Financeiro, e margem por produto vive em Vendas & Margem. Curva ABC não repete custo/lucro/margem.
 
 ## Layout padrão das telas de relatório
-- **Uma barra, uma linha:** seletor de visão (esquerda) e ações da tabela — exportar, colunas, densidade (direita) — dividem a MESMA linha. O `ReportTable` expõe a prop `acoes` para receber o seletor; nunca renderize o seletor como bloco separado acima da tabela (gera duas linhas). `ReportToolbar` já aplica `justify-between` com o slot esquerdo e as ações à direita.
-- **Metadados no rodapé, não no cabeçalho:** período consultado, comparação e horário de atualização ficam na linha de status inferior (junto de `Universo: …` e `Filtros ativos: …`), separados por `border-t`. O título do relatório no topo não repete período.
-- Telas sem seletor de visão (Curva ABC, Margens, Compras) mantêm só as ações alinhadas à direita — não invente um seletor vazio só para preencher a esquerda.
+- **Uma barra, uma linha:** seletor de visão (esquerda) e ações da tabela — exportar, colunas, densidade (direita) — dividem a MESMA linha. Use `ReportVisaoProvider` + `ReportBarraVisao` (o provider envolve a visão inteira; a tabela ativa injeta as ações por portal na barra). A barra fica FORA do bloco condicional: visões sem tabela (comparativo sem período, vazio, carregando) precisam manter o seletor acessível.
+- **Filtros da visão ficam à direita** (`controlesDireita`), junto das ações da tabela; nunca à esquerda, que é onde mora o seletor de visão. `FiltroRelatorio` usa largura fixa (`w-32`/`w-40`) — `w-full` quebra a barra em duas linhas.
+- **Metadados no rodapé, não no cabeçalho:** período, comparação e horário ficam na linha de status inferior (`StatusRelatorio`, junto de universo e filtros). Textos curtos e truncamento (`min-w-0 truncate`) para não quebrar linha.
+- Telas sem seletor de visão (Curva ABC, Margens, Compras) mantêm só as ações à direita — não invente seletor vazio.
+
+## Polimento visual (anti-ruído de bordas)
+- **Borda só onde há affordance** (inputs, selects, botões, popovers). Painéis de agrupamento usam tom de fundo (`bg-muted/25`, `rounded-lg`) em vez de caixa com borda — borda em volta de tudo deixa a tela "quadriculada".
+- **Card já tem `ring`** na base: não adicione `border` + `shadow` no `className` do Card (duplica o contorno). Use no máximo `shadow-2xs`.
+- **Controles mutuamente exclusivos** (presets de data, seletor de visão, densidade) são pílulas segmentadas: container `rounded-lg bg-muted/40 p-0.5`, item ativo `bg-background shadow-2xs`, inativos `ghost` sem borda.
+- **`MetricsStrip` é grade com separadores de 1px** (`grid gap-px bg-border/50`, colunas `minmax(9.5rem,1fr)`), não células com borda: colunas alinhadas e sem borda acumulada.
+- **Período e Comparação lado a lado a partir de `lg`** (não `xl`), com `Comparar com` sem rótulo duplicado e sem repetir o intervalo — o intervalo comparado já aparece no rodapé. Botão `Consultar` com largura natural (`lg:w-auto lg:self-end`), nunca esticado.
+
+## Cache de consulta pesada
+- Aba que dispara consulta custosa ao montar (ex.: **Vendas & Margem**, que roda vendas + Kardex sem saldo) precisa de cache em memória por `empresa+período` com TTL e botão **Atualizar**. Sem isso, cada troca de visão refaz a consulta e a tela pisca por dezenas de segundos. Implementação: `Map` no módulo + estado derivado durante o render (evita `setState` dentro de `useEffect`, que o lint bloqueia).
 
 ## Fluxo de dados (segurança)
 ```
