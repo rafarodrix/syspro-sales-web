@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { montarAnaliseMargens } from "@/lib/analise-margens";
+import { montarAnaliseMargens, ordenarItensMargem } from "@/lib/analise-margens";
+import type { ItemAnaliseMargem } from "@/lib/analise-margens";
 import type { RelatorioCompras } from "@/lib/relatorio-compras";
 
 function relatorio(): RelatorioCompras {
@@ -151,5 +152,49 @@ describe("análise de margens", () => {
 
     expect(analise.resumo.coberturaCusto).toBeLessThanOrEqual(100);
     expect(analise.resumo.coberturaCusto).toBe(100);
+  });
+
+  it("ordena por impacto de EDV, menor margem e lucro, com nulos no fim", () => {
+    const modelo: ItemAnaliseMargem = {
+      codigo: "X",
+      produto: "Produto",
+      unidade: "UN",
+      curva: "A",
+      quantidadeVendida: 1,
+      quantidadeDevolvida: 0,
+      quantidadeLiquidaReal: 1,
+      demandaLiquida: 1,
+      taxaDevolucao: 0,
+      valorVendido: 0,
+      valorDevolvido: 0,
+      valorVendaLiquida: 0,
+      taxaDevolucaoValor: 0,
+      estoqueAtual: null,
+      mediaDiaria: 0,
+      coberturaDias: null,
+      dataUltimoMovimento: null,
+      empresaId: "e1",
+      empresaNome: "Empresa",
+      custoAntesEdv: null,
+      lucroAntesEdv: null,
+      margemAntesEdv: null,
+      custoDepoisEdv: null,
+      lucroDepoisEdv: null,
+      margemDepoisEdv: null,
+      impactoLucroEdv: null,
+    };
+    const criar = (codigo: string, extras: Partial<ItemAnaliseMargem>) => ({
+      ...modelo,
+      codigo,
+      ...extras,
+    });
+    const a = criar("A", { valorVendido: 100, impactoLucroEdv: -10, margemDepoisEdv: 30, lucroDepoisEdv: 40 });
+    const b = criar("B", { valorVendido: 500, impactoLucroEdv: -90, margemDepoisEdv: -5, lucroDepoisEdv: -20 });
+    const c = criar("C", { valorVendido: 300, impactoLucroEdv: null, margemDepoisEdv: null, lucroDepoisEdv: null });
+
+    expect(ordenarItensMargem([a, b, c], "faturamento").map((i) => i.codigo)).toEqual(["B", "C", "A"]);
+    expect(ordenarItensMargem([a, b, c], "impacto").map((i) => i.codigo)).toEqual(["B", "A", "C"]);
+    expect(ordenarItensMargem([a, b, c], "margem").map((i) => i.codigo)).toEqual(["B", "A", "C"]);
+    expect(ordenarItensMargem([a, b, c], "lucro").map((i) => i.codigo)).toEqual(["A", "B", "C"]);
   });
 });

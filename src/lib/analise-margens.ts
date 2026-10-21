@@ -38,6 +38,64 @@ export interface AnaliseMargens {
   consultadoEm: string;
 }
 
+export type CriterioOrdenacaoMargem = "faturamento" | "impacto" | "margem" | "lucro";
+
+export const CRITERIOS_ORDENACAO_MARGEM: Array<{
+  valor: CriterioOrdenacaoMargem;
+  rotulo: string;
+  descricao: string;
+}> = [
+  {
+    valor: "faturamento",
+    rotulo: "Maior faturamento",
+    descricao: "Ordena pelo valor vendido antes das devoluções",
+  },
+  {
+    valor: "impacto",
+    rotulo: "Maior impacto de EDV",
+    descricao: "Ordena pela maior perda de lucro causada por devolução (mais negativo primeiro)",
+  },
+  {
+    valor: "margem",
+    rotulo: "Menor margem",
+    descricao: "Ordena da margem mais baixa (ou negativa) para a mais alta entre os itens com custo",
+  },
+  {
+    valor: "lucro",
+    rotulo: "Maior lucro após EDV",
+    descricao: "Ordena pelo lucro bruto depois das devoluções",
+  },
+];
+
+/** Ordena a lista de margens; itens sem custo (valores nulos) ficam sempre no fim. */
+export function ordenarItensMargem(
+  itens: ItemAnaliseMargem[],
+  criterio: CriterioOrdenacaoMargem,
+): ItemAnaliseMargem[] {
+  const nulosNoFim = (a: number | null, b: number | null, ordem: number) => {
+    if (a === null && b === null) return 0;
+    if (a === null) return 1;
+    if (b === null) return -1;
+    return (a - b) * ordem;
+  };
+
+  return [...itens].sort((a, b) => {
+    switch (criterio) {
+      case "impacto":
+        return nulosNoFim(a.impactoLucroEdv, b.impactoLucroEdv, 1)
+          || b.valorVendido - a.valorVendido;
+      case "margem":
+        return nulosNoFim(a.margemDepoisEdv, b.margemDepoisEdv, 1)
+          || b.valorVendido - a.valorVendido;
+      case "lucro":
+        return nulosNoFim(a.lucroDepoisEdv, b.lucroDepoisEdv, -1)
+          || b.valorVendido - a.valorVendido;
+      default:
+        return b.valorVendido - a.valorVendido;
+    }
+  });
+}
+
 export function montarAnaliseMargens(
   relatorios: Array<{ empresaId: string; empresaNome: string; relatorio: RelatorioCompras }>,
   margemBaixaAbaixoDe = 20,

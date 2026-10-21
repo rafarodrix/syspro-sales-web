@@ -21,7 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Periodo } from "@/lib/periodo";
-import type { AnaliseMargens, ItemAnaliseMargem } from "@/lib/analise-margens";
+import {
+  CRITERIOS_ORDENACAO_MARGEM,
+  ordenarItensMargem,
+  type AnaliseMargens,
+  type CriterioOrdenacaoMargem,
+  type ItemAnaliseMargem,
+} from "@/lib/analise-margens";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { ReportTable } from "./report-table";
 import { ReportMetricStrip } from "./report-toolbar";
@@ -45,6 +51,8 @@ export function AbaMargens({
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [produtoSelecionado, setProdutoSelecionado] = useState<ItemAnaliseMargem | null>(null);
+  const [ordenacao, setOrdenacao] = useState<CriterioOrdenacaoMargem>("faturamento");
+  const [curva, setCurva] = useState<"todas" | "A" | "B" | "C">("todas");
   const [situacao, setSituacao] = useState<SituacaoMargem>(() => {
     return ["negativa", "baixa", "saudavel", "sem-custo"].includes(situacaoInicial ?? "")
       ? situacaoInicial as SituacaoMargem
@@ -92,7 +100,8 @@ export function AbaMargens({
 
   const itens = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
-    return (dados?.itens ?? []).filter((item) => {
+    const filtrados = (dados?.itens ?? []).filter((item) => {
+      if (curva !== "todas" && item.curva !== curva) return false;
       if (situacao === "sem-custo" && item.custoReposicaoMedio !== null) return false;
       if (situacao === "negativa" && !(item.margemDepoisEdv !== null && item.margemDepoisEdv < 0)) return false;
       if (situacao === "baixa" && !(item.margemDepoisEdv !== null && item.margemDepoisEdv >= 0 && item.margemDepoisEdv < 20)) return false;
@@ -101,7 +110,8 @@ export function AbaMargens({
       return [item.codigo, item.produto, item.marca, item.empresaNome]
         .some((valor) => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo));
     });
-  }, [busca, dados?.itens, situacao]);
+    return ordenarItensMargem(filtrados, ordenacao);
+  }, [busca, curva, dados?.itens, ordenacao, situacao]);
 
   if (loading) {
     return <div className="space-y-3 py-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-72 w-full" /></div>;
@@ -138,7 +148,11 @@ export function AbaMargens({
           rotulo="Margem negativa"
           definicao="Produtos com custo de reposição informado e margem abaixo de zero após EDV."
           valor={formatarNumero(resumo.produtosMargemNegativa, 0)}
-          rodape={<button type="button" className="underline-offset-2 hover:underline" onClick={() => setSituacao("negativa")}>{formatarNumero(resumo.produtosMargemBaixa, 0)} com margem abaixo de 20% · ver detalhes</button>}
+          rodape={<>
+            <button type="button" className="underline-offset-2 hover:underline" onClick={() => { setSituacao("negativa"); setCurva("A"); setOrdenacao("margem"); }}>curva A</button>
+            {" · "}
+            <button type="button" className="underline-offset-2 hover:underline" onClick={() => { setSituacao("baixa"); setCurva("todas"); }}>{formatarNumero(resumo.produtosMargemBaixa, 0)} abaixo de 20%</button>
+          </>}
           icone={TrendingDown}
         />
         <MetricaCard
@@ -166,8 +180,8 @@ export function AbaMargens({
         busca={busca}
         onBuscaChange={onBuscaChange}
         placeholder="Buscar produto, código, marca ou empresa..."
-        temFiltrosAtivos={Boolean(busca) || situacao !== "todas"}
-        onLimpar={() => { onBuscaChange(""); setSituacao("todas"); }}
+        temFiltrosAtivos={Boolean(busca) || situacao !== "todas" || curva !== "todas"}
+        onLimpar={() => { onBuscaChange(""); setSituacao("todas"); setCurva("todas"); }}
       >
         <Select value={situacao} onValueChange={(valor) => setSituacao(valor as SituacaoMargem)}>
           <SelectTrigger className="h-9 w-48 text-xs" aria-label="Situação da margem"><SelectValue /></SelectTrigger>
@@ -177,6 +191,25 @@ export function AbaMargens({
             <SelectItem value="baixa">Margem abaixo de 20%</SelectItem>
             <SelectItem value="saudavel">Margem a partir de 20%</SelectItem>
             <SelectItem value="sem-custo">Sem custo de reposição</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={curva} onValueChange={(valor) => setCurva(valor as "todas" | "A" | "B" | "C")}>
+          <SelectTrigger className="h-9 w-40 text-xs" aria-label="Curva ABC"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas as curvas</SelectItem>
+            <SelectItem value="A">Curva A</SelectItem>
+            <SelectItem value="B">Curva B</SelectItem>
+            <SelectItem value="C">Curva C</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={ordenacao} onValueChange={(valor) => setOrdenacao(valor as CriterioOrdenacaoMargem)}>
+          <SelectTrigger className="h-9 w-52 text-xs" aria-label="Ordenar produtos"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {CRITERIOS_ORDENACAO_MARGEM.map((criterio) => (
+              <SelectItem key={criterio.valor} value={criterio.valor} title={criterio.descricao}>
+                {criterio.rotulo}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </DataFilterBar>
