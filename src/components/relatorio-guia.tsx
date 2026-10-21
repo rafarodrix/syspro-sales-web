@@ -173,6 +173,31 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "Vínculo venda ↔ Kardex", definicao: "Feito exclusivamente pelo ID interno do produto (produto_id ↔ produto_id_produto). Código auxiliar e descrição aparecem na tela, mas não são usados para casar registros." },
     ],
   },
+  margens: {
+    resumo:
+      "Mostra o lucro bruto e a margem de cada produto antes e depois das devoluções de venda (EDV), usando o custo de reposição informado pela API.",
+    comoLer: [
+      "A margem 'depois EDV' é a que vale para gestão: é o que sobrou de receita após o cliente devolver.",
+      "O impacto das EDVs mostra quanto o lucro caiu por devolução — se for grande em poucos produtos, o problema é específico, não geral.",
+      "Produtos vendidos sem custo informado ficam fora do cálculo e aparecem separados em 'faturamento sem custo' — nunca estime custo por conta própria.",
+      "Margem negativa em produto de giro alto é sinal de preço desatualizado ou custo subiu sem repasse.",
+      "Este relatório não depende de saldo de estoque: ele só olha vendas, devoluções e custo.",
+    ],
+    dica: "Cruze os produtos com margem negativa da curva A com a análise de compras: normalmente é preço de tabela antigo que precisa de reajuste antes de repor.",
+    glossario: [
+      { termo: "Custo de reposição (médio)", definicao: "Fórmula: média ponderada de produto_vlr_custo_reposicao pelas unidades vendidas no período. É o único custo usado para margem comercial (inclui impostos, frete e outras despesas)." },
+      { termo: "Lucro bruto antes EDV", definicao: "Fórmula: valor vendido − (custo de reposição médio × quantidade vendida)." },
+      { termo: "Lucro bruto depois EDV", definicao: "Fórmula: venda líquida real − (custo de reposição médio × quantidade líquida real), onde quantidade líquida real = vendida − devolvida." },
+      { termo: "Margem antes EDV", definicao: "Fórmula: lucro bruto antes EDV ÷ valor vendido × 100." },
+      { termo: "Margem depois EDV", definicao: "Fórmula: lucro bruto depois EDV ÷ venda líquida real × 100. É a margem que aparece no card principal e nos filtros." },
+      { termo: "Impacto das EDVs", definicao: "Fórmula: lucro depois EDV − lucro antes EDV. Equivale ao custo das unidades devolvidas menos o valor devolvido: negativo quando a devolução custou mais que o custo da mercadoria." },
+      { termo: "Faturamento sem custo", definicao: "Soma da venda líquida dos produtos em que a API não informou custo de reposição. Fica fora de todo cálculo de lucro e margem." },
+      { termo: "Cobertura de custo", definicao: "Fórmula: faturamento dos itens com custo ÷ faturamento líquido total × 100. Abaixo de 100% significa que parte da receita não entra na margem." },
+      { termo: "Margem negativa / baixa", definicao: "Negativa: margem depois EDV < 0. Baixa: margem entre 0% e 20%. Ambas exigem custo de reposição informado para serem classificadas." },
+      { termo: "Devoluções EDV", definicao: "Somente o grupo EDV do Kardex (emissão de devolução de venda) reduz quantidade e valor. EDC é devolução de compra e não entra." },
+      { termo: "Consolidação por empresa", definicao: "Quando mais de uma filial é selecionada, cada linha traz a empresa de origem. A seleção respeita apenas as empresas liberadas para o seu usuário." },
+    ],
+  },
   financeiro: {
     resumo:
       "Separa o faturamento por forma de pagamento declarada e por tipo de documento fiscal, em visões independentes.",
@@ -202,9 +227,10 @@ const TERMOS_PANORAMA = [
 ];
 
 // Todo relatório usa o Panorama, então todo guia ganha os termos correspondentes.
-// Exceção: Compras não tem Panorama (página própria), então não herda esses termos.
+// Exceção: Compras e Vendas & Margem têm tela própria (sem Panorama), então não herdam esses termos.
+const GUIAS_SEM_PANORAMA = new Set(["compras", "margens"]);
 for (const [chave, guia] of Object.entries(GUIAS_RELATORIOS)) {
-  if (chave === "compras") continue;
+  if (GUIAS_SEM_PANORAMA.has(chave)) continue;
   const existentes = new Set((guia.glossario ?? []).map((item) => item.termo));
   guia.glossario = [
     ...(guia.glossario ?? []),

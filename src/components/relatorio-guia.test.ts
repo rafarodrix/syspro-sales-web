@@ -31,6 +31,26 @@ describe("guias dos relatorios", () => {
     expect(curva?.definicao).toContain("80% = classe A");
   });
 
+  it("explica a formula dos campos calculados de vendas e margem", () => {
+    const termos = GUIAS_RELATORIOS.margens.glossario ?? [];
+    const nomes = termos.map((item) => item.termo);
+
+    for (const esperado of [
+      "Lucro bruto antes EDV",
+      "Lucro bruto depois EDV",
+      "Margem depois EDV",
+      "Impacto das EDVs",
+      "Cobertura de custo",
+      "Faturamento sem custo",
+    ]) {
+      expect(nomes).toContain(esperado);
+    }
+
+    const comFormula = termos.filter((item) => item.definicao.startsWith("Fórmula"));
+    expect(comFormula.length).toBeGreaterThanOrEqual(5);
+    expect(nomes).not.toContain("Ticket médio");
+  });
+
   it("nao herda termos do panorama no relatorio de compras", () => {
     const nomes = (GUIAS_RELATORIOS.compras.glossario ?? []).map((item) => item.termo);
     expect(nomes).not.toContain("Pedidos / NF");
