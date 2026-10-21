@@ -3,6 +3,7 @@ import { ReportTable } from "./report-table";
 import { useMemo, useState } from "react";
 import {
   FileText,
+  TrendingDown,
   LayoutList,
   MousePointerClick,
   PackageSearch,
@@ -115,7 +116,8 @@ export function AbaVendedores({
         title="Mostrar apenas vendedores com queda de faturamento no comparativo"
         onClick={() => setSomenteQueda((atual) => !atual)}
       >
-        Queda no comparativo
+        <span className="hidden xl:inline">Queda no comparativo</span>
+        <TrendingDown className="size-3.5 xl:hidden" />
       </Button>
         </>
       }

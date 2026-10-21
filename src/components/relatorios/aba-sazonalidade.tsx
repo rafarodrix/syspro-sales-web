@@ -316,17 +316,9 @@ export function AbaSazonalidade({
   return (
     <ReportVisaoProvider>
     <div className="space-y-4">
-      <ReportBarraVisao>
-        <ReportViewSelector
-          view={visao}
-          onViewChange={setVisao}
-          options={[
-            { value: "evolucao", label: "Evolução", icon: ChartLine },
-            { value: "dia-semana", label: "Dia da semana", icon: CalendarDays },
-            { value: "quinzena", label: "Quinzena", icon: CalendarRange },
-          ]}
-        />
-        <div className="flex flex-wrap items-center gap-2">
+      <ReportBarraVisao
+        controlesDireita={
+          <>
         {exibeEvolucao ? (
           <FiltroRelatorio
             rotulo="Granularidade"
@@ -347,7 +339,18 @@ export function AbaSazonalidade({
           ]}
           onChange={(valor) => setMetrica(valor as MetricaSazonalidade)}
         />
-        </div>
+          </>
+        }
+      >
+        <ReportViewSelector
+          view={visao}
+          onViewChange={setVisao}
+          options={[
+            { value: "evolucao", label: "Evolução", icon: ChartLine },
+            { value: "dia-semana", label: "Dia da semana", icon: CalendarDays },
+            { value: "quinzena", label: "Quinzena", icon: CalendarRange },
+          ]}
+        />
       </ReportBarraVisao>
       <ReportChart
         key={`${visao}-${granularidade}-${metrica}`}
