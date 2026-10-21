@@ -322,6 +322,7 @@ export function AbaSazonalidade({
         {exibeEvolucao ? (
           <FiltroRelatorio
             rotulo="Granularidade"
+            largura="w-32"
             valor={granularidade}
             opcoes={[
               { valor: "diario", rotulo: "Diária" },
@@ -332,6 +333,7 @@ export function AbaSazonalidade({
         ) : null}
         <FiltroRelatorio
           rotulo="Métrica do gráfico"
+          largura="w-36"
           valor={metrica}
           opcoes={[
             { valor: "faturamento", rotulo: "Faturamento" },
