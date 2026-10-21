@@ -42,6 +42,7 @@ import {
   situacaoEstoque,
   sugestaoCompra,
   type CriterioOrdenacaoCompras,
+  type LimitesCoberturaCompra,
   type SituacaoCompra,
 } from "@/lib/compras-compra";
 import type { ClasseCurvaCompras, RelatorioCompras } from "@/lib/relatorio-compras";
@@ -89,10 +90,12 @@ export function ComprasView({
   empresaId,
   empresaNome,
   coberturaAlvoInicial,
+  limitesCobertura,
 }: {
   empresaId: string;
   empresaNome: string;
   coberturaAlvoInicial: number;
+  limitesCobertura?: LimitesCoberturaCompra;
 }) {
   const [periodo, setPeriodo] = useState<Periodo>(() => periodoUltimos90Dias());
   const [periodoConsultado, setPeriodoConsultado] = useState<Periodo | null>(null);
@@ -165,7 +168,7 @@ export function ComprasView({
     const filtrados = relatorio.itens.filter((item) => {
       if (curva !== "todas" && item.curva !== curva) return false;
       if (marca !== "todas" && (item.marca ?? "").trim() !== marca) return false;
-      if (situacao !== "todas" && situacaoEstoque(item, alvoDias) !== situacao) return false;
+      if (situacao !== "todas" && situacaoEstoque(item, alvoDias, limitesCobertura) !== situacao) return false;
       if (!termo) return true;
       return (
         item.codigo.toLowerCase().includes(termo) ||
@@ -174,11 +177,11 @@ export function ComprasView({
       );
     });
     return ordenarItensCompras(filtrados, ordenacao, alvoDias);
-  }, [busca, curva, marca, situacao, ordenacao, alvoDias, relatorio.itens]);
+  }, [busca, curva, marca, situacao, ordenacao, alvoDias, limitesCobertura, relatorio.itens]);
 
   const resumoDecisao = useMemo(
-    () => resumirDecisaoCompra(itensFiltrados, alvoDias),
-    [itensFiltrados, alvoDias],
+    () => resumirDecisaoCompra(itensFiltrados, alvoDias, limitesCobertura),
+    [itensFiltrados, alvoDias, limitesCobertura],
   );
 
   const totais = useMemo(() => {
@@ -214,7 +217,7 @@ export function ComprasView({
     exportarParaCSV(
       `analise-compras-${empresaNome.replace(/[^\w-]+/g, "-").toLowerCase()}-${periodo}`,
       [...COLUNAS_EXPORTACAO_COMPRAS],
-      montarLinhasExportacaoCompras(itensFiltrados, alvoDias),
+      montarLinhasExportacaoCompras(itensFiltrados, alvoDias, limitesCobertura),
     );
     toast.success(`${itensFiltrados.length} produto(s) exportado(s).`);
   }
@@ -284,7 +287,7 @@ export function ComprasView({
             <ActionMetricCard
               titulo="Críticas"
               valor={formatarNumero(resumoDecisao.criticos, 0)}
-              descricao={`Cobertura abaixo de ${formatarNumero(alvoDias / 2, 0)} dias`}
+              descricao={`Cobertura abaixo de ${formatarNumero(limitesCobertura?.criticoDias ?? alvoDias / 2, 0)} dias`}
               onClick={() => {
                 setSituacao("critica");
                 setPagina(1);
@@ -562,8 +565,8 @@ export function ComprasView({
                             : `${formatarNumero(item.coberturaDias, 1)} dias`}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant={badgeSituacao(situacaoEstoque(item, alvoDias))}>
-                            {rotuloSituacao(situacaoEstoque(item, alvoDias))}
+                          <Badge variant={badgeSituacao(situacaoEstoque(item, alvoDias, limitesCobertura))}>
+                            {rotuloSituacao(situacaoEstoque(item, alvoDias, limitesCobertura))}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono font-semibold">

@@ -61,6 +61,18 @@ describe("decisao de compra", () => {
     expect(situacaoEstoque(item({ estoqueAtual: 700, coberturaDias: 70 }), 30)).toBe("excesso");
   });
 
+  it("usa os limites configurados da empresa quando informados", () => {
+    const limites = { criticoDias: 10, atencaoDias: 25, excessoDias: 60 };
+    // cobertura = estoque/mediaDiaria = 7 dias -> abaixo do crítico (10)
+    expect(situacaoEstoque(item({ estoqueAtual: 70, coberturaDias: 7 }), 30, limites)).toBe("critica");
+    // 20 dias -> entre crítico e atenção
+    expect(situacaoEstoque(item({ estoqueAtual: 200, coberturaDias: 20 }), 30, limites)).toBe("abaixo");
+    // 40 dias -> saudável
+    expect(situacaoEstoque(item({ estoqueAtual: 400, coberturaDias: 40 }), 30, limites)).toBe("saudavel");
+    // 70 dias -> acima do excesso (60)
+    expect(situacaoEstoque(item({ estoqueAtual: 700, coberturaDias: 70 }), 30, limites)).toBe("excesso");
+  });
+
   it("classifica produtos sem demanda e sem saldo localizado", () => {
     expect(situacaoEstoque(item({ demandaLiquida: 0, mediaDiaria: 0 }), 30)).toBe("sem-demanda");
     expect(situacaoEstoque(item({ estoqueAtual: null, coberturaDias: null }), 30)).toBe("sem-saldo");

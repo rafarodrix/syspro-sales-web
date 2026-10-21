@@ -48,14 +48,28 @@ export function custoSugestaoCompra(item: ItemRelatorioCompras, alvoDias: number
   return sugestaoCompra(item, alvoDias) * item.custoReposicaoMedio;
 }
 
-export function situacaoEstoque(item: ItemRelatorioCompras, alvoDias: number): SituacaoCompra {
+/** Limites de cobertura configurados por empresa (Configurações). */
+export interface LimitesCoberturaCompra {
+  criticoDias: number;
+  atencaoDias: number;
+  excessoDias: number;
+}
+
+export function situacaoEstoque(
+  item: ItemRelatorioCompras,
+  alvoDias: number,
+  limites?: LimitesCoberturaCompra,
+): SituacaoCompra {
   if (item.estoqueAtual === null) return "sem-saldo";
   if (item.demandaLiquida <= 0) return "sem-demanda";
   if (item.estoqueAtual <= 0) return "ruptura";
   const cobertura = item.estoqueAtual / item.mediaDiaria;
-  if (cobertura < alvoDias / 2) return "critica";
-  if (cobertura < alvoDias) return "abaixo";
-  if (cobertura > alvoDias * 2) return "excesso";
+  const criticoDias = limites?.criticoDias ?? alvoDias / 2;
+  const atencaoDias = limites?.atencaoDias ?? alvoDias;
+  const excessoDias = limites?.excessoDias ?? alvoDias * 2;
+  if (cobertura < criticoDias) return "critica";
+  if (cobertura < atencaoDias) return "abaixo";
+  if (cobertura > excessoDias) return "excesso";
   return "saudavel";
 }
 
@@ -121,6 +135,7 @@ export interface ResumoComprasDecisao {
 export function resumirDecisaoCompra(
   itens: ItemRelatorioCompras[],
   alvoDias: number,
+  limites?: LimitesCoberturaCompra,
 ): ResumoComprasDecisao {
   const resumo: ResumoComprasDecisao = {
     unidadesSugeridas: 0,
@@ -137,7 +152,7 @@ export function resumirDecisaoCompra(
     resumo.unidadesSugeridas += sugestaoCompra(item, alvoDias);
     resumo.custoSugestao += custoSugestaoCompra(item, alvoDias) ?? 0;
 
-    const situacao = situacaoEstoque(item, alvoDias);
+    const situacao = situacaoEstoque(item, alvoDias, limites);
     if (situacao === "ruptura") resumo.rupturas += 1;
     if (situacao === "critica") resumo.criticos += 1;
     if (situacao === "excesso") {

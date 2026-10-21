@@ -5,7 +5,13 @@
  * Código e unidade ficam em colunas próprias e os números saem no padrão
  * brasileiro para o Excel reconhecer como valor sem tratamento manual.
  */
-import { rotuloSituacao, situacaoEstoque, sugestaoCompra, custoSugestaoCompra } from "@/lib/compras-compra";
+import {
+  rotuloSituacao,
+  situacaoEstoque,
+  sugestaoCompra,
+  custoSugestaoCompra,
+  type LimitesCoberturaCompra,
+} from "@/lib/compras-compra";
 import type { ItemRelatorioCompras } from "@/lib/relatorio-compras";
 
 export const COLUNAS_EXPORTACAO_COMPRAS = [
@@ -56,6 +62,7 @@ function quantidadePtBr(valor: number | null | undefined): string {
 export function montarLinhasExportacaoCompras(
   itens: ItemRelatorioCompras[],
   alvoDias: number,
+  limites?: LimitesCoberturaCompra,
 ): (string | number)[][] {
   return itens.map((item) => [
     item.codigo ?? "",
@@ -68,7 +75,7 @@ export function montarLinhasExportacaoCompras(
     quantidadePtBr(item.demandaLiquida),
     quantidadePtBr(item.estoqueAtual),
     numeroPtBrEnxuto(item.coberturaDias, 1),
-    rotuloSituacao(situacaoEstoque(item, alvoDias)),
+    rotuloSituacao(situacaoEstoque(item, alvoDias, limites)),
     quantidadePtBr(sugestaoCompra(item, alvoDias)),
     numeroPtBr(custoSugestaoCompra(item, alvoDias)),
     numeroPtBr(item.custoAquisicaoMedio),
