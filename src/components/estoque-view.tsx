@@ -16,13 +16,10 @@ import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/dat
 import { EstoqueMetricas } from "@/components/estoque/estoque-metricas";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { ReportTable } from "./relatorios/report-table";
-import { TableEmptyState } from "@/components/table-empty-state";
-import { TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface EmpresaOption {
@@ -284,10 +281,83 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         </DataFilterBar>
 
         <TabsContent value="visao-geral">
-          <Card><CardHeader><CardTitle className="text-base">Fila de atenção</CardTitle><CardDescription>Produtos priorizados por ruptura, baixa cobertura, ausência de saída e excesso.</CardDescription></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-            <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Estoque</TableHead><TableHead className="text-right">Demanda líquida</TableHead><TableHead className="text-right">Cobertura</TableHead><TableHead className="text-right">Reposição</TableHead><TableHead /></TableRow></TableHeader>
-            <TableBody>{alertas.length ? alertas.map((item, indice) => <TableRow key={`${item.codigo}-${item.produto}-${indice}`}><ProdutoCell item={item} /><TableCell><SituacaoBadge situacao={item.situacao} /></TableCell><TableCell className="text-right font-medium">{formatarNumero(item.estoqueAtual, 2)}</TableCell><TableCell className="text-right">{formatarNumero(item.demandaLiquida, 2)}</TableCell><TableCell className="text-right">{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</TableCell><TableCell className="text-right">{item.valorReposicao === null ? "Sem custo" : formatarMoeda(item.valorReposicao)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>Ver Kardex</Button></TableCell></TableRow>) : <TableEmptyState colSpan={7} title={loading ? "Consultando estoque" : resumoSaude ? "Nenhum alerta encontrado" : "Consulte um período"} description={loading ? "Aguarde enquanto os dados são carregados." : resumoSaude ? "Nenhum produto requer atenção nos filtros atuais." : "Consulte um período para analisar a saúde do estoque."} />}</TableBody>
-          </Table></div></CardContent></Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Fila de atenção</CardTitle>
+              <CardDescription>
+                Produtos priorizados por ruptura, baixa cobertura, ausência de saída e excesso.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="px-3 pb-3">
+                <ReportTable<PosicaoEstoque>
+                  label="produtos em atenção"
+                  caption="Fila de atenção do estoque"
+                  data={alertas}
+                  rowKey={(item) => `${item.codigo}-${item.produto}`}
+                  showExport={false}
+                  columns={[
+                    {
+                      id: "produto",
+                      header: <>Produto</>,
+                      kind: "name",
+                      value: (item) => item.produto,
+                      cell: (item) => (
+                        <>
+                          <p className="text-xs font-medium">{item.produto}</p>
+                          <p className="font-mono text-[10px] text-muted-foreground">{item.codigo}</p>
+                        </>
+                      ),
+                    },
+                    {
+                      id: "situacao",
+                      header: <>Situação</>,
+                      kind: "name",
+                      value: (item) => item.situacao,
+                      cell: (item) => <SituacaoBadge situacao={item.situacao} />,
+                    },
+                    {
+                      id: "estoque",
+                      header: <>Estoque</>,
+                      kind: "number",
+                      value: (item) => item.estoqueAtual,
+                      cell: (item) => <span className="font-semibold">{formatarNumero(item.estoqueAtual, 2)}</span>,
+                    },
+                    {
+                      id: "demanda",
+                      header: <>Demanda líquida</>,
+                      kind: "number",
+                      value: (item) => item.demandaLiquida,
+                      cell: (item) => <>{formatarNumero(item.demandaLiquida, 2)}</>,
+                    },
+                    {
+                      id: "cobertura",
+                      header: <>Cobertura</>,
+                      kind: "number",
+                      value: (item) => item.coberturaDias,
+                      cell: (item) => <>{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</>,
+                    },
+                    {
+                      id: "reposicao",
+                      header: <>Reposição</>,
+                      kind: "currency",
+                      value: (item) => item.valorReposicao,
+                      cell: (item) => <>{item.valorReposicao === null ? "—" : formatarMoeda(item.valorReposicao)}</>,
+                    },
+                    {
+                      id: "acoes",
+                      header: <></>,
+                      cell: (item) => (
+                        <Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>
+                          Kardex
+                        </Button>
+                      ),
+                    },
+                  ]}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="posicao">
@@ -424,10 +494,85 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         </TabsContent>
 
         <TabsContent value="movimentacoes" className="space-y-6">
-          <Card><CardHeader><CardTitle className="text-base">Kardex detalhado</CardTitle><CardDescription>{movimentosFiltrados.length} movimento(s) no período filtrado.</CardDescription></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table>
-            <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Grupo</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Movimento</TableHead><TableHead className="text-right">Saldo</TableHead></TableRow></TableHeader>
-            <TableBody>{movimentosPaginacao.itensPaginados.length ? movimentosPaginacao.itensPaginados.map((item, indice) => <TableRow key={`${item.documento}-${item.produtoCodigoAuxiliar}-${item.dataMovimento}-${indice}`}><TableCell className="whitespace-nowrap text-xs">{dataVisual(item.dataMovimento)}</TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? "border-emerald-500/40 text-emerald-700" : "border-rose-500/40 text-rose-700"}>{item.grupoDocumento || "—"} · {item.classificacao.rotulo}</Badge></TableCell><TableCell className="max-w-44 truncate text-xs">{item.participante || "—"}</TableCell><TableCell className={`text-right font-semibold ${item.direcao === "entrada" ? "text-emerald-600" : "text-rose-600"}`}>{item.direcao === "entrada" ? "+" : "−"}{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell><TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell></TableRow>) : <TableEmptyState colSpan={7} title={loading ? "Consultando o Kardex" : "Nenhuma movimentação encontrada"} description={loading ? "Aguarde enquanto os movimentos são carregados." : "Ajuste a busca ou os filtros desta visão."} />}</TableBody>
-          </Table></div>{movimentosFiltrados.length > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={movimentosPaginacao.paginaAtual} totalItens={movimentosFiltrados.length} itensPorPagina={movimentosPaginacao.itensPorPagina} onPaginaChange={movimentosPaginacao.setPagina} onItensPorPaginaChange={movimentosPaginacao.setItensPorPagina} labelItens="movimentos" /></div> : null}</CardContent></Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Kardex detalhado</CardTitle>
+              <CardDescription>{movimentosFiltrados.length} movimento(s) no período filtrado.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="px-3 pb-3">
+                <ReportTable<MovimentoKardexPublico>
+                  label="movimentos"
+                  caption="Kardex detalhado"
+                  data={movimentosFiltrados}
+                  rowKey={(item) => `${item.documento}-${item.dataMovimento}-${item.produtoCodigoAuxiliar}`}
+                  showExport={false}
+                  columns={[
+                    {
+                      id: "data",
+                      header: <>Data</>,
+                      kind: "date",
+                      value: (item) => item.dataMovimento,
+                      cell: (item) => <span className="text-xs">{dataVisual(item.dataMovimento)}</span>,
+                    },
+                    {
+                      id: "produto",
+                      header: <>Produto</>,
+                      kind: "name",
+                      value: (item) => item.produtoDescricao,
+                      cell: (item) => (
+                        <>
+                          <p className="text-xs font-medium">{item.produtoDescricao}</p>
+                          <p className="font-mono text-[10px] text-muted-foreground">
+                            {item.produtoCodigoAuxiliar || "Sem código"}
+                          </p>
+                        </>
+                      ),
+                    },
+                    {
+                      id: "documento",
+                      header: <>Documento</>,
+                      kind: "name",
+                      value: (item) => item.documento ?? "",
+                      cell: (item) => <span className="font-mono text-xs">{item.documento || "—"}</span>,
+                    },
+                    {
+                      id: "grupo",
+                      header: <>Grupo</>,
+                      kind: "name",
+                      value: (item) => item.grupoDocumento,
+                      cell: (item) => (
+                        <Badge variant="outline" className={item.direcao === "entrada" ? classesSituacao.saudavel : classesSituacao.ruptura}>
+                          {item.grupoDocumento} · {item.direcao === "entrada" ? "Entrada" : "Saída"}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      id: "participante",
+                      header: <>Participante</>,
+                      kind: "name",
+                      value: (item) => item.participante ?? "",
+                      cell: (item) => <span className="text-xs">{item.participante || "—"}</span>,
+                    },
+                    {
+                      id: "movimento",
+                      header: <>Movimento</>,
+                      kind: "number",
+                      value: (item) => item.quantidadeMovimentada,
+                      cell: (item) => <>{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</>,
+                    },
+                    {
+                      id: "saldo",
+                      header: <>Saldo</>,
+                      kind: "number",
+                      value: (item) => item.saldo,
+                      cell: (item) => <span className="font-medium">{formatarNumero(item.saldo, 2)}</span>,
+                    },
+                  ]}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="devolucoes"><Card><CardHeader><CardTitle className="text-base">Devoluções de vendas e compras</CardTitle><CardDescription>EDV reduz vendas; EDC representa devolução de compra e permanece separada.</CardDescription></CardHeader><CardContent className="p-0"><MovimentosEspeciais itens={devolucoesPaginacao.itensPaginados} totalItens={devolucoes.length} paginacao={devolucoesPaginacao} vazio="Nenhuma devolução encontrada." mostrarValor /></CardContent></Card></TabsContent>
@@ -437,14 +582,102 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   );
 }
 
-function ProdutoCell({ item }: { item: PosicaoEstoque }) {
-  return <TableCell><p className="min-w-48 text-xs font-medium">{item.produto}</p><p className="font-mono text-[10px] text-muted-foreground">{item.codigo}</p></TableCell>;
-}
 
-function MovimentoProdutoCell({ item }: { item: MovimentoKardexPublico }) {
-  return <TableCell><p className="min-w-48 text-xs font-medium">{item.produtoDescricao}</p><p className="font-mono text-[10px] text-muted-foreground">{item.produtoCodigoAuxiliar || "Sem código"}</p></TableCell>;
-}
 
-function MovimentosEspeciais({ itens, totalItens, paginacao, vazio, mostrarValor = false }: { itens: MovimentoKardexPublico[]; totalItens: number; paginacao: ReturnType<typeof useTablePagination<MovimentoKardexPublico>>; vazio: string; mostrarValor?: boolean }) {
-  return <><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Quantidade</TableHead>{mostrarValor ? <TableHead className="text-right">Valor</TableHead> : <TableHead className="text-right">Saldo</TableHead>}</TableRow></TableHeader><TableBody>{itens.length ? itens.map((item, indice) => <TableRow key={`${item.documento}-${item.dataMovimento}-${indice}`}><TableCell className="text-xs">{dataVisual(item.dataMovimento)}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? classesSituacao.saudavel : classesSituacao.ruptura}>{item.grupoDocumento} · {item.direcao === "entrada" ? "Entrada" : "Saída"}</Badge></TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell className="text-xs">{item.participante || "—"}</TableCell><TableCell className="text-right">{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell>{mostrarValor ? <TableCell className="text-right font-medium">{formatarMoeda(Math.abs(item.valorTotal))}</TableCell> : <TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell>}</TableRow>) : <TableEmptyState colSpan={7} title={vazio.replace(/\.$/, "")} description="Ajuste a busca ou os filtros desta visão." />}</TableBody></Table></div>{totalItens > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={paginacao.paginaAtual} totalItens={totalItens} itensPorPagina={paginacao.itensPorPagina} onPaginaChange={paginacao.setPagina} onItensPorPaginaChange={paginacao.setItensPorPagina} labelItens="movimentos" /></div> : null}</>;
+function MovimentosEspeciais({
+  itens,
+  vazio,
+  mostrarValor = false,
+}: {
+  itens: MovimentoKardexPublico[];
+  totalItens: number;
+  paginacao: ReturnType<typeof useTablePagination<MovimentoKardexPublico>>;
+  vazio: string;
+  mostrarValor?: boolean;
+}) {
+  return (
+    <div className="px-3 pb-3">
+      <ReportTable<MovimentoKardexPublico>
+        label="movimentos"
+        caption="Movimentos do Kardex"
+        data={itens}
+        rowKey={(item) => `${item.documento}-${item.dataMovimento}-${item.produtoCodigoAuxiliar}`}
+        showExport={false}
+        columns={[
+          {
+            id: "data",
+            header: <>Data</>,
+            kind: "date",
+            value: (item) => item.dataMovimento,
+            cell: (item) => <span className="text-xs">{dataVisual(item.dataMovimento)}</span>,
+          },
+          {
+            id: "tipo",
+            header: <>Tipo</>,
+            kind: "name",
+            value: (item) => item.grupoDocumento,
+            cell: (item) => (
+              <Badge
+                variant="outline"
+                className={item.direcao === "entrada" ? classesSituacao.saudavel : classesSituacao.ruptura}
+              >
+                {item.grupoDocumento} · {item.direcao === "entrada" ? "Entrada" : "Saída"}
+              </Badge>
+            ),
+          },
+          {
+            id: "produto",
+            header: <>Produto</>,
+            kind: "name",
+            value: (item) => item.produtoDescricao,
+            cell: (item) => (
+              <>
+                <p className="text-xs font-medium">{item.produtoDescricao}</p>
+                <p className="font-mono text-[10px] text-muted-foreground">
+                  {item.produtoCodigoAuxiliar || "Sem código"}
+                </p>
+              </>
+            ),
+          },
+          {
+            id: "documento",
+            header: <>Documento</>,
+            kind: "name",
+            value: (item) => item.documento ?? "",
+            cell: (item) => <span className="font-mono text-xs">{item.documento || "—"}</span>,
+          },
+          {
+            id: "participante",
+            header: <>Participante</>,
+            kind: "name",
+            value: (item) => item.participante ?? "",
+            cell: (item) => <span className="text-xs">{item.participante || "—"}</span>,
+          },
+          {
+            id: "quantidade",
+            header: <>Quantidade</>,
+            kind: "number",
+            value: (item) => item.quantidadeMovimentada,
+            cell: (item) => <>{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</>,
+          },
+          mostrarValor
+            ? {
+                id: "valor",
+                header: <>Valor</>,
+                kind: "currency" as const,
+                value: (item) => item.valorTotal,
+                cell: (item) => <span className="font-medium">{formatarMoeda(Math.abs(item.valorTotal))}</span>,
+              }
+            : {
+                id: "saldo",
+                header: <>Saldo</>,
+                kind: "number" as const,
+                value: (item) => item.saldo,
+                cell: (item) => <span className="font-medium">{formatarNumero(item.saldo, 2)}</span>,
+              },
+        ]}
+      />
+      {itens.length === 0 ? <p className="pt-2 text-xs text-muted-foreground">{vazio}</p> : null}
+    </div>
+  );
 }
