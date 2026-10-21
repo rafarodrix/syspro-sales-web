@@ -76,6 +76,7 @@ export function ReportTable<T>({
   acoesExtras,
   rodape,
   renderDetalhe,
+  modoDetalhe = "fechado",
 }: {
   data: T[];
   columns: ReportColumn<T>[];
@@ -94,6 +95,8 @@ export function ReportTable<T>({
   rodape?: (linhas: T[]) => ReactNode;
   /** Conteúdo de detalhe exibido ao expandir a linha. */
   renderDetalhe?: (row: T) => ReactNode;
+  /** Estado inicial de todas as linhas de detalhe (use junto de `key` para alternar). */
+  modoDetalhe?: "aberto" | "fechado";
 }) {
   const report = useReportContext();
   const barra = useBarraRelatorio();
@@ -312,7 +315,7 @@ export function ReportTable<T>({
           {rows.length ? (
             rows.map((row, rowIndex) => {
               const chave = rowKey(row, rowIndex);
-              const aberta = Boolean(detalhesAbertos[chave]);
+              const aberta = detalhesAbertos[chave] ?? (modoDetalhe === "aberto");
               return (
               <Fragment key={chave}>
               <TableRow>

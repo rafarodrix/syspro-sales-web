@@ -4,14 +4,8 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   BarChart3,
-  ChevronDown,
-  ChevronRight,
-  FilterX,
   LayoutList,
   AlignJustify,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   Maximize2,
   Minimize2,
 } from "lucide-react";
@@ -35,11 +29,10 @@ import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatt
 import { calcularMargemItem } from "@/lib/metricas-negocio";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
+import { ReportTable } from "./relatorios/report-table";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
-import { TablePagination } from "@/components/table-pagination";
-import { TableEmptyState } from "@/components/table-empty-state";
 import { toast } from "sonner";
 import { resolverEmpresaSelecionada } from "@/lib/empresa-selecao";
 import { Button } from "@/components/ui/button";
@@ -50,14 +43,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -100,7 +85,8 @@ export function VendasView({
   );
   const [periodoConsultado, setPeriodoConsultado] = useState<Periodo>(initialPeriod ?? periodoMesAtual());
   const { vendas, erro, loading, consultar: consultarVendas } = useConsultaVendas(initialVendas, initialError);
-  const [notasAbertas, setNotasAbertas] = useState<Set<string>>(new Set());
+  // Quando verdadeiro, todas as notas abrem o detalhe de itens (estado inicial da tabela).
+  const [detalheTodos, setDetalheTodos] = useState(false);
 
   // Densidade da tabela
   const [densidade, setDensidade] = useState<"compacto" | "confortavel">("confortavel");
@@ -115,12 +101,8 @@ export function VendasView({
   const [filtroMargem, setFiltroMargem] = useState<FiltroMargem>("todas");
 
   // Ordenação
-  const [campoOrdenacao, setCampoOrdenacao] = useState<CampoOrdenacao>("emissao");
-  const [direcaoOrdenacao, setDirecaoOrdenacao] = useState<DirecaoOrdenacao>("desc");
 
   // Paginação
-  const [paginaAtual, setPaginaAtual] = useState(1);
-  const [itensPorPagina, setItensPorPagina] = useState(25);
 
   // Inicializar filtros a partir dos parâmetros de busca da URL (Drill-down)
   const empresaAtual = useMemo(
@@ -224,6 +206,9 @@ export function VendasView({
 
   // Ordenação
   const notasOrdenadas = useMemo(() => {
+    // Ordem base (emissão mais recente primeiro) usada pelo PDF; a tabela ordena por clique.
+    const campoOrdenacao = "emissao" as CampoOrdenacao;
+    const direcaoOrdenacao = "desc" as DirecaoOrdenacao;
     return [...notasFiltradas].sort((a, b) => {
       let valA: string | number = a[campoOrdenacao];
       let valB: string | number = b[campoOrdenacao];
@@ -244,14 +229,7 @@ export function VendasView({
       if (valA > valB) return direcaoOrdenacao === "asc" ? 1 : -1;
       return 0;
     });
-  }, [notasFiltradas, campoOrdenacao, direcaoOrdenacao]);
-  const paginaExibida = Math.min(paginaAtual, Math.max(1, Math.ceil(notasOrdenadas.length / itensPorPagina)));
-
-  // Paginação
-  const notasPaginadas = useMemo(() => {
-    const inicio = (paginaExibida - 1) * itensPorPagina;
-    return notasOrdenadas.slice(inicio, inicio + itensPorPagina);
-  }, [notasOrdenadas, paginaExibida, itensPorPagina]);
+  }, [notasFiltradas]);
 
   // Resumo dos filtros aplicados
   const resumoBusca = useMemo(() => {
@@ -270,31 +248,14 @@ export function VendasView({
     return { faturamento, totalNotas, clientes: clientes.size, ticketMedio, itensTotal, ...margens };
   }, [notasFiltradas]);
 
-  function alternarOrdenacao(campo: CampoOrdenacao) {
-    if (campoOrdenacao === campo) {
-      setDirecaoOrdenacao((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setCampoOrdenacao(campo);
-      setDirecaoOrdenacao("desc");
-    }
-    setPaginaAtual(1);
-  }
 
-  function alternarNota(id: string) {
-    setNotasAbertas((prev) => {
-      const novo = new Set(prev);
-      if (novo.has(id)) novo.delete(id);
-      else novo.add(id);
-      return novo;
-    });
-  }
 
   function expandirTodas() {
-    setNotasAbertas(new Set(notasPaginadas.map((n) => n.id)));
+    setDetalheTodos(true);
   }
 
   function recolherTodas() {
-    setNotasAbertas(new Set());
+    setDetalheTodos(false);
   }
 
   function limparTodosFiltros() {
@@ -305,7 +266,6 @@ export function VendasView({
     setFiltroFormaPagto("todos");
     setFiltroModelo("todos");
     setFiltroMargem("todas");
-    setPaginaAtual(1);
   }
 
   async function consultar(periodoDaConsulta = periodo) {
@@ -317,11 +277,9 @@ export function VendasView({
       toast.error("A data inicial deve ser anterior à data final");
       return;
     }
-    setNotasAbertas(new Set());
     try {
       await consultarVendas({ empresaId, periodo: periodoDaConsulta });
       setPeriodoConsultado(periodoDaConsulta);
-      setPaginaAtual(1);
       toast.success("Vendas consultadas com sucesso!");
     } catch (causa) {
       const mensagem =
@@ -438,7 +396,6 @@ export function VendasView({
               busca={buscaVenda}
               onBuscaChange={(valor) => {
                 setBuscaVenda(valor);
-                setPaginaAtual(1);
               }}
               placeholder="Buscar por NF, cliente, cidade ou produto..."
               onLimpar={limparTodosFiltros}
@@ -452,7 +409,6 @@ export function VendasView({
                     value={filtroEmpresa}
                     onValueChange={(v) => {
                       setFiltroEmpresa(v);
-                      setPaginaAtual(1);
                     }}
                   >
                     <SelectTrigger className="h-9 text-xs font-semibold">
@@ -479,7 +435,6 @@ export function VendasView({
                     value={filtroVendedor}
                     onValueChange={(v) => {
                       setFiltroVendedor(v);
-                      setPaginaAtual(1);
                     }}
                   >
                     <SelectTrigger className="h-9 text-xs">
@@ -504,7 +459,6 @@ export function VendasView({
                     value={filtroDepartamento}
                     onValueChange={(d) => {
                       setFiltroDepartamento(d);
-                      setPaginaAtual(1);
                     }}
                   >
                     <SelectTrigger className="h-9 text-xs">
@@ -529,7 +483,6 @@ export function VendasView({
                     value={filtroFormaPagto}
                     onValueChange={(fp) => {
                       setFiltroFormaPagto(fp);
-                      setPaginaAtual(1);
                     }}
                   >
                     <SelectTrigger className="h-9 text-xs">
@@ -553,7 +506,6 @@ export function VendasView({
                     value={filtroModelo}
                     onValueChange={(modelo) => {
                       setFiltroModelo(modelo);
-                      setPaginaAtual(1);
                     }}
                   >
                     <SelectTrigger className="h-9 text-xs">
@@ -576,7 +528,6 @@ export function VendasView({
                   value={filtroMargem}
                   onValueChange={(valor) => {
                     setFiltroMargem(valor as FiltroMargem);
-                    setPaginaAtual(1);
                   }}
                 >
                   <SelectTrigger className="h-9 text-xs">
@@ -684,134 +635,100 @@ export function VendasView({
                 />
               </div>
 
-              {/* Tabela com Ordenação */}
-              <div className="overflow-x-auto rounded-md border">
-                <div className="min-w-[820px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="sticky top-0 z-10 bg-muted/95 text-xs font-bold backdrop-blur">
-                      <TableHead className="w-10" />
-                      <TableHead
-                        onClick={() => alternarOrdenacao("numero")}
-                        className="cursor-pointer select-none hover:text-foreground"
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>NF</span>
-                          <IconeOrdenacao
-                            campo="numero"
-                            campoAtual={campoOrdenacao}
-                            direcao={direcaoOrdenacao}
-                          />
+              <div className="no-print min-w-0">
+                <ReportTable<VendaAgrupada>
+                  key={detalheTodos ? "aberto" : "fechado"}
+                  label="notas filtradas"
+                  caption="Notas fiscais emitidas"
+                  data={notasOrdenadas}
+                  rowKey={(nota) => nota.id}
+                  showExport={false}
+                  modoDetalhe={detalheTodos ? "aberto" : "fechado"}
+                  renderDetalhe={(nota) => <TabelaItens itens={nota.itens} />}
+                  columns={[
+                    {
+                      id: "numero",
+                      header: <>NF</>,
+                      kind: "name",
+                      value: (nota) => nota.numero,
+                      cell: (nota) => (
+                        <div className="flex flex-col">
+                          <span className="font-mono text-xs font-bold text-foreground">{nota.numero}</span>
+                          {nota.empresaNome ? (
+                            <span
+                              className="max-w-[140px] truncate font-sans text-[10px] font-medium text-primary"
+                              title={nota.empresaNome}
+                            >
+                              {nota.empresaNome}
+                            </span>
+                          ) : null}
                         </div>
-                      </TableHead>
-                      <TableHead
-                        onClick={() => alternarOrdenacao("emissao")}
-                        className="cursor-pointer select-none hover:text-foreground"
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>Emissão</span>
-                          <IconeOrdenacao
-                            campo="emissao"
-                            campoAtual={campoOrdenacao}
-                            direcao={direcaoOrdenacao}
-                          />
-                        </div>
-                      </TableHead>
-                      <TableHead
-                        onClick={() => alternarOrdenacao("cliente")}
-                        className="cursor-pointer select-none hover:text-foreground"
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>Cliente</span>
-                          <IconeOrdenacao
-                            campo="cliente"
-                            campoAtual={campoOrdenacao}
-                            direcao={direcaoOrdenacao}
-                          />
-                        </div>
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">Vendedor</TableHead>
-                      <TableHead
-                        onClick={() => alternarOrdenacao("quantidadeItens")}
-                        className="cursor-pointer select-none text-right hover:text-foreground"
-                      >
-                        <div className="flex items-center justify-end gap-1">
-                          <span>Itens</span>
-                          <IconeOrdenacao
-                            campo="quantidadeItens"
-                            campoAtual={campoOrdenacao}
-                            direcao={direcaoOrdenacao}
-                          />
-                        </div>
-                      </TableHead>
-                      <TableHead
-                        onClick={() => alternarOrdenacao("total")}
-                        className="cursor-pointer select-none text-right hover:text-foreground"
-                      >
-                        <div className="flex items-center justify-end gap-1">
-                          <span>Total (R$)</span>
-                          <IconeOrdenacao
-                            campo="total"
-                            campoAtual={campoOrdenacao}
-                            direcao={direcaoOrdenacao}
-                          />
-                        </div>
-                      </TableHead>
-                      <TableHead
-                        onClick={() => alternarOrdenacao("margemBruta")}
-                        className="cursor-pointer select-none text-right hover:text-foreground"
-                      >
-                        <div className="flex items-center justify-end gap-1">
-                          <span>Margem</span>
-                          <IconeOrdenacao
-                            campo="margemBruta"
-                            campoAtual={campoOrdenacao}
-                            direcao={direcaoOrdenacao}
-                          />
-                        </div>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {notasPaginadas.length === 0 ? (
-                      <TableEmptyState
-                        colSpan={8}
-                        title="Nenhuma nota encontrada"
-                        description="Nenhum resultado corresponde aos filtros aplicados para este período."
-                        action={temFiltrosAtivos ? (
-                          <Button variant="outline" size="sm" onClick={limparTodosFiltros} className="gap-1.5 text-xs font-semibold">
-                            <FilterX className="size-3.5" />
-                            Limpar filtros aplicados
-                          </Button>
-                        ) : null}
-                      />
-                    ) : (
-                      notasPaginadas.map((nota) => (
-                        <NotaRow
-                          key={nota.id}
-                          nota={nota}
-                          aberta={notasAbertas.has(nota.id)}
-                          onToggle={() => alternarNota(nota.id)}
-                          densidade={densidade}
-                        />
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-                </div>
+                      ),
+                    },
+                    {
+                      id: "emissao",
+                      header: <>Emissão</>,
+                      kind: "date",
+                      value: (nota) => nota.emissao,
+                      cell: (nota) => <span className="font-mono text-xs text-muted-foreground">{nota.emissao}</span>,
+                    },
+                    {
+                      id: "cliente",
+                      header: <>Cliente</>,
+                      kind: "name",
+                      value: (nota) => nota.cliente,
+                      cell: (nota) => (
+                        <>
+                          <div className="max-w-[240px] truncate text-xs font-semibold text-foreground" title={nota.cliente}>
+                            {nota.cliente}
+                          </div>
+                          {nota.cidade || nota.uf ? (
+                            <div className="text-[10.5px] text-muted-foreground">
+                              {[nota.cidade, nota.uf].filter(Boolean).join(" · ")}
+                            </div>
+                          ) : null}
+                        </>
+                      ),
+                    },
+                    {
+                      id: "vendedor",
+                      header: <>Vendedor</>,
+                      kind: "name",
+                      value: (nota) => nota.vendedor,
+                      cell: (nota) => (
+                        <span className="block max-w-[150px] truncate text-xs text-muted-foreground" title={nota.vendedor}>
+                          {nota.vendedor}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: "itens",
+                      header: <>Itens</>,
+                      kind: "number",
+                      value: (nota) => nota.quantidadeItens,
+                      cell: (nota) => <>{formatarNumero(nota.quantidadeItens, 2)}</>,
+                    },
+                    {
+                      id: "total",
+                      header: <>Total (R$)</>,
+                      kind: "currency",
+                      value: (nota) => nota.total,
+                      cell: (nota) => (
+                        <span className="font-mono text-xs font-bold text-foreground">{formatarMoeda(nota.total)}</span>
+                      ),
+                    },
+                    {
+                      id: "margem",
+                      header: <>Margem</>,
+                      kind: "percent",
+                      value: (nota) => (nota.coberturaCusto > 0 ? nota.margemBruta : null),
+                      cell: (nota) => (
+                        <>{nota.coberturaCusto > 0 ? `${formatarNumero(nota.margemBruta, 1)}%` : "—"}</>
+                      ),
+                    },
+                  ]}
+                />
               </div>
-
-              {/* Barra de Paginação Padrão */}
-              <TablePagination
-                paginaAtual={paginaExibida}
-                totalItens={notasOrdenadas.length}
-                itensPorPagina={itensPorPagina}
-                onPaginaChange={setPaginaAtual}
-                onItensPorPaginaChange={setItensPorPagina}
-                labelItens="notas filtradas"
-                opcoesItensPorPagina={[25, 50, 100]}
-                className="mt-4 border-t border-border/60"
-              />
             </>
           ) : !loading && !erro ? (
             <FeedbackState
@@ -826,24 +743,6 @@ export function VendasView({
   );
 }
 
-function IconeOrdenacao({
-  campo,
-  campoAtual,
-  direcao,
-}: {
-  campo: CampoOrdenacao;
-  campoAtual: CampoOrdenacao;
-  direcao: DirecaoOrdenacao;
-}) {
-  if (campo !== campoAtual) {
-    return <ArrowUpDown className="size-3 text-muted-foreground/50" />;
-  }
-  return direcao === "asc" ? (
-    <ArrowUp className="size-3 text-primary font-bold" />
-  ) : (
-    <ArrowDown className="size-3 text-primary font-bold" />
-  );
-}
 
 function exportarCsv(vendas: VendaProduto[]) {
   const cabecalho = [
@@ -908,77 +807,6 @@ function exportarCsv(vendas: VendaProduto[]) {
   exportarParaCSV(`vendas-syspro-${new Date().toISOString().slice(0, 10)}`, cabecalho, linhas);
 }
 
-function NotaRow({
-  nota,
-  aberta,
-  onToggle,
-  densidade = "confortavel",
-}: {
-  nota: VendaAgrupada;
-  aberta: boolean;
-  onToggle: () => void;
-  densidade?: "compacto" | "confortavel";
-}) {
-  const isCompacto = densidade === "compacto";
-  const cellPadding = isCompacto ? "py-1.5 px-3" : "py-3 px-4";
-
-  return (
-    <>
-      <TableRow data-state={aberta ? "selected" : undefined} className="hover:bg-muted/25 transition-colors">
-        <TableCell className={isCompacto ? "py-1 px-2 w-8" : "py-2.5 px-3 w-10"}>
-          <Button
-            aria-expanded={aberta}
-            aria-label={`${aberta ? "Ocultar" : "Mostrar"} itens da nota ${nota.numero}`}
-            onClick={onToggle}
-            size="icon-sm"
-            variant="ghost"
-            className={isCompacto ? "size-6" : "size-7"}
-          >
-            {aberta ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-          </Button>
-        </TableCell>
-        <TableCell className={`font-mono font-bold text-xs text-foreground ${cellPadding}`}>
-          <div className="flex flex-col">
-            <span>{nota.numero}</span>
-            {nota.empresaNome && (
-              <span className="text-[10px] font-sans font-medium text-primary truncate max-w-[140px]" title={nota.empresaNome}>
-                {nota.empresaNome}
-              </span>
-            )}
-          </div>
-        </TableCell>
-        <TableCell className={`font-mono text-xs text-muted-foreground ${cellPadding}`}>{nota.emissao}</TableCell>
-        <TableCell className={cellPadding}>
-          <div className="font-semibold text-foreground text-xs truncate max-w-[240px]" title={nota.cliente}>{nota.cliente}</div>
-          {nota.cidade || nota.uf ? (
-            <div className="text-[10.5px] text-muted-foreground">
-              {[nota.cidade, nota.uf].filter(Boolean).join(" · ")}
-            </div>
-          ) : null}
-        </TableCell>
-        <TableCell className={`hidden md:table-cell text-xs text-muted-foreground truncate max-w-[150px] ${cellPadding}`} title={nota.vendedor}>
-          {nota.vendedor}
-        </TableCell>
-        <TableCell className={`text-right font-mono text-xs ${cellPadding}`}>
-          {formatarNumero(nota.quantidadeItens, 2)}
-        </TableCell>
-        <TableCell className={`text-right font-mono font-bold text-xs text-foreground ${cellPadding}`}>
-          {formatarMoeda(nota.total)}
-        </TableCell>
-        <TableCell className={`text-right font-mono text-xs ${cellPadding}`}>
-          {nota.coberturaCusto > 0 ? `${formatarNumero(nota.margemBruta, 1)}%` : "—"}
-        </TableCell>
-      </TableRow>
-      {aberta ? (
-        <TableRow>
-          <TableCell colSpan={8} className="bg-muted/30 p-4">
-            <TabelaItens itens={nota.itens} />
-          </TableCell>
-        </TableRow>
-      ) : null}
-    </>
-  );
-}
 
 function TabelaItens({ itens }: { itens: VendaProduto[] }) {
   return (
