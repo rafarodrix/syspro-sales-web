@@ -21,6 +21,7 @@ interface RespostaProducao {
   periodo: { inicial: string; final: string };
   consultadoEm: string;
   ignoradosPorEmpresa: number;
+  avisoEmpresa?: boolean;
   itens: ProducaoNormalizada[];
   resumo: ResumoProducao;
   error?: string;

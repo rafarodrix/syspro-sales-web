@@ -23,6 +23,7 @@ interface RespostaTitulos {
   periodo: { inicial: string; final: string };
   consultadoEm: string;
   ignoradosPorEmpresa: number;
+  avisoEmpresa?: boolean;
   itens: TituloNormalizado[];
   resumo: ResumoTitulos;
   error?: string;
@@ -293,6 +294,17 @@ export function TitulosView({
                 rotulo: "Período",
                 valor: `${formatarDataInputParaBR(dados.periodo.inicial)} a ${formatarDataInputParaBR(dados.periodo.final)} · ${new Date(dados.consultadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
               },
+              ...(dados.avisoEmpresa
+                ? [
+                    {
+                      rotulo: "Atenção",
+                      valor: "base devolveu outra empresa_codigo",
+                      destaque: true,
+                      definicao:
+                        "O Syspro retornou registros com empresa_codigo diferente da empresa selecionada. Os dados foram exibidos para não deixar a tela vazia — confira se a filial está correta no cadastro da empresa.",
+                    },
+                  ]
+                : []),
               ...(dados.ignoradosPorEmpresa > 0
                 ? [
                     {

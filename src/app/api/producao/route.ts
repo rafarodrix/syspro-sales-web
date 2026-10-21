@@ -69,19 +69,28 @@ export async function POST(request: NextRequest) {
       throw erro;
     }
 
-    const daEmpresa = brutos.filter((item) => {
+    const normalizarCodigo = (valor: string) => valor.trim().replace(/^0+/, "") || "0";
+    const codigoEmpresa = normalizarCodigo(empresa.empresaCodigo);
+    const mesmaEmpresa = (item: unknown) => {
       const codigo = String((item as Record<string, unknown>)?.empresa_codigo ?? "").trim();
-      return !codigo || codigo === empresa.empresaCodigo.trim();
-    });
+      return !codigo || normalizarCodigo(codigo) === codigoEmpresa;
+    };
+    let considerados = brutos.filter(mesmaEmpresa);
+    // A base pode devolver sempre o mesmo empresa_codigo (ex.: 001) para qualquer
+    // filial da mesma instalação. Nesse caso, mostrar os dados com aviso é melhor
+    // do que exibir tela vazia.
+    const baseSemFiltro = considerados.length === 0 && brutos.length > 0;
+    if (baseSemFiltro) considerados = brutos;
 
-    const itens = daEmpresa.map((item) => normalizarProducao(item));
+    const itens = considerados.map((item) => normalizarProducao(item));
     return NextResponse.json(
       {
         empresaId: empresa.id,
         empresaNome: empresa.razaoSocial,
         periodo: { inicial: dtInicial, final: dtFinal },
         consultadoEm: new Date().toISOString(),
-        ignoradosPorEmpresa: brutos.length - daEmpresa.length,
+        ignoradosPorEmpresa: baseSemFiltro ? 0 : brutos.length - considerados.length,
+        avisoEmpresa: baseSemFiltro,
         itens,
         resumo: resumirProducao(itens),
       },
