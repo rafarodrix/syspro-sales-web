@@ -39,8 +39,7 @@ export function AbaDepartamentos({
     setSelecionado(nome);
     setVisao("analitico");
   };
-  return (
-    <div className="space-y-4">
+  const seletorVisao = (
       <ReportViewSelector
         view={visao}
         options={[
@@ -53,6 +52,10 @@ export function AbaDepartamentos({
           setVisao(novaVisao);
         }}
       />
+  );
+
+  return (
+    <div className="space-y-4">
       {visao === "comparativo" ? (
         <VisaoComparativoDimensao
           rotuloDimensao="Departamento"
@@ -75,6 +78,7 @@ export function AbaDepartamentos({
             </Button>
           ) : null}
           <ReportTable
+            acoes={seletorVisao}
             caption="Produtos por departamento"
             data={itensVisiveis}
             rowKey={(item) => `${item.departamento}-${item.id}`}
@@ -131,6 +135,7 @@ export function AbaDepartamentos({
         </>
       ) : visao === "sintetico" ? (
         <ReportTable
+            acoes={seletorVisao}
           caption="Resumo por departamento"
           data={deptosFiltrados}
           rowKey={(dep) => dep.nome}

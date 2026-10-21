@@ -55,7 +55,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -1047,16 +1046,6 @@ export function RelatoriosView({
                   <CardTitle className="text-base font-extrabold tracking-tight text-foreground">
                     {relatorioAtivo?.label ?? "Relatório Analítico"}
                   </CardTitle>
-                  <CardDescription className="text-xs">
-                    {formatarDataInputParaBR(periodoConsultado.inicial)} a{" "}
-                    {formatarDataInputParaBR(periodoConsultado.final)}
-                    {rotuloPeriodoAnterior
-                      ? ` · vs. ${rotuloPeriodoAnterior}`
-                      : ""}
-                    {consultadoEm
-                      ? ` · Atualizado às ${consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-                      : ""}
-                  </CardDescription>
                 </div>
                 {modoConsolidado && (
                   <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs font-bold gap-1 px-2.5 py-0.5">
@@ -1164,9 +1153,17 @@ export function RelatoriosView({
                 ) : null}
               </DataFilterBar>
             ) : null}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground" role="status">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground" role="status">
               <span>
                 Universo: {formatarNumero(vendas.length, 0)} item(ns) de venda · {modoConsolidado ? `${empresasSelecionadas.length} empresas` : rotuloEmpresa}
+              </span>
+              <span className="font-mono tabular-nums">
+                {formatarDataInputParaBR(periodoConsultado.inicial)} a{" "}
+                {formatarDataInputParaBR(periodoConsultado.final)}
+                {rotuloPeriodoAnterior ? ` · vs. ${rotuloPeriodoAnterior}` : ""}
+                {consultadoEm
+                  ? ` · Atualizado às ${consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                  : ""}
               </span>
               <span>
                 Filtros ativos: {formatarNumero((busca.trim() ? 1 : 0) + ((abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc) !== "todas" && (abaAtiva === "clientes" || abaAtiva === "curva-abc") ? 1 : 0), 0)}

@@ -69,6 +69,7 @@ export function ReportTable<T>({
   pagination = true,
   showExport = true,
   exportObservacoes,
+  acoes,
 }: {
   data: T[];
   columns: ReportColumn<T>[];
@@ -79,6 +80,8 @@ export function ReportTable<T>({
   pagination?: boolean;
   showExport?: boolean;
   exportObservacoes?: string;
+  /** Controles renderizados à esquerda da barra da tabela (ex.: seletor de visão). */
+  acoes?: ReactNode;
 }) {
   const report = useReportContext();
   const [sort, setSort] = useState<{ id: string; descending: boolean } | null>(
@@ -178,7 +181,7 @@ export function ReportTable<T>({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       {(showExport && report && visibleColumns.every((column) => column.value)) || report ? (
-        <ReportToolbar>
+        <ReportToolbar acoes={acoes}>
           {showExport && report && visibleColumns.every((column) => column.value) ? <ExportarVisao
             titulo={`${report.titulo} - ${caption ?? headerText(columns[0]?.header)}`}
             contexto={report.contexto}

@@ -1,5 +1,6 @@
 import { ReportTable } from "./report-table";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { CreditCard, FileText } from "lucide-react";
 import {
   formatarMoeda,
@@ -22,12 +23,15 @@ interface AbaFinanceiroProps {
 function TabelaFinanceira({
   itens,
   rotulo,
+  acoes,
 }: {
   itens: ItemFinanceiroAnalise[];
   rotulo: string;
+  acoes?: ReactNode;
 }) {
   return (
     <ReportTable
+      acoes={acoes}
       caption={rotulo}
       data={itens}
       rowKey={(item) => item.nome}
@@ -114,16 +118,19 @@ export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
   const [visao, setVisao] = useState<VisaoFinanceira>("pagamento");
   const exibePagamentos = visao === "pagamento";
 
+  const seletorVisao = (
+    <ReportViewSelector
+      view={visao}
+      onViewChange={setVisao}
+      options={[
+        { value: "pagamento", label: "Forma de pagamento", icon: CreditCard },
+        { value: "documento", label: "Documento fiscal", icon: FileText },
+      ]}
+    />
+  );
+
   return (
     <div className="space-y-4">
-      <ReportViewSelector
-        view={visao}
-        onViewChange={setVisao}
-        options={[
-          { value: "pagamento", label: "Forma de pagamento", icon: CreditCard },
-          { value: "documento", label: "Documento fiscal", icon: FileText },
-        ]}
-      />
       <TabelaFinanceira
         itens={
           exibePagamentos
@@ -131,6 +138,7 @@ export function AbaFinanceiro({ relatorioFinanceiro }: AbaFinanceiroProps) {
             : relatorioFinanceiro.modelosDocumento
         }
         rotulo={exibePagamentos ? "Forma de pagamento" : "Documento fiscal"}
+        acoes={seletorVisao}
       />
     </div>
   );

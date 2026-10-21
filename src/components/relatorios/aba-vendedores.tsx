@@ -45,8 +45,7 @@ export function AbaVendedores({
     setVisao("analitico");
   }
 
-  return (
-    <div className="space-y-4">
+  const seletorVisao = (
       <ReportViewSelector
         view={visao}
         options={[
@@ -59,11 +58,16 @@ export function AbaVendedores({
           setVisao(proximaVisao);
         }}
       />
+  );
+
+  return (
+    <div className="space-y-4">
 
       {visao === "sintetico" ? (
         <>
           {/* Tabela de Ranking Sintético */}
           <ReportTable
+            acoes={seletorVisao}
             caption="Resumo por vendedor"
             data={vendedoresFiltrados}
             rowKey={(vendedor) => vendedor.nome}

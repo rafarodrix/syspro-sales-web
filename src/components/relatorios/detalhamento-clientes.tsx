@@ -199,6 +199,8 @@ export function DetalhamentoClientes({
           </span>
         </div>
       ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
       <ReportViewSelector
         view={visao}
         onViewChange={(valor) => {
@@ -216,6 +218,17 @@ export function DetalhamentoClientes({
         ]}
         ariaLabel="Visão do detalhamento"
       />
+        </div>
+        {visao !== "notas" ? (
+          <ExportarVisao
+            titulo={`Clientes - ${visao === "mensal" ? "Produtos por mês" : "Produtos consolidados"}`}
+            contexto={contextoVisao}
+            colunas={colunas}
+            linhas={linhas}
+            observacoes={mes ? `Mês filtrado: ${mes}` : undefined}
+          />
+        ) : null}
+      </div>
       <div hidden={visao !== "notas"}>
         <VisaoAnaliticaNotas
           key={`${selecionados.join("|")}-${mes}-${janela}`}

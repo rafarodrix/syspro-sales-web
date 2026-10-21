@@ -47,8 +47,7 @@ export function AbaGeografico({
     setSelecionadas([cidade]);
     setVisao("analitico");
   };
-  return (
-    <div className="space-y-4">
+  const seletorVisao = (
       <ReportViewSelector
         view={visao}
         options={[
@@ -63,6 +62,10 @@ export function AbaGeografico({
           setVisao(proximaVisao);
         }}
       />
+  );
+
+  return (
+    <div className="space-y-4">
       {visao === "comparativo" ? (
         <VisaoComparativoDimensao
           rotuloDimensao="UF"
@@ -85,6 +88,7 @@ export function AbaGeografico({
         />
       ) : visao === "uf" ? (
         <ReportTable
+            acoes={seletorVisao}
           caption="Resumo por UF"
           data={ufsFiltradas}
           rowKey={(item) => item.uf}
@@ -193,6 +197,7 @@ export function AbaGeografico({
             </Button>
           ) : null}
           <ReportTable
+            acoes={seletorVisao}
             data={cidades}
             rowKey={(cidade) => `${cidade.cidade}-${cidade.uf}`}
             columns={[

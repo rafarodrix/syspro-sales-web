@@ -30,6 +30,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { formatarDataInputParaBR } from "@/lib/vendas";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { COLUNAS_EXPORTACAO_COMPRAS, montarLinhasExportacaoCompras } from "@/lib/exportar-compras";
 import {
@@ -684,6 +685,25 @@ export function ComprasView({
                     setPagina(1);
                   }}
                 />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-3 py-2 text-xs text-muted-foreground" role="status">
+                <span>
+                  Universo: {formatarNumero(relatorio.itens.length, 0)} produto(s) · {empresaNome}
+                </span>
+                <span className="font-mono tabular-nums">
+                  {periodoConsultado
+                    ? `${formatarDataInputParaBR(periodoConsultado.inicial)} a ${formatarDataInputParaBR(periodoConsultado.final)}`
+                    : "—"}
+                </span>
+                <span>
+                  Filtros ativos: {formatarNumero(
+                    (busca.trim() ? 1 : 0) +
+                      (curva !== "todas" ? 1 : 0) +
+                      (marca !== "todas" ? 1 : 0) +
+                      (situacao !== "todas" ? 1 : 0),
+                    0
+                  )}
+                </span>
               </div>
             </>
           ) : periodoConsultado ? (

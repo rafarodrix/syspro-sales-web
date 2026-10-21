@@ -2,9 +2,19 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 
-export function ReportToolbar({ children }: { children: ReactNode }) {
+export function ReportToolbar({
+  children,
+  acoes,
+}: {
+  children: ReactNode;
+  /** Controles do lado esquerdo da mesma linha (ex.: seletor de visão). */
+  acoes?: ReactNode;
+}) {
   return (
-    <div className="no-print flex flex-wrap items-center gap-2">{children}</div>
+    <div className="no-print flex flex-wrap items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">{acoes}</div>
+      <div className="flex flex-wrap items-center gap-2 sm:ml-auto">{children}</div>
+    </div>
   );
 }
 

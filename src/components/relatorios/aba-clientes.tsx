@@ -107,29 +107,32 @@ export function AbaClientes({
     setVisao("analitico");
   }
 
+  const seletorVisao = (
+    <ReportViewSelector
+      view={visao}
+      options={[
+        { value: "sintetico", label: "Resumo", icon: LayoutList },
+        {
+          value: "frequencia",
+          label: "Frequência",
+          icon: CalendarDays,
+        },
+        { value: "analitico", label: "Detalhamento", icon: FileText },
+      ]}
+      onViewChange={(proximaVisao) => {
+        if (proximaVisao === "analitico" && visao !== "analitico")
+          setOrigem(visao);
+        setVisao(proximaVisao);
+      }}
+    />
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xs text-muted-foreground">
         Identificação por nome, sujeita a homônimos. Consumidor genérico não
         entra na frequência.
       </p>
-      <ReportViewSelector
-        view={visao}
-        options={[
-          { value: "sintetico", label: "Resumo", icon: LayoutList },
-          {
-            value: "frequencia",
-            label: "Frequência",
-            icon: CalendarDays,
-          },
-          { value: "analitico", label: "Detalhamento", icon: FileText },
-        ]}
-        onViewChange={(proximaVisao) => {
-          if (proximaVisao === "analitico" && visao !== "analitico")
-            setOrigem(visao);
-          setVisao(proximaVisao);
-        }}
-      />
 
       <div hidden={visao !== "sintetico"}>
         <div className="flex flex-col gap-3">
@@ -149,6 +152,7 @@ export function AbaClientes({
             />          </div>
           {/* Ranking de clientes no padrão único de relatórios */}
           <ReportTable
+            acoes={seletorVisao}
             data={clientesOrdenados}
             rowKey={(cli) => cli.nome}
             label="clientes"
