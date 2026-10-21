@@ -1084,7 +1084,7 @@ export function RelatoriosView({
             </div>
           </CardHeader>
           <CardContent className="space-y-3 border-t border-border/40 pt-4">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
               <section className="min-w-0 flex-1 rounded-lg bg-muted/25 p-2.5" aria-label="Período">
                 <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Período</div>
                 <DateRangeFilter
@@ -1109,6 +1109,7 @@ export function RelatoriosView({
               </section>
               <Button
                 size="sm"
+                className="h-9 w-full shrink-0 lg:w-auto lg:self-end"
                 disabled={loading || !!erroPeriodo(periodo)}
                 onClick={() => consultar()}
               >
@@ -1165,16 +1166,16 @@ export function RelatoriosView({
               itens={[
                 {
                   rotulo: "Universo",
-                  valor: `${formatarNumero(vendas.length, 0)} item(ns) de venda · ${modoConsolidado ? `${empresasSelecionadas.length} empresas` : rotuloEmpresa}`,
+                  valor: `${formatarNumero(vendas.length, 0)} itens · ${modoConsolidado ? `${empresasSelecionadas.length} empresas` : rotuloEmpresa}`,
                   definicao: "Itens de venda retornados pela API do Syspro para o período e a empresa consultados.",
                 },
                 {
                   rotulo: "Período",
-                  valor: `${formatarDataInputParaBR(periodoConsultado.inicial)} a ${formatarDataInputParaBR(periodoConsultado.final)}${rotuloPeriodoAnterior ? ` · vs. ${rotuloPeriodoAnterior}` : ""}${consultadoEm ? ` · atualizado às ${consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}`,
+                  valor: `${formatarDataInputParaBR(periodoConsultado.inicial)} a ${formatarDataInputParaBR(periodoConsultado.final)}${rotuloPeriodoAnterior ? ` · vs. ${rotuloPeriodoAnterior}` : ""}${consultadoEm ? ` · ${consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}`,
                   definicao: "Período consultado, janela de comparação equivalente e horário da última consulta.",
                 },
                 {
-                  rotulo: "Filtros ativos",
+                  rotulo: "Filtros",
                   valor: formatarNumero((busca.trim() ? 1 : 0) + ((abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc) !== "todas" && (abaAtiva === "clientes" || abaAtiva === "curva-abc") ? 1 : 0), 0),
                   destaque: true,
                   definicao: "Conta a busca textual e o filtro de classe ABC aplicados nesta aba.",

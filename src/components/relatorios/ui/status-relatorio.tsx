@@ -25,7 +25,7 @@ export function StatusRelatorio({
     <div
       role="status"
       className={cn(
-        "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/40 pt-2 text-xs text-muted-foreground",
+        "flex flex-wrap items-center justify-between gap-x-4 gap-y-0.5 border-t border-border/40 pt-2 text-xs text-muted-foreground sm:flex-nowrap",
         className,
       )}
     >
@@ -36,7 +36,8 @@ export function StatusRelatorio({
           className={cn(
             "tabular-nums",
             item.definicao && "cursor-help",
-            item.destaque && "font-semibold text-foreground",
+            item.destaque && "shrink-0 font-semibold text-foreground",
+            !item.destaque && "min-w-0 truncate",
           )}
         >
           <span className="text-muted-foreground">{item.rotulo}: </span>
