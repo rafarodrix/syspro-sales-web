@@ -96,6 +96,23 @@ describe("saúde do estoque", () => {
     expect(resultado.resumo.saldosNegativos).toBe(1);
   });
 
+  it("respeita os limites de cobertura configurados por empresa", () => {
+    const resultado = montarSaudeEstoque([
+      movimento({ produtoIdProduto: "1", quantidadeMovimentada: -10, saldo: 12 }),
+      movimento({ produtoIdProduto: "2", quantidadeMovimentada: -10, saldo: 40 }),
+    ], [
+      venda({ produto_id: "1", produto_qtde: 10 }),
+      venda({ produto_id: "2", produto_qtde: 10 }),
+    ], { inicial: "01/10/2026", final: "10/10/2026" }, {
+      criticoDias: 5,
+      atencaoDias: 20,
+      excessoDias: 30,
+    });
+
+    expect(resultado.posicoes.find((item) => item.estoqueAtual === 12)?.situacao).toBe("atencao");
+    expect(resultado.posicoes.find((item) => item.estoqueAtual === 40)?.situacao).toBe("excesso");
+  });
+
   it("não considera movimentos sem ID no agrupamento e informa a inconsistência", () => {
     const resultado = montarSaudeEstoque([
       movimento({ produtoIdProduto: "", produtoCodigoAuxiliar: "SEM-ID" }),

@@ -13,6 +13,7 @@ export default async function RelatorioComprasPage({
     empresa && empresas.some((item) => item.id === empresa)
       ? empresa
       : (empresas[0]?.id ?? "");
+  const empresaAtual = empresas.find((item) => item.id === empresaSelecionada);
 
   return (
     <NavApp empresaSelecionada={empresaSelecionada}>
@@ -20,8 +21,9 @@ export default async function RelatorioComprasPage({
         key={empresaSelecionada}
         empresaId={empresaSelecionada}
         empresaNome={
-          empresas.find((item) => item.id === empresaSelecionada)?.razaoSocial ?? "Empresa"
+          empresaAtual?.razaoSocial ?? "Empresa"
         }
+        coberturaAlvoInicial={empresaAtual?.coberturaCompraDias ?? 30}
       />
     </NavApp>
   );

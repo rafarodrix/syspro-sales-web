@@ -12,7 +12,14 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   return <NavApp empresaSelecionada={empresaSelecionada}>
     <EstoqueView
       key={empresaSelecionada}
-      empresas={empresas.map((item) => ({ id: item.id, cnpj: item.cnpj, razaoSocial: item.razaoSocial }))}
+      empresas={empresas.map((item) => ({
+        id: item.id,
+        cnpj: item.cnpj,
+        razaoSocial: item.razaoSocial,
+        coberturaCriticaDias: item.coberturaCriticaDias,
+        coberturaAtencaoDias: item.coberturaAtencaoDias,
+        coberturaExcessoDias: item.coberturaExcessoDias,
+      }))}
       empresaInicial={empresaSelecionada}
     />
   </NavApp>;

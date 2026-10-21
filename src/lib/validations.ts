@@ -59,12 +59,55 @@ export const usuarioLiberarSchema = z.object({
   empresaId: z.string().min(1, "empresaId e obrigatorio."),
 });
 
+const diasCoberturaSchema = z.number().int().min(1).max(365);
+
+export const limitesEstoqueEmpresaSchema = z.object({
+  coberturaCriticaDias: diasCoberturaSchema,
+  coberturaAtencaoDias: diasCoberturaSchema,
+  coberturaExcessoDias: diasCoberturaSchema,
+  coberturaCompraDias: diasCoberturaSchema,
+}).superRefine((limites, contexto) => {
+  if (limites.coberturaCriticaDias >= limites.coberturaAtencaoDias) {
+    contexto.addIssue({
+      code: "custom",
+      path: ["coberturaCriticaDias"],
+      message: "O limite crítico deve ser menor que o limite de atenção.",
+    });
+  }
+  if (limites.coberturaAtencaoDias >= limites.coberturaExcessoDias) {
+    contexto.addIssue({
+      code: "custom",
+      path: ["coberturaAtencaoDias"],
+      message: "O limite de atenção deve ser menor que o limite de excesso.",
+    });
+  }
+});
+
 export const empresaCreateSchema = z.object({
   cnpj: z.string().transform((val) => val.replace(/\D/g, "")).pipe(z.string().length(14, "CNPJ deve conter exatamente 14 digitos.")),
   razaoSocial: z.string().trim().min(2, "Razao Social e obrigatoria."),
   empresaCodigo: z.string().trim().min(1, "Codigo da empresa no Syspro e obrigatorio."),
   sysproBaseUrl: z.string().optional().transform((val) => (val ? sanitizarSysproUrl(val) : "http://localhost:8080")),
   sysproUseIis: z.boolean().default(false),
+  coberturaCriticaDias: diasCoberturaSchema.default(7),
+  coberturaAtencaoDias: diasCoberturaSchema.default(15),
+  coberturaExcessoDias: diasCoberturaSchema.default(90),
+  coberturaCompraDias: diasCoberturaSchema.default(30),
+}).superRefine((empresa, contexto) => {
+  if (empresa.coberturaCriticaDias >= empresa.coberturaAtencaoDias) {
+    contexto.addIssue({
+      code: "custom",
+      path: ["coberturaCriticaDias"],
+      message: "O limite crítico deve ser menor que o limite de atenção.",
+    });
+  }
+  if (empresa.coberturaAtencaoDias >= empresa.coberturaExcessoDias) {
+    contexto.addIssue({
+      code: "custom",
+      path: ["coberturaAtencaoDias"],
+      message: "O limite de atenção deve ser menor que o limite de excesso.",
+    });
+  }
 });
 
 export const empresaUpdateSchema = z.object({
@@ -75,6 +118,10 @@ export const empresaUpdateSchema = z.object({
   ativa: z.boolean().optional(),
   sysproBaseUrl: z.string().optional().transform((val) => (val !== undefined ? sanitizarSysproUrl(val) : undefined)),
   sysproUseIis: z.boolean().optional(),
+  coberturaCriticaDias: diasCoberturaSchema.optional(),
+  coberturaAtencaoDias: diasCoberturaSchema.optional(),
+  coberturaExcessoDias: diasCoberturaSchema.optional(),
+  coberturaCompraDias: diasCoberturaSchema.optional(),
 });
 
 const padraoDataBR = /^\d{2}\/\d{2}\/\d{4}$/;

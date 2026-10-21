@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TablePagination } from "@/components/table-pagination";
+import { TableEmptyState } from "@/components/table-empty-state";
 import { cn } from "@/lib/utils";
 import { ExportarVisao } from "./exportar-visao";
 import { useReportContext } from "./report-context";
@@ -219,16 +220,11 @@ export function ReportTable<T>({
                 ))}
               </TableRow>
             ))
-          ) : (
-            <TableRow>
-              <TableCell
-                colSpan={columns.length}
-                className="p-8 text-center text-muted-foreground"
-              >
-                Nenhum registro neste recorte.
-              </TableCell>
-            </TableRow>
-          )}
+          ) : <TableEmptyState
+            colSpan={columns.length}
+            title="Nenhum registro neste recorte"
+            description="Ajuste a busca ou os filtros aplicados nesta visão."
+          />}
         </TableBody>
       </ReportTableFrame>
       {pagination ? (

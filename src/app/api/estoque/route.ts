@@ -41,9 +41,19 @@ export async function POST(request: NextRequest) {
         enforceRateLimit: false,
       }),
     ]);
-    const saude = montarSaudeEstoque(movimentos, vendas, { inicial: dtInicial, final: dtFinal });
+    const limites = {
+      criticoDias: empresa.coberturaCriticaDias,
+      atencaoDias: empresa.coberturaAtencaoDias,
+      excessoDias: empresa.coberturaExcessoDias,
+    };
+    const saude = montarSaudeEstoque(
+      movimentos,
+      vendas,
+      { inicial: dtInicial, final: dtFinal },
+      limites,
+    );
     const movimentosPublicos = movimentos.map(projetarMovimentoKardex);
-    return NextResponse.json({ movimentos: movimentosPublicos, ...saude }, {
+    return NextResponse.json({ movimentos: movimentosPublicos, limites, ...saude }, {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {

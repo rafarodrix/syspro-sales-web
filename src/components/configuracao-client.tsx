@@ -45,6 +45,10 @@ export interface EmpresaRow {
   ativa: boolean;
   sysproBaseUrl: string;
   sysproUseIis: boolean;
+  coberturaCriticaDias: number;
+  coberturaAtencaoDias: number;
+  coberturaExcessoDias: number;
+  coberturaCompraDias: number;
 }
 
 interface Props {
@@ -72,6 +76,12 @@ function formatarCnpj(cnpj: string) {
   return `${v.slice(0, 2)}.${v.slice(2, 5)}.${v.slice(5, 8)}/${v.slice(8, 12)}-${v.slice(12, 14)}`;
 }
 
+function limitesCoberturaValidos(critico: number, atencao: number, excesso: number, compra: number) {
+  return [critico, atencao, excesso, compra].every((valor) => Number.isInteger(valor) && valor >= 1 && valor <= 365)
+    && critico < atencao
+    && atencao < excesso;
+}
+
 export function ConfiguracaoClient({ empresas }: Props) {
   const router = useRouter();
 
@@ -81,6 +91,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [codigo, setCodigo] = useState("");
   const [baseUrl, setBaseUrl] = useState("http://localhost:8080");
   const [useIis, setUseIis] = useState("false");
+  const [coberturaCritica, setCoberturaCritica] = useState(7);
+  const [coberturaAtencao, setCoberturaAtencao] = useState(15);
+  const [coberturaExcesso, setCoberturaExcesso] = useState(90);
+  const [coberturaCompra, setCoberturaCompra] = useState(30);
   const [adicionando, setAdicionando] = useState(false);
 
   // Edição de Empresa
@@ -91,6 +105,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [editBaseUrl, setEditBaseUrl] = useState("");
   const [editUseIis, setEditUseIis] = useState("false");
   const [editAtiva, setEditAtiva] = useState(true);
+  const [editCoberturaCritica, setEditCoberturaCritica] = useState(7);
+  const [editCoberturaAtencao, setEditCoberturaAtencao] = useState(15);
+  const [editCoberturaExcesso, setEditCoberturaExcesso] = useState(90);
+  const [editCoberturaCompra, setEditCoberturaCompra] = useState(30);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // Exclusão
@@ -139,6 +157,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
       toast.error("Informe a URL da API Syspro da empresa");
       return;
     }
+    if (!limitesCoberturaValidos(coberturaCritica, coberturaAtencao, coberturaExcesso, coberturaCompra)) {
+      toast.error("Revise os limites: crítico < atenção < excesso, entre 1 e 365 dias.");
+      return;
+    }
 
     setAdicionando(true);
     const res = await fetch("/api/empresas", {
@@ -150,6 +172,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
         empresaCodigo: codigo.trim(),
         sysproBaseUrl: baseUrl.trim(),
         sysproUseIis: useIis === "true",
+        coberturaCriticaDias: coberturaCritica,
+        coberturaAtencaoDias: coberturaAtencao,
+        coberturaExcessoDias: coberturaExcesso,
+        coberturaCompraDias: coberturaCompra,
       }),
     });
     setAdicionando(false);
@@ -164,6 +190,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
     setCodigo("");
     setBaseUrl("http://localhost:8080");
     setUseIis("false");
+    setCoberturaCritica(7);
+    setCoberturaAtencao(15);
+    setCoberturaExcesso(90);
+    setCoberturaCompra(30);
     router.refresh();
   }
 
@@ -175,6 +205,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
     setEditBaseUrl(empresa.sysproBaseUrl || "http://localhost:8080");
     setEditUseIis(empresa.sysproUseIis ? "true" : "false");
     setEditAtiva(empresa.ativa);
+    setEditCoberturaCritica(empresa.coberturaCriticaDias);
+    setEditCoberturaAtencao(empresa.coberturaAtencaoDias);
+    setEditCoberturaExcesso(empresa.coberturaExcessoDias);
+    setEditCoberturaCompra(empresa.coberturaCompraDias);
   }
 
   async function salvarEdicao() {
@@ -182,6 +216,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
     const limpoCnpj = editCnpj.replace(/\D/g, "");
     if (limpoCnpj.length !== 14 || !editRazao.trim() || !editCodigo.trim()) {
       toast.error("Preencha CNPJ válido, Razão Social e Código Syspro");
+      return;
+    }
+    if (!limitesCoberturaValidos(editCoberturaCritica, editCoberturaAtencao, editCoberturaExcesso, editCoberturaCompra)) {
+      toast.error("Revise os limites: crítico < atenção < excesso, entre 1 e 365 dias.");
       return;
     }
     setSalvandoEdicao(true);
@@ -196,6 +234,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
         sysproBaseUrl: editBaseUrl.trim(),
         sysproUseIis: editUseIis === "true",
         ativa: editAtiva,
+        coberturaCriticaDias: editCoberturaCritica,
+        coberturaAtencaoDias: editCoberturaAtencao,
+        coberturaExcessoDias: editCoberturaExcesso,
+        coberturaCompraDias: editCoberturaCompra,
       }),
     });
     setSalvandoEdicao(false);
@@ -352,6 +394,21 @@ export function ConfiguracaoClient({ empresas }: Props) {
             </div>
           </div>
 
+          <div className="rounded-lg border bg-muted/20 p-3">
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-foreground">Parâmetros de cobertura</p>
+              <p className="text-[11px] text-muted-foreground">
+                Limites usados nas análises de estoque e como alvo inicial de compras.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <CampoDias id="criticoNovo" rotulo="Crítico abaixo de" valor={coberturaCritica} onChange={setCoberturaCritica} />
+              <CampoDias id="atencaoNovo" rotulo="Atenção abaixo de" valor={coberturaAtencao} onChange={setCoberturaAtencao} />
+              <CampoDias id="excessoNovo" rotulo="Excesso acima de" valor={coberturaExcesso} onChange={setCoberturaExcesso} />
+              <CampoDias id="compraNovo" rotulo="Alvo inicial de compras" valor={coberturaCompra} onChange={setCoberturaCompra} />
+            </div>
+          </div>
+
           <Button
             onClick={adicionarEmpresa}
             disabled={adicionando}
@@ -387,6 +444,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
                   <th className="px-4 py-3">Cód. Syspro</th>
                   <th className="px-4 py-3">Servidor Syspro (URL)</th>
                   <th className="px-4 py-3">Modo</th>
+                  <th className="px-4 py-3">Cobertura</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
@@ -394,7 +452,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
               <tbody className="divide-y divide-border/60">
                 {empresas.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
                       Nenhuma empresa cadastrada. Adicione uma empresa acima.
                     </td>
                   </tr>
@@ -421,6 +479,10 @@ export function ConfiguracaoClient({ empresas }: Props) {
                           <Badge variant="outline" className="text-[10px] font-mono">
                             {empresa.sysproUseIis ? "IIS" : "Direto"}
                           </Badge>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] text-muted-foreground">
+                          {empresa.coberturaCriticaDias}/{empresa.coberturaAtencaoDias}/{empresa.coberturaExcessoDias} dias
+                          <span className="block">Compra: {empresa.coberturaCompraDias} dias</span>
                         </td>
                         <td className="px-4 py-3">
                           <button
@@ -510,7 +572,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
 
       {/* Dialog de Edição de Empresa & Conexão */}
       <Dialog open={Boolean(empresaParaEditar)} onOpenChange={(open) => !open && setEmpresaParaEditar(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-base font-bold">
               Editar Empresa & Conexão Syspro
@@ -565,6 +627,18 @@ export function ConfiguracaoClient({ empresas }: Props) {
                   <SelectItem value="true">Com IIS (/sysproserverisapi.dll/...)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="mb-3 text-xs font-semibold text-foreground">Parâmetros de cobertura</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <CampoDias id="criticoEditar" rotulo="Crítico abaixo de" valor={editCoberturaCritica} onChange={setEditCoberturaCritica} />
+                <CampoDias id="atencaoEditar" rotulo="Atenção abaixo de" valor={editCoberturaAtencao} onChange={setEditCoberturaAtencao} />
+                <CampoDias id="excessoEditar" rotulo="Excesso acima de" valor={editCoberturaExcesso} onChange={setEditCoberturaExcesso} />
+                <CampoDias id="compraEditar" rotulo="Alvo inicial de compras" valor={editCoberturaCompra} onChange={setEditCoberturaCompra} />
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Ordem obrigatória: crítico &lt; atenção &lt; excesso. Valores entre 1 e 365 dias.
+              </p>
             </div>
             <div className="flex items-center gap-2 pt-1">
               <input
@@ -632,6 +706,36 @@ export function ConfiguracaoClient({ empresas }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function CampoDias({
+  id,
+  rotulo,
+  valor,
+  onChange,
+}: {
+  id: string;
+  rotulo: string;
+  valor: number;
+  onChange: (valor: number) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={id} className="text-xs font-semibold">{rotulo}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type="number"
+          min={1}
+          max={365}
+          value={valor}
+          onChange={(evento) => onChange(Number(evento.target.value))}
+          className="pr-12 font-mono text-xs"
+        />
+        <span className="pointer-events-none absolute right-3 top-2.5 text-[10px] text-muted-foreground">dias</span>
+      </div>
     </div>
   );
 }

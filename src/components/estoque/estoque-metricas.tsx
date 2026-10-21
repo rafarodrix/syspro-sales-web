@@ -1,10 +1,11 @@
 import { ActionMetricCard } from "@/components/analytics/action-metric-card";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
-import type { ResumoSaudeEstoque } from "@/lib/estoque-saude";
+import type { LimitesEstoque, ResumoSaudeEstoque } from "@/lib/estoque-saude";
 
 interface EstoqueMetricasProps {
   resumo: ResumoSaudeEstoque;
+  limites: LimitesEstoque;
   onRupturas: () => void;
   onBaixaCobertura: () => void;
   onExcesso: () => void;
@@ -13,6 +14,7 @@ interface EstoqueMetricasProps {
 
 export function EstoqueMetricas({
   resumo,
+  limites,
   onRupturas,
   onBaixaCobertura,
   onExcesso,
@@ -38,14 +40,14 @@ export function EstoqueMetricas({
           <ActionMetricCard
             titulo="Baixa cobertura"
             valor={formatarNumero(resumo.baixaCobertura)}
-            descricao="Produtos críticos ou em atenção, com menos de 15 dias"
+            descricao={`Produtos críticos ou em atenção, com menos de ${limites.atencaoDias} dias`}
             onClick={onBaixaCobertura}
             acaoTitulo="Mostrar produtos críticos e em atenção"
           />
           <ActionMetricCard
             titulo="Capital em excesso"
             valor={formatarMoeda(resumo.capitalExcesso)}
-            descricao={`${formatarNumero(resumo.excesso)} em excesso · ${formatarNumero(resumo.semGiro)} sem saída`}
+            descricao={`${formatarNumero(resumo.excesso)} acima de ${limites.excessoDias} dias · ${formatarNumero(resumo.semGiro)} sem saída`}
             onClick={onExcesso}
             acaoTitulo="Mostrar produtos com estoque em excesso"
           />

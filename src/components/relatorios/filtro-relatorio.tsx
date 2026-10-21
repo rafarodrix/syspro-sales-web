@@ -20,7 +20,7 @@ export function FiltroRelatorio({
 }) {
   return (
     <Select value={valor} onValueChange={onChange}>
-      <SelectTrigger aria-label={rotulo} className="w-full sm:w-auto">
+      <SelectTrigger aria-label={rotulo} className="h-9 w-full text-xs sm:w-44">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

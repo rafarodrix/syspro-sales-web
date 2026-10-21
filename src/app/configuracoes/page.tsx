@@ -25,6 +25,10 @@ export default async function ConfiguracoesPage() {
             ativa: e.ativa,
             sysproBaseUrl: e.sysproBaseUrl || "http://localhost:8080",
             sysproUseIis: e.sysproUseIis,
+            coberturaCriticaDias: e.coberturaCriticaDias,
+            coberturaAtencaoDias: e.coberturaAtencaoDias,
+            coberturaExcessoDias: e.coberturaExcessoDias,
+            coberturaCompraDias: e.coberturaCompraDias,
           }))}
         />
       </div>

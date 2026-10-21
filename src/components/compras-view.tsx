@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
 import { ActionMetricCard } from "@/components/analytics/action-metric-card";
+import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { ExportDropdown } from "@/components/export-dropdown";
@@ -87,9 +88,11 @@ function badgeSituacao(situacao: SituacaoCompra) {
 export function ComprasView({
   empresaId,
   empresaNome,
+  coberturaAlvoInicial,
 }: {
   empresaId: string;
   empresaNome: string;
+  coberturaAlvoInicial: number;
 }) {
   const [periodo, setPeriodo] = useState<Periodo>(() => periodoUltimos90Dias());
   const [periodoConsultado, setPeriodoConsultado] = useState<Periodo | null>(null);
@@ -101,9 +104,13 @@ export function ComprasView({
   const [marca, setMarca] = useState("todas");
   const [situacao, setSituacao] = useState<"todas" | SituacaoCompra>("todas");
   const [ordenacao, setOrdenacao] = useState<CriterioOrdenacaoCompras>("demanda");
-  const [alvoDias, setAlvoDias] = useState(30);
+  const [alvoDias, setAlvoDias] = useState(coberturaAlvoInicial);
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(25);
+  const opcoesCobertura = useMemo(
+    () => [...new Set([coberturaAlvoInicial, 15, 30, 45, 60, 90])].sort((a, b) => a - b),
+    [coberturaAlvoInicial],
+  );
 
   const marcas = useMemo(() => {
     const conjunto = new Set<string>();
@@ -221,25 +228,19 @@ export function ComprasView({
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShoppingBasket aria-hidden="true" />
-            Análise de Compras
-          </CardTitle>
-          <CardDescription>
-            Vendas, devoluções de venda EDV e estoque atual por produto em {empresaNome}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DateRangeFilter
-            value={periodo}
-            onChange={setPeriodo}
-            onConsultar={consultar}
-            loading={loading}
-          />
-        </CardContent>
-      </Card>
+      <AnalysisQueryCard
+        icon={ShoppingBasket}
+        title="Análise de Compras"
+        description={`Vendas, devoluções de venda EDV e estoque atual por produto em ${empresaNome}.`}
+        footer={`Cobertura alvo inicial configurada para esta empresa: ${coberturaAlvoInicial} dias.`}
+      >
+        <DateRangeFilter
+          value={periodo}
+          onChange={setPeriodo}
+          onConsultar={consultar}
+          loading={loading}
+        />
+      </AnalysisQueryCard>
 
       {erro ? (
         <FeedbackState
@@ -461,7 +462,7 @@ export function ComprasView({
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {[15, 30, 45, 60, 90].map((dias) => (
+                  {opcoesCobertura.map((dias) => (
                     <SelectItem key={dias} value={String(dias)}>
                       Alvo {dias} dias
                     </SelectItem>

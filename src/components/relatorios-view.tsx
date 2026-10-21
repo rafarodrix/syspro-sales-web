@@ -3,13 +3,10 @@
 import { useState, useMemo } from "react";
 import { ReportContext } from "./relatorios/report-context";
 import { useRouter } from "next/navigation";
-import { ReportToolbar, ReportFilters } from "./relatorios/report-toolbar";
 import { FiltroRelatorio } from "./relatorios/filtro-relatorio";
 import { erroPeriodo } from "@/lib/periodo";
 import { REPORT_DEFINITIONS } from "./relatorios/report-definitions";
 import {
-  Search,
-  X,
   Sparkles,
   Building2,
   Users,
@@ -58,6 +55,7 @@ import {
 } from "@/components/relatorio-guia";
 
 import { FeedbackState } from "@/components/feedback-state";
+import { DataFilterBar } from "@/components/data-filter-bar";
 import { toast } from "sonner";
 import { resolverEmpresaSelecionada } from "@/lib/empresa-selecao";
 import { Button } from "@/components/ui/button";
@@ -1069,94 +1067,33 @@ export function RelatoriosView({
                 disponíveis.
               </p>
             )}
-            <ReportToolbar>
-              {abasComBusca.has(abaAtiva) && (
-                <div className="relative min-w-[170px] sm:min-w-[210px]">
-                  <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    aria-label="Buscar registros da análise"
-                    placeholder="Pesquisar registros..."
-                    value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
-                    className="h-8 w-full rounded-md border bg-background pl-8 pr-7 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
+            {abasComBusca.has(abaAtiva) || abaAtiva === "curva-abc" || abaAtiva === "clientes" ? (
+              <DataFilterBar
+                busca={busca}
+                onBuscaChange={setBusca}
+                placeholder="Pesquisar registros desta visão..."
+                temFiltrosAtivos={Boolean(busca) || (abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc) !== "todas"}
+                onLimpar={() => {
+                  setBusca("");
+                  if (abaAtiva === "clientes") setFiltroClasseCli("todas");
+                  if (abaAtiva === "curva-abc") setFiltroClasseAbc("todas");
+                }}
+              >
+                {abaAtiva === "curva-abc" || abaAtiva === "clientes" ? (
+                  <FiltroRelatorio
+                    rotulo="Classe ABC"
+                    valor={abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc}
+                    onChange={(valor) => abaAtiva === "clientes"
+                      ? setFiltroClasseCli(valor as "todas" | "A" | "B" | "C")
+                      : setFiltroClasseAbc(valor as "todas" | "A" | "B" | "C")}
+                    opcoes={["todas", "A", "B", "C"].map((valor) => ({
+                      valor,
+                      rotulo: valor === "todas" ? "Todas as classes" : `Classe ${valor}`,
+                    }))}
                   />
-                  {busca && (
-                    <button
-                      onClick={() => setBusca("")}
-                      aria-label="Limpar busca"
-                      className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {abaAtiva === "curva-abc" || abaAtiva === "clientes" ? (
-                <>
-                  <ReportFilters
-                    count={
-                      (abaAtiva === "clientes"
-                        ? filtroClasseCli
-                        : filtroClasseAbc) === "todas"
-                        ? 0
-                        : 1
-                    }
-                    onClear={() =>
-                      abaAtiva === "clientes"
-                        ? setFiltroClasseCli("todas")
-                        : setFiltroClasseAbc("todas")
-                    }
-                  >
-                    <FiltroRelatorio
-                      rotulo="Classe ABC"
-                      valor={
-                        abaAtiva === "clientes"
-                          ? filtroClasseCli
-                          : filtroClasseAbc
-                      }
-                      onChange={(valor) =>
-                        abaAtiva === "clientes"
-                          ? setFiltroClasseCli(
-                              valor as "todas" | "A" | "B" | "C",
-                            )
-                          : setFiltroClasseAbc(
-                              valor as "todas" | "A" | "B" | "C",
-                            )
-                      }
-                      opcoes={["todas", "A", "B", "C"].map((valor) => ({
-                        valor,
-                        rotulo:
-                          valor === "todas"
-                            ? "Todas as classes"
-                            : `Classe ${valor}`,
-                      }))}
-                    />
-                  </ReportFilters>
-                  {(abaAtiva === "clientes"
-                    ? filtroClasseCli
-                    : filtroClasseAbc) !== "todas" ? (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      aria-label="Remover filtro de classe"
-                      onClick={() =>
-                        abaAtiva === "clientes"
-                          ? setFiltroClasseCli("todas")
-                          : setFiltroClasseAbc("todas")
-                      }
-                    >
-                      Classe{" "}
-                      {abaAtiva === "clientes"
-                        ? filtroClasseCli
-                        : filtroClasseAbc}{" "}
-                      ×
-                    </Button>
-                  ) : null}
-                </>
-              ) : null}
-            </ReportToolbar>
+                ) : null}
+              </DataFilterBar>
+            ) : null}
           </CardContent>
         </Card>
 

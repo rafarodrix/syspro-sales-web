@@ -6,7 +6,6 @@ import {
   BarChart3,
   ChevronDown,
   ChevronRight,
-  SearchX,
   FilterX,
   LayoutList,
   AlignJustify,
@@ -35,9 +34,11 @@ import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
 import { calcularMargemItem } from "@/lib/metricas-negocio";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
 import { TablePagination } from "@/components/table-pagination";
+import { TableEmptyState } from "@/components/table-empty-state";
 import { toast } from "sonner";
 import { resolverEmpresaSelecionada } from "@/lib/empresa-selecao";
 import { Button } from "@/components/ui/button";
@@ -361,32 +362,19 @@ export function VendasView({
   return (
     <div className="flex flex-col gap-6">
       {/* Painel de Consulta & Filtros */}
-      <Card className="no-print border-border/60 shadow-sm backdrop-blur-md">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-xl font-bold tracking-tight text-foreground">
-                Consulta de Vendas
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Selecione o período e aplique filtros para analisar notas fiscais e itens detalhados.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="border-t border-border/60 pt-4">
-          <DateRangeFilter
-            value={periodo}
-            onChange={setPeriodo}
-            onConsultar={consultar}
-            loading={loading}
-          />
-          <p className="mt-2 text-xs text-muted-foreground">
-            Dados exibidos: {periodoConsultado.inicial.split("-").reverse().join("/")} a {periodoConsultado.final.split("-").reverse().join("/")}.
-            {periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final ? " Novo período ainda não consultado." : ""}
-          </p>
-        </CardContent>
-      </Card>
+      <AnalysisQueryCard
+        icon={BarChart3}
+        title="Consulta de Vendas"
+        description="Selecione o período e aplique filtros para analisar notas fiscais e itens detalhados."
+        footer={<>Dados exibidos: {periodoConsultado.inicial.split("-").reverse().join("/")} a {periodoConsultado.final.split("-").reverse().join("/")}.{periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final ? " Novo período ainda não consultado." : ""}</>}
+      >
+        <DateRangeFilter
+          value={periodo}
+          onChange={setPeriodo}
+          onConsultar={consultar}
+          loading={loading}
+        />
+      </AnalysisQueryCard>
 
       {erro ? (
         <FeedbackState
@@ -790,32 +778,17 @@ export function VendasView({
                   </TableHeader>
                   <TableBody>
                     {notasPaginadas.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="py-12 text-center">
-                          <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                              <SearchX className="size-5" />
-                            </div>
-                            <span className="font-bold text-sm text-foreground">
-                              Nenhuma nota encontrada
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              Nenhum resultado corresponde aos filtros aplicados para este período.
-                            </span>
-                            {temFiltrosAtivos && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={limparTodosFiltros}
-                                className="mt-2 text-xs font-semibold gap-1.5"
-                              >
-                                <FilterX className="size-3.5" />
-                                Limpar filtros aplicados
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <TableEmptyState
+                        colSpan={8}
+                        title="Nenhuma nota encontrada"
+                        description="Nenhum resultado corresponde aos filtros aplicados para este período."
+                        action={temFiltrosAtivos ? (
+                          <Button variant="outline" size="sm" onClick={limparTodosFiltros} className="gap-1.5 text-xs font-semibold">
+                            <FilterX className="size-3.5" />
+                            Limpar filtros aplicados
+                          </Button>
+                        ) : null}
+                      />
                     ) : (
                       notasPaginadas.map((nota) => (
                         <NotaRow
@@ -845,15 +818,11 @@ export function VendasView({
               />
             </>
           ) : !loading && !erro ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
-              <BarChart3 className="size-8 text-muted-foreground/60" />
-              <p className="font-semibold text-foreground">
-                Nenhuma venda carregada para o período.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Selecione um período acima e clique em &quot;Consultar Vendas&quot;.
-              </p>
-            </div>
+            <FeedbackState
+              variant="empty"
+              title="Nenhuma venda carregada para o período"
+              description="Selecione um período acima e clique em Consultar."
+            />
           ) : null}
         </CardContent>
       </Card>

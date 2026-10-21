@@ -63,6 +63,18 @@ export interface SaudeEstoque {
   resumo: ResumoSaudeEstoque;
 }
 
+export interface LimitesEstoque {
+  criticoDias: number;
+  atencaoDias: number;
+  excessoDias: number;
+}
+
+export const LIMITES_ESTOQUE_PADRAO: LimitesEstoque = {
+  criticoDias: 7,
+  atencaoDias: 15,
+  excessoDias: 90,
+};
+
 interface AcumuladorProduto {
   codigo: string;
   produto: string;
@@ -82,22 +94,23 @@ interface AcumuladorProduto {
   quantidadeComCustoReposicao: number;
 }
 
-const LIMITE_CRITICO_DIAS = 7;
-const LIMITE_ATENCAO_DIAS = 15;
-const LIMITE_EXCESSO_DIAS = 90;
-
 function dataMaisRecente(atual: string | null, candidata: string): string | null {
   const normalizada = normalizarDataIso(candidata);
   if (!normalizada) return atual;
   return !atual || normalizada > normalizarDataIso(atual) ? candidata : atual;
 }
 
-function classificarSituacao(estoque: number, demanda: number, cobertura: number | null): SituacaoEstoque {
+function classificarSituacao(
+  estoque: number,
+  demanda: number,
+  cobertura: number | null,
+  limites: LimitesEstoque,
+): SituacaoEstoque {
   if (demanda > 0 && estoque <= 0) return "ruptura";
   if (demanda <= 0 && estoque > 0) return "sem_giro";
-  if (cobertura !== null && cobertura < LIMITE_CRITICO_DIAS) return "critico";
-  if (cobertura !== null && cobertura < LIMITE_ATENCAO_DIAS) return "atencao";
-  if (cobertura !== null && cobertura > LIMITE_EXCESSO_DIAS) return "excesso";
+  if (cobertura !== null && cobertura < limites.criticoDias) return "critico";
+  if (cobertura !== null && cobertura < limites.atencaoDias) return "atencao";
+  if (cobertura !== null && cobertura > limites.excessoDias) return "excesso";
   return "saudavel";
 }
 
@@ -126,6 +139,7 @@ export function montarSaudeEstoque(
   movimentos: MovimentoKardex[],
   vendas: VendaProduto[],
   periodo: { inicial: string; final: string },
+  limites: LimitesEstoque = LIMITES_ESTOQUE_PADRAO,
 ): SaudeEstoque {
   const porProduto = new Map<string, AcumuladorProduto>();
   let movimentosSemProdutoId = 0;
@@ -219,7 +233,7 @@ export function montarSaudeEstoque(
       ultimaEntrada: item.ultimaEntrada,
       ultimaSaida: item.ultimaSaida,
       ultimoMovimento: item.ultimoMovimento,
-      situacao: classificarSituacao(item.estoqueAtual, demandaLiquida, coberturaDias),
+      situacao: classificarSituacao(item.estoqueAtual, demandaLiquida, coberturaDias, limites),
     };
   }).sort((a, b) => {
     const prioridade: Record<SituacaoEstoque, number> = { ruptura: 0, critico: 1, atencao: 2, sem_giro: 3, excesso: 4, saudavel: 5 };

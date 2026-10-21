@@ -5,12 +5,17 @@ import { AlertTriangle, ArrowLeftRight, PackageSearch, ShieldAlert } from "lucid
 import { toast } from "sonner";
 import type { MovimentoKardexPublico } from "@/lib/kardex";
 import type { PosicaoEstoque, ResumoSaudeEstoque, SituacaoEstoque } from "@/lib/estoque-saude";
+import type { LimitesEstoque } from "@/lib/estoque-saude";
 import { dataInputParaSyspro } from "@/lib/vendas";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { exportarParaCSV } from "@/lib/exportar-csv";
 import { useTablePagination } from "@/hooks/use-table-pagination";
+import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/date-range-filter";
 import { EstoqueMetricas } from "@/components/estoque/estoque-metricas";
+import { ExportDropdown } from "@/components/export-dropdown";
+import { TableEmptyState } from "@/components/table-empty-state";
 import { TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +24,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface EmpresaOption { id: string; cnpj: string; razaoSocial: string }
-interface RespostaEstoque { movimentos: MovimentoKardexPublico[]; posicoes: PosicaoEstoque[]; resumo: ResumoSaudeEstoque }
+interface EmpresaOption {
+  id: string;
+  cnpj: string;
+  razaoSocial: string;
+  coberturaCriticaDias: number;
+  coberturaAtencaoDias: number;
+  coberturaExcessoDias: number;
+}
+interface RespostaEstoque {
+  movimentos: MovimentoKardexPublico[];
+  posicoes: PosicaoEstoque[];
+  resumo: ResumoSaudeEstoque;
+  limites: LimitesEstoque;
+}
 type FiltroSituacao = SituacaoEstoque | "todas" | "baixa_cobertura";
 
 const rotulosSituacao: Record<SituacaoEstoque, string> = {
@@ -52,10 +69,16 @@ function coberturaVisual(valor: number | null, demanda: number): string {
 
 export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOption[]; empresaInicial?: string }) {
   const [empresaId, setEmpresaId] = useState(empresaInicial && empresas.some((empresa) => empresa.id === empresaInicial) ? empresaInicial : (empresas[0]?.id ?? ""));
+  const empresaAtual = empresas.find((empresa) => empresa.id === empresaId);
   const [periodo, setPeriodo] = useState<Periodo>(periodoMesAtual());
   const [movimentos, setMovimentos] = useState<MovimentoKardexPublico[]>([]);
   const [posicoes, setPosicoes] = useState<PosicaoEstoque[]>([]);
   const [resumoSaude, setResumoSaude] = useState<ResumoSaudeEstoque | null>(null);
+  const [limites, setLimites] = useState<LimitesEstoque>(() => ({
+    criticoDias: empresaAtual?.coberturaCriticaDias ?? 7,
+    atencaoDias: empresaAtual?.coberturaAtencaoDias ?? 15,
+    excessoDias: empresaAtual?.coberturaExcessoDias ?? 90,
+  }));
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
@@ -86,6 +109,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       setMovimentos(dados.movimentos ?? []);
       setPosicoes(dados.posicoes ?? []);
       setResumoSaude(dados.resumo ?? null);
+      if (dados.limites) setLimites(dados.limites);
       movimentosPaginacao.reiniciar();
       posicoesPaginacao.reiniciar();
       devolucoesPaginacao.reiniciar();
@@ -125,6 +149,15 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const posicoesPaginacao = useTablePagination(posicoesFiltradas);
   const devolucoesPaginacao = useTablePagination(devolucoes);
   const transferenciasPaginacao = useTablePagination(transferencias);
+  const totalVisaoAtual = aba === "visao-geral"
+    ? posicoesFiltradas.filter((item) => item.situacao !== "saudavel").length
+    : aba === "posicao"
+      ? posicoesFiltradas.length
+      : aba === "devolucoes"
+        ? devolucoes.length
+        : aba === "transferencias"
+          ? transferencias.length
+          : movimentosFiltrados.length;
 
   function reiniciarPaginacoes() {
     movimentosPaginacao.reiniciar();
@@ -149,21 +182,86 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     devolucoesPaginacao.reiniciar();
     setAba("devolucoes");
   }
+  function exportarVisaoAtual() {
+    const nomeEmpresa = (empresaAtual?.razaoSocial ?? "empresa")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9-]+/g, "-")
+      .toLowerCase();
+    const sufixo = `${periodo.inicial}-a-${periodo.final}`;
+
+    if (aba === "visao-geral" || aba === "posicao") {
+      const itens = aba === "visao-geral"
+        ? posicoesFiltradas.filter((item) => item.situacao !== "saudavel")
+        : posicoesFiltradas;
+      exportarParaCSV(
+        `estoque-${aba}-${nomeEmpresa}-${sufixo}`,
+        ["Código auxiliar", "Produto", "Marca", "Situação", "Estoque", "Venda", "EDV", "Demanda líquida", "Cobertura (dias)", "Custo aquisição", "Custo reposição", "Valor reposição", "Último movimento"],
+        itens.map((item) => [
+          item.codigo,
+          item.produto,
+          item.marca,
+          rotulosSituacao[item.situacao],
+          item.estoqueAtual,
+          item.quantidadeVendida,
+          item.quantidadeDevolvida,
+          item.demandaLiquida,
+          item.coberturaDias,
+          item.custoAquisicaoMedio,
+          item.custoReposicaoMedio,
+          item.valorReposicao,
+          dataVisual(item.ultimoMovimento),
+        ]),
+      );
+      toast.success(`${itens.length} produto(s) exportado(s).`);
+      return;
+    }
+
+    const itens = aba === "devolucoes"
+      ? devolucoes
+      : aba === "transferencias"
+        ? transferencias
+        : movimentosFiltrados;
+    exportarParaCSV(
+      `estoque-${aba}-${nomeEmpresa}-${sufixo}`,
+      ["Data", "Código auxiliar", "Produto", "Documento", "Grupo", "Categoria", "Participante", "Direção", "Quantidade", "Saldo", "Valor"],
+      itens.map((item) => [
+        dataVisual(item.dataMovimento),
+        item.produtoCodigoAuxiliar,
+        item.produtoDescricao,
+        item.documento,
+        item.grupoDocumento,
+        item.classificacao.rotulo,
+        item.participante,
+        item.direcao,
+        Math.abs(item.quantidadeMovimentada),
+        item.saldo,
+        Math.abs(item.valorTotal),
+      ]),
+    );
+    toast.success(`${itens.length} movimento(s) exportado(s).`);
+  }
   const filtrosAtivos = Boolean(busca) || filtroDirecao !== "todas" || filtroCategoria !== "todas" || filtroGrupo !== "todos" || filtroSituacao !== "todas";
   function limparFiltros() { setBusca(""); setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); setFiltroSituacao("todas"); reiniciarPaginacoes(); }
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader><CardTitle className="flex items-center gap-2 text-xl"><PackageSearch className="size-5 text-primary" />Posição e Saúde do Estoque</CardTitle><CardDescription>Saldo, demanda líquida, custos, cobertura e movimentações por empresa. Período máximo de 31 dias.</CardDescription></CardHeader>
-        <CardContent><DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} maximoDias={31} /></CardContent>
-      </Card>
+      <AnalysisQueryCard
+        icon={PackageSearch}
+        title="Posição e Saúde do Estoque"
+        description="Saldo, demanda líquida, custos, cobertura e movimentações por empresa. Período máximo de 31 dias."
+        actions={<ExportDropdown onExportarCsv={exportarVisaoAtual} disabled={loading || !resumoSaude || totalVisaoAtual === 0} label="Exportar visão" />}
+        footer={`Parâmetros da empresa: crítico abaixo de ${limites.criticoDias} dias · atenção abaixo de ${limites.atencaoDias} dias · excesso acima de ${limites.excessoDias} dias.`}
+      >
+        <DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} maximoDias={31} />
+      </AnalysisQueryCard>
 
       {erro ? <Card className="border-destructive/50 bg-destructive/5"><CardContent className="pt-6 text-sm font-medium text-destructive">{erro}</CardContent></Card> : null}
 
       {resumoSaude ? <>
         <EstoqueMetricas
           resumo={resumoSaude}
+          limites={limites}
           onRupturas={() => abrirPosicaoComSituacao("ruptura")}
           onBaixaCobertura={() => abrirPosicaoComSituacao("baixa_cobertura")}
           onExcesso={() => abrirPosicaoComSituacao("excesso")}
@@ -187,7 +285,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         <TabsContent value="visao-geral">
           <Card><CardHeader><CardTitle className="text-base">Fila de atenção</CardTitle><CardDescription>Produtos priorizados por ruptura, baixa cobertura, ausência de saída e excesso.</CardDescription></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table>
             <TableHeader><TableRow><TableHead>Produto</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Estoque</TableHead><TableHead className="text-right">Demanda líquida</TableHead><TableHead className="text-right">Cobertura</TableHead><TableHead className="text-right">Reposição</TableHead><TableHead /></TableRow></TableHeader>
-            <TableBody>{alertas.length ? alertas.map((item, indice) => <TableRow key={`${item.codigo}-${item.produto}-${indice}`}><ProdutoCell item={item} /><TableCell><SituacaoBadge situacao={item.situacao} /></TableCell><TableCell className="text-right font-medium">{formatarNumero(item.estoqueAtual, 2)}</TableCell><TableCell className="text-right">{formatarNumero(item.demandaLiquida, 2)}</TableCell><TableCell className="text-right">{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</TableCell><TableCell className="text-right">{item.valorReposicao === null ? "Sem custo" : formatarMoeda(item.valorReposicao)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>Ver Kardex</Button></TableCell></TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{loading ? "Consultando estoque..." : resumoSaude ? "Nenhum alerta encontrado." : "Consulte um período para analisar a saúde do estoque."}</TableCell></TableRow>}</TableBody>
+            <TableBody>{alertas.length ? alertas.map((item, indice) => <TableRow key={`${item.codigo}-${item.produto}-${indice}`}><ProdutoCell item={item} /><TableCell><SituacaoBadge situacao={item.situacao} /></TableCell><TableCell className="text-right font-medium">{formatarNumero(item.estoqueAtual, 2)}</TableCell><TableCell className="text-right">{formatarNumero(item.demandaLiquida, 2)}</TableCell><TableCell className="text-right">{coberturaVisual(item.coberturaDias, item.demandaLiquida)}</TableCell><TableCell className="text-right">{item.valorReposicao === null ? "Sem custo" : formatarMoeda(item.valorReposicao)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>Ver Kardex</Button></TableCell></TableRow>) : <TableEmptyState colSpan={7} title={loading ? "Consultando estoque" : resumoSaude ? "Nenhum alerta encontrado" : "Consulte um período"} description={loading ? "Aguarde enquanto os dados são carregados." : resumoSaude ? "Nenhum produto requer atenção nos filtros atuais." : "Consulte um período para analisar a saúde do estoque."} />}</TableBody>
           </Table></div></CardContent></Card>
         </TabsContent>
 
@@ -217,7 +315,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
                   <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => abrirKardex(item)}>Kardex</Button></TableCell>
                 </TableRow>
               )) : (
-                <TableRow><TableCell colSpan={13} className="h-28 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</TableCell></TableRow>
+                <TableEmptyState colSpan={13} title="Nenhum produto encontrado" description="Ajuste a busca ou os filtros de situação." />
               )}
             </TableBody>
           </Table></div>{posicoesFiltradas.length > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={posicoesPaginacao.paginaAtual} totalItens={posicoesFiltradas.length} itensPorPagina={posicoesPaginacao.itensPorPagina} onPaginaChange={posicoesPaginacao.setPagina} onItensPorPaginaChange={posicoesPaginacao.setItensPorPagina} labelItens="produtos" /></div> : null}</CardContent></Card>
@@ -226,7 +324,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         <TabsContent value="movimentacoes" className="space-y-6">
           <Card><CardHeader><CardTitle className="text-base">Kardex detalhado</CardTitle><CardDescription>{movimentosFiltrados.length} movimento(s) no período filtrado.</CardDescription></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><Table>
             <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Grupo</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Movimento</TableHead><TableHead className="text-right">Saldo</TableHead></TableRow></TableHeader>
-            <TableBody>{movimentosPaginacao.itensPaginados.length ? movimentosPaginacao.itensPaginados.map((item, indice) => <TableRow key={`${item.documento}-${item.produtoCodigoAuxiliar}-${item.dataMovimento}-${indice}`}><TableCell className="whitespace-nowrap text-xs">{dataVisual(item.dataMovimento)}</TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? "border-emerald-500/40 text-emerald-700" : "border-rose-500/40 text-rose-700"}>{item.grupoDocumento || "—"} · {item.classificacao.rotulo}</Badge></TableCell><TableCell className="max-w-44 truncate text-xs">{item.participante || "—"}</TableCell><TableCell className={`text-right font-semibold ${item.direcao === "entrada" ? "text-emerald-600" : "text-rose-600"}`}>{item.direcao === "entrada" ? "+" : "−"}{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell><TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell></TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{loading ? "Consultando o Kardex..." : "Nenhuma movimentação encontrada."}</TableCell></TableRow>}</TableBody>
+            <TableBody>{movimentosPaginacao.itensPaginados.length ? movimentosPaginacao.itensPaginados.map((item, indice) => <TableRow key={`${item.documento}-${item.produtoCodigoAuxiliar}-${item.dataMovimento}-${indice}`}><TableCell className="whitespace-nowrap text-xs">{dataVisual(item.dataMovimento)}</TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? "border-emerald-500/40 text-emerald-700" : "border-rose-500/40 text-rose-700"}>{item.grupoDocumento || "—"} · {item.classificacao.rotulo}</Badge></TableCell><TableCell className="max-w-44 truncate text-xs">{item.participante || "—"}</TableCell><TableCell className={`text-right font-semibold ${item.direcao === "entrada" ? "text-emerald-600" : "text-rose-600"}`}>{item.direcao === "entrada" ? "+" : "−"}{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell><TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell></TableRow>) : <TableEmptyState colSpan={7} title={loading ? "Consultando o Kardex" : "Nenhuma movimentação encontrada"} description={loading ? "Aguarde enquanto os movimentos são carregados." : "Ajuste a busca ou os filtros desta visão."} />}</TableBody>
           </Table></div>{movimentosFiltrados.length > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={movimentosPaginacao.paginaAtual} totalItens={movimentosFiltrados.length} itensPorPagina={movimentosPaginacao.itensPorPagina} onPaginaChange={movimentosPaginacao.setPagina} onItensPorPaginaChange={movimentosPaginacao.setItensPorPagina} labelItens="movimentos" /></div> : null}</CardContent></Card>
         </TabsContent>
 
@@ -246,5 +344,5 @@ function MovimentoProdutoCell({ item }: { item: MovimentoKardexPublico }) {
 }
 
 function MovimentosEspeciais({ itens, totalItens, paginacao, vazio, mostrarValor = false }: { itens: MovimentoKardexPublico[]; totalItens: number; paginacao: ReturnType<typeof useTablePagination<MovimentoKardexPublico>>; vazio: string; mostrarValor?: boolean }) {
-  return <><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Quantidade</TableHead>{mostrarValor ? <TableHead className="text-right">Valor</TableHead> : <TableHead className="text-right">Saldo</TableHead>}</TableRow></TableHeader><TableBody>{itens.length ? itens.map((item, indice) => <TableRow key={`${item.documento}-${item.dataMovimento}-${indice}`}><TableCell className="text-xs">{dataVisual(item.dataMovimento)}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? classesSituacao.saudavel : classesSituacao.ruptura}>{item.grupoDocumento} · {item.direcao === "entrada" ? "Entrada" : "Saída"}</Badge></TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell className="text-xs">{item.participante || "—"}</TableCell><TableCell className="text-right">{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell>{mostrarValor ? <TableCell className="text-right font-medium">{formatarMoeda(Math.abs(item.valorTotal))}</TableCell> : <TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell>}</TableRow>) : <TableRow><TableCell colSpan={7} className="h-28 text-center text-sm text-muted-foreground">{vazio}</TableCell></TableRow>}</TableBody></Table></div>{totalItens > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={paginacao.paginaAtual} totalItens={totalItens} itensPorPagina={paginacao.itensPorPagina} onPaginaChange={paginacao.setPagina} onItensPorPaginaChange={paginacao.setItensPorPagina} labelItens="movimentos" /></div> : null}</>;
+  return <><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Produto</TableHead><TableHead>Documento</TableHead><TableHead>Participante</TableHead><TableHead className="text-right">Quantidade</TableHead>{mostrarValor ? <TableHead className="text-right">Valor</TableHead> : <TableHead className="text-right">Saldo</TableHead>}</TableRow></TableHeader><TableBody>{itens.length ? itens.map((item, indice) => <TableRow key={`${item.documento}-${item.dataMovimento}-${indice}`}><TableCell className="text-xs">{dataVisual(item.dataMovimento)}</TableCell><TableCell><Badge variant="outline" className={item.direcao === "entrada" ? classesSituacao.saudavel : classesSituacao.ruptura}>{item.grupoDocumento} · {item.direcao === "entrada" ? "Entrada" : "Saída"}</Badge></TableCell><MovimentoProdutoCell item={item} /><TableCell className="font-mono text-xs">{item.documento || "—"}</TableCell><TableCell className="text-xs">{item.participante || "—"}</TableCell><TableCell className="text-right">{formatarNumero(Math.abs(item.quantidadeMovimentada), 2)}</TableCell>{mostrarValor ? <TableCell className="text-right font-medium">{formatarMoeda(Math.abs(item.valorTotal))}</TableCell> : <TableCell className="text-right font-medium">{formatarNumero(item.saldo, 2)}</TableCell>}</TableRow>) : <TableEmptyState colSpan={7} title={vazio.replace(/\.$/, "")} description="Ajuste a busca ou os filtros desta visão." />}</TableBody></Table></div>{totalItens > 0 ? <div className="border-t p-3"><TablePagination paginaAtual={paginacao.paginaAtual} totalItens={totalItens} itensPorPagina={paginacao.itensPorPagina} onPaginaChange={paginacao.setPagina} onItensPorPaginaChange={paginacao.setItensPorPagina} labelItens="movimentos" /></div> : null}</>;
 }

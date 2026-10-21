@@ -12,15 +12,15 @@ datasource db {
 // ============================================================
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
   emailVerified Boolean  @default(false)
-  image        String?
-  password     String? // hash (Better Auth)
-  role         String    @default("vendas") // "admin" | "gerente" | "supervisor" | "vendas"
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  image         String?
+  password      String? // hash (Better Auth)
+  role          String   @default("vendas") // "admin" | "gerente" | "supervisor" | "vendas"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   sessions Session[]
   accounts Account[]
@@ -41,20 +41,20 @@ model Session {
 }
 
 model Account {
-  id                     String    @id @default(cuid())
-  accountId              String
-  providerId             String
-  userId                 String
-  accessToken            String?
-  refreshToken           String?
-  idToken                String?
-  accessTokenExpiresAt   DateTime?
-  refreshTokenExpiresAt  DateTime?
-  scope                  String?
-  password               String?
-  issuer                 String?
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  issuer                String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -77,22 +77,26 @@ model Verification {
 
 // Empresas cadastradas no banco (relação CNPJ <-> empresa_codigo com sua própria conexão Syspro)
 model Empresa {
-  id            String   @id @default(cuid())
-  cnpj          String   @unique // CNPJ do cliente/empresa (somente dígitos)
-  razaoSocial   String
-  empresaCodigo String // empresa_codigo na API do Syspro
-  ativa         Boolean  @default(true)
-  sysproBaseUrl String   @default("http://localhost:8080")
-  sysproUseIis  Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  cnpj                 String   @unique // CNPJ do cliente/empresa (somente dígitos)
+  razaoSocial          String
+  empresaCodigo        String // empresa_codigo na API do Syspro
+  ativa                Boolean  @default(true)
+  sysproBaseUrl        String   @default("http://localhost:8080")
+  sysproUseIis         Boolean  @default(false)
+  coberturaCriticaDias Int      @default(7)
+  coberturaAtencaoDias Int      @default(15)
+  coberturaExcessoDias Int      @default(90)
+  coberturaCompraDias  Int      @default(30)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   usuarios UserEmpresa[]
 }
 
 // CNPJs permitidos por usuário
 model UserEmpresa {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   empresaId String
   createdAt DateTime @default(now())

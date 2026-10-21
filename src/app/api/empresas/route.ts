@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aplicarLimite, autenticarApi, validarJson } from "@/lib/api-route";
 import { prisma } from "@/lib/database";
-import { empresaCreateSchema, empresaUpdateSchema } from "@/lib/validations";
+import { empresaCreateSchema, empresaUpdateSchema, limitesEstoqueEmpresaSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const autenticacao = await autenticarApi("empresas:gerenciar", "Acesso restrito ao Administrador.");
@@ -13,7 +13,17 @@ export async function POST(request: NextRequest) {
 
   const json = await validarJson(request, empresaCreateSchema, "Dados da empresa inválidos.");
   if (!json.ok) return json.response;
-  const { cnpj, razaoSocial, empresaCodigo, sysproBaseUrl, sysproUseIis } = json.value;
+  const {
+    cnpj,
+    razaoSocial,
+    empresaCodigo,
+    sysproBaseUrl,
+    sysproUseIis,
+    coberturaCriticaDias,
+    coberturaAtencaoDias,
+    coberturaExcessoDias,
+    coberturaCompraDias,
+  } = json.value;
 
   try {
     const empresa = await prisma.empresa.create({
@@ -23,6 +33,10 @@ export async function POST(request: NextRequest) {
         empresaCodigo,
         sysproBaseUrl,
         sysproUseIis,
+        coberturaCriticaDias,
+        coberturaAtencaoDias,
+        coberturaExcessoDias,
+        coberturaCompraDias,
       },
     });
     return NextResponse.json({ empresa }, { status: 201 });
@@ -43,11 +57,36 @@ export async function PATCH(request: NextRequest) {
 
   const json = await validarJson(request, empresaUpdateSchema, "Dados inválidos para atualização.");
   if (!json.ok) return json.response;
-  const { id, cnpj, razaoSocial, empresaCodigo, ativa, sysproBaseUrl, sysproUseIis } = json.value;
+  const {
+    id,
+    cnpj,
+    razaoSocial,
+    empresaCodigo,
+    ativa,
+    sysproBaseUrl,
+    sysproUseIis,
+    coberturaCriticaDias,
+    coberturaAtencaoDias,
+    coberturaExcessoDias,
+    coberturaCompraDias,
+  } = json.value;
 
   const existente = await prisma.empresa.findUnique({ where: { id } });
   if (!existente) {
     return NextResponse.json({ error: "Empresa não encontrada." }, { status: 404 });
+  }
+
+  const limites = limitesEstoqueEmpresaSchema.safeParse({
+    coberturaCriticaDias: coberturaCriticaDias ?? existente.coberturaCriticaDias,
+    coberturaAtencaoDias: coberturaAtencaoDias ?? existente.coberturaAtencaoDias,
+    coberturaExcessoDias: coberturaExcessoDias ?? existente.coberturaExcessoDias,
+    coberturaCompraDias: coberturaCompraDias ?? existente.coberturaCompraDias,
+  });
+  if (!limites.success) {
+    return NextResponse.json(
+      { error: limites.error.issues[0]?.message ?? "Limites de estoque inválidos." },
+      { status: 400 },
+    );
   }
 
   // CNPJ duplicado em outra empresa?
@@ -73,6 +112,10 @@ export async function PATCH(request: NextRequest) {
         ...(ativa !== undefined ? { ativa } : {}),
         ...(sysproBaseUrl !== undefined ? { sysproBaseUrl } : {}),
         ...(sysproUseIis !== undefined ? { sysproUseIis } : {}),
+        ...(coberturaCriticaDias !== undefined ? { coberturaCriticaDias } : {}),
+        ...(coberturaAtencaoDias !== undefined ? { coberturaAtencaoDias } : {}),
+        ...(coberturaExcessoDias !== undefined ? { coberturaExcessoDias } : {}),
+        ...(coberturaCompraDias !== undefined ? { coberturaCompraDias } : {}),
       },
     });
 
