@@ -54,6 +54,20 @@ function TabelaFinanceira({
           cell: (item) => <>{formatarMoeda(item.ticketMedio)}</>,
         },
         {
+          id: "desconto",
+          header: <>Desconto</>,
+          kind: "currency",
+          value: (item) => item.descontoConcedido,
+          cell: (item) => <>{formatarMoeda(item.descontoConcedido)}</>,
+        },
+        {
+          id: "taxaDesconto",
+          header: <>Taxa desconto</>,
+          kind: "percent",
+          value: (item) => item.taxaDesconto,
+          cell: (item) => <>{formatarPercentual(item.taxaDesconto, 1)}</>,
+        },
+        {
           id: "total",
           header: <>Faturamento</>,
           kind: "currency",

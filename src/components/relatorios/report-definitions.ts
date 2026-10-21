@@ -5,7 +5,6 @@ import {
   CreditCard,
   Layers,
   MapPin,
-  Percent,
   Sparkles,
   UserCheck,
   Users,
@@ -16,7 +15,6 @@ export interface ReportDefinition {
     | "curva-abc"
     | "clientes"
     | "margens"
-    | "descontos"
     | "sazonalidade"
     | "departamentos"
     | "vendedores"
@@ -53,14 +51,6 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     icone: BadgeDollarSign,
     cor: "text-emerald-600",
     desc: "Margem por produto, custo de reposição e impacto das EDVs",
-  },
-  {
-    id: "descontos",
-    label: "Descontos & Margem",
-    menuLabel: "Descontos & Margem",
-    icone: Percent,
-    cor: "text-rose-500",
-    desc: "Descontos, custo de reposição e margem por dimensão comercial",
   },
   {
     id: "sazonalidade",

@@ -12,7 +12,8 @@ import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
 import { FiltroRelatorio } from "./filtro-relatorio";
 
-type VisaoSazonalidade = "dia-semana" | "quinzena" | "diario" | "mensal";
+type VisaoSazonalidade = "evolucao" | "dia-semana" | "quinzena";
+type GranularidadeEvolucao = "diario" | "mensal";
 type MetricaSazonalidade = "faturamento" | "lucro";
 
 interface ItemSazonalidadeBase {
@@ -273,7 +274,8 @@ export function AbaSazonalidade({
   relatorioEvolucao,
   periodo,
 }: AbaSazonalidadeProps) {
-  const [visao, setVisao] = useState<VisaoSazonalidade>("diario");
+  const [visao, setVisao] = useState<VisaoSazonalidade>("evolucao");
+  const [granularidade, setGranularidade] = useState<GranularidadeEvolucao>("diario");
   const [metrica, setMetrica] = useState<MetricaSazonalidade>("faturamento");
   const porDiaSemana = relatorioSazonalidade.porDiaSemana.map(
     ({ dia, ...item }) => ({ ...item, rotulo: dia }),
@@ -282,14 +284,15 @@ export function AbaSazonalidade({
     ({ quinzena, ...item }) => ({ ...item, rotulo: quinzena }),
   );
   const exibeDiaSemana = visao === "dia-semana";
-  const exibeEvolucao = visao === "diario" || visao === "mensal";
+  const exibeEvolucao = visao === "evolucao";
+  const exibeMensal = exibeEvolucao && granularidade === "mensal";
   const somaMediasDiaSemana = porDiaSemana.reduce(
     (total, item) => total + (item.faturamentoMedioPorOcorrencia ?? 0),
     0,
   );
 
   const serie = [];
-  const mensal = visao === "mensal";
+  const mensal = exibeMensal;
   const valores = new Map(
     (mensal ? relatorioEvolucao.mensal : relatorioEvolucao.diario).map(
       (item) => [
@@ -318,12 +321,23 @@ export function AbaSazonalidade({
           view={visao}
           onViewChange={setVisao}
           options={[
-            { value: "diario", label: "Diário", icon: ChartLine },
-            { value: "mensal", label: "Mensal", icon: CalendarRange },
+            { value: "evolucao", label: "Evolução", icon: ChartLine },
             { value: "dia-semana", label: "Dia da semana", icon: CalendarDays },
             { value: "quinzena", label: "Quinzena", icon: CalendarRange },
           ]}
         />
+        <div className="flex flex-wrap items-center gap-2">
+        {exibeEvolucao ? (
+          <FiltroRelatorio
+            rotulo="Granularidade"
+            valor={granularidade}
+            opcoes={[
+              { valor: "diario", rotulo: "Diária" },
+              { valor: "mensal", rotulo: "Mensal" },
+            ]}
+            onChange={(valor) => setGranularidade(valor as GranularidadeEvolucao)}
+          />
+        ) : null}
         <FiltroRelatorio
           rotulo="Métrica do gráfico"
           valor={metrica}
@@ -333,9 +347,10 @@ export function AbaSazonalidade({
           ]}
           onChange={(valor) => setMetrica(valor as MetricaSazonalidade)}
         />
+        </div>
       </div>
       <ReportChart
-        key={`${visao}-${metrica}`}
+        key={`${visao}-${granularidade}-${metrica}`}
         temporal={exibeEvolucao}
         rotulo={metrica === "lucro" ? "Lucro bruto" : "Faturamento"}
         points={
@@ -366,13 +381,9 @@ export function AbaSazonalidade({
       />
       {exibeEvolucao ? (
         <TabelaEvolucao
-          itens={
-            visao === "diario"
-              ? relatorioEvolucao.diario
-              : relatorioEvolucao.mensal
-          }
-          rotulo={visao === "diario" ? "Emissão" : "Mês"}
-          mensal={visao === "mensal"}
+          itens={granularidade === "diario" ? relatorioEvolucao.diario : relatorioEvolucao.mensal}
+          rotulo={granularidade === "diario" ? "Emissão" : "Mês"}
+          mensal={granularidade === "mensal"}
         />
       ) : (
         <TabelaSazonalidade

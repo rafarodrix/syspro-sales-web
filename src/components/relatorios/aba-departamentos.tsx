@@ -108,22 +108,6 @@ export function AbaDepartamentos({
                 value: (item) => item.total,
                 cell: (item) => <>{formatarMoeda(item.total)}</>,
               },
-              {
-                id: "lucroBruto",
-                header: <>Lucro bruto</>,
-                kind: "currency",
-                value: (item) => item.lucroBruto,
-                cell: (item) => <>{formatarMoeda(item.lucroBruto)}</>,
-              },
-              {
-                id: "margemBruta",
-                header: <>Margem</>,
-                kind: "percent",
-                value: (item) => item.margemBruta,
-                cell: (item) => item.coberturaCusto > 0
-                  ? <>{formatarPercentual(item.margemBruta, 1)}</>
-                  : <>—</>,
-              },
             ]}
           />
         </>
@@ -171,6 +155,20 @@ export function AbaDepartamentos({
               kind: "currency",
               value: (dep) => dep.ticketMedio,
               cell: (dep) => <>{formatarMoeda(dep.ticketMedio)}</>,
+            },
+            {
+              id: "desconto",
+              header: <>Desconto</>,
+              kind: "currency",
+              value: (dep) => dep.descontoConcedido,
+              cell: (dep) => <>{formatarMoeda(dep.descontoConcedido)}</>,
+            },
+            {
+              id: "taxaDesconto",
+              header: <>Taxa desconto</>,
+              kind: "percent",
+              value: (dep) => dep.taxaDesconto,
+              cell: (dep) => <>{formatarPercentual(dep.taxaDesconto, 1)}</>,
             },
             {
               id: "faturamento",

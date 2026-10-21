@@ -89,6 +89,11 @@ export function AbaCurvaABC({
         />
       </div>
       {/* Tabela Curva ABC */}
+      <p className="text-xs text-muted-foreground">
+        Custo de reposição, lucro bruto e margem por produto ficam em <strong>Vendas & Margem</strong>, 
+        onde aparecem antes e depois das devoluções (EDV).
+      </p>
+
       <ReportTable
         caption="Curva ABC de produtos"
         data={itensFiltrados}
@@ -168,29 +173,6 @@ export function AbaCurvaABC({
             kind: "currency",
             value: (item) => item.total,
             cell: (item) => <>{formatarMoeda(item.total)}</>,
-          },
-          {
-            id: "custoReposicao",
-            header: <>Custo reposição</>,
-            kind: "currency",
-            value: (item) => item.custoReposicao,
-            cell: (item) => <>{formatarMoeda(item.custoReposicao)}</>,
-          },
-          {
-            id: "lucroBruto",
-            header: <>Lucro bruto</>,
-            kind: "currency",
-            value: (item) => item.lucroBruto,
-            cell: (item) => <>{formatarMoeda(item.lucroBruto)}</>,
-          },
-          {
-            id: "margemBruta",
-            header: <>Margem</>,
-            kind: "percent",
-            value: (item) => item.margemBruta,
-            cell: (item) => item.coberturaCusto > 0
-              ? <>{formatarPercentual(item.margemBruta, 1)}</>
-              : <>—</>,
           },
           {
             id: "percentual",

@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { VendaProduto } from "@/lib/syspro-api";
 import {
   agruparVendasPorNota,
+  analiseDepartamentos,
   analiseDescontos,
   analiseEmpresas,
   analiseEvolucaoVendas,
+  analiseFinanceira,
   analiseProdutosPorDimensao,
   analiseClientesNovosRecorrentes,
   analiseContribuicaoVariacao,
@@ -567,5 +569,24 @@ describe("métricas de gestão (comparativo e concentração)", () => {
 
     const quedasA = classeAPerdendoParticipacao(atual, anterior);
     expect(quedasA.some((item) => item.id === "A")).toBe(true);
+  });
+});
+describe("desconto nas dimensões consolidadas", () => {
+  it("traz desconto concedido e taxa por departamento", () => {
+    const [dep] = analiseDepartamentos([vendaBase({ produto_vlr_desconto: 25 })]);
+    expect(dep.descontoConcedido).toBe(25);
+    // taxa = desconto / (faturamento + desconto)
+    expect(dep.taxaDesconto).toBeCloseTo((25 / (dep.faturamento + 25)) * 100);
+  });
+
+  it("traz desconto concedido e taxa por forma de pagamento e documento", () => {
+    const { formasPagamento, modelosDocumento } = analiseFinanceira([
+      vendaBase({ produto_vlr_desconto: 30 }),
+      vendaBase({ produto_vlr_desconto: 10, nf_forma_pagto: "CARTAO" }),
+    ]);
+    const pix = formasPagamento.find((item) => item.nome === "PIX");
+    expect(pix?.descontoConcedido).toBe(30);
+    expect(pix?.taxaDesconto).toBeGreaterThan(0);
+    expect(modelosDocumento[0].descontoConcedido).toBe(40);
   });
 });

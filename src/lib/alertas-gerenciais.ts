@@ -16,7 +16,7 @@ export interface AlertaGerencial {
   titulo: string;
   detalhe: string;
   nivel: NivelAlertaGerencial;
-  relatorio: "clientes" | "vendedores" | "descontos" | "curva-abc";
+  relatorio: "clientes" | "vendedores" | "curva-abc";
 }
 
 export function gerarAlertasGerenciais(
@@ -32,7 +32,7 @@ export function gerarAlertasGerenciais(
       titulo: "Cobertura de custo incompleta",
       detalhe: `${resumo.coberturaCusto.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do faturamento possui custo de reposição informado.`,
       nivel: "atencao",
-      relatorio: "descontos",
+      relatorio: "vendedores",
     });
   }
 
@@ -110,7 +110,7 @@ export function gerarAlertasGerenciais(
         { maximumFractionDigits: 1 },
       )} p.p. de desconto.`,
       nivel: "atencao",
-      relatorio: "descontos",
+      relatorio: "vendedores",
     });
   }
 

@@ -64,21 +64,6 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "Identificação e recência", definicao: "Agrupamento por nome padronizado, sujeito a homônimos. Última compra observada nas janelas consultadas; dias sem compra medidos até o final do período atual." },
     ],
   },
-  descontos: {
-    resumo:
-      "Mede os descontos concedidos por vendedor, departamento e forma de pagamento. Não calcula margem real, pois a API de vendas não informa custo ou CMV.",
-    comoLer: [
-      "Uma taxa de desconto alta em um vendedor pode indicar negociação agressiva ou falta de autoridade de preço — compare com os colegas.",
-      "Departamentos com desconto recorrente podem ter preço de tabela acima do mercado ou sofrer pressão de concorrência.",
-      "Compare taxa, valor concedido e faturamento líquido dentro da mesma dimensão antes de tomar uma decisão comercial.",
-      "A sinalização de desconto maior sem crescimento de receita é um indício para investigação, não prova que o desconto causou a queda.",
-    ],
-    dica: "Vendedor com taxa de desconto muito acima da média é candidato a treinamento de negociação ou revisão da política de preços.",
-    glossario: [
-      { termo: "Taxa de desconto", definicao: "Desconto concedido ÷ (faturamento líquido + desconto), em %. É a taxa sobre o valor antes do desconto." },
-      { termo: "Forma de pagamento", definicao: "Meio informado na nota fiscal. A visão mostra a associação registrada entre esse meio e os descontos dos itens da nota." },
-    ],
-  },
   sazonalidade: {
     resumo:
       "Revela a evolução diária e mensal das vendas, além da distribuição por dia da semana e quinzena.",
@@ -107,6 +92,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     glossario: [
       { termo: "Mix de vendas", definicao: "Proporção da receita vinda de cada departamento/categoria." },
       { termo: "Visão sintética", definicao: "Uma linha por departamento com SKUs distintos, pedidos/NF, ticket médio, faturamento e participação. Quantidades físicas agregadas não são usadas porque podem misturar UN, KG, CX e outras unidades." },
+      { termo: "Taxa de desconto", definicao: "Fórmula: desconto concedido ÷ (faturamento líquido + desconto) × 100. É a taxa sobre o valor antes do desconto." },
       { termo: "Visão analítica", definicao: "Uma linha por produto dentro dos departamentos, para identificar quais itens compõem o resultado." },
     ],
   },
@@ -121,6 +107,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     dica: "Metas individuais fazem mais sentido quando consideram o perfil de cada um (balcão vs. venda direta).",
     glossario: [
       { termo: "Ticket médio", definicao: "Faturamento ÷ número de notas (vendas) do vendedor no período." },
+      { termo: "Taxa de desconto", definicao: "Fórmula: desconto concedido ÷ (faturamento líquido + desconto) × 100. É a taxa sobre o valor antes do desconto." },
       { termo: "Visão sintética", definicao: "Ranking consolidado por vendedor com pedidos, clientes identificados, SKUs distintos, ticket, desconto e faturamento. Consumidores genéricos não entram em clientes únicos." },
       { termo: "Produtos por vendedor", definicao: "Mostra o mix de produtos vendido por cada vendedor, com quantidade, notas, descontos e faturamento no período." },
       { termo: "Visão analítica", definicao: "Detalhe por nota/NF do período, filtrável por vendedor — mostra o que compõe os números do ranking." },
@@ -210,6 +197,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "NF-e (modelo 55)", definicao: "Nota Fiscal eletrônica — venda faturada (empresa para empresa)." },
       { termo: "NFC-e (modelo 65)", definicao: "Nota de balcão/consumidor final (PDV), emitida no caixa." },
       { termo: "Forma de pagamento", definicao: "Meio informado na nota fiscal, como Pix, cartão, dinheiro ou faturado. Mede o mix declarado, não liquidação financeira." },
+      { termo: "Taxa de desconto", definicao: "Fórmula: desconto concedido ÷ (faturamento líquido + desconto) × 100. É a taxa sobre o valor antes do desconto." },
       { termo: "Visão por documento fiscal", definicao: "Agrupa as notas por modelo de emissão, como NF-e (55) e NFC-e (65)." },
       { termo: "PDV", definicao: "Ponto de Venda — operação de balcão, com cupom fiscal." },
     ],

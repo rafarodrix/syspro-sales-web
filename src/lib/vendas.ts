@@ -147,6 +147,8 @@ export interface ItemDepartamentoAnalise extends IndicadoresRentabilidade {
   quantidadeProdutosDistintos: number;
   pedidos: number;
   ticketMedio: number;
+  descontoConcedido: number;
+  taxaDesconto: number;
   produtos: {
     id: string;
     codigoReferencia: string;
@@ -296,6 +298,8 @@ export interface ItemFinanceiroAnalise extends IndicadoresRentabilidade {
   percentual: number;
   pedidos: number;
   ticketMedio: number;
+  descontoConcedido: number;
+  taxaDesconto: number;
 }
 
 export type MetricaDeVendas = "faturamento" | "itens" | "notas" | "ticket";
@@ -751,6 +755,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
     {
       nome: string;
       faturamento: number;
+      desconto: number;
       quantidadeItens: number;
       notas: Set<string>;
       rentabilidade: AcumuladorRentabilidade;
@@ -783,6 +788,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
       depto = {
         nome: nomeDepto,
         faturamento: 0,
+        desconto: 0,
         quantidadeItens: 0,
         notas: new Set(),
         rentabilidade: novoAcumuladorRentabilidade(),
@@ -792,6 +798,7 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
     }
 
     depto.faturamento += total;
+    depto.desconto += paraNumero(venda.produto_vlr_desconto);
     depto.quantidadeItens += qtd;
     depto.notas.add(chaveDaNota(venda));
     acumularRentabilidade(depto.rentabilidade, venda);
@@ -835,6 +842,8 @@ export function analiseDepartamentos(vendas: VendaProduto[]): ItemDepartamentoAn
         quantidadeProdutosDistintos: produtos.length,
         pedidos: d.notas.size,
         ticketMedio: d.notas.size > 0 ? d.faturamento / d.notas.size : 0,
+        descontoConcedido: d.desconto,
+        taxaDesconto: calcularPercentual(d.desconto, d.faturamento + d.desconto),
         ...finalizarRentabilidade(d.rentabilidade),
         produtos,
       };
@@ -1533,6 +1542,7 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
 } {
   type AcumuladoFinanceiro = {
     faturamento: number;
+    desconto: number;
     notas: Set<string>;
     rentabilidade: AcumuladorRentabilidade;
   };
@@ -1551,19 +1561,21 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
 
     let atualFp = fpMap.get(fp);
     if (!atualFp) {
-      atualFp = { faturamento: 0, notas: new Set(), rentabilidade: novoAcumuladorRentabilidade() };
+      atualFp = { faturamento: 0, desconto: 0, notas: new Set(), rentabilidade: novoAcumuladorRentabilidade() };
       fpMap.set(fp, atualFp);
     }
     atualFp.faturamento += total;
+    atualFp.desconto += paraNumero(venda.produto_vlr_desconto);
     atualFp.notas.add(chaveNota);
     acumularRentabilidade(atualFp.rentabilidade, venda);
 
     let atualMod = modMap.get(mod);
     if (!atualMod) {
-      atualMod = { faturamento: 0, notas: new Set(), rentabilidade: novoAcumuladorRentabilidade() };
+      atualMod = { faturamento: 0, desconto: 0, notas: new Set(), rentabilidade: novoAcumuladorRentabilidade() };
       modMap.set(mod, atualMod);
     }
     atualMod.faturamento += total;
+    atualMod.desconto += paraNumero(venda.produto_vlr_desconto);
     atualMod.notas.add(chaveNota);
     acumularRentabilidade(atualMod.rentabilidade, venda);
   }
@@ -1575,6 +1587,8 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
       percentual: faturamentoTotal > 0 ? (dados.faturamento / faturamentoTotal) * 100 : 0,
       pedidos: dados.notas.size,
       ticketMedio: dados.notas.size > 0 ? dados.faturamento / dados.notas.size : 0,
+      descontoConcedido: dados.desconto,
+      taxaDesconto: calcularPercentual(dados.desconto, dados.faturamento + dados.desconto),
       ...finalizarRentabilidade(dados.rentabilidade),
     }))
     .sort((a, b) => b.total - a.total);
@@ -1586,6 +1600,8 @@ export function analiseFinanceira(vendas: VendaProduto[]): {
       percentual: faturamentoTotal > 0 ? (dados.faturamento / faturamentoTotal) * 100 : 0,
       pedidos: dados.notas.size,
       ticketMedio: dados.notas.size > 0 ? dados.faturamento / dados.notas.size : 0,
+      descontoConcedido: dados.desconto,
+      taxaDesconto: calcularPercentual(dados.desconto, dados.faturamento + dados.desconto),
       ...finalizarRentabilidade(dados.rentabilidade),
     }))
     .sort((a, b) => b.total - a.total);

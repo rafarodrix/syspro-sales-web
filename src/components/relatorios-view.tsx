@@ -10,7 +10,6 @@ import {
   Sparkles,
   Building2,
   Users,
-  Percent,
   Layers,
   MapPin,
   CreditCard,
@@ -23,7 +22,6 @@ import {
   analiseDepartamentos,
   analiseVendedores,
   analiseClientes,
-  analiseDescontos,
   analiseEmpresas,
   analiseEvolucaoVendas,
   analiseProdutosPorDimensao,
@@ -36,7 +34,6 @@ import {
   concentracaoTopN,
   analiseClientesNovosRecorrentes,
   analiseContribuicaoVariacao,
-  analiseDescontoSemRetorno,
   analiseDriversVendedores,
   classeAPerdendoParticipacao,
   mudancaMixTopProdutos,
@@ -79,7 +76,6 @@ import {
 // Subcomponentes modulares de abas
 import { AbaCurvaABC, ResumoCurvaAbcCard } from "./relatorios/aba-curva-abc";
 import { AbaClientes } from "./relatorios/aba-clientes";
-import { AbaDescontos } from "./relatorios/aba-descontos";
 import { AbaSazonalidade } from "./relatorios/aba-sazonalidade";
 import { AbaDepartamentos } from "./relatorios/aba-departamentos";
 import { AbaVendedores } from "./relatorios/aba-vendedores";
@@ -307,14 +303,6 @@ export function RelatoriosView({
     [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
   );
 
-  const alertasDesconto = useMemo(
-    () =>
-      abaAtiva === "descontos" && comparacaoDisponivel
-        ? analiseDescontoSemRetorno(vendas, vendasAnteriores)
-        : [],
-    [abaAtiva, comparacaoDisponivel, vendas, vendasAnteriores],
-  );
-
   const classeAEmQueda = useMemo(
     () =>
       abaAtiva === "curva-abc" && comparacaoDisponivel
@@ -479,17 +467,6 @@ export function RelatoriosView({
     [abaAtiva, relatorioABC],
   );
 
-  const relatorioDescontos = useMemo(() => {
-    if (abaAtiva !== "descontos") {
-      return {
-        porVendedor: [],
-        porDepartamento: [],
-        porFormaPagamento: [],
-      };
-    }
-    return analiseDescontos(vendas);
-  }, [vendas, abaAtiva]);
-
   const relatorioSazonalidade = useMemo(() => {
     if (abaAtiva !== "sazonalidade") {
       return { porDiaSemana: [], porQuinzena: [] };
@@ -626,26 +603,6 @@ export function RelatoriosView({
       );
     }
 
-    if (abaAtiva === "descontos") {
-      const itens = relatorioDescontos.porVendedor;
-      const faturamentoLiquido = itens.reduce(
-        (total, item) => total + item.faturamentoLiquido,
-        0,
-      );
-      const descontos = itens.reduce((total, item) => total + item.desconto, 0);
-      const bruto = faturamentoLiquido + descontos;
-      const taxa = bruto > 0 ? (descontos / bruto) * 100 : 0;
-      return (
-        <MetricaCard
-          rotulo="Taxa média de desconto"
-          definicao="Desconto total dividido pelo faturamento bruto estimado do período."
-          valor={formatarPercentual(taxa, 1)}
-          rodape={descontos > 0 ? formatarMoeda(descontos) : undefined}
-          icone={Percent}
-        />
-      );
-    }
-
     if (abaAtiva === "geografico") {
       const cidades = relatorioGeografico.filter((item) => item.faturamento > 0).length;
       const ufs = relatorioUFs.filter((item) => item.faturamento > 0).length;
@@ -704,7 +661,6 @@ export function RelatoriosView({
     relatorioABC,
     relatorioVendedores,
     relatorioDeptos,
-    relatorioDescontos,
     relatorioGeografico,
     relatorioUFs,
     relatorioFinanceiro,
@@ -887,30 +843,6 @@ export function RelatoriosView({
       );
     }
 
-    if (abaAtiva === "descontos" && comparacaoDisponivel) {
-      const principal = alertasDesconto[0];
-      return (
-        <ReportDiagnostics
-          titulo="Eficiência do desconto"
-          metricas={[
-            {
-              label: "Desconto maior sem crescimento",
-              value: formatarNumero(alertasDesconto.length, 0),
-              detail: principal
-                ? `${principal.vendedor}: +${formatarNumero(
-                    principal.aumentoPp,
-                    1,
-                  )} p.p. de desconto e ${formatarMoeda(
-                    principal.variacaoFaturamento,
-                  )} de receita`
-                : "Nenhum vendedor sinalizado",
-              attention: alertasDesconto.length > 0,
-            },
-          ]}
-        />
-      );
-    }
-
     return null;
   }, [
     abaAtiva,
@@ -924,7 +856,6 @@ export function RelatoriosView({
     relatorioGeografico,
     mudancaMix,
     classeAEmQueda,
-    alertasDesconto,
   ]);
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
@@ -1258,10 +1189,6 @@ export function RelatoriosView({
                     }}
                     periodoAnterior={rotuloPeriodoAnterior}
                   />
-                )}
-
-                {abaAtiva === "descontos" && (
-                  <AbaDescontos relatorioDescontos={relatorioDescontos} />
                 )}
 
                 {abaAtiva === "margens" && (
