@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { MetricsStrip } from "@/components/analytics/metrics-strip";
 
 export function ReportToolbar({ children }: { children: ReactNode }) {
   return (
@@ -39,21 +40,12 @@ export function ReportMetricStrip({
   items: { label: string; value: ReactNode; attention?: boolean }[];
 }) {
   return (
-    <dl className="flex flex-wrap gap-x-8 gap-y-3 rounded-md border px-4 py-3">
-      {items.map((item) => (
-        <div key={item.label}>
-          <dt className="text-xs text-muted-foreground">{item.label}</dt>
-          <dd
-            className={
-              item.attention
-                ? "text-lg font-semibold tabular-nums text-destructive"
-                : "text-lg font-semibold tabular-nums"
-            }
-          >
-            {item.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <MetricsStrip
+      itens={items.map((item) => ({
+        rotulo: item.label,
+        valor: typeof item.value === "string" ? item.value : String(item.value ?? ""),
+        attention: item.attention,
+      }))}
+    />
   );
 }

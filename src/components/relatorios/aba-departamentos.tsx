@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ReportTable } from "./report-table";
 import { useMemo, useState } from "react";
-import { FileText, LayoutList, MousePointerClick } from "lucide-react";
+import { ArrowLeftRight, FileText, LayoutList, MousePointerClick } from "lucide-react";
 import {
   formatarMoeda,
   formatarNumero,
@@ -10,13 +10,20 @@ import {
 import type { ItemDepartamentoAnalise } from "@/lib/vendas";
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportViewSelector } from "./report-view-toggle";
+import { VisaoComparativoDimensao } from "./visao-comparativo-dimensao";
 
 export function AbaDepartamentos({
   deptosFiltrados,
+  deptosAnteriores = [],
+  comparacaoDisponivel = false,
+  rotuloPeriodoAnterior,
 }: {
   deptosFiltrados: ItemDepartamentoAnalise[];
+  deptosAnteriores?: ItemDepartamentoAnalise[];
+  comparacaoDisponivel?: boolean;
+  rotuloPeriodoAnterior?: string;
 }) {
-  const [visao, setVisao] = useState<"sintetico" | "analitico">("sintetico");
+  const [visao, setVisao] = useState<"sintetico" | "analitico" | "comparativo">("sintetico");
   const [selecionado, setSelecionado] = useState<string | null>(null);
   const itens = useMemo(
     () =>
@@ -39,12 +46,23 @@ export function AbaDepartamentos({
         options={[
           { value: "sintetico", label: "Resumo", icon: LayoutList },
           { value: "analitico", label: "Produtos", icon: FileText },
+          { value: "comparativo", label: "Comparativo", icon: ArrowLeftRight },
         ]}
         onViewChange={(novaVisao) => {
           setSelecionado(null);
           setVisao(novaVisao);
         }}
       />
+      {visao === "comparativo" ? (
+        <VisaoComparativoDimensao
+          rotuloDimensao="Departamento"
+          itensAtuais={deptosFiltrados.map((dep) => ({ nome: dep.nome, faturamento: dep.faturamento }))}
+          itensAnteriores={deptosAnteriores.map((dep) => ({ nome: dep.nome, faturamento: dep.faturamento }))}
+          comparacaoDisponivel={comparacaoDisponivel}
+          rotuloPeriodoAnterior={rotuloPeriodoAnterior}
+        />
+      ) : null}
+
       {visao === "analitico" ? (
         <>
           {selecionado ? (

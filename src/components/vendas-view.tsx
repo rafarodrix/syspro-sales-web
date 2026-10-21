@@ -31,10 +31,11 @@ import {
 import { useConsultaVendas } from "@/hooks/use-consulta-vendas";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { exportarPdfVendas } from "@/lib/pdf-export";
-import { formatarMoeda, formatarNumero } from "@/lib/formatters";
+import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { calcularMargemItem } from "@/lib/metricas-negocio";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
+import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
 import { TablePagination } from "@/components/table-pagination";
@@ -632,60 +633,55 @@ export function VendasView({
           ) : vendas.length > 0 ? (
             <>
               {/* Resumo Consolidado dos Filtros Aplicados */}
-              <div className="no-print mb-4 grid grid-cols-2 gap-3 rounded-lg border border-border/60 bg-muted/20 p-3.5 sm:grid-cols-3 xl:grid-cols-6">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Total Faturado
-                  </span>
-                  <span className="font-mono text-base font-extrabold text-foreground">
-                    {formatarMoeda(resumoBusca.faturamento)}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Notas Fiscais
-                  </span>
-                  <span className="font-mono text-base font-extrabold text-foreground">
-                    {formatarNumero(resumoBusca.totalNotas, 0)}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Clientes Atendidos
-                  </span>
-                  <span className="font-mono text-base font-extrabold text-foreground">
-                    {formatarNumero(resumoBusca.clientes, 0)}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Ticket Médio
-                  </span>
-                  <span className="font-mono text-base font-extrabold text-foreground">
-                    {formatarMoeda(resumoBusca.ticketMedio)}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Lucro Bruto
-                  </span>
-                  <span className="font-mono text-base font-extrabold text-foreground">
-                    {formatarMoeda(resumoBusca.lucroBruto)}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Margem Bruta
-                  </span>
-                  <span className="font-mono text-base font-extrabold text-foreground">
-                    {resumoBusca.faturamentoComCusto > 0
-                      ? `${formatarNumero(resumoBusca.margemBruta, 1)}%`
-                      : "—"}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    cobertura {formatarNumero(resumoBusca.coberturaCusto, 1)}%
-                  </span>
-                </div>
+              <div className="no-print mb-4">
+                <MetricsStrip
+                  itens={[
+                    {
+                      rotulo: "Total faturado",
+                      valor: formatarMoeda(resumoBusca.faturamento),
+                      detalhe: `${formatarNumero(resumoBusca.itensTotal, 0)} itens`,
+                      definicao:
+                        "Soma do total das notas filtradas, com descontos abatidos e frete/seguro/outros somados.",
+                    },
+                    {
+                      rotulo: "Notas fiscais",
+                      valor: formatarNumero(resumoBusca.totalNotas, 0),
+                      detalhe: `${formatarNumero(notasFiltradas.length, 0)} de ${formatarNumero(notas.length, 0)} consultadas`,
+                      definicao: "Quantidade de notas fiscais que passaram pelos filtros desta seção.",
+                    },
+                    {
+                      rotulo: "Clientes atendidos",
+                      valor: formatarNumero(resumoBusca.clientes, 0),
+                      definicao: "Clientes distintos nas notas filtradas (nome do cliente, sem diferenciar filial).",
+                    },
+                    {
+                      rotulo: "Ticket médio",
+                      valor: formatarMoeda(resumoBusca.ticketMedio),
+                      detalhe: "por nota fiscal",
+                      definicao: "Total faturado dividido pelo número de notas filtradas.",
+                    },
+                    {
+                      rotulo: "Lucro bruto",
+                      valor: formatarMoeda(resumoBusca.lucroBruto),
+                      detalhe: "só itens com custo",
+                      definicao:
+                        "Receita dos itens com custo de reposição informado menos esse custo. Itens sem custo ficam fora.",
+                    },
+                    {
+                      rotulo: "Margem bruta",
+                      valor:
+                        resumoBusca.faturamentoComCusto > 0
+                          ? formatarPercentual(resumoBusca.margemBruta, 1)
+                          : "—",
+                      detalhe:
+                        resumoBusca.faturamentoComCusto > 0
+                          ? `cobertura ${formatarPercentual(resumoBusca.coberturaCusto, 1)}`
+                          : "custos não informados",
+                      definicao:
+                        "Lucro bruto dividido pela receita dos itens com custo informado. A cobertura mostra quanto do faturamento entra no cálculo.",
+                    },
+                  ]}
+                />
               </div>
 
               {/* Tabela com Ordenação */}

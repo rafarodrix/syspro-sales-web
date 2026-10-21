@@ -1,7 +1,7 @@
 import { DataBarPercent } from "./data-bar-percent";
 import { ReportTable } from "./report-table";
 import { useMemo, useState } from "react";
-import { FileText, LayoutList, Map, MousePointerClick } from "lucide-react";
+import { ArrowLeftRight, FileText, LayoutList, Map, MousePointerClick } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,17 +16,24 @@ import type {
 } from "@/lib/vendas";
 import { VisaoAnaliticaNotas } from "./visao-analitica-notas";
 import { ReportViewSelector } from "./report-view-toggle";
+import { VisaoComparativoDimensao } from "./visao-comparativo-dimensao";
 
 export function AbaGeografico({
   cidadesFiltradas,
   ufsFiltradas,
   notasAgrupadas,
+  ufsAnteriores = [],
+  comparacaoDisponivel = false,
+  rotuloPeriodoAnterior,
 }: {
   cidadesFiltradas: ItemGeograficoAnalise[];
   ufsFiltradas: ItemUFVendas[];
   notasAgrupadas: VendaAgrupada[];
+  ufsAnteriores?: ItemUFVendas[];
+  comparacaoDisponivel?: boolean;
+  rotuloPeriodoAnterior?: string;
 }) {
-  const [visao, setVisao] = useState<"uf" | "cidade" | "analitico">("uf");
+  const [visao, setVisao] = useState<"uf" | "cidade" | "comparativo" | "analitico">("uf");
   const [uf, setUf] = useState<string | null>(null);
   const [selecionadas, setSelecionadas] = useState<string[]>([]);
   const cidades = useMemo(
@@ -47,6 +54,7 @@ export function AbaGeografico({
         options={[
           { value: "uf", label: "Estados", icon: Map },
           { value: "cidade", label: "Cidades", icon: LayoutList },
+          { value: "comparativo", label: "Comparativo", icon: ArrowLeftRight },
           { value: "analitico", label: "Detalhamento", icon: FileText },
         ]}
         onViewChange={(proximaVisao) => {
@@ -55,6 +63,16 @@ export function AbaGeografico({
           setVisao(proximaVisao);
         }}
       />
+      {visao === "comparativo" ? (
+        <VisaoComparativoDimensao
+          rotuloDimensao="UF"
+          itensAtuais={ufsFiltradas.map((item) => ({ nome: item.uf, faturamento: item.faturamento }))}
+          itensAnteriores={ufsAnteriores.map((item) => ({ nome: item.uf, faturamento: item.faturamento }))}
+          comparacaoDisponivel={comparacaoDisponivel}
+          rotuloPeriodoAnterior={rotuloPeriodoAnterior}
+        />
+      ) : null}
+
       {visao === "analitico" ? (
         <VisaoAnaliticaNotas
           notas={notasAgrupadas}

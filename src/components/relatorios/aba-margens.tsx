@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RotateCcw, TrendingDown, WalletCards } from "lucide-react";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
-import { MetricaCard } from "@/components/metrica-card";
+import { ActionMetricCard } from "@/components/analytics/action-metric-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -130,37 +129,33 @@ export function AbaMargens({
   return (
     <div className="space-y-4">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricaCard
-          rotulo="Margem após EDV"
-          definicao="Lucro bruto sobre o faturamento líquido de devoluções, apenas onde há custo de reposição."
+        <ActionMetricCard
+          titulo="Margem após EDV"
           valor={formatarPercentual(resumo.margemDepoisEdv, 1)}
-          rodape={`${formatarPercentual(resumo.margemAntesEdv, 1)} antes das devoluções`}
-          icone={WalletCards}
+          descricao={`Lucro bruto sobre o faturamento líquido de devoluções, só onde há custo de reposição. Antes das devoluções: ${formatarPercentual(resumo.margemAntesEdv, 1)}.`}
         />
-        <MetricaCard
-          rotulo="Impacto das EDVs"
-          definicao="Variação do lucro bruto causada pelas devoluções de venda."
+        <ActionMetricCard
+          titulo="Impacto das devoluções (EDV)"
           valor={formatarMoeda(resumo.impactoLucroEdv)}
-          rodape={`${formatarMoeda(resumo.devolucoesEdv)} devolvidos`}
-          icone={RotateCcw}
+          descricao={`Perda de lucro bruto causada pelas devoluções: ${formatarMoeda(resumo.devolucoesEdv)} devolvidos.`}
         />
-        <MetricaCard
-          rotulo="Margem negativa"
-          definicao="Produtos com custo de reposição informado e margem abaixo de zero após EDV."
+        <ActionMetricCard
+          titulo="Margem negativa"
           valor={formatarNumero(resumo.produtosMargemNegativa, 0)}
-          rodape={<>
-            <button type="button" className="underline-offset-2 hover:underline" onClick={() => { setSituacao("baixa"); setCurva("A"); setOrdenacao("margem"); }}>curva A com margem &lt;20%</button>
-            {" · "}
-            <button type="button" className="underline-offset-2 hover:underline" onClick={() => { setSituacao("baixa"); setCurva("todas"); }}>{formatarNumero(resumo.produtosMargemBaixa, 0)} abaixo de 20%</button>
-          </>}
-          icone={TrendingDown}
+          descricao={`Produtos com custo informado e margem abaixo de zero. ${formatarNumero(resumo.produtosMargemBaixa, 0)} estão abaixo de 20%.`}
+          acaoTitulo="Filtrar produtos com margem negativa"
+          onClick={() => {
+            setSituacao("baixa");
+            setCurva("todas");
+            setOrdenacao("margem");
+          }}
         />
-        <MetricaCard
-          rotulo="Faturamento sem custo"
-          definicao="Faturamento separado dos cálculos porque a API não informou custo de reposição."
+        <ActionMetricCard
+          titulo="Faturamento sem custo"
           valor={formatarMoeda(resumo.faturamentoSemCusto)}
-          rodape={<button type="button" className="underline-offset-2 hover:underline" onClick={() => setSituacao("sem-custo")}>{formatarPercentual(resumo.coberturaCusto, 1)} do faturamento coberto · ver detalhes</button>}
-          icone={AlertTriangle}
+          descricao={`Fica fora do cálculo porque a API não informou custo de reposição. Cobertura de custo: ${formatarPercentual(resumo.coberturaCusto, 1)}.`}
+          acaoTitulo="Ver produtos sem custo informado"
+          onClick={() => setSituacao("sem-custo")}
         />
       </div>
 

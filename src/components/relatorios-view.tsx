@@ -9,11 +9,6 @@ import { REPORT_DEFINITIONS } from "./relatorios/report-definitions";
 import {
   Sparkles,
   Building2,
-  Users,
-  Layers,
-  MapPin,
-  CreditCard,
-  CalendarDays,
   Star,
 } from "lucide-react";
 import type { VendaProduto, VendaComEmpresa } from "@/lib/syspro-api";
@@ -66,7 +61,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MetricaCard } from "@/components/metrica-card";
+import type { MetricsStripItem } from "@/components/analytics/metrics-strip";
 import {
   formatarMoeda,
   formatarNumero,
@@ -74,7 +69,7 @@ import {
 } from "@/lib/formatters";
 
 // Subcomponentes modulares de abas
-import { AbaCurvaABC, ResumoCurvaAbcCard } from "./relatorios/aba-curva-abc";
+import { AbaCurvaABC } from "./relatorios/aba-curva-abc";
 import { AbaClientes } from "./relatorios/aba-clientes";
 import { AbaSazonalidade } from "./relatorios/aba-sazonalidade";
 import { AbaDepartamentos } from "./relatorios/aba-departamentos";
@@ -570,92 +565,177 @@ export function RelatoriosView({
     );
   }, [relatorioGeografico, busca]);
 
-  const metricaContextual = useMemo(() => {
+  const deptosAnteriores = useMemo(
+    () => (comparacaoDisponivel ? analiseDepartamentos(vendasAnteriores) : []),
+    [comparacaoDisponivel, vendasAnteriores],
+  );
+
+  const ufsAnteriores = useMemo(
+    () => (comparacaoDisponivel ? analiseUFs(vendasAnteriores) : []),
+    [comparacaoDisponivel, vendasAnteriores],
+  );
+
+  const indicadoresContextuais = useMemo<MetricsStripItem[]>(() => {
     if (abaAtiva === "curva-abc") {
-      return <ResumoCurvaAbcCard relatorioABC={relatorioABC} />;
+      const classes = [
+        { rotulo: "Classe A", resumo: relatorioABC.resumoA },
+        { rotulo: "Classe B", resumo: relatorioABC.resumoB },
+        { rotulo: "Classe C", resumo: relatorioABC.resumoC },
+      ];
+      const formatar = (valor: number) =>
+        relatorioABC.metrica === "quantidade" ? formatarNumero(valor, 2) : formatarMoeda(valor);
+      return classes.map(({ rotulo, resumo }) => ({
+        rotulo,
+        valor: formatar(resumo.valor),
+        detalhe: `${formatarPercentual(resumo.percentualValor, 1)} · ${formatarNumero(resumo.itens, 0)} itens`,
+        definicao:
+          "Faixa da curva ABC: a classe A concentra os itens que respondem pela maior parte da métrica selecionada (Pareto).",
+      }));
     }
 
-    if (abaAtiva === "clientes") {
-      return null;
-    }
+    if (abaAtiva === "clientes") return [];
 
     if (abaAtiva === "vendedores") {
-      const ativos = relatorioVendedores.filter((item) => item.faturamento > 0).length;
-      return (
-        <MetricaCard
-          rotulo="Vendedores ativos"
-          definicao="Quantidade de vendedores com faturamento no período consultado."
-          valor={formatarNumero(ativos, 0)}
-          icone={Users}
-        />
-      );
+      const ativos = relatorioVendedores.filter((item) => item.faturamento > 0);
+      const desconto = ativos.reduce((soma, item) => soma + item.descontoConcedido, 0);
+      const bruto = ativos.reduce((soma, item) => soma + item.faturamento + item.descontoConcedido, 0);
+      const comCusto = ativos.filter((item) => item.coberturaCusto > 0);
+      const lucro = comCusto.reduce((soma, item) => soma + item.lucroBruto, 0);
+      const receita = comCusto.reduce((soma, item) => soma + item.faturamentoComCusto, 0);
+      return [
+        {
+          rotulo: "Vendedores ativos",
+          valor: formatarNumero(ativos.length, 0),
+          definicao: "Vendedores com faturamento no período consultado.",
+        },
+        {
+          rotulo: "Desconto concedido",
+          valor: formatarMoeda(desconto),
+          detalhe: bruto > 0 ? `taxa ${formatarPercentual((desconto / bruto) * 100, 1)} sobre o valor bruto` : undefined,
+          definicao:
+            "Soma dos descontos aplicados nos itens. A taxa é o desconto dividido pelo valor antes do desconto (faturamento + desconto).",
+        },
+        {
+          rotulo: "Margem da equipe",
+          valor: receita > 0 ? formatarPercentual((lucro / receita) * 100, 1) : "—",
+          detalhe: receita > 0 ? `lucro ${formatarMoeda(lucro)}` : "sem custo informado",
+          definicao:
+            "Lucro bruto dividido pela receita dos itens que possuem custo de reposição informado.",
+        },
+      ];
     }
 
     if (abaAtiva === "departamentos") {
-      const ativos = relatorioDeptos.filter((item) => item.faturamento > 0).length;
-      return (
-        <MetricaCard
-          rotulo="Departamentos ativos"
-          definicao="Quantidade de departamentos com faturamento no período consultado."
-          valor={formatarNumero(ativos, 0)}
-          icone={Layers}
-        />
-      );
+      const ativos = relatorioDeptos.filter((item) => item.faturamento > 0);
+      const desconto = ativos.reduce((soma, item) => soma + item.descontoConcedido, 0);
+      const bruto = ativos.reduce((soma, item) => soma + item.faturamento + item.descontoConcedido, 0);
+      const top = [...ativos].sort((a, b) => b.faturamento - a.faturamento)[0];
+      return [
+        {
+          rotulo: "Departamentos ativos",
+          valor: formatarNumero(ativos.length, 0),
+          definicao: "Departamentos com faturamento no período consultado.",
+        },
+        {
+          rotulo: "Desconto concedido",
+          valor: formatarMoeda(desconto),
+          detalhe: bruto > 0 ? `taxa ${formatarPercentual((desconto / bruto) * 100, 1)}` : undefined,
+          definicao:
+            "Soma dos descontos dos itens. A taxa é o desconto dividido pelo valor antes do desconto (faturamento + desconto).",
+        },
+        {
+          rotulo: "Maior departamento",
+          valor: top?.nome ?? "—",
+          detalhe: top ? `${formatarMoeda(top.faturamento)} · ${formatarPercentual(top.percentual, 1)}` : undefined,
+          definicao: "Departamento com maior faturamento no período.",
+        },
+      ];
     }
 
     if (abaAtiva === "geografico") {
-      const cidades = relatorioGeografico.filter((item) => item.faturamento > 0).length;
-      const ufs = relatorioUFs.filter((item) => item.faturamento > 0).length;
-      return (
-        <MetricaCard
-          rotulo="Cobertura geográfica"
-          definicao="Quantidade de cidades e UFs com vendas no período consultado."
-          valor={formatarNumero(cidades, 0)}
-          rodape={`${formatarNumero(ufs, 0)} UFs atendidas`}
-          icone={MapPin}
-        />
-      );
+      const cidades = relatorioGeografico.filter((item) => item.faturamento > 0);
+      const ufs = relatorioUFs.filter((item) => item.faturamento > 0);
+      const top = [...cidades].sort((a, b) => b.faturamento - a.faturamento)[0];
+      return [
+        {
+          rotulo: "Cidades ativas",
+          valor: formatarNumero(cidades.length, 0),
+          detalhe: `${formatarNumero(ufs.length, 0)} UFs atendidas`,
+          definicao: "Cidades e UFs com vendas no período consultado.",
+        },
+        {
+          rotulo: "Maior praça",
+          valor: top ? `${top.cidade} / ${top.uf}` : "—",
+          detalhe: top ? `${formatarMoeda(top.faturamento)} · ${formatarPercentual(top.percentual, 1)}` : undefined,
+          definicao: "Cidade com maior faturamento no período consultado.",
+        },
+      ];
     }
 
     if (abaAtiva === "financeiro") {
       const principal = relatorioFinanceiro.formasPagamento[0];
-      return (
-        <MetricaCard
-          rotulo="Forma predominante"
-          definicao="Forma de pagamento com maior faturamento no período consultado."
-          valor={principal?.nome ?? "—"}
-          rodape={
-            principal ? formatarPercentual(principal.percentual, 1) : undefined
-          }
-          icone={CreditCard}
-        />
+      const desconto = relatorioFinanceiro.formasPagamento.reduce(
+        (soma, item) => soma + item.descontoConcedido,
+        0,
       );
+      const bruto = relatorioFinanceiro.formasPagamento.reduce(
+        (soma, item) => soma + item.total + item.descontoConcedido,
+        0,
+      );
+      const aPrazo = relatorioFinanceiro.formasPagamento
+        .filter((item) => /prazo|boleto|credi[aá]rio|30|60|90/i.test(item.nome))
+        .reduce((soma, item) => soma + item.percentual, 0);
+      return [
+        {
+          rotulo: "Forma predominante",
+          valor: principal?.nome ?? "—",
+          detalhe: principal ? formatarPercentual(principal.percentual, 1) : undefined,
+          definicao: "Forma de pagamento com maior faturamento no período consultado.",
+        },
+        {
+          rotulo: "Desconto concedido",
+          valor: formatarMoeda(desconto),
+          detalhe: bruto > 0 ? `taxa ${formatarPercentual((desconto / bruto) * 100, 1)}` : undefined,
+          definicao:
+            "Desconto aplicado nas vendas e sua taxa sobre o valor antes do desconto (faturamento + desconto).",
+        },
+        {
+          rotulo: "Participação a prazo",
+          valor: formatarPercentual(aPrazo, 1),
+          definicao:
+            "Soma da participação das formas de pagamento identificadas como a prazo (boleto, crediário, 30/60/90 dias).",
+        },
+      ];
     }
 
     if (abaAtiva === "sazonalidade") {
       const melhorDia = [...relatorioSazonalidade.porDiaSemana].sort(
-        (a, b) =>
-          b.faturamentoMedioPorOcorrencia -
-          a.faturamentoMedioPorOcorrencia,
+        (a, b) => b.faturamentoMedioPorOcorrencia - a.faturamentoMedioPorOcorrencia,
       )[0];
-      return (
-        <MetricaCard
-          rotulo="Melhor dia"
-          definicao="Dia da semana com maior faturamento médio por ocorrência no calendário consultado."
-          valor={melhorDia?.dia ?? "—"}
-          rodape={
-            melhorDia
-              ? `${formatarMoeda(
-                  melhorDia.faturamentoMedioPorOcorrencia,
-                )} por ocorrência`
-              : undefined
-          }
-          icone={CalendarDays}
-        />
-      );
+      const piorDia = [...relatorioSazonalidade.porDiaSemana].sort(
+        (a, b) => a.faturamentoMedioPorOcorrencia - b.faturamentoMedioPorOcorrencia,
+      )[0];
+      return [
+        {
+          rotulo: "Melhor dia",
+          valor: melhorDia?.dia ?? "—",
+          detalhe: melhorDia
+            ? `${formatarMoeda(melhorDia.faturamentoMedioPorOcorrencia)} por ocorrência`
+            : undefined,
+          definicao: "Dia da semana com maior faturamento médio por ocorrência no período consultado.",
+        },
+        {
+          rotulo: "Pior dia",
+          valor: piorDia?.dia ?? "—",
+          detalhe: piorDia
+            ? `${formatarMoeda(piorDia.faturamentoMedioPorOcorrencia)} por ocorrência`
+            : undefined,
+          definicao: "Dia da semana com menor faturamento médio por ocorrência no período consultado.",
+        },
+      ];
     }
 
-    return null;
+    return [];
   }, [
     abaAtiva,
     relatorioABC,
@@ -1134,7 +1214,7 @@ export function RelatoriosView({
                     rotuloPeriodoAnterior={rotuloPeriodoAnterior}
                     compacto
                     mostrarClientes={abaAtiva === "clientes"}
-                    metricaExtra={metricaContextual}
+                    itensExtra={indicadoresContextuais}
                   />
                 )}
 
@@ -1210,7 +1290,12 @@ export function RelatoriosView({
                 )}
 
                 {abaAtiva === "departamentos" && (
-                  <AbaDepartamentos deptosFiltrados={deptosFiltrados} />
+                  <AbaDepartamentos
+                    deptosFiltrados={deptosFiltrados}
+                    deptosAnteriores={deptosAnteriores}
+                    comparacaoDisponivel={comparacaoDisponivel}
+                    rotuloPeriodoAnterior={rotuloPeriodoAnterior}
+                  />
                 )}
 
                 {abaAtiva === "vendedores" && (
@@ -1232,6 +1317,9 @@ export function RelatoriosView({
                           .includes(busca.toLowerCase().trim()),
                     )}
                     notasAgrupadas={notasAgrupadasRelatorio}
+                    ufsAnteriores={ufsAnteriores}
+                    comparacaoDisponivel={comparacaoDisponivel}
+                    rotuloPeriodoAnterior={rotuloPeriodoAnterior}
                   />
                 )}
 

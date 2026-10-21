@@ -1,7 +1,6 @@
 import { ReportTable } from "./report-table";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   formatarMoeda,
   formatarNumero,
@@ -32,42 +31,6 @@ const ROTULOS_METRICA: Record<MetricaCurvaABC, string> = {
   quantidade: "Quantidade",
   custo: "Custo de reposição",
 };
-
-export function ResumoCurvaAbcCard({
-  relatorioABC,
-}: {
-  relatorioABC: AbaCurvaABCProps["relatorioABC"];
-}) {
-  const classes = [
-    { label: "A", resumo: relatorioABC.resumoA, tone: "text-emerald-700 dark:text-emerald-400" },
-    { label: "B", resumo: relatorioABC.resumoB, tone: "text-blue-700 dark:text-blue-400" },
-    { label: "C", resumo: relatorioABC.resumoC, tone: "text-amber-700 dark:text-amber-400" },
-  ];
-  const formatarValor = (valor: number) => relatorioABC.metrica === "quantidade"
-    ? formatarNumero(valor, 2)
-    : formatarMoeda(valor);
-
-  return (
-    <Card className="border-border/60 bg-card/90 shadow-2xs">
-      <CardContent className="flex h-full flex-col gap-2 p-3.5 sm:p-4">
-        <div className="text-xs font-semibold text-muted-foreground">Curva ABC</div>
-        <div className="grid grid-cols-3 gap-2">
-          {classes.map(({ label, resumo, tone }) => (
-            <div key={label} className="min-w-0">
-              <div className={`text-xs font-bold ${tone}`}>Classe {label}</div>
-              <div className="truncate font-mono text-base font-extrabold tabular-nums text-foreground">
-                {formatarValor(resumo.valor)}
-              </div>
-              <div className="text-[10px] text-muted-foreground">
-                {formatarPercentual(resumo.percentualValor, 1)} · {resumo.itens} itens
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export function AbaCurvaABC({
   itensFiltrados,
