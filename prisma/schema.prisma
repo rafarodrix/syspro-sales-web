@@ -88,6 +88,7 @@ model Empresa {
   coberturaAtencaoDias Int      @default(15)
   coberturaExcessoDias Int      @default(90)
   coberturaCompraDias  Int      @default(30)
+  grupoEstoquePadrao   String   @default("GERAL")
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

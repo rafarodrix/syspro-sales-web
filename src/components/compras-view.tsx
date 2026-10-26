@@ -86,11 +86,13 @@ export function ComprasView({
   empresaNome,
   coberturaAlvoInicial,
   limitesCobertura,
+  grupoEstoquePadrao = "GERAL",
 }: {
   empresaId: string;
   empresaNome: string;
   coberturaAlvoInicial: number;
   limitesCobertura?: LimitesCoberturaCompra;
+  grupoEstoquePadrao?: string;
 }) {
   const [periodo, setPeriodo] = useState<Periodo>(() => periodoUltimos90Dias());
   const [periodoConsultado, setPeriodoConsultado] = useState<Periodo | null>(null);
@@ -134,6 +136,7 @@ export function ComprasView({
           dtInicial: proximoPeriodo.inicial,
           dtFinal: proximoPeriodo.final,
           forcarAtualizacao: true,
+          grupoEstoquePadrao,
         }),
       });
       const dados = (await resposta.json().catch(() => ({}))) as RelatorioCompras & {

@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     coberturaAtencaoDias,
     coberturaExcessoDias,
     coberturaCompraDias,
+    grupoEstoquePadrao,
   } = json.value;
 
   try {
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
         coberturaAtencaoDias,
         coberturaExcessoDias,
         coberturaCompraDias,
+        grupoEstoquePadrao,
       },
     });
     return NextResponse.json({ empresa }, { status: 201 });
@@ -69,6 +71,7 @@ export async function PATCH(request: NextRequest) {
     coberturaAtencaoDias,
     coberturaExcessoDias,
     coberturaCompraDias,
+    grupoEstoquePadrao,
   } = json.value;
 
   const existente = await prisma.empresa.findUnique({ where: { id } });
@@ -116,6 +119,7 @@ export async function PATCH(request: NextRequest) {
         ...(coberturaAtencaoDias !== undefined ? { coberturaAtencaoDias } : {}),
         ...(coberturaExcessoDias !== undefined ? { coberturaExcessoDias } : {}),
         ...(coberturaCompraDias !== undefined ? { coberturaCompraDias } : {}),
+        ...(grupoEstoquePadrao !== undefined ? { grupoEstoquePadrao } : {}),
       },
     });
 

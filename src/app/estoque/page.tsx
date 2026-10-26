@@ -17,6 +17,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
         cnpj: item.cnpj,
         razaoSocial: item.razaoSocial,
         coberturaCriticaDias: item.coberturaCriticaDias,
+        grupoEstoquePadrao: item.grupoEstoquePadrao,
         coberturaAtencaoDias: item.coberturaAtencaoDias,
         coberturaExcessoDias: item.coberturaExcessoDias,
       }))}

@@ -20,6 +20,7 @@ export async function obterRelatorioCompras({
   dtFinal,
   forcarAtualizacao = false,
   consultarSaldoAtual = true,
+  grupoEstoquePadrao,
   signal,
 }: {
   actorId: string;
@@ -29,6 +30,7 @@ export async function obterRelatorioCompras({
   forcarAtualizacao?: boolean;
   /** Compras precisa do saldo atual; margens consulta somente EDVs do período. */
   consultarSaldoAtual?: boolean;
+  grupoEstoquePadrao?: string;
   signal?: AbortSignal;
 }) {
   if (!periodoConsultaValido(dtInicial, dtFinal)) {

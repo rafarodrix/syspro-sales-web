@@ -1,4 +1,4 @@
-import { grupoDefineSaldo, type MovimentoKardex } from "@/lib/kardex";
+import { movimentoCompoeSaldo, type MovimentoKardex } from "@/lib/kardex";
 import {
   calcularCoberturaEstoque,
   calcularDemandaLiquida,
@@ -140,6 +140,7 @@ export function montarSaudeEstoque(
   vendas: VendaProduto[],
   periodo: { inicial: string; final: string },
   limites: LimitesEstoque = LIMITES_ESTOQUE_PADRAO,
+  empresa?: { grupoEstoquePadrao?: string },
 ): SaudeEstoque {
   const porProduto = new Map<string, AcumuladorProduto>();
   let movimentosSemProdutoId = 0;
@@ -163,8 +164,8 @@ export function montarSaudeEstoque(
     if (movimento.direcao === "entrada") atual.ultimaEntrada = dataMaisRecente(atual.ultimaEntrada, movimento.dataMovimento);
     if (movimento.direcao === "saida") atual.ultimaSaida = dataMaisRecente(atual.ultimaSaida, movimento.dataMovimento);
 
-    // Saldo atual: somente movimentos de EVP/EVD/EDV/EDC (estoque real do produto).
-    if (!grupoDefineSaldo(movimento.grupoDocumento)) return;
+    // Saldo atual: último movimento do grupo de estoque definido na empresa.
+    if (!movimentoCompoeSaldo(movimento, empresa)) return;
     if (dataMovimento > dataUltimo || (dataMovimento === dataUltimo && indice > atual.ordemUltimoMovimento)) {
       atual.estoqueAtual = movimento.saldo;
       atual.ultimoMovimento = movimento.dataMovimento;

@@ -49,6 +49,7 @@ export interface EmpresaRow {
   coberturaAtencaoDias: number;
   coberturaExcessoDias: number;
   coberturaCompraDias: number;
+  grupoEstoquePadrao: string;
 }
 
 interface Props {

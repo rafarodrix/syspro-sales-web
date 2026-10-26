@@ -22,6 +22,27 @@ export function grupoDefineSaldo(grupoDocumento: string): boolean {
   return (GRUPOS_SALDO_ESTOQUE as readonly string[]).includes(grupo);
 }
 
+/**
+ * Retorna o grupo de estoque de uma movimentação (campo `produto_grupo_estoque`
+ * que vem do Syspro). Quando não vem, assume GERAL para manter compatibilidade.
+ */
+export function grupoEstoqueDoProduto(movimento: MovimentoKardex): string {
+  return String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
+}
+
+export function obterGruposSaldoEstoque(empresa?: { grupoEstoquePadrao?: string }): string[] {
+  const padrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
+  return [padrao];
+}
+
+export function movimentoCompoeSaldo(
+  movimento: MovimentoKardex,
+  empresa?: { grupoEstoquePadrao?: string },
+): boolean {
+  const grupos = obterGruposSaldoEstoque(empresa);
+  return grupos.includes(grupoEstoqueDoProduto(movimento));
+}
+
 export interface ClassificacaoKardex {
   categoria: CategoriaKardex;
   direcao: DirecaoKardex;
@@ -46,6 +67,7 @@ export interface MovimentoKardex {
   descricaoGrupoDocumento: string;
   operacaoSyspro: string;
   modeloDocumento: string;
+  grupoEstoque?: string;
   direcao: DirecaoKardex;
   classificacao: ClassificacaoKardex;
   empresaId?: string;

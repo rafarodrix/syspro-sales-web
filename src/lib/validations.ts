@@ -93,6 +93,7 @@ export const empresaCreateSchema = z.object({
   coberturaAtencaoDias: diasCoberturaSchema.default(15),
   coberturaExcessoDias: diasCoberturaSchema.default(90),
   coberturaCompraDias: diasCoberturaSchema.default(30),
+  grupoEstoquePadrao: z.string().trim().max(50).default("GERAL"),
 }).superRefine((empresa, contexto) => {
   if (empresa.coberturaCriticaDias >= empresa.coberturaAtencaoDias) {
     contexto.addIssue({
@@ -122,6 +123,7 @@ export const empresaUpdateSchema = z.object({
   coberturaAtencaoDias: diasCoberturaSchema.optional(),
   coberturaExcessoDias: diasCoberturaSchema.optional(),
   coberturaCompraDias: diasCoberturaSchema.optional(),
+  grupoEstoquePadrao: z.string().trim().max(50).optional(),
 });
 
 const padraoDataBR = /^\d{2}\/\d{2}\/\d{4}$/;
@@ -132,6 +134,7 @@ export const vendasQuerySchema = z.object({
   dtInicial: z.string().refine((val) => padraoDataBR.test(val) || padraoDataISO.test(val), { message: "Data inicial deve estar no formato DD/MM/AAAA ou AAAA-MM-DD." }),
   dtFinal: z.string().refine((val) => padraoDataBR.test(val) || padraoDataISO.test(val), { message: "Data final deve estar no formato DD/MM/AAAA ou AAAA-MM-DD." }),
   forcarAtualizacao: z.boolean().optional().default(false),
+  grupoEstoquePadrao: z.string().optional(),
 });
 
 export const kardexQuerySchema = vendasQuerySchema;

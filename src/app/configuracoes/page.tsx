@@ -29,6 +29,7 @@ export default async function ConfiguracoesPage() {
             coberturaAtencaoDias: e.coberturaAtencaoDias,
             coberturaExcessoDias: e.coberturaExcessoDias,
             coberturaCompraDias: e.coberturaCompraDias,
+            grupoEstoquePadrao: e.grupoEstoquePadrao,
           }))}
         />
       </div>

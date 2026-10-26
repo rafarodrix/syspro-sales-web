@@ -29,6 +29,7 @@ export default async function RelatorioComprasPage({
           atencaoDias: empresaAtual?.coberturaAtencaoDias ?? 15,
           excessoDias: empresaAtual?.coberturaExcessoDias ?? 90,
         }}
+        grupoEstoquePadrao={empresaAtual?.grupoEstoquePadrao ?? "GERAL"}
       />
     </NavApp>
   );
