@@ -121,6 +121,7 @@ describe("orquestração do relatório de compras", () => {
         { documento: "B", produtoIdProduto: "P1", produtoCodigoAuxiliar: "REF-1" },
       ],
       { inicial: "2026-09-01", final: "2026-09-30" },
+      { grupoEstoquePadrao: empresa.grupoEstoquePadrao },
     );
     expect(resultado).toEqual({ itens: [], resumo: { totalProdutos: 0 } });
   });
@@ -141,6 +142,7 @@ describe("orquestração do relatório de compras", () => {
       expect.any(Array),
       [],
       { inicial: "2027-01-01", final: "2027-01-31" },
+      { grupoEstoquePadrao: empresa.grupoEstoquePadrao },
     );
   });
 
@@ -222,6 +224,7 @@ describe("orquestração do relatório de compras", () => {
         { documento: "2026-09-16:2026-09-30", produtoIdProduto: "P1", produtoCodigoAuxiliar: "REF-1" },
       ],
       { inicial: "2026-09-01", final: "2026-09-30" },
+      { grupoEstoquePadrao: empresa.grupoEstoquePadrao },
     );
   });
 
@@ -240,6 +243,7 @@ describe("orquestração do relatório de compras", () => {
       [],
       [],
       { inicial: "2026-09-01", final: "2026-09-30" },
+      { grupoEstoquePadrao: empresa.grupoEstoquePadrao },
     );
   });
 
@@ -273,6 +277,7 @@ describe("orquestração do relatório de compras", () => {
         expect.objectContaining({ documento: "MOV-POSTERIOR", produtoIdProduto: "P-DEV" }),
       ],
       { inicial: "2026-09-01", final: "2026-09-30" },
+      { grupoEstoquePadrao: empresa.grupoEstoquePadrao },
     );
   });
 
@@ -305,6 +310,7 @@ describe("orquestração do relatório de compras", () => {
       expect.any(Array),
       [],
       { inicial: "2026-09-01", final: "2026-09-30" },
+      { grupoEstoquePadrao: empresa.grupoEstoquePadrao },
     );
   });
 });

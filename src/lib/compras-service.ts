@@ -87,5 +87,5 @@ export async function obterRelatorioCompras({
     ));
   }
 
-  return montarRelatorioCompras(vendas, movimentos, { inicial: inicialIso, final: finalIso });
+  return montarRelatorioCompras(vendas, movimentos, { inicial: inicialIso, final: finalIso }, { grupoEstoquePadrao: (grupoEstoquePadrao ?? empresa.grupoEstoquePadrao) || undefined });
 }

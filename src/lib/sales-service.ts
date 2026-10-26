@@ -10,6 +10,7 @@ export interface EmpresaInfo {
   empresaCodigo: string;
   sysproBaseUrl?: string | null;
   sysproUseIis?: boolean | null;
+  grupoEstoquePadrao?: string | null;
 }
 
 interface CacheEntry {

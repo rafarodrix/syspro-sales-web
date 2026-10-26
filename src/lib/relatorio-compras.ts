@@ -86,6 +86,7 @@ export function montarRelatorioCompras(
   vendas: VendaProduto[],
   movimentos: MovimentoKardex[],
   periodo: { inicial: string; final: string },
+  empresa?: { grupoEstoquePadrao?: string },
 ): RelatorioCompras {
   const porProduto = new Map<
     string,
@@ -197,8 +198,10 @@ export function montarRelatorioCompras(
       atual.valorDevolvido += Math.abs(movimento.valorTotal);
     }
 
-    // Saldo atual: somente movimentos de EVP/EVD/EDV/EDC (estoque real do produto).
-    if (!grupoDefineSaldo(movimento.grupoDocumento)) return;
+    // Saldo atual: ultimo movimento do grupo de estoque configurado (campo produto_grupo_estoque).
+    const grupoEstoque = String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
+    const grupoPadrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
+    if (grupoEstoque !== grupoPadrao) return;
     const dataAtual = movimento.dataMovimento.slice(0, 10);
     const dataAnterior = atual.dataUltimoMovimento?.slice(0, 10) ?? "";
     if (dataAtual > dataAnterior || (dataAtual === dataAnterior && indice > atual.ordemUltimoMovimento)) {
