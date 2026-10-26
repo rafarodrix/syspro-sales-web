@@ -111,6 +111,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [editCoberturaAtencao, setEditCoberturaAtencao] = useState(15);
   const [editCoberturaExcesso, setEditCoberturaExcesso] = useState(90);
   const [editCoberturaCompra, setEditCoberturaCompra] = useState(30);
+  const [editGrupoEstoque, setEditGrupoEstoque] = useState("GERAL");
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // Exclusão
@@ -414,18 +415,13 @@ export function ConfiguracaoClient({ empresas }: Props) {
               <Label htmlFor="grupoEstoquePadrao" className="text-xs font-semibold">
                 Grupo de estoque padrão
               </Label>
-              <Select
+              <Input
+                id="grupoEstoquePadrao"
                 value={grupoEstoquePadrao}
-                onValueChange={(valor) => setGrupoEstoquePadrao(valor)}
-              >
-                <SelectTrigger id="grupoEstoquePadrao" className="text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="GERAL">GERAL (estoque operacional)</SelectItem>
-                  <SelectItem value="FISCAL">FISCAL (estoque fiscal)</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(e) => setGrupoEstoquePadrao(e.target.value.toUpperCase())}
+                placeholder="Ex: GERAL, FISCAL, OUTRO"
+                className="text-xs font-mono"
+              />
               <p className="text-[11px] text-muted-foreground">
                 Define qual grupo de estoque do Kardex será usado para calcular o saldo atual.
               </p>
@@ -659,6 +655,23 @@ export function ConfiguracaoClient({ empresas }: Props) {
                 <CampoDias id="excessoEditar" rotulo="Excesso acima de" valor={editCoberturaExcesso} onChange={setEditCoberturaExcesso} />
                 <CampoDias id="compraEditar" rotulo="Alvo inicial de compras" valor={editCoberturaCompra} onChange={setEditCoberturaCompra} />
               </div>
+
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="grupoEstoqueEditar" className="text-xs font-semibold">
+                  Grupo de estoque padrão
+                </Label>
+                <Input
+                  id="grupoEstoqueEditar"
+                  value={editGrupoEstoque}
+                  onChange={(e) => setEditGrupoEstoque(e.target.value.toUpperCase())}
+                  placeholder="Ex: GERAL, FISCAL, OUTRO"
+                  className="text-xs font-mono"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Informe exatamente como vem no campo <code>produto_grupo_estoque</code> do Kardex. Padrão: GERAL.
+                </p>
+              </div>
+
               <p className="mt-2 text-[10px] text-muted-foreground">
                 Ordem obrigatória: crítico &lt; atenção &lt; excesso. Valores entre 1 e 365 dias.
               </p>
