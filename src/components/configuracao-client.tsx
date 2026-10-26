@@ -96,6 +96,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [coberturaAtencao, setCoberturaAtencao] = useState(15);
   const [coberturaExcesso, setCoberturaExcesso] = useState(90);
   const [coberturaCompra, setCoberturaCompra] = useState(30);
+  const [grupoEstoquePadrao, setGrupoEstoquePadrao] = useState("GERAL");
   const [adicionando, setAdicionando] = useState(false);
 
   // Edição de Empresa
@@ -407,6 +408,27 @@ export function ConfiguracaoClient({ empresas }: Props) {
               <CampoDias id="atencaoNovo" rotulo="Atenção abaixo de" valor={coberturaAtencao} onChange={setCoberturaAtencao} />
               <CampoDias id="excessoNovo" rotulo="Excesso acima de" valor={coberturaExcesso} onChange={setCoberturaExcesso} />
               <CampoDias id="compraNovo" rotulo="Alvo inicial de compras" valor={coberturaCompra} onChange={setCoberturaCompra} />
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <Label htmlFor="grupoEstoquePadrao" className="text-xs font-semibold">
+                Grupo de estoque padrão
+              </Label>
+              <Select
+                value={grupoEstoquePadrao}
+                onValueChange={(valor) => setGrupoEstoquePadrao(valor)}
+              >
+                <SelectTrigger id="grupoEstoquePadrao" className="text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="GERAL">GERAL (estoque operacional)</SelectItem>
+                  <SelectItem value="FISCAL">FISCAL (estoque fiscal)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Define qual grupo de estoque do Kardex será usado para calcular o saldo atual.
+              </p>
             </div>
           </div>
 
