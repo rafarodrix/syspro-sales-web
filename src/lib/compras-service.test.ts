@@ -48,6 +48,7 @@ const empresa = {
   razaoSocial: "Empresa 1",
   empresaCodigo: "1",
   sysproBaseUrl: "http://localhost:8080",
+  grupoEstoquePadrao: null,
 };
 
 beforeEach(() => {

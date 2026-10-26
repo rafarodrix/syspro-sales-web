@@ -86,7 +86,7 @@ export function montarRelatorioCompras(
   vendas: VendaProduto[],
   movimentos: MovimentoKardex[],
   periodo: { inicial: string; final: string },
-  empresa?: { grupoEstoquePadrao?: string },
+  empresa?: { grupoEstoquePadrao?: string | null },
 ): RelatorioCompras {
   const porProduto = new Map<
     string,
