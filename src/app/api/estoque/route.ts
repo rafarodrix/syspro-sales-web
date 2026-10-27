@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { aplicarLimite, autenticarApi, buscarEmpresaAutorizada, validarJson } from "@/lib/api-route";
 import { SysproApiError } from "@/lib/syspro-api";
 import { obterMovimentosEstoque, EstoqueQueryError } from "@/lib/estoque-service";
-import { montarSaudeEstoque } from "@/lib/estoque-saude";
 import { projetarMovimentoKardex } from "@/lib/kardex";
-import { obterVendas, SalesIntegrationError, SalesQueryError } from "@/lib/sales-service";
 import { kardexQuerySchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
@@ -29,38 +27,18 @@ export async function POST(request: NextRequest) {
     const empresa = await buscarEmpresaAutorizada(session, empresaId);
     if (!empresa) return NextResponse.json({ error: "Empresa não encontrada ou não liberada." }, { status: 403 });
 
-    const [movimentos, vendas] = await Promise.all([
-      obterMovimentosEstoque({ empresa, dtInicial, dtFinal, signal: request.signal }),
-      obterVendas({
-        actorId: session.user.id,
-        empresasLiberadas: [empresa],
-        empresaSelecionadaId: empresa.id,
-        dtInicial,
-        dtFinal,
-        signal: request.signal,
-        enforceRateLimit: false,
-      }),
-    ]);
-    const limites = {
-      criticoDias: empresa.coberturaCriticaDias,
-      atencaoDias: empresa.coberturaAtencaoDias,
-      excessoDias: empresa.coberturaExcessoDias,
-    };
-    const saude = montarSaudeEstoque(
-      movimentos,
-      vendas,
-      { inicial: dtInicial, final: dtFinal },
-      limites,
-      { grupoEstoquePadrao: empresa.grupoEstoquePadrao ?? undefined },
-    );
+    const movimentos = await obterMovimentosEstoque({
+      empresa,
+      dtInicial,
+      dtFinal,
+      signal: request.signal,
+    });
     const movimentosPublicos = movimentos.map(projetarMovimentoKardex);
-    return NextResponse.json({ movimentos: movimentosPublicos, limites, ...saude }, {
+    return NextResponse.json({ movimentos: movimentosPublicos }, {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {
     if (error instanceof EstoqueQueryError) return NextResponse.json({ error: error.message }, { status: error.status });
-    if (error instanceof SalesQueryError) return NextResponse.json({ error: error.message }, { status: error.status });
-    if (error instanceof SalesIntegrationError) return NextResponse.json({ error: error.message }, { status: 502 });
     if (error instanceof SysproApiError) return NextResponse.json({ error: error.message }, { status: error.status ?? 502 });
     console.error("[api/estoque] Erro ao consultar Kardex:", error);
     return NextResponse.json({ error: "Erro ao consultar movimentações de estoque." }, { status: 502 });
