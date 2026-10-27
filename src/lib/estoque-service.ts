@@ -19,21 +19,24 @@ export async function obterMovimentosEstoque({
   empresa,
   dtInicial,
   dtFinal,
+  codigoAuxiliar,
   signal,
 }: {
   empresa: EmpresaInfo;
   dtInicial: string;
   dtFinal: string;
+  codigoAuxiliar?: string;
   signal?: AbortSignal;
 }): Promise<MovimentoKardex[]> {
   if (!validarPeriodoKardex(dtInicial, dtFinal)) {
-    throw new EstoqueQueryError("O Kardex permite consultas de no máximo 31 dias.", 400);
+    throw new EstoqueQueryError("Informe um período válido para consultar o Kardex.", 400);
   }
   if (!empresa.sysproBaseUrl) {
     throw new EstoqueQueryError("A empresa selecionada não possui uma origem Syspro configurada.", 400);
   }
 
   const paraSyspro = (data: string) => data.includes("-") ? dataInputParaSyspro(data) : data;
+  const codigoNormalizado = codigoAuxiliar?.trim().toLocaleUpperCase("pt-BR");
   const dados = await consultarSysproAdaptativamente(
     { inicial: dtInicial, final: dtFinal },
     (janela) => consultarKardex({
@@ -42,12 +45,15 @@ export async function obterMovimentosEstoque({
     }, {
       dtInicial: paraSyspro(janela.inicial),
       dtFinal: paraSyspro(janela.final),
+      codigoAuxiliar: codigoAuxiliar?.trim() || undefined,
     }, signal),
   );
 
   return dados
     .map(normalizarMovimentoKardex)
     .filter((movimento) => movimento.empresaCodigo === empresa.empresaCodigo)
+    .filter((movimento) => !codigoNormalizado
+      || movimento.produtoCodigoAuxiliar.trim().toLocaleUpperCase("pt-BR") === codigoNormalizado)
     .map((movimento) => ({
       ...movimento,
       empresaId: empresa.id,

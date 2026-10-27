@@ -106,8 +106,10 @@ describe("Kardex", () => {
     expect(publico).not.toHaveProperty("empresaCnpj");
   });
 
-  it("aceita no máximo 31 dias de Kardex", () => {
+  it("aceita períodos longos e rejeita datas inválidas ou invertidas", () => {
     expect(validarPeriodoKardex("01/09/2026", "01/10/2026")).toBe(true);
-    expect(validarPeriodoKardex("01/09/2026", "02/10/2026")).toBe(false);
+    expect(validarPeriodoKardex("01/01/2020", "02/10/2026")).toBe(true);
+    expect(validarPeriodoKardex("31/02/2026", "02/10/2026")).toBe(false);
+    expect(validarPeriodoKardex("03/10/2026", "02/10/2026")).toBe(false);
   });
 });

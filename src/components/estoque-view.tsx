@@ -11,6 +11,8 @@ import { ExportDropdown } from "@/components/export-dropdown";
 import { ReportTable, type ReportColumn } from "@/components/relatorios/report-table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { formatarMoeda, formatarNumero } from "@/lib/formatters";
@@ -135,6 +137,8 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const empresaAtual = empresas.find((empresa) => empresa.id === empresaId);
   const grupoPadrao = empresaAtual?.grupoEstoquePadrao?.trim().toUpperCase() || "GERAL";
   const [periodo, setPeriodo] = useState<Periodo>(periodoMesAtual());
+  const [codigoAuxiliar, setCodigoAuxiliar] = useState("");
+  const [codigoConsultado, setCodigoConsultado] = useState("");
   const [movimentos, setMovimentos] = useState<MovimentoKardexPublico[]>([]);
   const [consultado, setConsultado] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -151,9 +155,14 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     return () => cancelAnimationFrame(frame);
   }, [empresaInicial]);
 
-  async function consultar() {
+  async function consultar(periodoConsulta: Periodo = periodo) {
     if (!empresaId) {
       toast.error("Selecione uma empresa.");
+      return;
+    }
+    const codigo = codigoAuxiliar.trim();
+    if (!codigo) {
+      toast.error("Informe o código auxiliar do produto.");
       return;
     }
     setLoading(true);
@@ -164,20 +173,24 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           empresaId,
-          dtInicial: dataInputParaSyspro(periodo.inicial),
-          dtFinal: dataInputParaSyspro(periodo.final),
+          codigoAuxiliar: codigo,
+          dtInicial: dataInputParaSyspro(periodoConsulta.inicial),
+          dtFinal: dataInputParaSyspro(periodoConsulta.final),
         }),
       });
       const dados = await resposta.json().catch(() => ({})) as Partial<RespostaEstoque> & { error?: string };
       if (!resposta.ok) throw new Error(dados.error || "Erro ao consultar o estoque.");
       const recebidos = dados.movimentos ?? [];
       setMovimentos(recebidos);
+      setCodigoConsultado(codigo);
       setConsultado(true);
+      limparFiltros();
       toast.success(`${recebidos.length} movimentação(ões) carregada(s) do Kardex.`);
     } catch (causa) {
       const mensagem = causa instanceof Error ? causa.message : "Erro ao consultar o estoque.";
       setErro(mensagem);
       setMovimentos([]);
+      setCodigoConsultado("");
       setConsultado(false);
       toast.error(mensagem);
     } finally {
@@ -206,8 +219,6 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
     return movimentos.filter((item) => {
       const textoBate = !termo || [
-        item.produtoCodigoAuxiliar,
-        item.produtoDescricao,
         item.documento,
         item.participante,
         item.grupoDocumento,
@@ -255,7 +266,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
       .replace(/[^a-zA-Z0-9-]+/g, "-")
       .toLowerCase();
     exportarParaCSV(
-      `kardex-${nomeEmpresa}-${periodo.inicial}-a-${periodo.final}`,
+      `kardex-${nomeEmpresa}-${codigoConsultado}-${periodo.inicial}-a-${periodo.final}`,
       ["Grupo de estoque", "Data", "Código auxiliar", "Produto", "Documento", "Grupo documental", "Categoria", "Participante", "Direção", "Quantidade", "Saldo", "Valor"],
       movimentosFiltrados.map((item) => [
         item.grupoEstoque,
@@ -279,8 +290,8 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     <div className="flex flex-col gap-6">
       <AnalysisQueryCard
         icon={PackageSearch}
-        title="Movimentações de Estoque"
-        description="Kardex completo organizado pelos grupos de estoque encontrados no período. Período máximo de 31 dias."
+        title="Kardex por Produto"
+        description="Informe o código auxiliar para consultar todo o histórico de movimentações de um item, sem limite de dias."
         actions={(
           <ExportDropdown
             onExportarCsv={exportarMovimentos}
@@ -288,9 +299,33 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
             label="Exportar movimentos"
           />
         )}
-        footer={`O grupo ${grupoPadrao} é o grupo padrão da empresa. Todos os demais grupos retornados pelo Kardex também serão exibidos.`}
+        footer={`O grupo ${grupoPadrao} é o grupo padrão da empresa. A consulta inclui todos os grupos de estoque e documentos do item.`}
       >
-        <DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} maximoDias={31} />
+        <div className="space-y-4">
+          <div className="max-w-sm space-y-1.5">
+            <Label htmlFor="estoque-codigo-auxiliar">Código auxiliar do produto</Label>
+            <Input
+              id="estoque-codigo-auxiliar"
+              value={codigoAuxiliar}
+              onChange={(event) => setCodigoAuxiliar(event.target.value)}
+              placeholder="Ex.: 5374"
+              autoComplete="off"
+              className="font-mono"
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Campo obrigatório. A busca considera somente este item.
+            </p>
+          </div>
+          <DateRangeFilter
+            value={periodo}
+            onChange={setPeriodo}
+            onConsultar={consultar}
+            loading={loading}
+            semLimiteDias
+            consultaDesabilitada={!codigoAuxiliar.trim()}
+          />
+        </div>
       </AnalysisQueryCard>
 
       {erro ? (
@@ -305,7 +340,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
             {
               rotulo: "Movimentos",
               valor: formatarNumero(movimentosFiltrados.length, 0),
-              detalhe: `${movimentosPorGrupo.length} grupo(s) visível(is)`,
+              detalhe: `Item ${codigoConsultado} · ${movimentosPorGrupo.length} grupo(s)`,
               definicao: "Quantidade de linhas do Kardex após a aplicação dos filtros da tela.",
             },
             {
@@ -323,7 +358,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
           <DataFilterBar
             busca={busca}
             onBuscaChange={setBusca}
-            placeholder="Buscar código auxiliar, produto, documento ou participante..."
+            placeholder="Buscar documento ou participante..."
             temFiltrosAtivos={filtrosAtivos}
             onLimpar={limparFiltros}
           >
@@ -405,7 +440,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
             <Card>
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
                 {movimentos.length === 0
-                  ? "Nenhuma movimentação foi retornada pelo Kardex neste período."
+                  ? `Nenhuma movimentação foi retornada para o item ${codigoConsultado} neste período.`
                   : "Nenhuma movimentação corresponde aos filtros selecionados."}
               </CardContent>
             </Card>

@@ -136,7 +136,11 @@ export const vendasQuerySchema = z.object({
   forcarAtualizacao: z.boolean().optional().default(false),
 });
 
-export const kardexQuerySchema = vendasQuerySchema;
+export const kardexQuerySchema = vendasQuerySchema
+  .omit({ forcarAtualizacao: true })
+  .extend({
+    codigoAuxiliar: z.string().trim().min(1, "Código auxiliar do produto é obrigatório.").max(100),
+  });
 
 export const configuracaoTesteSchema = z.object({
   baseUrl: z.string().trim().min(1, "URL da API Syspro não informada."),

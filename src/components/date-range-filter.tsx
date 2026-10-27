@@ -3,7 +3,7 @@
 import { CalendarDaysIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { erroPeriodo, type Periodo } from "@/lib/periodo";
+import { erroPeriodo, erroPeriodoSemLimite, type Periodo } from "@/lib/periodo";
 
 export type { Periodo } from "@/lib/periodo";
 
@@ -78,6 +78,8 @@ export function DateRangeFilter({
   compact = false,
   persistirCookie = true,
   maximoDias,
+  semLimiteDias = false,
+  consultaDesabilitada = false,
 }: {
   value: Periodo;
   onChange: (periodo: Periodo) => void;
@@ -86,8 +88,10 @@ export function DateRangeFilter({
   compact?: boolean;
   persistirCookie?: boolean;
   maximoDias?: number;
+  semLimiteDias?: boolean;
+  consultaDesabilitada?: boolean;
 }) {
-  const erroBase = erroPeriodo(value);
+  const erroBase = semLimiteDias ? erroPeriodoSemLimite(value) : erroPeriodo(value);
   const diferencaDias = value.inicial && value.final
     ? Math.floor((Date.parse(`${value.final}T00:00:00Z`) - Date.parse(`${value.inicial}T00:00:00Z`)) / 86_400_000)
     : 0;
@@ -122,7 +126,7 @@ export function DateRangeFilter({
                 onClick={() => {
                   if (persistirCookie) salvarPeriodoCookie(preset.value);
                   onChange(preset.value);
-                  onConsultar?.(preset.value);
+                  if (!consultaDesabilitada) onConsultar?.(preset.value);
                 }}
                 size="sm"
                 type="button"
@@ -157,7 +161,7 @@ export function DateRangeFilter({
               }
               className="h-8 w-[138px] border-border/60 text-xs font-mono font-medium"
               onKeyDown={(event) => {
-                if (event.key === "Enter" && onConsultar && !erro && !loading) {
+                if (event.key === "Enter" && onConsultar && !erro && !loading && !consultaDesabilitada) {
                   if (persistirCookie) salvarPeriodoCookie(value);
                   onConsultar(value);
                 }
@@ -177,7 +181,7 @@ export function DateRangeFilter({
               }
               className="h-8 w-[138px] border-border/60 text-xs font-mono font-medium"
               onKeyDown={(event) => {
-                if (event.key === "Enter" && onConsultar && !erro && !loading) {
+                if (event.key === "Enter" && onConsultar && !erro && !loading && !consultaDesabilitada) {
                   if (persistirCookie) salvarPeriodoCookie(value);
                   onConsultar(value);
                 }
@@ -191,7 +195,7 @@ export function DateRangeFilter({
                 if (persistirCookie) salvarPeriodoCookie(value);
                 onConsultar(value);
               }}
-              disabled={loading || !!erro}
+              disabled={loading || !!erro || consultaDesabilitada}
               size="sm"
               className="h-8 font-semibold gap-1.5 px-3.5 shadow-sm"
             >

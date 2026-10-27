@@ -84,6 +84,15 @@ describe("cliente da API Syspro", () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain(rota);
   });
 
+  it("envia o código auxiliar como filtro da consulta do Kardex", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("[]"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await consultarKardex(config, { ...periodo, codigoAuxiliar: " 5374 " });
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain("produto_codigo_auxiliar=5374");
+  });
+
   it("traduz 404 em orientação de configuração e preserva o corpo", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ detalhe: "ausente" }), { status: 404 }),

@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const json = await validarJson(request, kardexQuerySchema, "Parâmetros inválidos.");
     if (!json.ok) return json.response;
-    const { empresaId, dtInicial, dtFinal } = json.value;
+    const { empresaId, dtInicial, dtFinal, codigoAuxiliar } = json.value;
     if (empresaId === "todas" || empresaId.includes(",")) {
       return NextResponse.json({ error: "Selecione uma única empresa para consultar o Kardex." }, { status: 400 });
     }
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       empresa,
       dtInicial,
       dtFinal,
+      codigoAuxiliar,
       signal: request.signal,
     });
     const movimentosPublicos = movimentos.map(projetarMovimentoKardex);

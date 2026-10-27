@@ -20,6 +20,10 @@ export interface SysproDateRange {
   dtFinal: string; // DD/MM/AAAA
 }
 
+export interface SysproKardexQuery extends SysproDateRange {
+  codigoAuxiliar?: string;
+}
+
 // ------------------------------------------------------------------
 // Tipos por rota (conforme manual)
 // ------------------------------------------------------------------
@@ -151,11 +155,13 @@ async function request<T>(
   rota: string,
   range: SysproDateRange,
   signal?: AbortSignal,
+  filtros?: Record<string, string>,
 ): Promise<T[]> {
   const baseUrl = sanitizarSysproUrl(config.baseUrl);
   const params = new URLSearchParams({
     dt_inicial: formatDate(range.dtInicial),
     dt_final: formatDate(range.dtFinal),
+    ...filtros,
   });
   const url = `${baseUrl}${buildPath(config, rota)}?${params.toString()}`;
 
@@ -312,10 +318,17 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
 
 export async function consultarKardex(
   config: SysproConfig,
-  range: SysproDateRange,
+  query: SysproKardexQuery,
   signal?: AbortSignal,
 ): Promise<MovimentacaoEstoque[]> {
-  return request<MovimentacaoEstoque>(config, "produto/kardex", range, signal);
+  const codigoAuxiliar = query.codigoAuxiliar?.trim();
+  return request<MovimentacaoEstoque>(
+    config,
+    "produto/kardex",
+    query,
+    signal,
+    codigoAuxiliar ? { produto_codigo_auxiliar: codigoAuxiliar } : undefined,
+  );
 }
 
 export async function consultarProducao(

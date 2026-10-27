@@ -130,7 +130,18 @@ export function projetarMovimentoKardex(movimento: MovimentoKardex): MovimentoKa
 }
 
 export function validarPeriodoKardex(inicial: string, final: string): boolean {
-  const converter = (valor: string) => { const resultado = /^(?:(\d{2})\/(\d{2})\/(\d{4})|(\d{4})-(\d{2})-(\d{2}))$/.exec(valor); if (!resultado) return null; const [, diaBr, mesBr, anoBr, anoIso, mesIso, diaIso] = resultado; const data = new Date(Date.UTC(Number(anoBr ?? anoIso), Number(mesBr ?? mesIso) - 1, Number(diaBr ?? diaIso))); return Number.isNaN(data.getTime()) ? null : data; };
+  const converter = (valor: string) => {
+    const resultado = /^(?:(\d{2})\/(\d{2})\/(\d{4})|(\d{4})-(\d{2})-(\d{2}))$/.exec(valor);
+    if (!resultado) return null;
+    const [, diaBr, mesBr, anoBr, anoIso, mesIso, diaIso] = resultado;
+    const ano = Number(anoBr ?? anoIso);
+    const mes = Number(mesBr ?? mesIso);
+    const dia = Number(diaBr ?? diaIso);
+    const data = new Date(Date.UTC(ano, mes - 1, dia));
+    return data.getUTCFullYear() === ano && data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia
+      ? data
+      : null;
+  };
   const inicio = converter(inicial); const fim = converter(final);
-  return Boolean(inicio && fim && inicio <= fim && fim.getTime() - inicio.getTime() <= 30 * 86_400_000);
+  return Boolean(inicio && fim && inicio <= fim);
 }
