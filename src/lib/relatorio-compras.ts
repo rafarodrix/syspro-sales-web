@@ -96,6 +96,7 @@ export function montarRelatorioCompras(
       totalCustoReposicao: number;
       quantidadeComCustoAquisicao: number;
       quantidadeComCustoReposicao: number;
+      devolucoesContadas: Array<{ documento: string; grupoDocumento: string; data: string; quantidade: number }>;
     }
   >();
   const chavePorId = new Map<string, string>();
@@ -132,6 +133,7 @@ export function montarRelatorioCompras(
       quantidadeComCustoAquisicao: 0,
       quantidadeComCustoReposicao: 0,
       ordemUltimoMovimento: -1,
+      devolucoesContadas: [],
     };
     const quantidade = paraNumero(venda.produto_qtde);
     atual.quantidadeVendida += quantidade;
@@ -157,7 +159,7 @@ export function montarRelatorioCompras(
       movimento.grupoDocumento.trim().toUpperCase() === "EDV" &&
       estaNoPeriodo(movimento.dataMovimento, periodo.inicial, periodo.final);
     let chave = chavePorId.get(codigoId);
-    let atual = chave ? porProduto.get(chave) : undefined;
+    let atual = chave ? porProduto.get(chave)! : undefined;
 
     if (!atual && codigoId && ehDevolucaoVendaNoPeriodo) {
       chave = codigoId;
@@ -187,15 +189,35 @@ export function montarRelatorioCompras(
         quantidadeComCustoAquisicao: 0,
         quantidadeComCustoReposicao: 0,
         ordemUltimoMovimento: -1,
+      devolucoesContadas: [],
       };
       chavePorId.set(codigoId, chave);
       porProduto.set(chave, atual);
     }
     if (!atual) return;
 
+    // Evita contar a mesma nota de devolução mais de uma vez quando o Kardex
+    // repete a linha por algum motivo (ex.: mesmo documento + mesma quantidade).
     if (ehDevolucaoVendaNoPeriodo) {
-      atual.quantidadeDevolvida += Math.abs(movimento.quantidadeMovimentada);
-      atual.valorDevolvido += Math.abs(movimento.valorTotal);
+      const jaContada =
+        atual.devolucoesContadas?.some(
+          (d) =>
+            d.documento === movimento.documento &&
+            d.grupoDocumento === movimento.grupoDocumento &&
+            d.data === movimento.dataMovimento.slice(0, 10) &&
+            d.quantidade === Math.abs(movimento.quantidadeMovimentada),
+        ) ?? false;
+      if (!jaContada) {
+        atual.quantidadeDevolvida += Math.abs(movimento.quantidadeMovimentada);
+        atual.valorDevolvido += Math.abs(movimento.valorTotal);
+        atual.devolucoesContadas = atual.devolucoesContadas || [];
+        atual.devolucoesContadas.push({
+          documento: movimento.documento,
+          grupoDocumento: movimento.grupoDocumento,
+          data: movimento.dataMovimento.slice(0, 10),
+          quantidade: Math.abs(movimento.quantidadeMovimentada),
+        });
+      }
     }
 
     // O grupo documental classifica o movimento, mas não decide o saldo. O saldo atual
