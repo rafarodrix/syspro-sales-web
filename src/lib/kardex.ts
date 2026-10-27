@@ -87,11 +87,21 @@ export function paraNumero(valor: unknown): number {
   return Number.isFinite(numero) ? numero : 0;
 }
 
-export function classificarMovimentoKardex(grupoDocumento: string, operacaoSyspro: string, descricaoGrupoDocumento = ""): ClassificacaoKardex {
+function calcularDirecaoKardex(operacaoSyspro: string, qtdeAnterior: number, qtdeSaldo: number): DirecaoKardex {
+  // A variação real do saldo é mais confiável que o campo kardex_operacao,
+  // especialmente para ajustes de estoque (EAJ) que podem vir com operação invertida.
+  const variacao = qtdeSaldo - qtdeAnterior;
+  if (variacao > 0) return "entrada";
+  if (variacao < 0) return "saida";
+  const operacao = operacaoSyspro.trim().toUpperCase();
+  return operacao === "E" ? "entrada" : operacao === "S" ? "saida" : "indefinida";
+}
+
+export function classificarMovimentoKardex(grupoDocumento: string, operacaoSyspro: string, descricaoGrupoDocumento = "", qtdeAnterior = 0, qtdeSaldo = 0): ClassificacaoKardex {
   const grupo = grupoDocumento.trim().toUpperCase();
   const descricao = descricaoGrupoDocumento.trim().toUpperCase();
   const operacao = operacaoSyspro.trim().toUpperCase();
-  const direcao: DirecaoKardex = operacao === "E" ? "entrada" : operacao === "S" ? "saida" : "indefinida";
+  const direcao: DirecaoKardex = calcularDirecaoKardex(operacaoSyspro, qtdeAnterior, qtdeSaldo);
   const categorias: Record<string, Omit<ClassificacaoKardex, "direcao">> = {
     EA: { categoria: "outros", rotulo: "Ajuste de estoque" }, EAJ: { categoria: "outros", rotulo: "Ajuste de estoque" }, EBC: { categoria: "bonificacao", rotulo: "Bonificação concedida" }, EDV: { categoria: "devolucao_venda", rotulo: "Devolução de venda" }, EDO: { categoria: "outros", rotulo: "Doação" }, ENP: { categoria: "fiscal", rotulo: "Emissão fiscal de venda (NF-e)" }, ETM: { categoria: "transferencia", rotulo: "Transferência para produção" }, EVP: { categoria: "venda", rotulo: "Venda PDV" }, EVD: { categoria: "venda", rotulo: "Venda direta" }, EDC: { categoria: "devolucao_compra", rotulo: "Devolução de compra" }, EPE: { categoria: "outros", rotulo: "Perda ou furto" }, ESS: { categoria: "outros", rotulo: "Simples remessa" }, EST: { categoria: "transferencia", rotulo: "Transferência" }, PCP: { categoria: "compra", rotulo: "Pedido de compra" }, EBR: { categoria: "bonificacao", rotulo: "Bonificação" }, EAQ: { categoria: "compra", rotulo: "Recebimento de mercadorias" }, ECI: { categoria: "outros", rotulo: "Consumo interno" }, EOE: { categoria: "outros", rotulo: "Outras entradas" }, EPD: { categoria: "outros", rotulo: "Recebimento por produção" }, EES: { categoria: "outros", rotulo: "Simples remessa" }, EET: { categoria: "transferencia", rotulo: "Transferência" }, ETE: { categoria: "outros", rotulo: "Troca de mercadoria" },
   };
@@ -106,7 +116,9 @@ export function normalizarMovimentoKardex(item: unknown): MovimentoKardex {
   const grupoDocumento = texto("kardex_cd_grupo_documento");
   const descricaoGrupoDocumento = texto("kardex_ds_grupo_documento");
   const operacaoSyspro = texto("kardex_operacao");
-  const classificacao = classificarMovimentoKardex(grupoDocumento, operacaoSyspro, descricaoGrupoDocumento);
+  const qtdeAnterior = paraNumero(registro.kardex_qtde_anterior);
+  const qtdeSaldo = paraNumero(registro.kardex_qtde_saldo);
+  const classificacao = classificarMovimentoKardex(grupoDocumento, operacaoSyspro, descricaoGrupoDocumento, qtdeAnterior, qtdeSaldo);
   return { empresaCodigo: texto("empresa_codigo"), empresaNome: texto("empresa_nome"), participante: texto("participante_nome"), produtoIdProduto: texto("produto_id_produto"), produtoCodigoAuxiliar: texto("produto_codigo_auxiliar"), produtoMarca: texto("produto_marca"), produtoDescricao: texto("produto_descricao"), valorTotal: paraNumero(registro.produto_vlr_total), dataMovimento: texto("kardex_data_movimento"), quantidadeAnterior: paraNumero(registro.kardex_qtde_anterior), quantidadeMovimentada: paraNumero(registro.kardex_qtde_movimento), saldo: paraNumero(registro.kardex_qtde_saldo), documento: texto("kardex_nro_documento"), grupoDocumento, descricaoGrupoDocumento, operacaoSyspro, modeloDocumento: texto("kardex_modelo_documento"),
     grupoEstoque: texto("produto_grupo_estoque"), direcao: classificacao.direcao, classificacao };
 }
