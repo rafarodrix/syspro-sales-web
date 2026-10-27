@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       vendas,
       { inicial: dtInicial, final: dtFinal },
       limites,
+      { grupoEstoquePadrao: empresa.grupoEstoquePadrao ?? undefined },
     );
     const movimentosPublicos = movimentos.map(projetarMovimentoKardex);
     return NextResponse.json({ movimentos: movimentosPublicos, limites, ...saude }, {

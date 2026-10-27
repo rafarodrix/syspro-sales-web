@@ -24,6 +24,7 @@ describe("Kardex", () => {
       kardex_ds_grupo_documento: "EMISSAO DE VENDA DE PRODUTOS PDV",
       kardex_operacao: "S",
       kardex_modelo_documento: "65",
+      produto_grupo_estoque: " furo ",
     });
 
     expect(movimento).toMatchObject({
@@ -32,8 +33,10 @@ describe("Kardex", () => {
       quantidadeMovimentada: -1,
       saldo: 51,
       grupoDocumento: "EVP",
+      grupoEstoque: "furo",
       direcao: "saida",
     });
+    expect(projetarMovimentoKardex(movimento).grupoEstoque).toBe("FURO");
   });
 
   it("classifica EDV como devolução de venda e entrada quando a API indicar E", () => {
@@ -97,7 +100,7 @@ describe("Kardex", () => {
     });
     const publico = projetarMovimentoKardex(movimento);
 
-    expect(publico).toMatchObject({ produtoCodigoAuxiliar: "REF-10", quantidadeMovimentada: -4, saldo: 6 });
+    expect(publico).toMatchObject({ produtoCodigoAuxiliar: "REF-10", quantidadeMovimentada: -4, saldo: 6, grupoEstoque: "GERAL" });
     expect(publico).not.toHaveProperty("produtoIdProduto");
     expect(publico).not.toHaveProperty("empresaCodigo");
     expect(publico).not.toHaveProperty("empresaCnpj");

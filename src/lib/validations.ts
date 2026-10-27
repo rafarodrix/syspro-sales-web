@@ -134,7 +134,6 @@ export const vendasQuerySchema = z.object({
   dtInicial: z.string().refine((val) => padraoDataBR.test(val) || padraoDataISO.test(val), { message: "Data inicial deve estar no formato DD/MM/AAAA ou AAAA-MM-DD." }),
   dtFinal: z.string().refine((val) => padraoDataBR.test(val) || padraoDataISO.test(val), { message: "Data final deve estar no formato DD/MM/AAAA ou AAAA-MM-DD." }),
   forcarAtualizacao: z.boolean().optional().default(false),
-  grupoEstoquePadrao: z.string().optional(),
 });
 
 export const kardexQuerySchema = vendasQuerySchema;

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const json = await validarJson(request, vendasQuerySchema, "Parâmetros inválidos.");
     if (!json.ok) return json.response;
-    const { empresaId, dtInicial, dtFinal, forcarAtualizacao, grupoEstoquePadrao } = json.value;
+    const { empresaId, dtInicial, dtFinal, forcarAtualizacao } = json.value;
     if (empresaId === "todas" || empresaId.includes(",")) {
       return NextResponse.json(
         { error: "Selecione uma única empresa para consultar estoque e devoluções." },
@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
       dtInicial,
       dtFinal,
       forcarAtualizacao,
-      grupoEstoquePadrao: grupoEstoquePadrao ?? empresa.grupoEstoquePadrao,
       signal: request.signal,
     });
     return NextResponse.json(relatorio, {

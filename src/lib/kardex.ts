@@ -11,18 +11,6 @@ export type CategoriaKardex =
   | "outros";
 
 /**
- * Grupos cujo saldo representa o estoque que o cliente considera real.
- * Os demais grupos (ENP, EPD, EOS, EAJ, EBR, ESS...) movimentam um
- * estoque paralelo e NÃO devem definir o saldo atual do produto.
- */
-export const GRUPOS_SALDO_ESTOQUE = ["EVP", "EVD", "EDV", "EDC", "EAQ"] as const;
-
-export function grupoDefineSaldo(grupoDocumento: string): boolean {
-  const grupo = (grupoDocumento ?? "").trim().toUpperCase();
-  return (GRUPOS_SALDO_ESTOQUE as readonly string[]).includes(grupo);
-}
-
-/**
  * Retorna o grupo de estoque de uma movimentação (campo `produto_grupo_estoque`
  * que vem do Syspro). Quando não vem, assume GERAL para manter compatibilidade.
  */
@@ -30,14 +18,14 @@ export function grupoEstoqueDoProduto(movimento: MovimentoKardex): string {
   return String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
 }
 
-export function obterGruposSaldoEstoque(empresa?: { grupoEstoquePadrao?: string }): string[] {
+export function obterGruposSaldoEstoque(empresa?: { grupoEstoquePadrao?: string | null }): string[] {
   const padrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
   return [padrao];
 }
 
 export function movimentoCompoeSaldo(
   movimento: MovimentoKardex,
-  empresa?: { grupoEstoquePadrao?: string },
+  empresa?: { grupoEstoquePadrao?: string | null },
 ): boolean {
   const grupos = obterGruposSaldoEstoque(empresa);
   return grupos.includes(grupoEstoqueDoProduto(movimento));
@@ -74,7 +62,7 @@ export interface MovimentoKardex {
   empresaCnpj?: string;
 }
 
-export type MovimentoKardexPublico = Pick<
+export type MovimentoKardexPublico = Omit<Pick<
   MovimentoKardex,
   | "participante"
   | "produtoCodigoAuxiliar"
@@ -86,9 +74,10 @@ export type MovimentoKardexPublico = Pick<
   | "documento"
   | "grupoDocumento"
   | "descricaoGrupoDocumento"
+  | "grupoEstoque"
   | "direcao"
   | "classificacao"
->;
+>, "grupoEstoque"> & { grupoEstoque: string };
 
 export function paraNumero(valor: unknown): number {
   if (typeof valor === "number") return Number.isFinite(valor) ? valor : 0;
@@ -134,6 +123,7 @@ export function projetarMovimentoKardex(movimento: MovimentoKardex): MovimentoKa
     documento: movimento.documento,
     grupoDocumento: movimento.grupoDocumento,
     descricaoGrupoDocumento: movimento.descricaoGrupoDocumento,
+    grupoEstoque: grupoEstoqueDoProduto(movimento),
     direcao: movimento.direcao,
     classificacao: movimento.classificacao,
   };

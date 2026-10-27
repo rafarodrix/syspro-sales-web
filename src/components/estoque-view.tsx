@@ -31,6 +31,7 @@ interface EmpresaOption {
   coberturaCriticaDias: number;
   coberturaAtencaoDias: number;
   coberturaExcessoDias: number;
+  grupoEstoquePadrao: string;
 }
 interface RespostaEstoque {
   movimentos: MovimentoKardexPublico[];
@@ -85,6 +86,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   const [filtroDirecao, setFiltroDirecao] = useState("todas");
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
   const [filtroGrupo, setFiltroGrupo] = useState("todos");
+  const [filtroGrupoEstoque, setFiltroGrupoEstoque] = useState("todos");
   const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>("todas");
   const [aba, setAba] = useState("visao-geral");
 
@@ -122,13 +124,18 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
   }
 
   const gruposDisponiveis = useMemo(() => Array.from(new Set(movimentos.map((item) => item.grupoDocumento).filter(Boolean))).sort(), [movimentos]);
+  const gruposEstoqueDisponiveis = useMemo(() => Array.from(new Set(movimentos.map((item) => item.grupoEstoque).filter(Boolean))).sort(), [movimentos]);
   const movimentosFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return movimentos.filter((item) => {
-      const textoBate = !termo || [item.produtoCodigoAuxiliar, item.produtoDescricao, item.documento, item.participante, item.grupoDocumento, item.descricaoGrupoDocumento].some((campo) => campo.toLowerCase().includes(termo));
-      return textoBate && (filtroDirecao === "todas" || item.direcao === filtroDirecao) && (filtroCategoria === "todas" || item.classificacao.categoria === filtroCategoria) && (filtroGrupo === "todos" || item.grupoDocumento === filtroGrupo);
+      const textoBate = !termo || [item.produtoCodigoAuxiliar, item.produtoDescricao, item.documento, item.participante, item.grupoDocumento, item.descricaoGrupoDocumento, item.grupoEstoque].some((campo) => campo.toLowerCase().includes(termo));
+      return textoBate
+        && (filtroDirecao === "todas" || item.direcao === filtroDirecao)
+        && (filtroCategoria === "todas" || item.classificacao.categoria === filtroCategoria)
+        && (filtroGrupo === "todos" || item.grupoDocumento === filtroGrupo)
+        && (filtroGrupoEstoque === "todos" || item.grupoEstoque === filtroGrupoEstoque);
     });
-  }, [busca, filtroDirecao, filtroCategoria, filtroGrupo, movimentos]);
+  }, [busca, filtroDirecao, filtroCategoria, filtroGrupo, filtroGrupoEstoque, movimentos]);
   const posicoesFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return posicoes.filter((item) => {
@@ -163,7 +170,12 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
 
   function abrirKardex(item: PosicaoEstoque) {
     setBusca(item.codigo === "Sem código" ? item.produto : item.codigo);
-    setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); movimentosPaginacao.reiniciar(); setAba("movimentacoes");
+    setFiltroDirecao("todas");
+    setFiltroCategoria("todas");
+    setFiltroGrupo("todos");
+    setFiltroGrupoEstoque(empresaAtual?.grupoEstoquePadrao?.trim().toUpperCase() || "todos");
+    movimentosPaginacao.reiniciar();
+    setAba("movimentacoes");
   }
   function abrirFilaComSituacao(situacao: FiltroSituacao) {
     setFiltroSituacao(situacao);
@@ -173,6 +185,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     setFiltroDirecao("todas");
     setFiltroCategoria("devolucao_venda");
     setFiltroGrupo("todos");
+    setFiltroGrupoEstoque("todos");
     devolucoesPaginacao.reiniciar();
     setAba("devolucoes");
   }
@@ -216,12 +229,13 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         : movimentosFiltrados;
     exportarParaCSV(
       `estoque-${aba}-${nomeEmpresa}-${sufixo}`,
-      ["Data", "Código auxiliar", "Produto", "Documento", "Grupo", "Categoria", "Participante", "Direção", "Quantidade", "Saldo", "Valor"],
+      ["Data", "Código auxiliar", "Produto", "Documento", "Grupo de estoque", "Grupo documental", "Categoria", "Participante", "Direção", "Quantidade", "Saldo", "Valor"],
       itens.map((item) => [
         dataVisual(item.dataMovimento),
         item.produtoCodigoAuxiliar,
         item.produtoDescricao,
         item.documento,
+        item.grupoEstoque,
         item.grupoDocumento,
         item.classificacao.rotulo,
         item.participante,
@@ -233,8 +247,8 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
     );
     toast.success(`${itens.length} movimento(s) exportado(s).`);
   }
-  const filtrosAtivos = Boolean(busca) || filtroDirecao !== "todas" || filtroCategoria !== "todas" || filtroGrupo !== "todos" || filtroSituacao !== "todas";
-  function limparFiltros() { setBusca(""); setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); setFiltroSituacao("todas"); reiniciarPaginacoes(); }
+  const filtrosAtivos = Boolean(busca) || filtroDirecao !== "todas" || filtroCategoria !== "todas" || filtroGrupo !== "todos" || filtroGrupoEstoque !== "todos" || filtroSituacao !== "todas";
+  function limparFiltros() { setBusca(""); setFiltroDirecao("todas"); setFiltroCategoria("todas"); setFiltroGrupo("todos"); setFiltroGrupoEstoque("todos"); setFiltroSituacao("todas"); reiniciarPaginacoes(); }
 
   return (
     <div className="flex flex-col gap-6">
@@ -243,7 +257,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
         title="Posição e Saúde do Estoque"
         description="Saldo, demanda líquida, custos, cobertura e movimentações por empresa. Período máximo de 31 dias."
         actions={<ExportDropdown onExportarCsv={exportarVisaoAtual} disabled={loading || !resumoSaude || totalVisaoAtual === 0} label="Exportar visão" />}
-        footer={`Parâmetros da empresa: crítico abaixo de ${limites.criticoDias} dias · atenção abaixo de ${limites.atencaoDias} dias · excesso acima de ${limites.excessoDias} dias.`}
+        footer={`Saldo da posição: grupo ${empresaAtual?.grupoEstoquePadrao || "GERAL"} · crítico abaixo de ${limites.criticoDias} dias · atenção abaixo de ${limites.atencaoDias} dias · excesso acima de ${limites.excessoDias} dias.`}
       >
         <DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} maximoDias={31} />
       </AnalysisQueryCard>
@@ -270,7 +284,8 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
           {aba === "visao-geral" ? <div className="w-40 sm:w-44"><Select value={filtroSituacao} onValueChange={(valor) => { setFiltroSituacao(valor as FiltroSituacao); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Situação" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as situações</SelectItem><SelectItem value="baixa_cobertura">Baixa cobertura</SelectItem>{Object.entries(rotulosSituacao).map(([valor, rotulo]) => <SelectItem key={valor} value={valor}>{rotulo}</SelectItem>)}</SelectContent></Select></div> : <>
             <div className="w-40 sm:w-44"><Select value={filtroDirecao} onValueChange={(valor) => { setFiltroDirecao(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Entrada / saída" /></SelectTrigger><SelectContent><SelectItem value="todas">Entradas e saídas</SelectItem><SelectItem value="entrada">Somente entradas</SelectItem><SelectItem value="saida">Somente saídas</SelectItem></SelectContent></Select></div>
             <div className="w-40 sm:w-44"><Select value={filtroCategoria} onValueChange={(valor) => { setFiltroCategoria(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger><SelectContent><SelectItem value="todas">Todas as categorias</SelectItem><SelectItem value="venda">Vendas</SelectItem><SelectItem value="devolucao_venda">Devoluções de venda</SelectItem><SelectItem value="compra">Compras</SelectItem><SelectItem value="devolucao_compra">Devoluções de compra</SelectItem><SelectItem value="transferencia">Transferências</SelectItem><SelectItem value="bonificacao">Bonificações</SelectItem><SelectItem value="fiscal">Emissões fiscais (NF-e)</SelectItem><SelectItem value="outros">Outros movimentos</SelectItem></SelectContent></Select></div>
-            <div className="w-40 sm:w-44"><Select value={filtroGrupo} onValueChange={(valor) => { setFiltroGrupo(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Grupo" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os grupos</SelectItem>{gruposDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}</SelectContent></Select></div>
+            <div className="w-40 sm:w-44"><Select value={filtroGrupoEstoque} onValueChange={(valor) => { setFiltroGrupoEstoque(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Estoque" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os estoques</SelectItem>{gruposEstoqueDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}</SelectContent></Select></div>
+            <div className="w-40 sm:w-44"><Select value={filtroGrupo} onValueChange={(valor) => { setFiltroGrupo(valor); movimentosPaginacao.reiniciar(); devolucoesPaginacao.reiniciar(); transferenciasPaginacao.reiniciar(); }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Grupo documental" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os documentos</SelectItem>{gruposDisponiveis.map((grupo) => <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>)}</SelectContent></Select></div>
           </>}
         </DataFilterBar>
 
@@ -374,7 +389,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
                   label="movimentos"
                   caption="Kardex detalhado"
                   data={movimentosFiltrados}
-                  rowKey={(item) => `${item.documento}-${item.dataMovimento}-${item.produtoCodigoAuxiliar}`}
+                  rowKey={(item) => `${item.grupoEstoque}-${item.documento}-${item.dataMovimento}-${item.produtoCodigoAuxiliar}`}
                   showExport={false}
                   columns={[
                     {
@@ -406,8 +421,15 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
                       cell: (item) => <span className="font-mono text-xs">{item.documento || "—"}</span>,
                     },
                     {
+                      id: "estoque",
+                      header: <>Estoque</>,
+                      kind: "name",
+                      value: (item) => item.grupoEstoque,
+                      cell: (item) => <Badge variant="secondary">{item.grupoEstoque}</Badge>,
+                    },
+                    {
                       id: "grupo",
-                      header: <>Grupo</>,
+                      header: <>Grupo documental</>,
                       kind: "name",
                       value: (item) => item.grupoDocumento,
                       cell: (item) => (
@@ -470,7 +492,7 @@ function MovimentosEspeciais({
         label="movimentos"
         caption="Movimentos do Kardex"
         data={itens}
-        rowKey={(item) => `${item.documento}-${item.dataMovimento}-${item.produtoCodigoAuxiliar}`}
+        rowKey={(item) => `${item.grupoEstoque}-${item.documento}-${item.dataMovimento}-${item.produtoCodigoAuxiliar}`}
         showExport={false}
         columns={[
           {
@@ -479,6 +501,13 @@ function MovimentosEspeciais({
             kind: "date",
             value: (item) => item.dataMovimento,
             cell: (item) => <span className="text-xs">{dataVisual(item.dataMovimento)}</span>,
+          },
+          {
+            id: "estoque",
+            header: <>Estoque</>,
+            kind: "name",
+            value: (item) => item.grupoEstoque,
+            cell: (item) => <Badge variant="secondary">{item.grupoEstoque}</Badge>,
           },
           {
             id: "tipo",

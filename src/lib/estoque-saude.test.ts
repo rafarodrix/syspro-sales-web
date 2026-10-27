@@ -136,6 +136,15 @@ describe("saúde do estoque", () => {
     expect(resultado.posicoes.find((item) => item.estoqueAtual === 40)?.situacao).toBe("excesso");
   });
 
+  it("calcula o saldo pelo grupo de estoque configurado na empresa", () => {
+    const resultado = montarSaudeEstoque([
+      movimento({ produtoIdProduto: "1", grupoEstoque: "FURO", saldo: 8, dataMovimento: "2026-10-02" }),
+      movimento({ produtoIdProduto: "1", grupoEstoque: "GERAL", saldo: 3, dataMovimento: "2026-10-03" }),
+    ], [], { inicial: "01/10/2026", final: "10/10/2026" }, undefined, { grupoEstoquePadrao: "FURO" });
+
+    expect(resultado.posicoes[0]?.estoqueAtual).toBe(8);
+  });
+
   it("não considera movimentos sem ID no agrupamento e informa a inconsistência", () => {
     const resultado = montarSaudeEstoque([
       movimento({ produtoIdProduto: "", produtoCodigoAuxiliar: "SEM-ID" }),

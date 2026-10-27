@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { empresaCreateSchema, limitesEstoqueEmpresaSchema } from "@/lib/validations";
+import { empresaCreateSchema, limitesEstoqueEmpresaSchema, vendasQuerySchema } from "@/lib/validations";
 
 describe("limites de estoque por empresa", () => {
   it("aceita uma sequência válida de cobertura", () => {
@@ -37,5 +37,18 @@ describe("limites de estoque por empresa", () => {
       coberturaExcessoDias: 90,
       coberturaCompraDias: 30,
     });
+  });
+});
+
+describe("consulta de vendas e compras", () => {
+  it("não aceita o grupo de estoque do navegador como parâmetro da consulta", () => {
+    const resultado = vendasQuerySchema.parse({
+      empresaId: "empresa-1",
+      dtInicial: "01/10/2026",
+      dtFinal: "31/10/2026",
+      grupoEstoquePadrao: "OUTRO-GRUPO",
+    });
+
+    expect(resultado).not.toHaveProperty("grupoEstoquePadrao");
   });
 });

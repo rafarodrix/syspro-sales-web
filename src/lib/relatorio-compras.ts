@@ -1,4 +1,4 @@
-import { grupoDefineSaldo, type MovimentoKardex } from "@/lib/kardex";
+import { movimentoCompoeSaldo, type MovimentoKardex } from "@/lib/kardex";
 import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
 export { normalizarDataIso } from "@/lib/periodo";
@@ -198,10 +198,9 @@ export function montarRelatorioCompras(
       atual.valorDevolvido += Math.abs(movimento.valorTotal);
     }
 
-    // Saldo atual: ultimo movimento do grupo de estoque configurado (campo produto_grupo_estoque).
-    const grupoEstoque = String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
-    const grupoPadrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
-    if (grupoEstoque !== grupoPadrao) return;
+    // O grupo documental classifica o movimento, mas não decide o saldo. O saldo atual
+    // vem exclusivamente do último movimento do grupo de estoque configurado na empresa.
+    if (!movimentoCompoeSaldo(movimento, empresa)) return;
     const dataAtual = movimento.dataMovimento.slice(0, 10);
     const dataAnterior = atual.dataUltimoMovimento?.slice(0, 10) ?? "";
     if (dataAtual > dataAnterior || (dataAtual === dataAnterior && indice > atual.ordemUltimoMovimento)) {

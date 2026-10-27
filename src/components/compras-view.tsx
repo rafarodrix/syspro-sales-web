@@ -136,7 +136,6 @@ export function ComprasView({
           dtInicial: proximoPeriodo.inicial,
           dtFinal: proximoPeriodo.final,
           forcarAtualizacao: true,
-          grupoEstoquePadrao,
         }),
       });
       const dados = (await resposta.json().catch(() => ({}))) as RelatorioCompras & {
@@ -344,8 +343,8 @@ export function ComprasView({
             <div className="space-y-1.5">
               <CardTitle>Produtos para análise de compra</CardTitle>
               <CardDescription>
-                Curva ABC calculada pela demanda líquida. O estoque usa o saldo do movimento mais
-                recente encontrado até hoje.
+                Curva ABC calculada pela demanda líquida. O estoque usa o saldo do último movimento
+                do grupo {grupoEstoquePadrao.trim().toUpperCase() || "GERAL"}, configurado na empresa.
               </CardDescription>
             </div>
             <ExportDropdown

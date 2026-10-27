@@ -76,6 +76,24 @@ describe("relatorio de compras", () => {
     });
   });
 
+  it("usa exclusivamente o último movimento do grupo de estoque definido na empresa", () => {
+    const relatorio = montarRelatorioCompras(
+      [venda("PROD-1", 5)],
+      [
+        { ...movimento("PROD-1", "2026-10-20", "EVP", -1, 90), grupoEstoque: "GERAL" },
+        { ...movimento("PROD-1", "2026-10-18", "ENP", -1, 12), grupoEstoque: " furo " },
+        { ...movimento("PROD-1", "2026-10-21", "EPD", 1, 15), grupoEstoque: "FURO" },
+      ],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+      { grupoEstoquePadrao: "Furo" },
+    );
+
+    expect(relatorio.itens[0]).toMatchObject({
+      estoqueAtual: 15,
+      dataUltimoMovimento: "2026-10-21",
+    });
+  });
+
   it("não relaciona venda e Kardex apenas pelo código auxiliar", () => {
     const itemVendido = {
       ...venda("{47E770D8-EE38-474E-AFF3-3A1A51E3EDC4}", 10, "Água desmineralizada"),
