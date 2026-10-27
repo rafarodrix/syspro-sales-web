@@ -96,7 +96,6 @@ export function montarRelatorioCompras(
       totalCustoReposicao: number;
       quantidadeComCustoAquisicao: number;
       quantidadeComCustoReposicao: number;
-      devolucoesContadas: Array<{ documento: string; grupoDocumento: string; data: string; quantidade: number }>;
     }
   >();
   const chavePorId = new Map<string, string>();
@@ -133,7 +132,6 @@ export function montarRelatorioCompras(
       quantidadeComCustoAquisicao: 0,
       quantidadeComCustoReposicao: 0,
       ordemUltimoMovimento: -1,
-      devolucoesContadas: [],
     };
     const quantidade = paraNumero(venda.produto_qtde);
     atual.quantidadeVendida += quantidade;
@@ -189,40 +187,24 @@ export function montarRelatorioCompras(
         quantidadeComCustoAquisicao: 0,
         quantidadeComCustoReposicao: 0,
         ordemUltimoMovimento: -1,
-      devolucoesContadas: [],
       };
       chavePorId.set(codigoId, chave);
       porProduto.set(chave, atual);
     }
     if (!atual) return;
 
-    // Evita contar a mesma nota de devolução mais de uma vez quando o Kardex
-    // repete a linha por algum motivo (ex.: mesmo documento + mesma quantidade).
-    if (ehDevolucaoVendaNoPeriodo) {
-      const jaContada =
-        atual.devolucoesContadas?.some(
-          (d) =>
-            d.documento === movimento.documento &&
-            d.grupoDocumento === movimento.grupoDocumento &&
-            d.data === movimento.dataMovimento.slice(0, 10) &&
-            d.quantidade === Math.abs(movimento.quantidadeMovimentada),
-        ) ?? false;
-      if (!jaContada) {
-        atual.quantidadeDevolvida += Math.abs(movimento.quantidadeMovimentada);
-        atual.valorDevolvido += Math.abs(movimento.valorTotal);
-        atual.devolucoesContadas = atual.devolucoesContadas || [];
-        atual.devolucoesContadas.push({
-          documento: movimento.documento,
-          grupoDocumento: movimento.grupoDocumento,
-          data: movimento.dataMovimento.slice(0, 10),
-          quantidade: Math.abs(movimento.quantidadeMovimentada),
-        });
-      }
-    }
-
     // O grupo documental classifica o movimento, mas não decide o saldo. O saldo atual
     // vem exclusivamente do último movimento do grupo de estoque configurado na empresa.
-    if (!movimentoCompoeSaldo(movimento, empresa)) return;
+    const grupoEstoque = String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
+    const grupoPadrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
+
+    // Soma devoluções de venda apenas do grupo de estoque configurado na empresa.
+    if (ehDevolucaoVendaNoPeriodo && grupoEstoque === grupoPadrao) {
+      atual.quantidadeDevolvida += Math.abs(movimento.quantidadeMovimentada);
+      atual.valorDevolvido += Math.abs(movimento.valorTotal);
+    }
+
+    if (grupoEstoque !== grupoPadrao) return;
     const dataAtual = movimento.dataMovimento.slice(0, 10);
     const dataAnterior = atual.dataUltimoMovimento?.slice(0, 10) ?? "";
     if (dataAtual > dataAnterior || (dataAtual === dataAnterior && indice > atual.ordemUltimoMovimento)) {
