@@ -38,6 +38,7 @@ export const itensGerais: ItemNavegacao[] = [
   { id: "dashboard", label: "Dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard, permissao: "dashboard:visualizar" },
   { id: "vendas", label: "Vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart, permissao: "vendas:visualizar" },
   { id: "estoque", label: "Estoque", titulo: "Movimentações / Kardex", categoria: "Navegação", href: "/estoque", icone: PackageSearch, permissao: "estoque:visualizar" },
+  { id: "producao", label: "Produção", titulo: "Produção", categoria: "Navegação", href: "/producao", icone: Factory, permissao: "relatorios:visualizar" },
   { id: "pagar", label: "Contas a Pagar", titulo: "Contas a Pagar", categoria: "Navegação", href: "/financeiro/pagar", icone: BanknoteArrowDown, permissao: "relatorios:visualizar" },
   { id: "receber", label: "Contas a Receber", titulo: "Contas a Receber", categoria: "Navegação", href: "/financeiro/receber", icone: BanknoteArrowUp, permissao: "relatorios:visualizar" },
 ];
@@ -51,7 +52,6 @@ export const relatoriosVendas: ItemNavegacao[] = [
   { id: "vendedores", label: "Vendedores", titulo: "Vendedores", categoria: "Relatórios", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500", permissao: "relatorios:visualizar" },
   { id: "geografico", label: "Cidade e UF", titulo: "Cidade e UF", categoria: "Relatórios", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500", permissao: "relatorios:visualizar" },
   { id: "financeiro", label: "Financeiro & Fiscal", titulo: "Financeiro & Formas de Pagto", categoria: "Relatórios", href: "/relatorios?aba=financeiro", icone: CreditCard, cor: "text-orange-500", permissao: "relatorios:visualizar" },
-  { id: "producao", label: "Produção", titulo: "Produção", categoria: "Relatórios", href: "/producao", icone: Factory, permissao: "relatorios:visualizar" },
 ];
 
 export const itensRelatorios: ItemNavegacao[] = [

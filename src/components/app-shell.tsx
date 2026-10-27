@@ -10,6 +10,7 @@ import {
   BanknoteArrowDown,
   BanknoteArrowUp,
   PackageSearch,
+  Factory,
   BarChart3,
   UserCog,
   Settings,
@@ -103,6 +104,7 @@ export function AppShell({
     }
     if (pathname.startsWith("/usuarios")) return { secao: "Administração", pagina: "Gestão de Usuários" };
     if (pathname.startsWith("/configuracoes")) return { secao: "Administração", pagina: "Configurações da API" };
+    if (pathname.startsWith("/producao")) return { secao: "Geral", pagina: "Produção" };
     return { secao: "Syspro ERP", pagina: "Visão Geral" };
   }, [pathname, abaAtiva]);
 
@@ -236,6 +238,21 @@ export function AppShell({
               >
                 <PackageSearch className="size-4 shrink-0" />
                 {!collapsed && <span>Estoque</span>}
+              </Link>
+            )}
+
+            {podeVerRelatorios && (
+              <Link
+                href={criarLinkComEmpresa("/producao")}
+                title="Produção"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                  pathname === "/producao"
+                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                } ${collapsed ? "justify-center px-2" : ""}`}
+              >
+                <Factory className="size-4 shrink-0" />
+                {!collapsed && <span>Produção</span>}
               </Link>
             )}
 
