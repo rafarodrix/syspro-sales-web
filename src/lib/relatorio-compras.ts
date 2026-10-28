@@ -96,6 +96,7 @@ export function montarRelatorioCompras(
       totalCustoReposicao: number;
       quantidadeComCustoAquisicao: number;
       quantidadeComCustoReposicao: number;
+      documentosDevolucao?: Set<string>;
     }
   >();
   const chavePorId = new Map<string, string>();
@@ -151,6 +152,22 @@ export function montarRelatorioCompras(
     porProduto.set(idNormalizado, atual);
   }
 
+  // Devoluções (EDV) podem ser canceladas no próprio dia por outra linha EDV
+  // com operação S. Calculamos o saldo líquido por documento para não contar
+  // devoluções que foram estornadas.
+  const edvPorDocumento = new Map<string, number>();
+  const edvValorPorDocumento = new Map<string, number>();
+  for (const movimento of movimentos) {
+    if (movimento.grupoDocumento.trim().toUpperCase() !== "EDV") continue;
+    if (!estaNoPeriodo(movimento.dataMovimento, periodo.inicial, periodo.final)) continue;
+    const grupoEstoque = String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
+    const grupoPadrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
+    if (grupoEstoque !== grupoPadrao) continue;
+    const chaveDoc = `${normalizarCodigoProduto(movimento.produtoIdProduto, "")}:${movimento.documento}:${grupoEstoque}`;
+    edvPorDocumento.set(chaveDoc, (edvPorDocumento.get(chaveDoc) ?? 0) + movimento.quantidadeMovimentada);
+    edvValorPorDocumento.set(chaveDoc, (edvValorPorDocumento.get(chaveDoc) ?? 0) + movimento.valorTotal);
+  }
+
   movimentos.forEach((movimento, indice) => {
     const codigoId = normalizarCodigoProduto(movimento.produtoIdProduto, "");
     const ehDevolucaoVendaNoPeriodo =
@@ -198,10 +215,21 @@ export function montarRelatorioCompras(
     const grupoEstoque = String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
     const grupoPadrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
 
-    // Soma devoluções de venda apenas do grupo de estoque configurado na empresa.
+    // Soma devoluções de venda apenas do grupo de estoque configurado na empresa
+    // e apenas o saldo líquido do documento (ignora cancelamentos).
     if (ehDevolucaoVendaNoPeriodo && grupoEstoque === grupoPadrao) {
-      atual.quantidadeDevolvida += Math.abs(movimento.quantidadeMovimentada);
-      atual.valorDevolvido += Math.abs(movimento.valorTotal);
+      const chaveDoc = `${codigoId}:${movimento.documento}:${grupoEstoque}`;
+      const saldoDoc = edvPorDocumento.get(chaveDoc) ?? 0;
+      const valorDoc = edvValorPorDocumento.get(chaveDoc) ?? 0;
+      // Só adiciona no primeiro movimento do documento, usando o saldo líquido.
+      if (!atual.documentosDevolucao?.has(movimento.documento)) {
+        if (saldoDoc > 0) {
+          atual.quantidadeDevolvida += saldoDoc;
+          atual.valorDevolvido += Math.max(0, Math.abs(valorDoc));
+        }
+        atual.documentosDevolucao = atual.documentosDevolucao || new Set();
+        atual.documentosDevolucao.add(movimento.documento);
+      }
     }
 
     if (grupoEstoque !== grupoPadrao) return;
