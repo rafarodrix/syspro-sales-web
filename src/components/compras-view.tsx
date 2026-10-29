@@ -280,6 +280,15 @@ export function ComprasView({
               acaoTitulo="Filtrar somente produtos com cobertura crítica"
             />
             <ActionMetricCard
+              titulo="Abaixo do alvo"
+              valor={formatarNumero(resumoDecisao.abaixo, 0)}
+              descricao={`Cobertura entre ${formatarNumero(limitesCobertura?.criticoDias ?? alvoDias / 2, 0)} e ${formatarNumero(limitesCobertura?.atencaoDias ?? alvoDias, 0)} dias`}
+              onClick={() => {
+                setSituacao("abaixo");
+              }}
+              acaoTitulo="Filtrar somente produtos abaixo do alvo"
+            />
+            <ActionMetricCard
               titulo="Capital parado"
               valor={formatarMoeda(resumoDecisao.excessoCapital + resumoDecisao.semDemandaCapital)}
               descricao={`${resumoDecisao.excessoProdutos} em excesso + ${resumoDecisao.semDemandaProdutos} sem demanda`}

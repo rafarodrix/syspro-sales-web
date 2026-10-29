@@ -126,6 +126,7 @@ export interface ResumoComprasDecisao {
   custoSugestao: number;
   rupturas: number;
   criticos: number;
+  abaixo: number;
   excessoCapital: number;
   excessoProdutos: number;
   semDemandaCapital: number;
@@ -142,6 +143,7 @@ export function resumirDecisaoCompra(
     custoSugestao: 0,
     rupturas: 0,
     criticos: 0,
+    abaixo: 0,
     excessoCapital: 0,
     excessoProdutos: 0,
     semDemandaCapital: 0,
@@ -155,6 +157,7 @@ export function resumirDecisaoCompra(
     const situacao = situacaoEstoque(item, alvoDias, limites);
     if (situacao === "ruptura") resumo.rupturas += 1;
     if (situacao === "critica") resumo.criticos += 1;
+    if (situacao === "abaixo") resumo.abaixo += 1;
     if (situacao === "excesso") {
       resumo.excessoProdutos += 1;
       resumo.excessoCapital += item.custoEstoqueReposicao ?? 0;
