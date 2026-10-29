@@ -110,6 +110,23 @@ export function ComprasView({
     [coberturaAlvoInicial],
   );
 
+  const limitesEfetivos = useMemo<LimitesCoberturaCompra>(() => {
+    if (!limitesCobertura) {
+      return {
+        criticoDias: alvoDias / 2,
+        atencaoDias: alvoDias,
+        excessoDias: alvoDias * 2,
+      };
+    }
+    const alvoBase = Math.max(1, coberturaAlvoInicial);
+    const fator = alvoDias / alvoBase;
+    return {
+      criticoDias: Math.max(1, Math.round(limitesCobertura.criticoDias * fator)),
+      atencaoDias: Math.max(1, Math.round(limitesCobertura.atencaoDias * fator)),
+      excessoDias: Math.max(1, Math.round(limitesCobertura.excessoDias * fator)),
+    };
+  }, [alvoDias, limitesCobertura, coberturaAlvoInicial]);
+
   const marcas = useMemo(() => {
     const conjunto = new Set<string>();
     for (const item of relatorio.itens) {
@@ -162,7 +179,7 @@ export function ComprasView({
     const filtrados = relatorio.itens.filter((item) => {
       if (curva !== "todas" && item.curva !== curva) return false;
       if (marca !== "todas" && (item.marca ?? "").trim() !== marca) return false;
-      if (situacao !== "todas" && situacaoEstoque(item, alvoDias, limitesCobertura) !== situacao) return false;
+      if (situacao !== "todas" && situacaoEstoque(item, alvoDias, limitesEfetivos) !== situacao) return false;
       if (!termo) return true;
       return (
         item.codigo.toLowerCase().includes(termo) ||
@@ -171,11 +188,11 @@ export function ComprasView({
       );
     });
     return ordenarItensCompras(filtrados, ordenacao, alvoDias);
-  }, [busca, curva, marca, situacao, ordenacao, alvoDias, limitesCobertura, relatorio.itens]);
+  }, [busca, curva, marca, situacao, ordenacao, alvoDias, limitesEfetivos, relatorio.itens]);
 
   const resumoDecisao = useMemo(
-    () => resumirDecisaoCompra(itensFiltrados, alvoDias, limitesCobertura),
-    [itensFiltrados, alvoDias, limitesCobertura],
+    () => resumirDecisaoCompra(itensFiltrados, alvoDias, limitesEfetivos),
+    [itensFiltrados, alvoDias, limitesEfetivos],
   );
 
   const totais = useMemo(() => {
@@ -273,7 +290,7 @@ export function ComprasView({
             <ActionMetricCard
               titulo="Críticas"
               valor={formatarNumero(resumoDecisao.criticos, 0)}
-              descricao={`Cobertura abaixo de ${formatarNumero(limitesCobertura?.criticoDias ?? alvoDias / 2, 0)} dias`}
+              descricao={`Cobertura abaixo de ${formatarNumero(limitesEfetivos.criticoDias, 0)} dias`}
               onClick={() => {
                 setSituacao("critica");
               }}
@@ -282,7 +299,7 @@ export function ComprasView({
             <ActionMetricCard
               titulo="Abaixo do alvo"
               valor={formatarNumero(resumoDecisao.abaixo, 0)}
-              descricao={`Cobertura entre ${formatarNumero(limitesCobertura?.criticoDias ?? alvoDias / 2, 0)} e ${formatarNumero(limitesCobertura?.atencaoDias ?? alvoDias, 0)} dias`}
+              descricao={`Cobertura entre ${formatarNumero(limitesEfetivos.criticoDias, 0)} e ${formatarNumero(limitesEfetivos.atencaoDias, 0)} dias`}
               onClick={() => {
                 setSituacao("abaixo");
               }}
@@ -534,10 +551,10 @@ export function ComprasView({
                       id: "situacao",
                       header: <span title="Classificação pela cobertura alvo escolhida na tela">Situação</span>,
                       kind: "name",
-                      value: (item) => situacaoEstoque(item, alvoDias, limitesCobertura),
+                      value: (item) => situacaoEstoque(item, alvoDias, limitesEfetivos),
                       cell: (item) => (
-                        <Badge variant={badgeSituacao(situacaoEstoque(item, alvoDias, limitesCobertura))}>
-                          {rotuloSituacao(situacaoEstoque(item, alvoDias, limitesCobertura))}
+                        <Badge variant={badgeSituacao(situacaoEstoque(item, alvoDias, limitesEfetivos))}>
+                          {rotuloSituacao(situacaoEstoque(item, alvoDias, limitesEfetivos))}
                         </Badge>
                       ),
                     },
