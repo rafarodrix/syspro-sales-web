@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
-import { ActionMetricCard } from "@/components/analytics/action-metric-card";
 import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { StatusRelatorio } from "./relatorios/ui/status-relatorio";
@@ -99,7 +98,6 @@ export function ComprasView({
   const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
   const [curva, setCurva] = useState<"todas" | ClasseCurvaCompras>("todas");
-  const [marca, setMarca] = useState("todas");
   const [situacao, setSituacao] = useState<"todas" | SituacaoCompra>("todas");
   const [ordenacao, setOrdenacao] = useState<CriterioOrdenacaoCompras>("demanda");
   const [alvoDias, setAlvoDias] = useState(coberturaAlvoInicial);
@@ -109,14 +107,6 @@ export function ComprasView({
   );
 
 
-  const marcas = useMemo(() => {
-    const conjunto = new Set<string>();
-    for (const item of relatorio.itens) {
-      const nome = item.marca?.trim();
-      if (nome) conjunto.add(nome);
-    }
-    return [...conjunto].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [relatorio.itens]);
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
     if (!empresaId) {
@@ -160,7 +150,6 @@ export function ComprasView({
     const termo = busca.trim().toLowerCase();
     const filtrados = relatorio.itens.filter((item) => {
       if (curva !== "todas" && item.curva !== curva) return false;
-      if (marca !== "todas" && (item.marca ?? "").trim() !== marca) return false;
       if (situacao !== "todas" && situacaoEstoque(item, alvoDias) !== situacao) return false;
       if (!termo) return true;
       return (
@@ -170,7 +159,7 @@ export function ComprasView({
       );
     });
     return ordenarItensCompras(filtrados, ordenacao, alvoDias);
-  }, [busca, curva, marca, situacao, ordenacao, alvoDias, relatorio.itens]);
+  }, [busca, curva, situacao, ordenacao, alvoDias, relatorio.itens]);
 
   const resumoDecisao = useMemo(
     () => resumirDecisaoCompra(itensFiltrados, alvoDias),
@@ -243,70 +232,45 @@ export function ComprasView({
       ) : null}
 
       {periodoConsultado ? (
-        <section className="space-y-3">
+        <section className="space-y-2">
           <SecaoTitulo
             eyebrow="Ação"
             titulo="Decisão de compra"
-            descricao={`Cobertura alvo: ${alvoDias} dias. Ruptura ≤ 0; Crítica < 50%; Abaixo 50-100%; Saudável 100-200%; Excesso > 200%.`}
           />
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <ActionMetricCard
-              titulo="Sugestão de compra"
-              valor={formatarMoeda(resumoDecisao.custoSugestao)}
-              descricao={`${formatarNumero(resumoDecisao.unidadesSugeridas, 0)} un para cobrir ${alvoDias} dias`}
-              onClick={() => {
-                setSituacao("todas");
-                setOrdenacao("sugestao");
-              }}
-              acaoTitulo="Ordenar a tabela pela maior sugestão de compra"
-            />
-            <ActionMetricCard
-              titulo="Rupturas"
-              valor={formatarNumero(resumoDecisao.rupturas, 0)}
-              descricao="Estoque zerado ou negativo com demanda no período"
-              onClick={() => {
-                setSituacao("ruptura");
-              }}
-              acaoTitulo="Filtrar somente produtos em ruptura"
-            />
-            <ActionMetricCard
-              titulo="Críticas"
-              valor={formatarNumero(resumoDecisao.criticos, 0)}
-              descricao={`Cobertura abaixo de ${formatarPercentual(0.5, 0)} do alvo`}
-              onClick={() => {
-                setSituacao("critica");
-              }}
-              acaoTitulo="Filtrar somente produtos com cobertura crítica"
-            />
-            <ActionMetricCard
-              titulo="Abaixo do alvo"
-              valor={formatarNumero(resumoDecisao.abaixo, 0)}
-              descricao={`Cobertura entre ${formatarPercentual(0.5, 0)} e ${formatarPercentual(1, 0)} do alvo`}
-              onClick={() => {
-                setSituacao("abaixo");
-              }}
-              acaoTitulo="Filtrar somente produtos abaixo do alvo"
-            />
-            <ActionMetricCard
-              titulo="Saudáveis"
-              valor={formatarNumero(resumoDecisao.saudaveis, 0)}
-              descricao={`Cobertura entre ${formatarPercentual(1, 0)} e ${formatarPercentual(2, 0)} do alvo`}
-              onClick={() => {
-                setSituacao("saudavel");
-              }}
-              acaoTitulo="Filtrar somente produtos com cobertura saudável"
-            />
-            <ActionMetricCard
-              titulo="Excesso / sem demanda"
-              valor={formatarMoeda(resumoDecisao.excessoCapital + resumoDecisao.semDemandaCapital)}
-              descricao={`${resumoDecisao.excessoProdutos} em excesso (>2× alvo) + ${resumoDecisao.semDemandaProdutos} sem demanda`}
-              onClick={() => {
-                setSituacao("excesso");
-                setOrdenacao("estoque-valor");
-              }}
-              acaoTitulo="Filtrar produtos em excesso ordenando pelo maior capital em estoque"
-            />
-          </div>
+          <MetricsStrip
+            itens={[
+              {
+                rotulo: "Sugestão de compra",
+                valor: formatarMoeda(resumoDecisao.custoSugestao),
+                detalhe: `${formatarNumero(resumoDecisao.unidadesSugeridas, 0)} un para ${alvoDias} dias`,
+              },
+              {
+                rotulo: "Rupturas",
+                valor: formatarNumero(resumoDecisao.rupturas, 0),
+                detalhe: "Estoque ≤ 0 com demanda",
+              },
+              {
+                rotulo: "Críticas",
+                valor: formatarNumero(resumoDecisao.criticos, 0),
+                detalhe: "< 50% do alvo",
+              },
+              {
+                rotulo: "Abaixo do alvo",
+                valor: formatarNumero(resumoDecisao.abaixo, 0),
+                detalhe: "50% a 100% do alvo",
+              },
+              {
+                rotulo: "Saudáveis",
+                valor: formatarNumero(resumoDecisao.saudaveis, 0),
+                detalhe: "100% a 200% do alvo",
+              },
+              {
+                rotulo: "Excesso / sem demanda",
+                valor: formatarMoeda(resumoDecisao.excessoCapital + resumoDecisao.semDemandaCapital),
+                detalhe: `${resumoDecisao.excessoProdutos} excesso + ${resumoDecisao.semDemandaProdutos} sem demanda`,
+              },
+            ]}
+          />
         </section>
       ) : null}
 
@@ -315,7 +279,6 @@ export function ComprasView({
           <SecaoTitulo
             eyebrow="Contexto"
             titulo="Base do período"
-            descricao={`Período completo, sem os filtros da tabela · custo informado em ${formatarPercentual(relatorio.resumo.coberturaCusto, 1)} da demanda`}
           />
           <MetricsStrip
             itens={[
@@ -359,15 +322,8 @@ export function ComprasView({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1.5">
               <CardTitle>Produtos para análise de compra</CardTitle>
-              <CardDescription>
-                Curva ABC pela demanda líquida. Estoque = saldo do último movimento do grupo {grupoEstoquePadrao.trim().toUpperCase() || "GERAL"} até hoje. Cobertura = estoque ÷ média diária. Sugestão = média diária × alvo - estoque.
-              </CardDescription>
             </div>
-            <ExportDropdown
-              onExportarCsv={exportarExcel}
-              disabled={loading || itensFiltrados.length === 0}
-              label="Exportar Excel"
-            />
+
           </div>
           <DataFilterBar
             busca={busca}
@@ -376,12 +332,11 @@ export function ComprasView({
             }}
             placeholder="Buscar por descrição, código ou marca..."
             temFiltrosAtivos={
-              Boolean(busca) || curva !== "todas" || marca !== "todas" || situacao !== "todas"
+              Boolean(busca) || curva !== "todas" || situacao !== "todas"
             }
             onLimpar={() => {
               setBusca("");
               setCurva("todas");
-              setMarca("todas");
               setSituacao("todas");
             }}
           >
@@ -398,17 +353,7 @@ export function ComprasView({
                 setCurva(valor as "todas" | ClasseCurvaCompras);
               }}
             />
-            <FiltroRelatorio
-              rotulo="Filtrar por marca"
-              valor={marca}
-              opcoes={[
-                { valor: "todas", rotulo: "Todas as marcas" },
-                ...marcas.map((nome) => ({ valor: nome, rotulo: nome })),
-              ]}
-              onChange={(valor) => {
-                setMarca(valor);
-              }}
-            />
+
             <FiltroRelatorio
               rotulo="Filtrar por situação de estoque"
               valor={situacao}
@@ -701,12 +646,11 @@ export function ComprasView({
                     valor: formatarNumero(
                       (busca.trim() ? 1 : 0) +
                         (curva !== "todas" ? 1 : 0) +
-                        (marca !== "todas" ? 1 : 0) +
                         (situacao !== "todas" ? 1 : 0),
                       0,
                     ),
                     destaque: true,
-                    definicao: "Conta busca textual, curva ABC, marca e situação aplicados.",
+                    definicao: "Conta busca textual, curva ABC e situação aplicados.",
                   },
                 ]}
               />

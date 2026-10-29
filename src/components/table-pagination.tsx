@@ -28,6 +28,7 @@ export function TablePagination({
   const totalPaginas = Math.max(1, Math.ceil(totalItens / itensPorPagina));
 
   if (totalItens <= 0) return null;
+  if (totalPaginas <= 1) return null;
 
   return (
     <div
