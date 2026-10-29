@@ -42,7 +42,6 @@ import {
   situacaoEstoque,
   sugestaoCompra,
   type CriterioOrdenacaoCompras,
-  type LimitesCoberturaCompra,
   type SituacaoCompra,
 } from "@/lib/compras-compra";
 import type { ClasseCurvaCompras, RelatorioCompras } from "@/lib/relatorio-compras";
@@ -85,13 +84,12 @@ export function ComprasView({
   empresaId,
   empresaNome,
   coberturaAlvoInicial,
-  limitesCobertura,
   grupoEstoquePadrao = "GERAL",
 }: {
   empresaId: string;
   empresaNome: string;
   coberturaAlvoInicial: number;
-  limitesCobertura?: LimitesCoberturaCompra;
+  
   grupoEstoquePadrao?: string;
 }) {
   const [periodo, setPeriodo] = useState<Periodo>(() => periodoUltimos90Dias());
@@ -110,22 +108,6 @@ export function ComprasView({
     [coberturaAlvoInicial],
   );
 
-  const limitesEfetivos = useMemo<LimitesCoberturaCompra>(() => {
-    if (!limitesCobertura) {
-      return {
-        criticoDias: alvoDias / 2,
-        atencaoDias: alvoDias,
-        excessoDias: alvoDias * 2,
-      };
-    }
-    const alvoBase = Math.max(1, coberturaAlvoInicial);
-    const fator = alvoDias / alvoBase;
-    return {
-      criticoDias: Math.max(1, Math.round(limitesCobertura.criticoDias * fator)),
-      atencaoDias: Math.max(1, Math.round(limitesCobertura.atencaoDias * fator)),
-      excessoDias: Math.max(1, Math.round(limitesCobertura.excessoDias * fator)),
-    };
-  }, [alvoDias, limitesCobertura, coberturaAlvoInicial]);
 
   const marcas = useMemo(() => {
     const conjunto = new Set<string>();
@@ -179,7 +161,7 @@ export function ComprasView({
     const filtrados = relatorio.itens.filter((item) => {
       if (curva !== "todas" && item.curva !== curva) return false;
       if (marca !== "todas" && (item.marca ?? "").trim() !== marca) return false;
-      if (situacao !== "todas" && situacaoEstoque(item, alvoDias, limitesEfetivos) !== situacao) return false;
+      if (situacao !== "todas" && situacaoEstoque(item, alvoDias) !== situacao) return false;
       if (!termo) return true;
       return (
         item.codigo.toLowerCase().includes(termo) ||
@@ -188,11 +170,11 @@ export function ComprasView({
       );
     });
     return ordenarItensCompras(filtrados, ordenacao, alvoDias);
-  }, [busca, curva, marca, situacao, ordenacao, alvoDias, limitesEfetivos, relatorio.itens]);
+  }, [busca, curva, marca, situacao, ordenacao, alvoDias, relatorio.itens]);
 
   const resumoDecisao = useMemo(
-    () => resumirDecisaoCompra(itensFiltrados, alvoDias, limitesEfetivos),
-    [itensFiltrados, alvoDias, limitesEfetivos],
+    () => resumirDecisaoCompra(itensFiltrados, alvoDias),
+    [itensFiltrados, alvoDias],
   );
 
   const totais = useMemo(() => {
@@ -228,7 +210,7 @@ export function ComprasView({
     exportarParaCSV(
       `analise-compras-${empresaNome.replace(/[^\w-]+/g, "-").toLowerCase()}-${periodo}`,
       [...COLUNAS_EXPORTACAO_COMPRAS],
-      montarLinhasExportacaoCompras(itensFiltrados, alvoDias, limitesCobertura),
+      montarLinhasExportacaoCompras(itensFiltrados, alvoDias),
     );
     toast.success(`${itensFiltrados.length} produto(s) exportado(s).`);
   }
@@ -265,7 +247,7 @@ export function ComprasView({
           <SecaoTitulo
             eyebrow="Ação"
             titulo="Decisão de compra"
-            descricao={`Considera os filtros ativos e a cobertura alvo de ${alvoDias} dias (parâmetro da tela).`}
+            descricao={`Cobertura alvo: ${alvoDias} dias. Ruptura ≤ 0; Crítica < 50%; Abaixo 50-100%; Saudável 100-200%; Excesso > 200%.`}
           />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ActionMetricCard
@@ -281,7 +263,7 @@ export function ComprasView({
             <ActionMetricCard
               titulo="Rupturas"
               valor={formatarNumero(resumoDecisao.rupturas, 0)}
-              descricao="Com demanda no período e estoque zerado ou negativo"
+              descricao="Estoque zerado ou negativo com demanda no período"
               onClick={() => {
                 setSituacao("ruptura");
               }}
@@ -290,7 +272,7 @@ export function ComprasView({
             <ActionMetricCard
               titulo="Críticas"
               valor={formatarNumero(resumoDecisao.criticos, 0)}
-              descricao={`Cobertura abaixo de ${formatarNumero(limitesEfetivos.criticoDias, 0)} dias`}
+              descricao={`Cobertura abaixo de ${formatarPercentual(0.5, 0)} do alvo`}
               onClick={() => {
                 setSituacao("critica");
               }}
@@ -299,16 +281,25 @@ export function ComprasView({
             <ActionMetricCard
               titulo="Abaixo do alvo"
               valor={formatarNumero(resumoDecisao.abaixo, 0)}
-              descricao={`Cobertura entre ${formatarNumero(limitesEfetivos.criticoDias, 0)} e ${formatarNumero(limitesEfetivos.atencaoDias, 0)} dias`}
+              descricao={`Cobertura entre ${formatarPercentual(0.5, 0)} e ${formatarPercentual(1, 0)} do alvo`}
               onClick={() => {
                 setSituacao("abaixo");
               }}
               acaoTitulo="Filtrar somente produtos abaixo do alvo"
             />
             <ActionMetricCard
-              titulo="Capital parado"
+              titulo="Saudáveis"
+              valor={formatarNumero(resumoDecisao.saudaveis, 0)}
+              descricao={`Cobertura entre ${formatarPercentual(1, 0)} e ${formatarPercentual(2, 0)} do alvo`}
+              onClick={() => {
+                setSituacao("saudavel");
+              }}
+              acaoTitulo="Filtrar somente produtos com cobertura saudável"
+            />
+            <ActionMetricCard
+              titulo="Excesso / sem demanda"
               valor={formatarMoeda(resumoDecisao.excessoCapital + resumoDecisao.semDemandaCapital)}
-              descricao={`${resumoDecisao.excessoProdutos} em excesso + ${resumoDecisao.semDemandaProdutos} sem demanda`}
+              descricao={`${resumoDecisao.excessoProdutos} em excesso (>2× alvo) + ${resumoDecisao.semDemandaProdutos} sem demanda`}
               onClick={() => {
                 setSituacao("excesso");
                 setOrdenacao("estoque-valor");
@@ -369,8 +360,7 @@ export function ComprasView({
             <div className="space-y-1.5">
               <CardTitle>Produtos para análise de compra</CardTitle>
               <CardDescription>
-                Curva ABC calculada pela demanda líquida. O estoque usa o saldo do último movimento
-                do grupo {grupoEstoquePadrao.trim().toUpperCase() || "GERAL"}, configurado na empresa.
+                Curva ABC pela demanda líquida. Estoque = saldo do último movimento do grupo {grupoEstoquePadrao.trim().toUpperCase() || "GERAL"} até hoje. Cobertura = estoque ÷ média diária. Sugestão = média diária × alvo - estoque.
               </CardDescription>
             </div>
             <ExportDropdown
@@ -551,10 +541,10 @@ export function ComprasView({
                       id: "situacao",
                       header: <span title="Classificação pela cobertura alvo escolhida na tela">Situação</span>,
                       kind: "name",
-                      value: (item) => situacaoEstoque(item, alvoDias, limitesEfetivos),
+                      value: (item) => situacaoEstoque(item, alvoDias),
                       cell: (item) => (
-                        <Badge variant={badgeSituacao(situacaoEstoque(item, alvoDias, limitesEfetivos))}>
-                          {rotuloSituacao(situacaoEstoque(item, alvoDias, limitesEfetivos))}
+                        <Badge variant={badgeSituacao(situacaoEstoque(item, alvoDias))}>
+                          {rotuloSituacao(situacaoEstoque(item, alvoDias))}
                         </Badge>
                       ),
                     },

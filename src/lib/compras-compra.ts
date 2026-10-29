@@ -21,13 +21,13 @@ export const SITUACOES_COMPRA: Array<{
   rotulo: string;
   descricao: string;
 }> = [
-  { valor: "ruptura", rotulo: "Ruptura", descricao: "Sem saldo em estoque e com demanda no período" },
-  { valor: "critica", rotulo: "Crítica", descricao: "Cobertura menor que metade da cobertura alvo" },
-  { valor: "abaixo", rotulo: "Abaixo do alvo", descricao: "Cobertura abaixo da cobertura alvo" },
-  { valor: "saudavel", rotulo: "Saudável", descricao: "Cobertura entre a alvo e o dobro dela" },
-  { valor: "excesso", rotulo: "Excesso", descricao: "Cobertura acima do dobro da alvo (capital parado)" },
-  { valor: "sem-demanda", rotulo: "Sem demanda", descricao: "Nenhuma demanda líquida no período" },
-  { valor: "sem-saldo", rotulo: "Sem saldo localizado", descricao: "Kardex não trouxe saldo para o produto" },
+  { valor: "ruptura", rotulo: "Ruptura", descricao: "Estoque zerado ou negativo com demanda no período" },
+  { valor: "critica", rotulo: "Crítica", descricao: "Cobertura abaixo de 50% do alvo" },
+  { valor: "abaixo", rotulo: "Abaixo do alvo", descricao: "Cobertura entre 50% e 100% do alvo" },
+  { valor: "saudavel", rotulo: "Saudável", descricao: "Cobertura entre 100% e 200% do alvo" },
+  { valor: "excesso", rotulo: "Excesso", descricao: "Cobertura acima de 200% do alvo" },
+  { valor: "sem-demanda", rotulo: "Sem demanda", descricao: "Nenhuma venda líquida no período" },
+  { valor: "sem-saldo", rotulo: "Sem saldo localizado", descricao: "Nenhum movimento do grupo de estoque da empresa até hoje" },
 ];
 
 export function rotuloSituacao(situacao: SituacaoCompra): string {
@@ -48,28 +48,17 @@ export function custoSugestaoCompra(item: ItemRelatorioCompras, alvoDias: number
   return sugestaoCompra(item, alvoDias) * item.custoReposicaoMedio;
 }
 
-/** Limites de cobertura configurados por empresa (Configurações). */
-export interface LimitesCoberturaCompra {
-  criticoDias: number;
-  atencaoDias: number;
-  excessoDias: number;
-}
-
 export function situacaoEstoque(
   item: ItemRelatorioCompras,
   alvoDias: number,
-  limites?: LimitesCoberturaCompra,
 ): SituacaoCompra {
   if (item.estoqueAtual === null) return "sem-saldo";
   if (item.demandaLiquida <= 0) return "sem-demanda";
   if (item.estoqueAtual <= 0) return "ruptura";
   const cobertura = item.estoqueAtual / item.mediaDiaria;
-  const criticoDias = limites?.criticoDias ?? alvoDias / 2;
-  const atencaoDias = limites?.atencaoDias ?? alvoDias;
-  const excessoDias = limites?.excessoDias ?? alvoDias * 2;
-  if (cobertura < criticoDias) return "critica";
-  if (cobertura < atencaoDias) return "abaixo";
-  if (cobertura > excessoDias) return "excesso";
+  if (cobertura < alvoDias / 2) return "critica";
+  if (cobertura < alvoDias) return "abaixo";
+  if (cobertura > alvoDias * 2) return "excesso";
   return "saudavel";
 }
 
@@ -127,6 +116,7 @@ export interface ResumoComprasDecisao {
   rupturas: number;
   criticos: number;
   abaixo: number;
+  saudaveis: number;
   excessoCapital: number;
   excessoProdutos: number;
   semDemandaCapital: number;
@@ -136,7 +126,6 @@ export interface ResumoComprasDecisao {
 export function resumirDecisaoCompra(
   itens: ItemRelatorioCompras[],
   alvoDias: number,
-  limites?: LimitesCoberturaCompra,
 ): ResumoComprasDecisao {
   const resumo: ResumoComprasDecisao = {
     unidadesSugeridas: 0,
@@ -144,6 +133,7 @@ export function resumirDecisaoCompra(
     rupturas: 0,
     criticos: 0,
     abaixo: 0,
+    saudaveis: 0,
     excessoCapital: 0,
     excessoProdutos: 0,
     semDemandaCapital: 0,
@@ -154,10 +144,11 @@ export function resumirDecisaoCompra(
     resumo.unidadesSugeridas += sugestaoCompra(item, alvoDias);
     resumo.custoSugestao += custoSugestaoCompra(item, alvoDias) ?? 0;
 
-    const situacao = situacaoEstoque(item, alvoDias, limites);
+    const situacao = situacaoEstoque(item, alvoDias);
     if (situacao === "ruptura") resumo.rupturas += 1;
     if (situacao === "critica") resumo.criticos += 1;
     if (situacao === "abaixo") resumo.abaixo += 1;
+    if (situacao === "saudavel") resumo.saudaveis += 1;
     if (situacao === "excesso") {
       resumo.excessoProdutos += 1;
       resumo.excessoCapital += item.custoEstoqueReposicao ?? 0;

@@ -24,11 +24,6 @@ export default async function RelatorioComprasPage({
           empresaAtual?.razaoSocial ?? "Empresa"
         }
         coberturaAlvoInicial={empresaAtual?.coberturaCompraDias ?? 30}
-        limitesCobertura={{
-          criticoDias: empresaAtual?.coberturaCriticaDias ?? 7,
-          atencaoDias: empresaAtual?.coberturaAtencaoDias ?? 15,
-          excessoDias: empresaAtual?.coberturaExcessoDias ?? 90,
-        }}
         grupoEstoquePadrao={empresaAtual?.grupoEstoquePadrao ?? "GERAL"}
       />
     </NavApp>

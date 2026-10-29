@@ -10,7 +10,6 @@ import {
   situacaoEstoque,
   sugestaoCompra,
   custoSugestaoCompra,
-  type LimitesCoberturaCompra,
 } from "@/lib/compras-compra";
 import type { ItemRelatorioCompras } from "@/lib/relatorio-compras";
 
@@ -62,7 +61,6 @@ function quantidadePtBr(valor: number | null | undefined): string {
 export function montarLinhasExportacaoCompras(
   itens: ItemRelatorioCompras[],
   alvoDias: number,
-  limites?: LimitesCoberturaCompra,
 ): (string | number)[][] {
   return itens.map((item) => [
     item.codigo ?? "",
@@ -75,7 +73,7 @@ export function montarLinhasExportacaoCompras(
     quantidadePtBr(item.demandaLiquida),
     quantidadePtBr(item.estoqueAtual),
     numeroPtBrEnxuto(item.coberturaDias, 1),
-    rotuloSituacao(situacaoEstoque(item, alvoDias, limites)),
+    rotuloSituacao(situacaoEstoque(item, alvoDias)),
     quantidadePtBr(sugestaoCompra(item, alvoDias)),
     numeroPtBr(custoSugestaoCompra(item, alvoDias)),
     numeroPtBr(item.custoAquisicaoMedio),
