@@ -363,6 +363,47 @@ describe("relatorio de compras", () => {
     });
   });
 
+  it("projeta a média diária só sobre os dias com estoque (sugestão de ruptura)", () => {
+    // 90 dias de análise, 20 peças vendidas e estoque zerando no dia 60.
+    const movimentos: MovimentoKardex[] = [];
+    let saldo = 20;
+    for (let i = 0; i < 20; i += 1) {
+      const dia = new Date(Date.UTC(2026, 0, 3) + i * 3 * 86_400_000).toISOString().slice(0, 10);
+      movimentos.push(movimento("P1", dia, "EVP", -1, saldo - 1));
+      saldo -= 1;
+    }
+
+    const relatorio = montarRelatorioCompras(
+      [venda("P1", 20)],
+      movimentos,
+      { inicial: "2026-01-01", final: "2026-03-31" },
+    );
+
+    const item = relatorio.itens[0];
+    expect(item.diasComEstoque).toBe(60);
+    expect(item.diasEmRuptura).toBe(30);
+    expect(item.semBaseEstoque).toBe(false);
+    // 20 ÷ 60 dias com estoque, não 20 ÷ 90 do período.
+    expect(item.mediaDiaria).toBeCloseTo(20 / 60, 10);
+    expect(item.estoqueAtual).toBe(0);
+    expect(item.coberturaDias).toBe(0);
+  });
+
+  it("marca sem base de estoque quando o Kardex nunca teve saldo positivo", () => {
+    const relatorio = montarRelatorioCompras(
+      [venda("P1", 4)],
+      [
+        movimento("P1", "2026-01-05", "EVP", -1, -91),
+        movimento("P1", "2026-01-06", "EVP", -1, -92),
+      ],
+      { inicial: "2026-01-01", final: "2026-01-10" },
+    );
+
+    const item = relatorio.itens[0];
+    expect(item.semBaseEstoque).toBe(true);
+    expect(item.diasComEstoque).toBe(0);
+  });
+
   it("divide consultas longas em janelas inclusivas de no maximo 31 dias", () => {
     expect(dividirPeriodoKardex("2026-07-19", "2026-10-16")).toEqual([
       { inicial: "2026-07-19", final: "2026-08-18" },

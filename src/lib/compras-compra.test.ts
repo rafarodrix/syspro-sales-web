@@ -27,6 +27,9 @@ function item(parcial: Partial<ItemRelatorioCompras> = {}): ItemRelatorioCompras
     estoqueAtual: 0,
     mediaDiaria: 10,
     coberturaDias: 0,
+    diasComEstoque: 30,
+    diasEmRuptura: 0,
+    semBaseEstoque: false,
     dataUltimoMovimento: "2026-10-19",
     produtoId: "ID-1",
     marca: "MARCA",
@@ -76,6 +79,26 @@ describe("decisao de compra", () => {
     expect(situacaoEstoque(item({ demandaLiquida: 0, mediaDiaria: 0 }), 30)).toBe("sem-demanda");
     expect(situacaoEstoque(item({ estoqueAtual: null, coberturaDias: null }), 30)).toBe("sem-saldo");
     expect(rotuloSituacao("sem-saldo")).toBe("Sem saldo localizado");
+  });
+
+  it("nao projeta compra para base sem saldo positivo no periodo", () => {
+    const semBase = item({ estoqueAtual: -93, mediaDiaria: 10, semBaseEstoque: true, diasComEstoque: 0 });
+    expect(sugestaoCompra(semBase, 30)).toBe(0);
+    expect(custoSugestaoCompra(semBase, 30)).toBe(0);
+    expect(situacaoEstoque(semBase, 30)).toBe("sem-base");
+    expect(rotuloSituacao("sem-base")).toBe("Sem base de estoque");
+  });
+
+  it("projeta ruptura pelo ritmo dos dias com estoque", () => {
+    // vendeu 20 em 60 dias com estoque: 20/60 x 90 = 30 peças, estoque zerado
+    const emRuptura = item({
+      estoqueAtual: 0,
+      demandaLiquida: 20,
+      mediaDiaria: 20 / 60,
+      diasComEstoque: 60,
+      diasEmRuptura: 30,
+    });
+    expect(sugestaoCompra(emRuptura, 90)).toBe(30);
   });
 
   it("resume sugestao, rupturas e capital parado", () => {

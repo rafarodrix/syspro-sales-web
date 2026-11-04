@@ -1,6 +1,7 @@
 import { movimentoCompoeSaldo, type MovimentoKardex } from "@/lib/kardex";
 import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
+import { diasBaseDemanda, reconstruirDiasEstoque, semBaseDeEstoque } from "@/lib/ruptura";
 export { normalizarDataIso } from "@/lib/periodo";
 import {
   calcularCoberturaEstoque,
@@ -31,8 +32,15 @@ export interface ItemRelatorioCompras {
   valorVendaLiquida: number;
   taxaDevolucaoValor: number;
   estoqueAtual: number | null;
+  /** Média diária de demanda sobre os dias com estoque disponível (ver `ruptura.ts`). */
   mediaDiaria: number;
   coberturaDias: number | null;
+  /** Dias do período com saldo positivo no Kardex. */
+  diasComEstoque: number;
+  /** Dias do período em que o produto ficou sem saldo positivo. */
+  diasEmRuptura: number;
+  /** true quando o Kardex nunca registrou saldo positivo no período (base sem controle de estoque). */
+  semBaseEstoque: boolean;
   dataUltimoMovimento: string | null;
   produtoId?: string;
   marca?: string;
@@ -100,6 +108,8 @@ export function montarRelatorioCompras(
     }
   >();
   const chavePorId = new Map<string, string>();
+  /** Movimentos do produto no período, usados para reconstruir o saldo dia a dia. */
+  const movimentosPorProduto = new Map<string, MovimentoKardex[]>();
 
   for (const venda of vendas) {
     const produtoId = String(venda.produto_id ?? "").trim();
@@ -123,6 +133,9 @@ export function montarRelatorioCompras(
       estoqueAtual: null,
       mediaDiaria: 0,
       coberturaDias: null,
+      diasComEstoque: 0,
+      diasEmRuptura: 0,
+      semBaseEstoque: false,
       dataUltimoMovimento: null,
       produtoId,
       marca: undefined,
@@ -194,6 +207,9 @@ export function montarRelatorioCompras(
         estoqueAtual: null,
         mediaDiaria: 0,
         coberturaDias: null,
+        diasComEstoque: 0,
+        diasEmRuptura: 0,
+        semBaseEstoque: false,
         dataUltimoMovimento: null,
         produtoId: movimento.produtoIdProduto?.trim(),
         marca: movimento.produtoMarca?.trim() || undefined,
@@ -209,6 +225,9 @@ export function montarRelatorioCompras(
       porProduto.set(chave, atual);
     }
     if (!atual) return;
+    const movimentosDoProduto = movimentosPorProduto.get(codigoId);
+    if (movimentosDoProduto) movimentosDoProduto.push(movimento);
+    else movimentosPorProduto.set(codigoId, [movimento]);
 
     // O grupo documental classifica o movimento, mas não decide o saldo. O saldo atual
     // vem exclusivamente do último movimento do grupo de estoque configurado na empresa.
@@ -244,14 +263,25 @@ export function montarRelatorioCompras(
   });
 
   const diasPeriodo = calcularDiasInclusivos(periodo.inicial, periodo.final);
-  for (const item of porProduto.values()) {
+  for (const [produtoId, item] of porProduto.entries()) {
     item.quantidadeLiquidaReal = item.quantidadeVendida - item.quantidadeDevolvida;
     item.demandaLiquida = calcularDemandaLiquida(item.quantidadeVendida, item.quantidadeDevolvida);
     item.taxaDevolucao = calcularPercentual(item.quantidadeDevolvida, item.quantidadeVendida);
     item.valorVendaLiquida = item.valorVendido - item.valorDevolvido;
     item.taxaDevolucaoValor = calcularPercentual(item.valorDevolvido, item.valorVendido);
-    item.mediaDiaria = diasPeriodo > 0 ? item.demandaLiquida / diasPeriodo : 0;
-    item.coberturaDias = calcularCoberturaEstoque(item.estoqueAtual, item.demandaLiquida, diasPeriodo);
+    // Média diária e cobertura usam a MESMA base: os dias com estoque disponível.
+    // Sem ruptura no período a base é o período inteiro e o resultado não muda.
+    const diasEstoque = reconstruirDiasEstoque(
+      movimentosPorProduto.get(produtoId) ?? [],
+      periodo,
+      empresa,
+    );
+    const baseDias = diasBaseDemanda(diasEstoque, diasPeriodo);
+    item.diasComEstoque = diasEstoque.diasComEstoque;
+    item.diasEmRuptura = diasEstoque.diasEmRuptura;
+    item.semBaseEstoque = semBaseDeEstoque(diasEstoque);
+    item.mediaDiaria = baseDias > 0 ? item.demandaLiquida / baseDias : 0;
+    item.coberturaDias = calcularCoberturaEstoque(item.estoqueAtual, item.demandaLiquida, baseDias);
     item.custoAquisicaoMedio = item.quantidadeComCustoAquisicao > 0
       ? item.totalCustoAquisicao / item.quantidadeComCustoAquisicao
       : null;
@@ -307,6 +337,9 @@ export function montarRelatorioCompras(
       estoqueAtual: item.estoqueAtual,
       mediaDiaria: item.mediaDiaria,
       coberturaDias: item.coberturaDias,
+      diasComEstoque: item.diasComEstoque,
+      diasEmRuptura: item.diasEmRuptura,
+      semBaseEstoque: item.semBaseEstoque,
       dataUltimoMovimento: item.dataUltimoMovimento,
       produtoId: item.produtoId,
       marca: item.marca,

@@ -475,11 +475,28 @@ export function ComprasView({
                     },
                     {
                       id: "cobertura",
-                      header: <span title="Dias de atendimento com o estoque atual e a média diária de demanda">Cobertura</span>,
+                      header: <span title="Dias de atendimento com o estoque atual, no ritmo dos dias em que havia estoque">Cobertura</span>,
                       kind: "number",
                       value: (item) => item.coberturaDias,
                       cell: (item) => (
                         <>{item.coberturaDias === null ? "-" : `${formatarNumero(item.coberturaDias, 1)} d`}</>
+                      ),
+                    },
+                    {
+                      id: "ruptura",
+                      header: <span title="Dias do período em que o produto ficou sem saldo positivo no Kardex. A média diária e a sugestão desconsideram esses dias">Dias em ruptura</span>,
+                      kind: "number",
+                      value: (item) => item.diasEmRuptura,
+                      cell: (item) => (
+                        <>
+                          {item.semBaseEstoque ? (
+                            <span className="text-muted-foreground">-</span>
+                          ) : item.diasEmRuptura > 0 ? (
+                            <span className="font-semibold">{formatarNumero(item.diasEmRuptura, 0)}</span>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          )}
+                        </>
                       ),
                     },
                     {
@@ -495,7 +512,7 @@ export function ComprasView({
                     },
                     {
                       id: "sugestao",
-                      header: <span title="Quantidade para atingir a cobertura alvo descontando o estoque atual">Sugestão</span>,
+                      header: <span title="Projeção para a cobertura alvo no ritmo dos dias com estoque, descontando o estoque atual">Sugestão</span>,
                       kind: "number",
                       value: (item) => sugestaoCompra(item, alvoDias),
                       cell: (item) => (

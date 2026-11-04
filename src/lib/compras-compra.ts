@@ -14,6 +14,7 @@ export type SituacaoCompra =
   | "saudavel"
   | "excesso"
   | "sem-demanda"
+  | "sem-base"
   | "sem-saldo";
 
 export const SITUACOES_COMPRA: Array<{
@@ -27,6 +28,7 @@ export const SITUACOES_COMPRA: Array<{
   { valor: "saudavel", rotulo: "Saudável", descricao: "Cobertura entre 100% e 200% do alvo" },
   { valor: "excesso", rotulo: "Excesso", descricao: "Cobertura acima de 200% do alvo" },
   { valor: "sem-demanda", rotulo: "Sem demanda", descricao: "Nenhuma venda líquida no período" },
+  { valor: "sem-base", rotulo: "Sem base de estoque", descricao: "O Kardex não registrou saldo positivo em nenhum dia do período: a base não controla estoque e não há como projetar ruptura" },
   { valor: "sem-saldo", rotulo: "Sem saldo localizado", descricao: "Nenhum movimento do grupo de estoque da empresa até hoje" },
 ];
 
@@ -34,9 +36,16 @@ export function rotuloSituacao(situacao: SituacaoCompra): string {
   return SITUACOES_COMPRA.find((item) => item.valor === situacao)?.rotulo ?? situacao;
 }
 
-/** Quantidade sugerida para atingir a cobertura alvo, descontando o estoque atual. */
+/**
+ * Quantidade sugerida para atingir a cobertura alvo, descontando o estoque atual.
+ *
+ * A média vem dos dias com estoque disponível: quem ficou em ruptura no período
+ * é projetado no ritmo de quando havia produto para vender. Base sem saldo
+ * positivo em nenhum dia (sem controle de estoque) não projeta nada.
+ */
 export function sugestaoCompra(item: ItemRelatorioCompras, alvoDias: number): number {
   if (alvoDias <= 0 || item.demandaLiquida <= 0) return 0;
+  if (item.semBaseEstoque) return 0;
   const necessario = item.mediaDiaria * alvoDias;
   const estoque = item.estoqueAtual ?? 0;
   return Math.max(0, Math.ceil(necessario - estoque));
@@ -54,6 +63,9 @@ export function situacaoEstoque(
 ): SituacaoCompra {
   if (item.estoqueAtual === null) return "sem-saldo";
   if (item.demandaLiquida <= 0) return "sem-demanda";
+  // Base sem saldo positivo em nenhum dia do período: não é ruptura medida, é
+  // ausência de controle de estoque. Sem isso, o ritmo ajustado distorceria a compra.
+  if (item.semBaseEstoque) return "sem-base";
   if (item.estoqueAtual <= 0) return "ruptura";
   const cobertura = item.estoqueAtual / item.mediaDiaria;
   if (cobertura < alvoDias / 2) return "critica";
