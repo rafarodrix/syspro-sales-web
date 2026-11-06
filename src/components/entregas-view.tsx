@@ -91,6 +91,25 @@ function badgeSituacaoPedido(situacao: SituacaoPedido) {
   return "outline" as const;
 }
 
+/** Hora da etapa com o tempo decorrido logo abaixo, colorido pelo limite. */
+function CelulaHoraEtapa({ hora, etapa }: { hora: string | null; etapa: Etapa }) {
+  const cor = etapa.minutos === null
+    ? "text-muted-foreground"
+    : etapa.emAndamento
+      ? "text-amber-600 dark:text-amber-500"
+      : etapa.estourou
+        ? "text-destructive font-semibold"
+        : "text-emerald-600 dark:text-emerald-500";
+  return (
+    <span className="flex flex-col leading-tight">
+      <span className="font-mono text-[11px]">{horaCurta(hora)}</span>
+      <span className={`text-[10px] ${cor}`} title={`Limite de ${etapa.limite} min`}>
+        {etapa.minutos === null ? "—" : `${formatarDuracaoMinutos(etapa.minutos)}${etapa.emAndamento ? "…" : ""}`}
+      </span>
+    </span>
+  );
+}
+
 /** Verde dentro do limite, vermelho acima, âmbar quando a etapa ainda corre. */
 function CelulaEtapa({ etapa }: { etapa: Etapa }) {
   if (etapa.minutos === null) return <span className="text-muted-foreground">—</span>;
@@ -478,7 +497,7 @@ export function EntregasView({
                     id: "cliente",
                     header: <>Cliente</>,
                     kind: "name",
-                    className: "min-w-[140px] max-w-[190px]",
+                    className: "min-w-[130px] max-w-[170px]",
                     value: (linha) => linha.cliente,
                     cell: (linha) => <span className="block truncate">{linha.cliente}</span>,
                   },
@@ -486,63 +505,39 @@ export function EntregasView({
                     id: "horaVenda",
                     header: <span title="D — horário da venda (PEDIDO.HR_VENDA)">Venda</span>,
                     kind: "number",
-                    className: "w-12 whitespace-nowrap",
+                    className: "w-14 whitespace-nowrap",
                     value: (linha) => linha.horaVenda ?? "",
                     cell: (linha) => <span className="font-mono text-[11px]">{horaCurta(linha.horaVenda)}</span>,
                   },
                   {
                     id: "separado",
-                    header: <span title="H — fim da separação/conferência (PEDIDO.HR_SEPARADO)">Separado</span>,
+                    header: <span title="H — fim da separação/conferência. Abaixo: tempo desde a venda (limite 15 min)">Separado</span>,
                     kind: "number",
-                    className: "w-14 whitespace-nowrap",
+                    className: "w-16 whitespace-nowrap",
                     value: (linha) => linha.horaConferido ?? "",
-                    cell: (linha) => <span className="font-mono text-[11px]">{horaCurta(linha.horaConferido)}</span>,
-                  },
-                  {
-                    id: "alertaSeparacao",
-                    header: <span title="Fórmula: separado − venda. Limite 15 min.">A. sep.</span>,
-                    kind: "number",
-                    className: "w-[4.5rem] whitespace-nowrap",
-                    value: (linha) => linha.separacao.minutos,
-                    cell: (linha) => <CelulaEtapa etapa={linha.separacao} />,
+                    cell: (linha) => <CelulaHoraEtapa hora={linha.horaConferido} etapa={linha.separacao} />,
                   },
                   {
                     id: "saida",
-                    header: <span title="J — saída para entrega (ENTREGA.HR_SAIDA)">Saída</span>,
+                    header: <span title="J — saída para entrega. Abaixo: tempo desde o separado (limite 30 min)">Saída</span>,
                     kind: "number",
-                    className: "w-12 whitespace-nowrap",
+                    className: "w-16 whitespace-nowrap",
                     value: (linha) => linha.horaSaida ?? "",
-                    cell: (linha) => <span className="font-mono text-[11px]">{horaCurta(linha.horaSaida)}</span>,
-                  },
-                  {
-                    id: "alertaSaida",
-                    header: <span title="Fórmula: saída − separado. Limite 30 min.">A. saída</span>,
-                    kind: "number",
-                    className: "w-[4.5rem] whitespace-nowrap",
-                    value: (linha) => linha.saida.minutos,
-                    cell: (linha) => <CelulaEtapa etapa={linha.saida} />,
+                    cell: (linha) => <CelulaHoraEtapa hora={linha.horaSaida} etapa={linha.saida} />,
                   },
                   {
                     id: "fechamento",
-                    header: <span title="L — fechamento da DAV (PEDIDO.HR_FECHAMENTO)">Fecham.</span>,
+                    header: <span title="L — fechamento da DAV. Abaixo: tempo desde a saída (limite provisório 50 min)">Fecham.</span>,
                     kind: "number",
-                    className: "w-14 whitespace-nowrap",
+                    className: "w-16 whitespace-nowrap",
                     value: (linha) => linha.horaFechamento ?? "",
-                    cell: (linha) => <span className="font-mono text-[11px]">{horaCurta(linha.horaFechamento)}</span>,
-                  },
-                  {
-                    id: "alertaFechamento",
-                    header: <span title="Fórmula: fechamento − saída. Limite provisório de 50 min.">A. fech.</span>,
-                    kind: "number",
-                    className: "w-[4.5rem] whitespace-nowrap",
-                    value: (linha) => linha.fechamento.minutos,
-                    cell: (linha) => <CelulaEtapa etapa={linha.fechamento} />,
+                    cell: (linha) => <CelulaHoraEtapa hora={linha.horaFechamento} etapa={linha.fechamento} />,
                   },
                   {
                     id: "totalExpedicao",
                     header: <span title="J − D: da venda até sair para entrega">Ciclo</span>,
                     kind: "number",
-                    className: "w-16 whitespace-nowrap",
+                    className: "w-14 whitespace-nowrap",
                     value: (linha) => linha.totalExpedicao.minutos,
                     cell: (linha) => (
                       <span className="font-mono text-[11px] text-muted-foreground">
