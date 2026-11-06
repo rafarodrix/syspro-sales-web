@@ -195,6 +195,53 @@ export function tipoDocumento(pedido: Pick<PedidoSyspro, "tipoPedido" | "origem"
   return "outro";
 }
 
+/**
+ * Número do pedido: o Syspro só numera quando o pedido é gerado.
+ * NUMERO = 0 com status aberto é lançamento em andamento; com cancelado é
+ * documento cancelado antes de virar pedido.
+ */
+export function emLancamento(pedido: Pick<PedidoSyspro, "numero">): boolean {
+  const numero = Number(String(pedido.numero ?? "").replace(/\D/g, ""));
+  return !Number.isFinite(numero) || numero <= 0;
+}
+
+export type FiltroStatus = "aberto" | "fechado" | "cancelado" | "todos";
+
+export const FILTROS_STATUS: Array<{ valor: FiltroStatus; rotulo: string }> = [
+  { valor: "aberto", rotulo: "Aberto" },
+  { valor: "fechado", rotulo: "Fechado" },
+  { valor: "cancelado", rotulo: "Cancelado" },
+  { valor: "todos", rotulo: "Todos os status" },
+];
+
+/** Aberto = tudo que não é CANCELADO nem FECHADO. */
+export function passaFiltroStatus(pedido: Pick<PedidoSyspro, "status">, filtro: FiltroStatus): boolean {
+  const status = String(pedido.status ?? "").trim().toUpperCase();
+  if (filtro === "todos") return true;
+  if (filtro === "cancelado") return status === "CANCELADO";
+  if (filtro === "fechado") return status === "FECHADO";
+  return status !== "CANCELADO" && status !== "FECHADO";
+}
+
+/** Legenda = STATUS2 do pedido (PENDENTE, SEPARADO, EM ENTREGA...). */
+export type FiltroLegenda = "todas" | string;
+
+export const FILTROS_LEGENDA: Array<{ valor: FiltroLegenda; rotulo: string }> = [
+  { valor: "todas", rotulo: "Todas as legendas" },
+  { valor: "PENDENTE", rotulo: "Pendente" },
+  { valor: "EM SEPARACAO", rotulo: "Em separação" },
+  { valor: "SEPARADO", rotulo: "Separado" },
+  { valor: "EM ENTREGA", rotulo: "Em entrega" },
+  { valor: "ENTREGUE", rotulo: "Entregue" },
+  { valor: "DESISTENCIA", rotulo: "Desistência" },
+  { valor: "NO CAIXA", rotulo: "No caixa" },
+];
+
+export function passaFiltroLegenda(pedido: Pick<PedidoSyspro, "status2">, filtro: FiltroLegenda): boolean {
+  if (filtro === "todas") return true;
+  return String(pedido.status2 ?? "").trim().toUpperCase() === String(filtro).trim().toUpperCase();
+}
+
 export type FiltroAtendimento = "entrega" | "balcao" | "todos";
 
 export const FILTROS_ATENDIMENTO: Array<{ valor: FiltroAtendimento; rotulo: string }> = [

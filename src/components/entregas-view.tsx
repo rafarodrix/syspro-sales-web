@@ -26,24 +26,28 @@ import { exportarParaCSV } from "@/lib/exportar-csv";
 import {
   FILTROS_ATENDIMENTO,
   FILTROS_DOCUMENTO,
-  FILTROS_SITUACAO_ENTREGA,
+  FILTROS_LEGENDA,
+  FILTROS_STATUS,
   ROTULO_SITUACAO_PEDIDO,
   formatarDuracaoMinutos,
   montarLinhasPedido,
   passaFiltroAtendimento,
   passaFiltroDocumento,
-  passaFiltroSituacao,
+  passaFiltroLegenda,
+  passaFiltroStatus,
   resumirPedidos,
   situacaoPedido,
   type Etapa,
   type FiltroAtendimento,
   type FiltroDocumento,
-  type FiltroSituacao,
+  type FiltroLegenda,
+  type FiltroStatus,
   type LinhaPedido,
   type PedidoSyspro,
   type ResumoEtapa,
   type ResumoPedidos,
   type SituacaoPedido,
+  emLancamento,
   tipoDocumento,
 } from "@/lib/pedidos";
 
@@ -159,7 +163,8 @@ export function EntregasView({
   const [rotaNaoLiberada, setRotaNaoLiberada] = useState(false);
   const [busca, setBusca] = useState("");
   // Padrão operacional: a tela abre nos pedidos que ainda precisam de ação.
-  const [situacao, setSituacao] = useState<FiltroSituacao>("em-aberto");
+  const [status, setStatus] = useState<FiltroStatus>("aberto");
+  const [legenda, setLegenda] = useState<FiltroLegenda>("todas");
   const [apenasEstourados, setApenasEstourados] = useState(false);
   // Padrão: só pedidos de venda (orçamento não é entrega).
   const [documento, setDocumento] = useState<FiltroDocumento>("pedido");
@@ -229,7 +234,8 @@ export function EntregasView({
       .filter((linha) => {
         if (!passaFiltroDocumento(linha, documento)) return false;
         if (!passaFiltroAtendimento(linha, atendimento)) return false;
-        if (!passaFiltroSituacao(linha, situacao)) return false;
+        if (!passaFiltroStatus(linha, status)) return false;
+        if (!passaFiltroLegenda(linha, legenda)) return false;
         if (
           apenasEstourados &&
           !linha.separacao.estourou &&
@@ -252,13 +258,14 @@ export function EntregasView({
         if (a.dataVenda !== b.dataVenda) return a.dataVenda < b.dataVenda ? -1 : 1;
         return (a.horaVenda ?? "").localeCompare(b.horaVenda ?? "");
       });
-  }, [linhas, busca, situacao, apenasEstourados, documento, atendimento]);
+  }, [linhas, busca, status, legenda, apenasEstourados, documento, atendimento]);
 
   const resumoPeriodo = useMemo(() => resumirPedidos(linhas, { hoje }), [linhas, hoje]);
 
   const filtrosAtivos =
     (busca.trim() ? 1 : 0) +
-    (situacao !== "em-aberto" ? 1 : 0) +
+    (status !== "aberto" ? 1 : 0) +
+    (legenda !== "todas" ? 1 : 0) +
     (apenasEstourados ? 1 : 0) +
     (documento !== "pedido" ? 1 : 0) +
     (atendimento !== "todos" ? 1 : 0);
@@ -401,7 +408,7 @@ export function EntregasView({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1.5">
               <CardTitle>
-                {situacao === "em-aberto" ? "Pedidos em aberto" : "Pedidos do período"}
+                {status === "aberto" ? "Pedidos em aberto" : "Pedidos do período"}
               </CardTitle>
               <p className="text-[11px] text-muted-foreground">
                 A. sep. / A. saída / A. fech. = tempo gasto naquela etapa (do marco anterior até ela).
@@ -415,7 +422,8 @@ export function EntregasView({
             temFiltrosAtivos={filtrosAtivos > 0}
             onLimpar={() => {
               setBusca("");
-              setSituacao("em-aberto");
+              setStatus("aberto");
+              setLegenda("todas");
               setApenasEstourados(false);
               setDocumento("pedido");
               setAtendimento("todos");
@@ -434,10 +442,16 @@ export function EntregasView({
               onChange={(valor) => setAtendimento(valor as FiltroAtendimento)}
             />
             <FiltroRelatorio
-              rotulo="Filtrar por situação"
-              valor={situacao}
-              opcoes={FILTROS_SITUACAO_ENTREGA.map((opcao) => ({ valor: opcao.valor, rotulo: opcao.rotulo }))}
-              onChange={(valor) => setSituacao(valor as FiltroSituacao)}
+              rotulo="Filtrar por status"
+              valor={status}
+              opcoes={FILTROS_STATUS.map((opcao) => ({ valor: opcao.valor, rotulo: opcao.rotulo }))}
+              onChange={(valor) => setStatus(valor as FiltroStatus)}
+            />
+            <FiltroRelatorio
+              rotulo="Filtrar por legenda"
+              valor={legenda}
+              opcoes={FILTROS_LEGENDA.map((opcao) => ({ valor: opcao.valor, rotulo: opcao.rotulo }))}
+              onChange={(valor) => setLegenda(valor as FiltroLegenda)}
             />
             <FiltroRelatorio
               rotulo="Filtrar por limite de tempo"
@@ -493,8 +507,17 @@ export function EntregasView({
                     value: (linha) => linha.numero,
                     cell: (linha) => (
                       <span className="flex items-center gap-1">
-                        <span className="font-mono text-[11px] font-semibold">{linha.numero}</span>
-                        {tipoDocumento(linha) === "orcamento" ? (
+                        <span className="font-mono text-[11px] font-semibold">
+                          {emLancamento(linha) ? "—" : linha.numero}
+                        </span>
+                        {emLancamento(linha) ? (
+                          <span
+                            className="rounded bg-amber-500/15 px-1 text-[9px] font-semibold uppercase text-amber-600 dark:text-amber-500"
+                            title="Número ainda não gerado: pedido em lançamento (ou cancelado antes de virar pedido)"
+                          >
+                            lanç
+                          </span>
+                        ) : tipoDocumento(linha) === "orcamento" ? (
                           <span className="rounded bg-muted px-1 text-[9px] font-semibold uppercase text-muted-foreground">
                             orç
                           </span>

@@ -6,7 +6,10 @@ import {
   minutosEntre,
   montarLinhaPedido,
   montarLinhasPedido,
+  emLancamento,
   passaFiltroAtendimento,
+  passaFiltroLegenda,
+  passaFiltroStatus,
   passaFiltroDocumento,
   passaFiltroSituacao,
   fechamentoConfiavel,
@@ -160,6 +163,28 @@ describe("análise de entrega", () => {
     expect(passaFiltroDocumento(venda, "pedido")).toBe(true);
     expect(passaFiltroDocumento(orcamento, "orcamento")).toBe(true);
     expect(passaFiltroDocumento(orcamento, "todos")).toBe(true);
+  });
+
+  it("trata número 0 como lançamento", () => {
+    expect(emLancamento({ numero: "0" })).toBe(true);
+    expect(emLancamento({ numero: "" })).toBe(true);
+    expect(emLancamento({ numero: "630517" })).toBe(false);
+  });
+
+  it("filtra por status (aberto = nem cancelado nem fechado) e por legenda", () => {
+    const aberto = { status: "ABERTO", status2: "PENDENTE" };
+    const fechado = { status: "FECHADO", status2: "ENTREGUE" };
+    const cancelado = { status: "CANCELADO", status2: "DESISTENCIA" };
+    expect(passaFiltroStatus(aberto, "aberto")).toBe(true);
+    expect(passaFiltroStatus(fechado, "aberto")).toBe(false);
+    expect(passaFiltroStatus(cancelado, "aberto")).toBe(false);
+    expect(passaFiltroStatus(fechado, "fechado")).toBe(true);
+    expect(passaFiltroStatus(cancelado, "cancelado")).toBe(true);
+    expect(passaFiltroStatus(cancelado, "todos")).toBe(true);
+
+    expect(passaFiltroLegenda(fechado, "todas")).toBe(true);
+    expect(passaFiltroLegenda(fechado, "ENTREGUE")).toBe(true);
+    expect(passaFiltroLegenda(fechado, "PENDENTE")).toBe(false);
   });
 
   it("separa entrega de balcão pelo campo ENTREGA", () => {
