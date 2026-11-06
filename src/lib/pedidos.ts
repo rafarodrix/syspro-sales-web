@@ -245,6 +245,29 @@ export const FILTROS_LEGENDA: Array<{ valor: FiltroLegenda; rotulo: string }> = 
   { valor: "NO CAIXA", rotulo: "No caixa" },
 ];
 
+/** Rótulo de exibição da legenda (STATUS2) do Syspro. */
+export const ROTULOS_LEGENDA: Record<string, string> = {
+  PENDENTE: "Pendente",
+  "EM SEPARACAO": "Em separação",
+  SEPARADO: "Separado",
+  "EM ENTREGA": "Em entrega",
+  ENTREGUE: "Entregue",
+  DESISTENCIA: "Desistência",
+  "NO CAIXA": "No caixa",
+  LANCANDO: "Lançando",
+};
+
+/**
+ * A legenda do Syspro (STATUS2) é a fonte de verdade do estágio do pedido.
+ * A "situação" calculada (pendente/em rota/entregue) é derivada e não deve
+ * aparecer como se fosse o status do ERP.
+ */
+export function rotuloLegenda(pedido: Pick<PedidoSyspro, "status2">): string {
+  const bruto = String(pedido.status2 ?? "").trim().toUpperCase();
+  if (!bruto) return "—";
+  return ROTULOS_LEGENDA[bruto] ?? bruto.charAt(0) + bruto.slice(1).toLowerCase();
+}
+
 export function passaFiltroLegenda(pedido: Pick<PedidoSyspro, "status2">, filtro: FiltroLegenda): boolean {
   if (filtro === "todas") return true;
   return String(pedido.status2 ?? "").trim().toUpperCase() === String(filtro).trim().toUpperCase();

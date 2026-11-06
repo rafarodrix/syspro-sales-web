@@ -36,6 +36,7 @@ import {
   passaFiltroLegenda,
   passaFiltroStatus,
   resumirPedidos,
+  rotuloLegenda,
   situacaoPedido,
   type Etapa,
   type FiltroAtendimento,
@@ -98,6 +99,15 @@ function horaCurta(hora: string | null): string {
 function dataCurta(data: string): string {
   const [ano, mes, dia] = data.split("-");
   return dia && mes ? `${dia}/${mes}` : (data ?? "—");
+}
+
+/** Cor do badge seguindo a legenda do Syspro. */
+function badgeLegenda(status2: string) {
+  const legenda = String(status2 ?? "").trim().toUpperCase();
+  if (legenda === "ENTREGUE") return "default" as const;
+  if (legenda === "DESISTENCIA") return "destructive" as const;
+  if (legenda === "EM ENTREGA" || legenda === "SEPARADO") return "outline" as const;
+  return "secondary" as const;
 }
 
 function badgeSituacaoPedido(situacao: SituacaoPedido) {
@@ -426,7 +436,7 @@ export function EntregasView({
       ) : null}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="sticky top-0 z-20 rounded-t-xl border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
@@ -620,19 +630,16 @@ export function EntregasView({
                     cell: (linha) => <span className="block truncate">{linha.entregador ?? "—"}</span>,
                   },
                   {
-                    id: "situacao",
-                    header: <>Situação</>,
+                    id: "legenda",
+                    header: <span title="Legenda do pedido no Syspro (STATUS2)">Legenda</span>,
                     kind: "name",
-                    className: "w-20 whitespace-nowrap",
-                    value: (linha) => situacaoPedido(linha),
-                    cell: (linha) => {
-                      const situacaoLinha = situacaoPedido(linha);
-                      return (
-                        <Badge variant={badgeSituacaoPedido(situacaoLinha)}>
-                          {ROTULO_SITUACAO_PEDIDO[situacaoLinha]}
-                        </Badge>
-                      );
-                    },
+                    className: "w-24 whitespace-nowrap",
+                    value: (linha) => linha.status2,
+                    cell: (linha) => (
+                      <Badge variant={badgeLegenda(linha.status2)}>
+                        {rotuloLegenda(linha)}
+                      </Badge>
+                    ),
                   },
                 ]}
                 rodape={(linhasRodape) => (

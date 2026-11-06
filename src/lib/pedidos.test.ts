@@ -9,6 +9,7 @@ import {
   emLancamento,
   passaFiltroAtendimento,
   passaFiltroLegenda,
+  rotuloLegenda,
   passaFiltroStatus,
   passaFiltroDocumento,
   passaFiltroSituacao,
@@ -191,6 +192,14 @@ describe("análise de entrega", () => {
     expect(passaFiltroLegenda(fechado, "todas")).toBe(true);
     expect(passaFiltroLegenda(fechado, "ENTREGUE")).toBe(true);
     expect(passaFiltroLegenda(fechado, "PENDENTE")).toBe(false);
+  });
+
+  it("mostra a legenda do Syspro, não a situação calculada", () => {
+    expect(rotuloLegenda({ status2: "SEPARADO" })).toBe("Separado");
+    expect(rotuloLegenda({ status2: "EM SEPARACAO" })).toBe("Em separação");
+    expect(rotuloLegenda({ status2: "DESISTENCIA" })).toBe("Desistência");
+    expect(rotuloLegenda({ status2: "" })).toBe("—");
+    expect(rotuloLegenda({ status2: "OUTRA COISA" })).toBe("Outra coisa");
   });
 
   it("separa entrega de balcão pelo campo ENTREGA", () => {
