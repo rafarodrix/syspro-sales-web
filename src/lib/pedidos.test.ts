@@ -6,6 +6,7 @@ import {
   minutosEntre,
   montarLinhaPedido,
   montarLinhasPedido,
+  passaFiltroAtendimento,
   passaFiltroDocumento,
   passaFiltroSituacao,
   fechamentoConfiavel,
@@ -20,6 +21,8 @@ function pedido(parcial: Partial<PedidoSyspro> = {}): PedidoSyspro {
     numero: "628099",
     tipoPedido: "PV",
     origem: "BALCAO",
+    entrega: true,
+    valor: 150,
     cliente: "AUTO MECANICA 4 RODAS",
     dataVenda: "2026-10-27",
     horaVenda: "08:00:00",
@@ -157,6 +160,33 @@ describe("análise de entrega", () => {
     expect(passaFiltroDocumento(venda, "pedido")).toBe(true);
     expect(passaFiltroDocumento(orcamento, "orcamento")).toBe(true);
     expect(passaFiltroDocumento(orcamento, "todos")).toBe(true);
+  });
+
+  it("separa entrega de balcão pelo campo ENTREGA", () => {
+    expect(passaFiltroAtendimento({ entrega: true }, "entrega")).toBe(true);
+    expect(passaFiltroAtendimento({ entrega: true }, "balcao")).toBe(false);
+    expect(passaFiltroAtendimento({ entrega: false }, "balcao")).toBe(true);
+    expect(passaFiltroAtendimento({ entrega: false }, "todos")).toBe(true);
+  });
+
+  it("mede viagem perdida e registro incompleto", () => {
+    const linhas = montarLinhasPedido([
+      // saiu e desistiu -> viagem perdida
+      pedido({ numero: "1", status: "FECHADO", status2: "DESISTENCIA", valor: 200 }),
+      // entregue com saída -> normal
+      pedido({ numero: "2", valor: 100 }),
+      // entregue sem saída -> registro incompleto
+      pedido({ numero: "3", horaSaida: null, valor: 50 }),
+      // em aberto de entrega -> valor em jogo
+      pedido({ numero: "4", status: "ABERTO", status2: "PENDENTE", horaConferido: null, horaSaida: null, horaFechamento: null, valor: 80 }),
+    ]);
+    const r = resumirPedidos(linhas);
+    expect(r.desistenciasComSaida).toBe(1);
+    expect(r.valorPerdido).toBe(200);
+    expect(r.entreguesSemSaida).toBe(1);
+    expect(r.entregasEmAberto).toBe(1);
+    expect(r.valorEmAberto).toBe(80);
+    expect(r.taxaDesistencia).toBeCloseTo(50, 5); // 1 de 2 que saíram
   });
 
   it("ignora fechamento igual à venda (padrão do Syspro em pedido aberto)", () => {

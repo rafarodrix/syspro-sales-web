@@ -21,19 +21,22 @@ import {
 } from "@/components/date-range-filter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import {
+  FILTROS_ATENDIMENTO,
   FILTROS_DOCUMENTO,
   FILTROS_SITUACAO_ENTREGA,
   ROTULO_SITUACAO_PEDIDO,
   formatarDuracaoMinutos,
   montarLinhasPedido,
+  passaFiltroAtendimento,
   passaFiltroDocumento,
   passaFiltroSituacao,
   resumirPedidos,
   situacaoPedido,
   type Etapa,
+  type FiltroAtendimento,
   type FiltroDocumento,
   type FiltroSituacao,
   type LinhaPedido,
@@ -54,6 +57,12 @@ const RESUMO_VAZIO: ResumoPedidos = {
   cancelados: 0,
   atrasados: 0,
   maiorEsperaMinutos: null,
+  desistenciasComSaida: 0,
+  valorPerdido: 0,
+  entreguesSemSaida: 0,
+  entregasEmAberto: 0,
+  valorEmAberto: 0,
+  taxaDesistencia: null,
   separacao: RESUMO_ETAPA_VAZIO,
   saida: RESUMO_ETAPA_VAZIO,
   fechamento: RESUMO_ETAPA_VAZIO,
@@ -154,6 +163,7 @@ export function EntregasView({
   const [apenasEstourados, setApenasEstourados] = useState(false);
   // Padrão: só pedidos de venda (orçamento não é entrega).
   const [documento, setDocumento] = useState<FiltroDocumento>("pedido");
+  const [atendimento, setAtendimento] = useState<FiltroAtendimento>("todos");
   const [hoje, setHoje] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
@@ -218,6 +228,7 @@ export function EntregasView({
     return linhas
       .filter((linha) => {
         if (!passaFiltroDocumento(linha, documento)) return false;
+        if (!passaFiltroAtendimento(linha, atendimento)) return false;
         if (!passaFiltroSituacao(linha, situacao)) return false;
         if (
           apenasEstourados &&
@@ -241,7 +252,7 @@ export function EntregasView({
         if (a.dataVenda !== b.dataVenda) return a.dataVenda < b.dataVenda ? -1 : 1;
         return (a.horaVenda ?? "").localeCompare(b.horaVenda ?? "");
       });
-  }, [linhas, busca, situacao, apenasEstourados, documento]);
+  }, [linhas, busca, situacao, apenasEstourados, documento, atendimento]);
 
   const resumoFiltrado = useMemo(() => resumirPedidos(linhasFiltradas, { hoje }), [linhasFiltradas, hoje]);
   const resumoPeriodo = useMemo(() => resumirPedidos(linhas, { hoje }), [linhas, hoje]);
@@ -250,7 +261,8 @@ export function EntregasView({
     (busca.trim() ? 1 : 0) +
     (situacao !== "em-aberto" ? 1 : 0) +
     (apenasEstourados ? 1 : 0) +
-    (documento !== "pedido" ? 1 : 0);
+    (documento !== "pedido" ? 1 : 0) +
+    (atendimento !== "todos" ? 1 : 0);
 
   function exportarCsv() {
     if (linhasFiltradas.length === 0) {
@@ -335,6 +347,44 @@ export function EntregasView({
               { rotulo: "Em entrega", valor: formatarNumero(resumoPeriodo.emRota, 0) },
               { rotulo: "Entregues", valor: formatarNumero(resumoPeriodo.entregues, 0), detalhe: "no período" },
               { rotulo: "Cancelados", valor: formatarNumero(resumoPeriodo.cancelados, 0), detalhe: "no período" },
+            ]}
+          />
+        </section>
+      ) : null}
+
+      {periodoConsultado && !erro ? (
+        <section className="space-y-2">
+          <SecaoTitulo eyebrow="Risco" titulo="Falhas de processo" />
+          <MetricsStrip
+            itens={[
+              {
+                rotulo: "Viagens perdidas",
+                valor: formatarNumero(resumoPeriodo.desistenciasComSaida, 0),
+                detalhe: formatarMoeda(resumoPeriodo.valorPerdido),
+                attention: resumoPeriodo.desistenciasComSaida > 0,
+                definicao: "Pedidos que saíram para entrega e voltaram como desistência: custo de entrega sem receita.",
+              },
+              {
+                rotulo: "Taxa de desistência",
+                valor: formatarPercentual(resumoPeriodo.taxaDesistencia, 1),
+                detalhe: "sobre o que saiu",
+                attention: (resumoPeriodo.taxaDesistencia ?? 0) > 5,
+                definicao: "Fórmula: desistências com saída ÷ pedidos que saíram para entrega.",
+              },
+              {
+                rotulo: "Entregue sem saída",
+                valor: formatarNumero(resumoPeriodo.entreguesSemSaida, 0),
+                detalhe: "registro incompleto",
+                attention: resumoPeriodo.entreguesSemSaida > 0,
+                definicao: "Pedido marcado como entrega e entregue, mas sem horário de saída — o processo não foi registrado no sistema.",
+              },
+              {
+                rotulo: "Entregas em aberto",
+                valor: formatarNumero(resumoPeriodo.entregasEmAberto, 0),
+                detalhe: formatarMoeda(resumoPeriodo.valorEmAberto),
+                attention: resumoPeriodo.entregasEmAberto > 0,
+                definicao: "Pedidos de entrega que ainda não foram entregues nem cancelados, com o valor em jogo.",
+              },
             ]}
           />
         </section>
@@ -442,6 +492,7 @@ export function EntregasView({
               setSituacao("em-aberto");
               setApenasEstourados(false);
               setDocumento("pedido");
+              setAtendimento("todos");
             }}
           >
             <FiltroRelatorio
@@ -449,6 +500,12 @@ export function EntregasView({
               valor={documento}
               opcoes={FILTROS_DOCUMENTO.map((opcao) => ({ valor: opcao.valor, rotulo: opcao.rotulo }))}
               onChange={(valor) => setDocumento(valor as FiltroDocumento)}
+            />
+            <FiltroRelatorio
+              rotulo="Filtrar por atendimento"
+              valor={atendimento}
+              opcoes={FILTROS_ATENDIMENTO.map((opcao) => ({ valor: opcao.valor, rotulo: opcao.rotulo }))}
+              onChange={(valor) => setAtendimento(valor as FiltroAtendimento)}
             />
             <FiltroRelatorio
               rotulo="Filtrar por situação"

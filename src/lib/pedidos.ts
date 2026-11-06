@@ -35,6 +35,10 @@ export interface PedidoSyspro {
   tipoPedido: string;
   /** ORIGEM: "BALCAO", "ORCAMENTO" etc. */
   origem: string;
+  /** PEDIDO.ENTREGA: true = vai para entrega; false = retira no balcão. */
+  entrega: boolean;
+  /** PEDIDO.VLR_TOTAL. */
+  valor: number;
   cliente: string;
   dataVenda: string;
   horaVenda: string | null;
@@ -191,6 +195,22 @@ export function tipoDocumento(pedido: Pick<PedidoSyspro, "tipoPedido" | "origem"
   return "outro";
 }
 
+export type FiltroAtendimento = "entrega" | "balcao" | "todos";
+
+export const FILTROS_ATENDIMENTO: Array<{ valor: FiltroAtendimento; rotulo: string }> = [
+  { valor: "todos", rotulo: "Entrega e balcão" },
+  { valor: "entrega", rotulo: "Somente entrega" },
+  { valor: "balcao", rotulo: "Somente balcão" },
+];
+
+export function passaFiltroAtendimento(
+  pedido: Pick<PedidoSyspro, "entrega">,
+  filtro: FiltroAtendimento,
+): boolean {
+  if (filtro === "todos") return true;
+  return filtro === "entrega" ? pedido.entrega : !pedido.entrega;
+}
+
 export type FiltroDocumento = "pedido" | "orcamento" | "todos";
 
 export const FILTROS_DOCUMENTO: Array<{ valor: FiltroDocumento; rotulo: string }> = [
@@ -281,6 +301,18 @@ export interface ResumoPedidos {
   atrasados: number;
   /** Maior ciclo medido (venda -> saída), em minutos. */
   maiorEsperaMinutos: number | null;
+  /** Pedidos que saíram para entrega e voltaram (DESISTENCIA) — viagem perdida. */
+  desistenciasComSaida: number;
+  /** Valor dessas viagens perdidas. */
+  valorPerdido: number;
+  /** Entregues marcados como ENTREGA=SIM mas sem HR_SAIDA (processo não registrado). */
+  entreguesSemSaida: number;
+  /** Pedidos que ainda vão para entrega (ENTREGA=SIM e não entregues/cancelados). */
+  entregasEmAberto: number;
+  /** Valor em aberto (o que está na fila). */
+  valorEmAberto: number;
+  /** Taxa de desistência sobre as entregas que saíram (%). */
+  taxaDesistencia: number | null;
   separacao: ResumoEtapa;
   saida: ResumoEtapa;
   fechamento: ResumoEtapa;
@@ -328,6 +360,10 @@ export function resumirPedidos(
     .map((linha) => linha.totalExpedicao.minutos)
     .filter((valor): valor is number => valor !== null);
 
+  const comSaida = linhas.filter((linha) => linha.horaSaida !== null);
+  const desistenciasComSaida = comSaida.filter((linha) => situacaoPedido(linha) === "cancelado");
+  const entregasEmAberto = abertos.filter((linha) => linha.entrega);
+
   return {
     total: linhas.length,
     entregues: linhas.filter((linha) => situacaoPedido(linha) === "entregue").length,
@@ -341,6 +377,14 @@ export function resumirPedidos(
       return estourouAlguma || paradoDeOutroDia;
     }).length,
     maiorEsperaMinutos: ciclos.length > 0 ? Math.max(...ciclos) : null,
+    desistenciasComSaida: desistenciasComSaida.length,
+    valorPerdido: desistenciasComSaida.reduce((total, linha) => total + linha.valor, 0),
+    entreguesSemSaida: linhas.filter(
+      (linha) => linha.entrega && situacaoPedido(linha) === "entregue" && linha.horaSaida === null,
+    ).length,
+    entregasEmAberto: entregasEmAberto.length,
+    valorEmAberto: entregasEmAberto.reduce((total, linha) => total + linha.valor, 0),
+    taxaDesistencia: comSaida.length > 0 ? (desistenciasComSaida.length / comSaida.length) * 100 : null,
     separacao: resumirEtapa(linhas.map((linha) => linha.separacao)),
     saida: resumirEtapa(linhas.map((linha) => linha.saida)),
     fechamento: resumirEtapa(linhas.map((linha) => linha.fechamento)),
