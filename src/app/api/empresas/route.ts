@@ -155,7 +155,8 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    if (tokenInformado && tokenServidor && irmaos.length > 0) {
+    // Limpar o token também precisa valer para o servidor inteiro.
+    if (tokenInformado && irmaos.length > 0) {
       await prisma.empresa.updateMany({
         where: { id: { in: irmaos.map((item) => item.id) } },
         data: { sysproToken: tokenServidor },
