@@ -345,17 +345,6 @@ export function AppShell({
                       const ativo = pathname === "/relatorios" && abaAtiva === item.id;
                       return <Link key={item.id} href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${ativo ? "bg-muted font-bold text-foreground shadow-2xs border-l-2 border-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}><Icone className={`size-3.5 shrink-0 ${ativo ? item.cor : "text-muted-foreground"}`} /><span className="truncate">{item.label}</span></Link>;
                     })}
-                    <Link
-                      href={criarLinkComEmpresa("/relatorios/pedidos")}
-                      className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${
-                        pathname === "/relatorios/pedidos"
-                          ? "border-l-2 border-primary bg-muted font-bold text-foreground shadow-2xs"
-                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                      }`}
-                    >
-                      <Truck className="size-3.5 shrink-0" />
-                      <span className="truncate">Pedidos e Entregas</span>
-                    </Link>
                     {podeVerEstoque ? (
                       <>
                         <span className="mt-2 block px-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">
@@ -374,6 +363,20 @@ export function AppShell({
                         </Link>
                       </>
                     ) : null}
+                    <span className="mt-2 block px-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                      Entrega
+                    </span>
+                    <Link
+                      href={criarLinkComEmpresa("/relatorios/entregas")}
+                      className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${
+                        pathname === "/relatorios/entregas"
+                          ? "border-l-2 border-primary bg-muted font-bold text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      }`}
+                    >
+                      <Truck className="size-3.5 shrink-0" />
+                      <span className="truncate">Análise de Entrega</span>
+                    </Link>
                   </div>
                 )
               )}
@@ -567,17 +570,6 @@ export function AppShell({
                       {item.label}
                     </Link>
                   ))}
-                  <Link
-                    href={criarLinkComEmpresa("/relatorios/pedidos")}
-                    className={`flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs ${
-                      pathname === "/relatorios/pedidos"
-                        ? "bg-muted font-bold text-foreground"
-                        : "text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <Truck className="size-3.5" />
-                    Pedidos e Entregas
-                  </Link>
                   {podeVerEstoque ? (
                     <>
                       <span className="mt-3 block text-[10px] font-bold uppercase text-muted-foreground">
@@ -596,6 +588,20 @@ export function AppShell({
                       </Link>
                     </>
                   ) : null}
+                  <span className="mt-3 block text-[10px] font-bold uppercase text-muted-foreground">
+                    Entrega
+                  </span>
+                  <Link
+                    href={criarLinkComEmpresa("/relatorios/entregas")}
+                    className={`flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs ${
+                      pathname === "/relatorios/entregas"
+                        ? "bg-muted font-bold text-foreground"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Truck className="size-3.5" />
+                    Análise de Entrega
+                  </Link>
                 </div>
               )}
 

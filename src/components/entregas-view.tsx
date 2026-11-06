@@ -21,7 +21,7 @@ import {
 } from "@/components/date-range-filter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatarNumero } from "@/lib/formatters";
+import { formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import {
   ROTULO_SITUACAO_PEDIDO,
@@ -30,6 +30,7 @@ import {
   montarLinhasPedido,
   resumirPedidos,
   situacaoPedido,
+  type Etapa,
   type LinhaPedido,
   type PedidoSyspro,
   type ResumoPedidos,
@@ -42,12 +43,12 @@ const RESUMO_VAZIO: ResumoPedidos = {
   pendentes: 0,
   emRota: 0,
   cancelados: 0,
-  mediaConferencia: null,
-  mediaSaida: null,
-  mediaFechamento: null,
-  foraDaConferencia: 0,
-  foraDaSaida: 0,
-  foraDoFechamento: 0,
+  separacao: { media: null, dentro: 0, fora: 0, percentualNoPrazo: null, emAndamento: 0 },
+  conferencia: { media: null, dentro: 0, fora: 0, percentualNoPrazo: null, emAndamento: 0 },
+  saida: { media: null, dentro: 0, fora: 0, percentualNoPrazo: null, emAndamento: 0 },
+  fechamento: { media: null, dentro: 0, fora: 0, percentualNoPrazo: null, emAndamento: 0 },
+  totalExpedicao: { media: null, dentro: 0, fora: 0, percentualNoPrazo: null, emAndamento: 0 },
+  porEntregador: [],
 };
 
 const COLUNAS_EXPORTACAO_PEDIDOS = [
@@ -63,13 +64,13 @@ const COLUNAS_EXPORTACAO_PEDIDOS = [
   "Alerta saída (min)",
   "Fechamento",
   "Alerta fechamento (min)",
+  "Total até expedição (min)",
   "Entregador",
   "Situação",
 ] as const;
 
 function horaCurta(hora: string | null): string {
-  if (!hora) return "—";
-  return hora.slice(0, 5);
+  return hora ? hora.slice(0, 5) : "—";
 }
 
 function badgeSituacaoPedido(situacao: SituacaoPedido) {
@@ -80,17 +81,31 @@ function badgeSituacaoPedido(situacao: SituacaoPedido) {
   return "outline" as const;
 }
 
-function CelulaAlerta({ minutos, limite }: { minutos: number | null; limite: number }) {
-  if (minutos === null) return <span className="text-muted-foreground">—</span>;
-  const estourou = minutos > limite;
+/** Verde dentro do limite, vermelho acima, âmbar quando a etapa ainda corre. */
+function CelulaEtapa({ etapa }: { etapa: Etapa }) {
+  if (etapa.minutos === null) return <span className="text-muted-foreground">—</span>;
+  if (etapa.emAndamento) {
+    return (
+      <span className="font-semibold text-amber-600 dark:text-amber-500" title="Etapa em andamento">
+        {formatarDuracaoMinutos(etapa.minutos)}…
+      </span>
+    );
+  }
   return (
-    <span className={estourou ? "font-semibold text-destructive" : "text-muted-foreground"}>
-      {formatarDuracaoMinutos(minutos)}
+    <span
+      className={
+        etapa.estourou
+          ? "font-semibold text-destructive"
+          : "font-medium text-emerald-600 dark:text-emerald-500"
+      }
+      title={`Limite de ${etapa.limite} min`}
+    >
+      {formatarDuracaoMinutos(etapa.minutos)}
     </span>
   );
 }
 
-export function PedidosView({
+export function EntregasView({
   empresaId,
   empresaNome,
 }: {
@@ -136,7 +151,11 @@ export function PedidosView({
         setRotaNaoLiberada(Boolean(dados.rotaNaoLiberada));
         throw new Error(dados.error || "Erro ao consultar os pedidos.");
       }
-      const montadas = montarLinhasPedido(dados.pedidos ?? []);
+      const agora = new Date();
+      const montadas = montarLinhasPedido(dados.pedidos ?? [], {
+        agoraMinutos: agora.getHours() * 60 + agora.getMinutes(),
+        hoje: agora.toISOString().slice(0, 10),
+      });
       setLinhas(montadas);
       setResumo(dados.resumo ?? resumirPedidos(montadas));
       setPeriodoConsultado({ ...proximoPeriodo });
@@ -159,9 +178,10 @@ export function PedidosView({
       if (situacao !== "todas" && situacaoPedido(linha) !== situacao) return false;
       if (
         apenasEstourados &&
-        !linha.alertaConferencia.estourou &&
-        !linha.alertaSaida.estourou &&
-        !linha.alertaFechamento.estourou
+        !linha.conferencia.estourou &&
+        !linha.saida.estourou &&
+        !linha.fechamento.estourou &&
+        !linha.separacao.estourou
       ) {
         return false;
       }
@@ -173,6 +193,8 @@ export function PedidosView({
       );
     });
   }, [linhas, busca, situacao, apenasEstourados]);
+
+  const resumoFiltrado = useMemo(() => resumirPedidos(linhasFiltradas), [linhasFiltradas]);
 
   const filtrosAtivos =
     (busca.trim() ? 1 : 0) + (situacao !== "todas" ? 1 : 0) + (apenasEstourados ? 1 : 0);
@@ -188,13 +210,14 @@ export function PedidosView({
       linha.cliente,
       horaCurta(linha.horaVenda),
       horaCurta(linha.horaSeparacao),
-      linha.alertaSeparacao.minutos ?? "",
+      linha.separacao.minutos ?? "",
       horaCurta(linha.horaConferido),
-      linha.alertaConferencia.minutos ?? "",
+      linha.conferencia.minutos ?? "",
       horaCurta(linha.horaSaida),
-      linha.alertaSaida.minutos ?? "",
+      linha.saida.minutos ?? "",
       horaCurta(linha.horaFechamento),
-      linha.alertaFechamento.minutos ?? "",
+      linha.fechamento.minutos ?? "",
+      linha.totalExpedicao.minutos ?? "",
       linha.entregador ?? "",
       ROTULO_SITUACAO_PEDIDO[situacaoPedido(linha)],
     ]);
@@ -202,7 +225,7 @@ export function PedidosView({
       ? `${periodoConsultado.inicial}_a_${periodoConsultado.final}`
       : new Date().toISOString().slice(0, 10);
     exportarParaCSV(
-      `pedidos-${empresaNome.replace(/[^\w-]+/g, "-").toLowerCase()}-${periodoTexto}`,
+      `entrega-${empresaNome.replace(/[^\w-]+/g, "-").toLowerCase()}-${periodoTexto}`,
       [...COLUNAS_EXPORTACAO_PEDIDOS],
       corpo,
     );
@@ -212,10 +235,10 @@ export function PedidosView({
   return (
     <div className="flex flex-col gap-6">
       <AnalysisQueryCard
-        icon={Clock}
-        title="Pedidos e Entregas"
-        description={`Do horário da venda até o fechamento do DAV em ${empresaNome}.`}
-        footer="Limites operacionais: separação 5 min · conferência 15 min · saída para entrega 30 min · fechamento 50 min."
+        icon={Truck}
+        title="Análise de Entrega"
+        description={`Cada etapa do DAV em ${empresaNome}: separação, conferência, saída e fechamento — com o tempo gasto em cada uma.`}
+        footer="Limites: separação 5 min · conferência 15 min · saída 30 min · fechamento 50 min (provisório)."
       >
         <DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} />
       </AnalysisQueryCard>
@@ -234,11 +257,15 @@ export function PedidosView({
           <SecaoTitulo eyebrow="Situação" titulo="Pedidos do período" />
           <MetricsStrip
             itens={[
-              { rotulo: "Pedidos", valor: formatarNumero(resumo.total, 0), detalhe: `${linhas.length} linhas` },
-              { rotulo: "Entregues", valor: formatarNumero(resumo.entregues, 0) },
-              { rotulo: "Pendentes", valor: formatarNumero(resumo.pendentes, 0), attention: resumo.pendentes > 0 },
-              { rotulo: "Em entrega", valor: formatarNumero(resumo.emRota, 0) },
-              { rotulo: "Cancelados", valor: formatarNumero(resumo.cancelados, 0) },
+              { rotulo: "Pedidos", valor: formatarNumero(resumoFiltrado.total, 0) },
+              { rotulo: "Entregues", valor: formatarNumero(resumoFiltrado.entregues, 0) },
+              {
+                rotulo: "Pendentes",
+                valor: formatarNumero(resumoFiltrado.pendentes, 0),
+                attention: resumoFiltrado.pendentes > 0,
+              },
+              { rotulo: "Em entrega", valor: formatarNumero(resumoFiltrado.emRota, 0) },
+              { rotulo: "Cancelados", valor: formatarNumero(resumoFiltrado.cancelados, 0) },
             ]}
           />
         </section>
@@ -246,42 +273,74 @@ export function PedidosView({
 
       {periodoConsultado && !erro ? (
         <section className="space-y-2">
-          <SecaoTitulo eyebrow="Tempo" titulo="Atendimento dos limites" />
+          <SecaoTitulo eyebrow="Tempo por etapa" titulo="Onde o processo trava" />
           <MetricsStrip
             itens={[
               {
-                rotulo: "Média conferência",
-                valor: formatarDuracaoMinutos(resumo.mediaConferencia),
-                detalhe: `limite ${15} min`,
-                attention: resumo.foraDaConferencia > 0,
-                definicao: "Fórmula: média de (conferido − hora da venda) dos pedidos com horário.",
+                rotulo: "Separação",
+                valor: formatarDuracaoMinutos(resumoFiltrado.separacao.media),
+                detalhe: resumoFiltrado.separacao.percentualNoPrazo === null
+                  ? "sem dado (F)"
+                  : `${formatarPercentual(resumoFiltrado.separacao.percentualNoPrazo, 0)} no prazo`,
+                attention: resumoFiltrado.separacao.fora > 0,
+                definicao: "Fórmula: em separação (F) − hora da venda (D). Limite 5 min.",
               },
               {
-                rotulo: "Média saída",
-                valor: formatarDuracaoMinutos(resumo.mediaSaida),
-                detalhe: `limite ${30} min`,
-                attention: resumo.foraDaSaida > 0,
-                definicao: "Fórmula: média de (saída para entrega − hora da venda).",
+                rotulo: "Conferência",
+                valor: formatarDuracaoMinutos(resumoFiltrado.conferencia.media),
+                detalhe: resumoFiltrado.conferencia.percentualNoPrazo === null
+                  ? "sem dado"
+                  : `${formatarPercentual(resumoFiltrado.conferencia.percentualNoPrazo, 0)} no prazo`,
+                attention: resumoFiltrado.conferencia.fora > 0,
+                definicao: "Fórmula: conferido (H) − em separação (F). Limite 15 min. Sem F, usa a venda como início.",
               },
               {
-                rotulo: "Média fechamento",
-                valor: formatarDuracaoMinutos(resumo.mediaFechamento),
-                detalhe: `limite ${50} min`,
-                attention: resumo.foraDoFechamento > 0,
-                definicao: "Fórmula: média de (fechamento − hora da venda).",
+                rotulo: "Saída",
+                valor: formatarDuracaoMinutos(resumoFiltrado.saida.media),
+                detalhe: resumoFiltrado.saida.percentualNoPrazo === null
+                  ? "sem dado"
+                  : `${formatarPercentual(resumoFiltrado.saida.percentualNoPrazo, 0)} no prazo`,
+                attention: resumoFiltrado.saida.fora > 0,
+                definicao: "Fórmula: saída para entrega (J) − conferido (H). Limite 30 min.",
               },
               {
-                rotulo: "Fora do limite",
-                valor: formatarNumero(
-                  resumo.foraDaConferencia + resumo.foraDaSaida + resumo.foraDoFechamento,
-                  0,
-                ),
-                detalhe: `${resumo.foraDaConferencia} conf · ${resumo.foraDaSaida} saída`,
-                attention: resumo.foraDaConferencia + resumo.foraDaSaida + resumo.foraDoFechamento > 0,
-                definicao: "Pedidos que estouraram o limite em pelo menos uma etapa.",
+                rotulo: "Fechamento",
+                valor: formatarDuracaoMinutos(resumoFiltrado.fechamento.media),
+                detalhe: resumoFiltrado.fechamento.percentualNoPrazo === null
+                  ? "sem dado"
+                  : `${formatarPercentual(resumoFiltrado.fechamento.percentualNoPrazo, 0)} no prazo`,
+                attention: resumoFiltrado.fechamento.fora > 0,
+                definicao: "Fórmula: fechamento (L) − saída (J). Limite provisório de 50 min.",
+              },
+              {
+                rotulo: "Total até expedição",
+                valor: formatarDuracaoMinutos(resumoFiltrado.totalExpedicao.media),
+                detalhe: "venda → saída",
+                definicao: "Fórmula: saída para entrega (J) − hora da venda (D). Sem limite: mede o ciclo inteiro.",
               },
             ]}
           />
+        </section>
+      ) : null}
+
+      {periodoConsultado && !erro && resumoFiltrado.porEntregador.length > 0 ? (
+        <section className="space-y-2">
+          <SecaoTitulo eyebrow="Equipe" titulo="Desempenho por entregador" />
+          <div className="grid gap-px overflow-hidden rounded-lg bg-border/50 ring-1 ring-border/50 sm:grid-cols-2 lg:grid-cols-3">
+            {resumoFiltrado.porEntregador.slice(0, 9).map((item) => (
+              <div key={item.entregador} className="flex flex-col gap-0.5 bg-card px-3 py-2">
+                <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {item.entregador}
+                </span>
+                <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                  {formatarNumero(item.davs, 0)} DAV
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {formatarNumero(item.entregues, 0)} entregues · ciclo médio {formatarDuracaoMinutos(item.mediaExpedicao)}
+                </span>
+              </div>
+            ))}
+          </div>
         </section>
       ) : null}
 
@@ -366,66 +425,75 @@ export function PedidosView({
                   },
                   {
                     id: "horaVenda",
-                    header: <span title="Horário da venda (PEDIDO.HR_VENDA)">Hora venda</span>,
+                    header: <span title="D — horário da venda (PEDIDO.HR_VENDA)">Venda</span>,
                     kind: "name",
                     value: (linha) => linha.horaVenda ?? "",
                     cell: (linha) => <span className="font-mono">{horaCurta(linha.horaVenda)}</span>,
                   },
                   {
                     id: "separacao",
-                    header: <span title="Horário em que o pedido saiu para separação. O Syspro ainda não registra este horário.">Em separação</span>,
+                    header: <span title="F — início da separação. O Syspro ainda não registra este horário.">Em separação</span>,
                     kind: "name",
                     value: (linha) => linha.horaSeparacao ?? "",
                     cell: () => <span className="text-muted-foreground">—</span>,
                   },
                   {
                     id: "alertaSeparacao",
-                    header: <span title="Fórmula: em separação − hora da venda (limite 5 min)">Alerta sep.</span>,
+                    header: <span title="E — Fórmula: em separação − venda. Limite 5 min.">Alerta sep.</span>,
                     kind: "number",
-                    value: (linha) => linha.alertaSeparacao.minutos,
-                    cell: (linha) => <CelulaAlerta minutos={linha.alertaSeparacao.minutos} limite={linha.alertaSeparacao.limite} />,
+                    value: (linha) => linha.separacao.minutos,
+                    cell: (linha) => <CelulaEtapa etapa={linha.separacao} />,
                   },
                   {
                     id: "conferido",
-                    header: <span title="Horário em que a conferência terminou (PEDIDO.HR_SEPARADO)">Conferido</span>,
+                    header: <span title="H — fim da separação/conferência (PEDIDO.HR_SEPARADO)">Conferido</span>,
                     kind: "name",
                     value: (linha) => linha.horaConferido ?? "",
                     cell: (linha) => <span className="font-mono">{horaCurta(linha.horaConferido)}</span>,
                   },
                   {
                     id: "alertaConferencia",
-                    header: <span title="Fórmula: conferido − hora da venda (limite 15 min)">Alerta conf.</span>,
+                    header: <span title="G — Fórmula: conferido − em separação (sem separação registrada, usa a venda). Limite 15 min.">Alerta conf.</span>,
                     kind: "number",
-                    value: (linha) => linha.alertaConferencia.minutos,
-                    cell: (linha) => <CelulaAlerta minutos={linha.alertaConferencia.minutos} limite={linha.alertaConferencia.limite} />,
+                    value: (linha) => linha.conferencia.minutos,
+                    cell: (linha) => <CelulaEtapa etapa={linha.conferencia} />,
                   },
                   {
                     id: "saida",
-                    header: <span title="Horário de saída para entrega (ENTREGA.HR_SAIDA)">Saída</span>,
+                    header: <span title="J — saída para entrega (ENTREGA.HR_SAIDA)">Saída</span>,
                     kind: "name",
                     value: (linha) => linha.horaSaida ?? "",
                     cell: (linha) => <span className="font-mono">{horaCurta(linha.horaSaida)}</span>,
                   },
                   {
                     id: "alertaSaida",
-                    header: <span title="Fórmula: saída − hora da venda (limite 30 min)">Alerta saída</span>,
+                    header: <span title="I — Fórmula: saída − conferido. Limite 30 min.">Alerta saída</span>,
                     kind: "number",
-                    value: (linha) => linha.alertaSaida.minutos,
-                    cell: (linha) => <CelulaAlerta minutos={linha.alertaSaida.minutos} limite={linha.alertaSaida.limite} />,
+                    value: (linha) => linha.saida.minutos,
+                    cell: (linha) => <CelulaEtapa etapa={linha.saida} />,
                   },
                   {
                     id: "fechamento",
-                    header: <span title="Horário de fechamento do DAV (PEDIDO.HR_FECHAMENTO)">Fechamento</span>,
+                    header: <span title="L — fechamento da DAV (PEDIDO.HR_FECHAMENTO)">Fechamento</span>,
                     kind: "name",
                     value: (linha) => linha.horaFechamento ?? "",
                     cell: (linha) => <span className="font-mono">{horaCurta(linha.horaFechamento)}</span>,
                   },
                   {
                     id: "alertaFechamento",
-                    header: <span title="Fórmula: fechamento − hora da venda (limite 50 min)">Alerta fech.</span>,
+                    header: <span title="K — Fórmula: fechamento − saída. Limite provisório de 50 min.">Alerta fech.</span>,
                     kind: "number",
-                    value: (linha) => linha.alertaFechamento.minutos,
-                    cell: (linha) => <CelulaAlerta minutos={linha.alertaFechamento.minutos} limite={linha.alertaFechamento.limite} />,
+                    value: (linha) => linha.fechamento.minutos,
+                    cell: (linha) => <CelulaEtapa etapa={linha.fechamento} />,
+                  },
+                  {
+                    id: "totalExpedicao",
+                    header: <span title="J − D: da venda até sair para entrega">Ciclo total</span>,
+                    kind: "number",
+                    value: (linha) => linha.totalExpedicao.minutos,
+                    cell: (linha) => (
+                      <span className="font-mono">{formatarDuracaoMinutos(linha.totalExpedicao.minutos)}</span>
+                    ),
                   },
                   {
                     id: "entregador",
@@ -489,16 +557,14 @@ export function PedidosView({
       </Card>
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Truck className="size-3.5" />
-        <span>
-          Fonte: PEDIDO / ENTREGA / PARTICIPANTE via /api/dynamic/query do SysproServer.
-        </span>
+        <Clock className="size-3.5" />
+        <span>Fonte: PEDIDO / ENTREGA / PARTICIPANTE via /api/dynamic/query do SysproServer.</span>
       </div>
 
       <GlossarioRelatorio
-        itens={GUIAS_RELATORIOS.pedidos.glossario ?? []}
-        guia={GUIAS_RELATORIOS.pedidos}
-        relatorioLabel="Pedidos e Entregas"
+        itens={GUIAS_RELATORIOS.entregas.glossario ?? []}
+        guia={GUIAS_RELATORIOS.entregas}
+        relatorioLabel="Análise de Entrega"
       />
     </div>
   );
