@@ -413,6 +413,9 @@ export function ConfiguracaoClient({ empresas }: Props) {
                 placeholder="Bearer exigido pelo SysproServer (deixe vazio se não usar)"
                 className="text-xs font-mono"
               />
+              <p className="text-[11px] text-muted-foreground">
+                O token é do servidor Syspro: vale para todas as filiais cadastradas com a mesma URL.
+              </p>
             </div>
           </div>
 
@@ -675,6 +678,9 @@ export function ConfiguracaoClient({ empresas }: Props) {
                 placeholder="Bearer exigido pelo SysproServer (deixe vazio se não usar)"
                 className="text-xs font-mono"
               />
+              <p className="text-[11px] text-muted-foreground">
+                O token é do servidor Syspro: ao salvar, ele passa a valer para todas as filiais da mesma URL.
+              </p>
             </div>
             <div className="rounded-lg border bg-muted/20 p-3">
               <p className="mb-3 text-xs font-semibold text-foreground">Parâmetros de cobertura</p>

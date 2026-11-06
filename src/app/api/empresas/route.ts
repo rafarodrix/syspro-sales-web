@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aplicarLimite, autenticarApi, validarJson } from "@/lib/api-route";
 import { prisma } from "@/lib/database";
+import { mesmoServidor, tokenDoServidor } from "@/lib/servidor-syspro";
 import { empresaCreateSchema, empresaUpdateSchema, limitesEstoqueEmpresaSchema } from "@/lib/validations";
+
+/** O token pertence ao servidor Syspro: todas as filiais da mesma origem o compartilham. */
+async function filiaisDoServidor(origem: { baseUrl?: string | null; useIis?: boolean | null }) {
+  const todas = await prisma.empresa.findMany({
+    select: { id: true, sysproBaseUrl: true, sysproUseIis: true, sysproToken: true },
+  });
+  return todas.filter((empresa) =>
+    mesmoServidor({ baseUrl: empresa.sysproBaseUrl, useIis: empresa.sysproUseIis }, origem));
+}
 
 export async function POST(request: NextRequest) {
   const autenticacao = await autenticarApi("empresas:gerenciar", "Acesso restrito ao Administrador.");
@@ -28,6 +38,8 @@ export async function POST(request: NextRequest) {
   } = json.value;
 
   try {
+    const irmaos = await filiaisDoServidor({ baseUrl: sysproBaseUrl, useIis: sysproUseIis });
+    const tokenServidor = tokenDoServidor(sysproToken, irmaos);
     const empresa = await prisma.empresa.create({
       data: {
         cnpj,
@@ -35,7 +47,7 @@ export async function POST(request: NextRequest) {
         empresaCodigo,
         sysproBaseUrl,
         sysproUseIis,
-        sysproToken: sysproToken ?? null,
+        sysproToken: tokenServidor,
         coberturaCriticaDias,
         coberturaAtencaoDias,
         coberturaExcessoDias,
@@ -43,6 +55,12 @@ export async function POST(request: NextRequest) {
         grupoEstoquePadrao,
       },
     });
+    if (tokenServidor && irmaos.length > 0) {
+      await prisma.empresa.updateMany({
+        where: { id: { in: irmaos.map((item) => item.id) } },
+        data: { sysproToken: tokenServidor },
+      });
+    }
     return NextResponse.json({ empresa }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -109,6 +127,16 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
+    // O token vale para o servidor: ao salvar aqui, replica nas outras filiais
+    // da mesma origem para não deixar uma filial autenticada e outra não.
+    const tokenInformado = sysproToken !== undefined;
+    const tokenServidor = tokenInformado ? (String(sysproToken ?? "").trim() || null) : existente.sysproToken;
+    const origemFinal = {
+      baseUrl: sysproBaseUrl ?? existente.sysproBaseUrl,
+      useIis: sysproUseIis ?? existente.sysproUseIis,
+    };
+    const irmaos = (await filiaisDoServidor(origemFinal)).filter((item) => item.id !== id);
+
     await prisma.empresa.update({
       where: { id },
       data: {
@@ -118,7 +146,7 @@ export async function PATCH(request: NextRequest) {
         ...(ativa !== undefined ? { ativa } : {}),
         ...(sysproBaseUrl !== undefined ? { sysproBaseUrl } : {}),
         ...(sysproUseIis !== undefined ? { sysproUseIis } : {}),
-        ...(sysproToken !== undefined ? { sysproToken } : {}),
+        sysproToken: tokenServidor,
         ...(coberturaCriticaDias !== undefined ? { coberturaCriticaDias } : {}),
         ...(coberturaAtencaoDias !== undefined ? { coberturaAtencaoDias } : {}),
         ...(coberturaExcessoDias !== undefined ? { coberturaExcessoDias } : {}),
@@ -126,6 +154,13 @@ export async function PATCH(request: NextRequest) {
         ...(grupoEstoquePadrao !== undefined ? { grupoEstoquePadrao } : {}),
       },
     });
+
+    if (tokenInformado && tokenServidor && irmaos.length > 0) {
+      await prisma.empresa.updateMany({
+        where: { id: { in: irmaos.map((item) => item.id) } },
+        data: { sysproToken: tokenServidor },
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch {
