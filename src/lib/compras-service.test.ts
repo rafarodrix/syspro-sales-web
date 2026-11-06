@@ -97,7 +97,8 @@ describe("orquestração do relatório de compras", () => {
       signal,
     });
 
-    expect(mocks.dividirPeriodoKardex).toHaveBeenCalledWith("2026-09-01", "2026-10-19");
+    // 30 dias antes do período entram só como histórico (produto já existia?)
+    expect(mocks.dividirPeriodoKardex).toHaveBeenCalledWith("2026-08-02", "2026-10-19");
     expect(mocks.obterVendas).toHaveBeenCalledWith({
       actorId: "usuario-1",
       empresasLiberadas: [empresa],
@@ -137,7 +138,7 @@ describe("orquestração do relatório de compras", () => {
       dtFinal: "2027-01-31",
     });
 
-    expect(mocks.dividirPeriodoKardex).toHaveBeenCalledWith("2027-01-01", "2027-01-31");
+    expect(mocks.dividirPeriodoKardex).toHaveBeenCalledWith("2026-12-02", "2027-01-31");
     expect(mocks.obterMovimentosEstoque).not.toHaveBeenCalled();
     expect(mocks.montarRelatorioCompras).toHaveBeenCalledWith(
       expect.any(Array),

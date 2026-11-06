@@ -57,21 +57,35 @@ export function reconstruirDiasEstoque(
   const final = normalizarDataIso(periodo.final);
   if (!inicial || !final || inicial > final) return SEM_DIAS_ESTOQUE;
 
-  const ordenados = movimentos
+  const noPeriodo = movimentos
     .map((movimento) => ({ movimento, data: normalizarDataIso(movimento.dataMovimento) }))
     .filter(({ movimento, data }) =>
-      Boolean(data) && data >= inicial && data <= final && movimentoCompoeSaldo(movimento, empresa))
+      Boolean(data) && data <= final && movimentoCompoeSaldo(movimento, empresa),
+    );
+  const ordenados = noPeriodo
+    .filter(({ data }) => data >= inicial)
     .sort((a, b) => (a.data === b.data ? 0 : a.data < b.data ? -1 : 1));
 
   if (ordenados.length === 0) return SEM_DIAS_ESTOQUE;
 
+  // O produto já movimentava antes da janela? Então ele existia na base e o
+  // saldo de abertura é informação, não ausência: os dias anteriores ao
+  // primeiro movimento contam (com estoque se o saldo era positivo, ruptura se
+  // não era). Sem esse histórico, "zerado" e "ainda não cadastrado" são
+  // indistinguíveis e o certo é não avaliar esses dias.
+  const temHistoricoAntes = noPeriodo.some(({ data }) => data < inicial);
+
   // Saldo do dia anterior ao primeiro movimento da janela.
   let saldo: number | null = saldoAnterior(ordenados[0].movimento);
   const saldoAbertura = saldo;
-  // Sem saldo no início, os dias anteriores ao primeiro movimento não são
-  // avaliados: não há como distinguir "existia com estoque zero" de "produto
-  // ainda não movimentado" (cadastro novo, primeira compra no meio do período).
-  const inicioContagem = saldoAbertura > 0 ? inicial : ordenados[0].data;
+  // Primeira movimentação sendo SAÍDA com saldo anterior zerado/negativo também
+  // prova que o produto existia e vendia sem estoque — ruptura real, não cadastro novo.
+  const primeiraSaidaSemSaldo =
+    (saldoAbertura ?? 0) <= 0 && Number(ordenados[0].movimento.quantidadeMovimentada) < 0;
+  const inicioContagem =
+    saldoAbertura > 0 || temHistoricoAntes || primeiraSaidaSemSaldo
+      ? inicial
+      : ordenados[0].data;
 
   const porDia = new Map<string, MovimentoKardex[]>();
   for (const { movimento, data } of ordenados) {

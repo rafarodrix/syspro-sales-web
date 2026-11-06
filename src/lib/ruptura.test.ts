@@ -149,4 +149,33 @@ describe("dias com estoque (sugestão de ruptura)", () => {
     };
     expect(diasBaseDemanda(dias, 90)).toBe(60);
   });
+
+  it("usa o período inteiro quando há histórico antes da janela", () => {
+    // Produto já movimentava em dezembro e zerou: em janeiro os dias sem
+    // movimento são ruptura real, não cadastro novo.
+    const dias = reconstruirDiasEstoque(
+      [
+        movimento("2025-12-20", 0, 5),
+        movimento("2025-12-28", 5, -5),
+        movimento("2026-01-10", 0, 3),
+      ],
+      { inicial: "2026-01-01", final: "2026-01-20" },
+    );
+
+    expect(dias.diasConsiderados).toBe(20);
+    expect(dias.diasEmRuptura).toBe(9); // 01 a 09/01 sem saldo
+    expect(dias.diasComEstoque).toBe(11); // 10 a 20/01
+  });
+
+  it("conta desde o início quando a primeira movimentação é venda sem saldo", () => {
+    // Venda com saldo anterior zerado prova que o produto existia e operava sem estoque.
+    const dias = reconstruirDiasEstoque([movimento("2026-01-15", 0, -1)], {
+      inicial: "2026-01-01",
+      final: "2026-01-20",
+    });
+
+    expect(dias.diasConsiderados).toBe(20);
+    expect(dias.diasEmRuptura).toBe(20);
+    expect(dias.diasComEstoque).toBe(0);
+  });
 });

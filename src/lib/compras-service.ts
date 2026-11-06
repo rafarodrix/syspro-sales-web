@@ -4,6 +4,16 @@ import { dividirPeriodoKardex, montarRelatorioCompras, normalizarDataIso } from 
 import { obterVendas, periodoConsultaValido, SalesQueryError, type EmpresaInfo } from "@/lib/sales-service";
 import { consultarSysproAdaptativamente } from "@/lib/syspro-consulta-adaptativa";
 
+/** Janela extra consultada antes do período (histórico de saldo). */
+const DIAS_HISTORICO_ANTERIOR = 30;
+
+function somarDias(iso: string, dias: number): string {
+  const [ano, mes, dia] = iso.split("-").map(Number);
+  const data = new Date(Date.UTC(ano, mes - 1, dia));
+  data.setUTCDate(data.getUTCDate() + dias);
+  return data.toISOString().slice(0, 10);
+}
+
 function hojeEmSaoPaulo(): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
@@ -40,7 +50,11 @@ export async function obterRelatorioCompras({
   const finalEstoque = consultarSaldoAtual && inicialIso <= hojeEmSaoPaulo()
     ? [finalIso, hojeEmSaoPaulo()].sort().at(-1)!
     : finalIso;
-  const janelasKardex = dividirPeriodoKardex(inicialIso, finalEstoque);
+  // Olha 30 dias antes do período só para saber se o produto já existia na base.
+  // Sem esse histórico, um item zerado antes da janela parece "cadastro novo" e
+  // os dias de ruptura anteriores ao primeiro movimento ficam de fora da conta.
+  const inicioHistorico = somarDias(inicialIso, -DIAS_HISTORICO_ANTERIOR);
+  const janelasKardex = dividirPeriodoKardex(inicioHistorico, finalEstoque);
 
   // Vendas e Kardex já dividem automaticamente respostas acima do limite.
   const vendas = await consultarSysproAdaptativamente(
