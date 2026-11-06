@@ -89,6 +89,7 @@ export const empresaCreateSchema = z.object({
   empresaCodigo: z.string().trim().min(1, "Codigo da empresa no Syspro e obrigatorio."),
   sysproBaseUrl: z.string().optional().transform((val) => (val ? sanitizarSysproUrl(val) : "http://localhost:8080")),
   sysproUseIis: z.boolean().default(false),
+  sysproToken: z.string().trim().max(200).optional().transform((val) => (val ? val : null)),
   coberturaCriticaDias: diasCoberturaSchema.default(7),
   coberturaAtencaoDias: diasCoberturaSchema.default(15),
   coberturaExcessoDias: diasCoberturaSchema.default(90),
@@ -119,6 +120,7 @@ export const empresaUpdateSchema = z.object({
   ativa: z.boolean().optional(),
   sysproBaseUrl: z.string().optional().transform((val) => (val !== undefined ? sanitizarSysproUrl(val) : undefined)),
   sysproUseIis: z.boolean().optional(),
+  sysproToken: z.string().trim().max(200).optional().transform((val) => (val === undefined ? undefined : val ? val : null)),
   coberturaCriticaDias: diasCoberturaSchema.optional(),
   coberturaAtencaoDias: diasCoberturaSchema.optional(),
   coberturaExcessoDias: diasCoberturaSchema.optional(),
@@ -145,5 +147,6 @@ export const kardexQuerySchema = vendasQuerySchema
 export const configuracaoTesteSchema = z.object({
   baseUrl: z.string().trim().min(1, "URL da API Syspro não informada."),
   useIis: z.boolean({ error: "Modo IIS inválido." }),
+  token: z.string().trim().max(200).optional(),
 });
 

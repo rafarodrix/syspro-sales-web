@@ -45,6 +45,7 @@ export interface EmpresaRow {
   ativa: boolean;
   sysproBaseUrl: string;
   sysproUseIis: boolean;
+  sysproToken: string;
   coberturaCriticaDias: number;
   coberturaAtencaoDias: number;
   coberturaExcessoDias: number;
@@ -92,6 +93,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [codigo, setCodigo] = useState("");
   const [baseUrl, setBaseUrl] = useState("http://localhost:8080");
   const [useIis, setUseIis] = useState("false");
+  const [token, setToken] = useState("");
   const [coberturaCritica, setCoberturaCritica] = useState(7);
   const [coberturaAtencao, setCoberturaAtencao] = useState(15);
   const [coberturaExcesso, setCoberturaExcesso] = useState(90);
@@ -106,6 +108,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [editCodigo, setEditCodigo] = useState("");
   const [editBaseUrl, setEditBaseUrl] = useState("");
   const [editUseIis, setEditUseIis] = useState("false");
+  const [editToken, setEditToken] = useState("");
   const [editAtiva, setEditAtiva] = useState(true);
   const [editCoberturaCritica, setEditCoberturaCritica] = useState(7);
   const [editCoberturaAtencao, setEditCoberturaAtencao] = useState(15);
@@ -121,7 +124,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
   const [empresaTestandoId, setEmpresaTestandoId] = useState<string | null>(null);
   const [resultadoTestePorEmpresa, setResultadoTestePorEmpresa] = useState<Record<string, TesteResultado>>({});
 
-  async function testarConexaoEmpresa(empresa: { id: string; baseUrl: string; useIis: boolean }) {
+  async function testarConexaoEmpresa(empresa: { id: string; baseUrl: string; useIis: boolean; token?: string }) {
     setEmpresaTestandoId(empresa.id);
     try {
       const res = await fetch("/api/configuracao/testar", {
@@ -130,6 +133,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
         body: JSON.stringify({
           baseUrl: empresa.baseUrl,
           useIis: empresa.useIis,
+          token: empresa.token ?? "",
         }),
       });
       const data: TesteResultado = await res.json();
@@ -175,6 +179,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
         empresaCodigo: codigo.trim(),
         sysproBaseUrl: baseUrl.trim(),
         sysproUseIis: useIis === "true",
+        sysproToken: token.trim(),
         coberturaCriticaDias: coberturaCritica,
         coberturaAtencaoDias: coberturaAtencao,
         coberturaExcessoDias: coberturaExcesso,
@@ -207,6 +212,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
     setEditCodigo(empresa.empresaCodigo);
     setEditBaseUrl(empresa.sysproBaseUrl || "http://localhost:8080");
     setEditUseIis(empresa.sysproUseIis ? "true" : "false");
+    setEditToken(empresa.sysproToken ?? "");
     setEditAtiva(empresa.ativa);
     setEditCoberturaCritica(empresa.coberturaCriticaDias);
     setEditCoberturaAtencao(empresa.coberturaAtencaoDias);
@@ -236,6 +242,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
         empresaCodigo: editCodigo.trim(),
         sysproBaseUrl: editBaseUrl.trim(),
         sysproUseIis: editUseIis === "true",
+        sysproToken: editToken.trim(),
         ativa: editAtiva,
         coberturaCriticaDias: editCoberturaCritica,
         coberturaAtencaoDias: editCoberturaAtencao,
@@ -395,6 +402,18 @@ export function ConfiguracaoClient({ empresas }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1">
+              <Label htmlFor="tokenNovo" className="text-xs font-semibold">
+                Token da API Syspro
+              </Label>
+              <Input
+                id="tokenNovo"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Bearer exigido pelo SysproServer (deixe vazio se não usar)"
+                className="text-xs font-mono"
+              />
+            </div>
           </div>
 
           <div className="rounded-lg border bg-muted/20 p-3">
@@ -531,6 +550,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
                                   id: empresa.id,
                                   baseUrl: empresa.sysproBaseUrl || "http://localhost:8080",
                                   useIis: empresa.sysproUseIis,
+                                  token: empresa.sysproToken,
                                 })
                               }
                               disabled={isTestando}
@@ -646,6 +666,15 @@ export function ConfiguracaoClient({ empresas }: Props) {
                   <SelectItem value="true">Com IIS (/sysproserverisapi.dll/...)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Token da API Syspro</Label>
+              <Input
+                value={editToken}
+                onChange={(e) => setEditToken(e.target.value)}
+                placeholder="Bearer exigido pelo SysproServer (deixe vazio se não usar)"
+                className="text-xs font-mono"
+              />
             </div>
             <div className="rounded-lg border bg-muted/20 p-3">
               <p className="mb-3 text-xs font-semibold text-foreground">Parâmetros de cobertura</p>

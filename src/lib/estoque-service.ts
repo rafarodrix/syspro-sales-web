@@ -42,6 +42,7 @@ export async function obterMovimentosEstoque({
     (janela) => consultarKardex({
       baseUrl: empresa.sysproBaseUrl!,
       useIis: empresa.sysproUseIis === true,
+      token: empresa.sysproToken ?? null,
     }, {
       dtInicial: paraSyspro(janela.inicial),
       dtFinal: paraSyspro(janela.final),

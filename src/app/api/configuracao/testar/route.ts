@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const json = await validarJson(request, configuracaoTesteSchema, "Configuração inválida.");
     if (!json.ok) return json.response;
-    const { baseUrl, useIis } = json.value;
+    const { baseUrl, useIis, token } = json.value;
 
     let sanitizedBase: string;
     try {
@@ -45,7 +45,10 @@ export async function POST(request: Request) {
       const timeoutId = setTimeout(() => controller.abort(), 8000);
       response = await fetch(urlFinal, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          ...(token?.trim() ? { Authorization: `Bearer ${token.trim()}` } : {}),
+        },
         signal: controller.signal,
         redirect: "error",
       });
@@ -63,6 +66,11 @@ export async function POST(request: Request) {
     const fim = Math.round(performance.now() - inicio);
     if (!response.ok) {
       let sugestao: string | undefined;
+      if (response.status === 401) {
+        sugestao = token?.trim()
+          ? "Token recusado. Confira o Token da API Syspro cadastrado para esta empresa."
+          : "O SysproServer exigiu token (Authorization: Bearer). Preencha o Token da API Syspro desta empresa.";
+      }
       if (response.status === 404) {
         sugestao = isIis
           ? "Recebeu 404. Tente desmarcar 'Com IIS' para usar /api/exporta/ direto."

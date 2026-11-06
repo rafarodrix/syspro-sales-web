@@ -52,7 +52,7 @@ describe("serviço de estoque", () => {
     });
 
     expect(mocks.consultarKardex).toHaveBeenCalledWith(
-      { baseUrl: "http://localhost:8080", useIis: false },
+      { baseUrl: "http://localhost:8080", useIis: false, token: null },
       { dtInicial: "01/01/2020", dtFinal: "27/10/2026", codigoAuxiliar: "aux-1" },
       undefined,
     );

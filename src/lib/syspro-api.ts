@@ -13,6 +13,8 @@ import { sanitizarSysproUrl } from "@/lib/validations";
 export interface SysproConfig {
   baseUrl: string; // ex.: http://api.minhaempresa.com:8080
   useIis: boolean; // true => prefixo /syspro/exporta/api ; false => /api/exporta
+  /** Token do SysproServer (Authorization: Bearer). Obrigatório nas versões novas. */
+  token?: string | null;
 }
 
 export interface SysproDateRange {
@@ -167,7 +169,10 @@ async function request<T>(
 
   const res = await fetch(url, {
     signal: signal ?? AbortSignal.timeout(30_000),
-    headers: { Accept: "application/json" },
+    headers: {
+      Accept: "application/json",
+      ...(config.token?.trim() ? { Authorization: `Bearer ${config.token.trim()}` } : {}),
+    },
     redirect: "error",
     // API local do Syspro: não validar TLS do cliente
     cache: "no-store",

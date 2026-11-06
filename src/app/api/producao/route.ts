@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const config = { baseUrl: empresa.sysproBaseUrl, useIis: empresa.sysproUseIis === true };
+    const config = { baseUrl: empresa.sysproBaseUrl, useIis: empresa.sysproUseIis === true, token: empresa.sysproToken ?? null };
     let brutos: unknown[];
     try {
       brutos = (await consultarProducao(

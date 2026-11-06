@@ -11,6 +11,7 @@ export interface EmpresaInfo {
   empresaCodigo: string;
   sysproBaseUrl?: string | null;
   sysproUseIis?: boolean | null;
+  sysproToken?: string | null;
   grupoEstoquePadrao?: string | null;
 }
 
@@ -147,6 +148,7 @@ export async function obterVendas({
         const config = {
           baseUrl: emp.sysproBaseUrl || "http://localhost:8080",
           useIis: emp.sysproUseIis === true,
+          token: emp.sysproToken ?? null,
         };
 
         const dados = await consultarSysproAdaptativamente(
@@ -170,7 +172,12 @@ export async function obterVendas({
         return filtradas;
       } catch (err) {
         console.error(`[sales-service] Erro ao consultar vendas da empresa ${emp.id}:`, err);
-        throw new SalesIntegrationError(`Não foi possível consultar a filial ${emp.razaoSocial}. A consolidação não foi gerada para evitar totais incompletos.`, { cause: err });
+        // 401 é configuração, não indisponibilidade: a mensagem precisa dizer isso.
+        const status = (err as { status?: number } | null)?.status;
+        const mensagem = status === 401
+          ? `A API do Syspro da filial ${emp.razaoSocial} exigiu autenticação (HTTP 401). Configure o Token da API desta empresa em Configurações.`
+          : `Não foi possível consultar a filial ${emp.razaoSocial}. A consolidação não foi gerada para evitar totais incompletos.`;
+        throw new SalesIntegrationError(mensagem, { cause: err });
       }
     });
 

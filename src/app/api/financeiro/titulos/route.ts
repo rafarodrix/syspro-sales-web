@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const config = { baseUrl: empresa.sysproBaseUrl, useIis: empresa.sysproUseIis === true };
+    const config = { baseUrl: empresa.sysproBaseUrl, useIis: empresa.sysproUseIis === true, token: empresa.sysproToken ?? null };
     const consultar = categoria === "pagar" ? consultarTitulosPagar : consultarTitulosReceber;
 
     let brutos: unknown[];

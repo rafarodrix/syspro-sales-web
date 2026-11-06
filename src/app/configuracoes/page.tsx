@@ -25,6 +25,7 @@ export default async function ConfiguracoesPage() {
             ativa: e.ativa,
             sysproBaseUrl: e.sysproBaseUrl || "http://localhost:8080",
             sysproUseIis: e.sysproUseIis,
+            sysproToken: e.sysproToken ?? "",
             coberturaCriticaDias: e.coberturaCriticaDias,
             coberturaAtencaoDias: e.coberturaAtencaoDias,
             coberturaExcessoDias: e.coberturaExcessoDias,

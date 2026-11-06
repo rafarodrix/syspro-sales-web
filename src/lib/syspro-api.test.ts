@@ -84,6 +84,21 @@ describe("cliente da API Syspro", () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain(rota);
   });
 
+  it("envia Authorization Bearer quando a empresa tem token", async () => {
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify([vendaValida()]))));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await consultarVendas({ ...config, token: " abc123 " }, periodo, new AbortController().signal);
+    const chamadaComToken = fetchMock.mock.calls[0][1] as RequestInit;
+    expect((chamadaComToken.headers as Record<string, string>).Authorization).toBe("Bearer abc123");
+
+    fetchMock.mockClear();
+    await consultarVendas({ ...config, token: "" }, periodo, new AbortController().signal);
+    const semToken = fetchMock.mock.calls[0][1] as RequestInit;
+    expect((semToken.headers as Record<string, string>).Authorization).toBeUndefined();
+  });
+
   it("envia o código auxiliar como filtro da consulta do Kardex", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("[]"));
     vi.stubGlobal("fetch", fetchMock);

@@ -83,7 +83,9 @@ model Empresa {
   empresaCodigo        String // empresa_codigo na API do Syspro
   ativa                Boolean  @default(true)
   sysproBaseUrl        String   @default("http://localhost:8080")
-  sysproUseIis         Boolean  @default(false)
+  sysproUseIis        Boolean  @default(false)
+  /// Token Bearer exigido pelo SysproServer novo nas rotas /api/exporta
+  sysproToken         String?
   coberturaCriticaDias Int      @default(7)
   coberturaAtencaoDias Int      @default(15)
   coberturaExcessoDias Int      @default(90)

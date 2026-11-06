@@ -69,7 +69,7 @@ describe("serviço de vendas", () => {
     const vendas = await obterVendas(parametros({ signal }));
 
     expect(mocks.consultarVendas).toHaveBeenCalledWith(
-      { baseUrl: empresaA.sysproBaseUrl, useIis: true },
+      { baseUrl: empresaA.sysproBaseUrl, useIis: true, token: null },
       expect.objectContaining({ dtInicial: expect.stringMatching(/^\d{2}\/01\/2026$/), dtFinal: expect.stringMatching(/^\d{2}\/02\/2026$/) }),
       signal,
     );
