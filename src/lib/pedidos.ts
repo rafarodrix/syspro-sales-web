@@ -205,22 +205,30 @@ export function emLancamento(pedido: Pick<PedidoSyspro, "numero">): boolean {
   return !Number.isFinite(numero) || numero <= 0;
 }
 
-export type FiltroStatus = "aberto" | "fechado" | "cancelado" | "todos";
+export type FiltroStatus = "aberto" | "lancamento" | "fechado" | "cancelado" | "todos";
 
 export const FILTROS_STATUS: Array<{ valor: FiltroStatus; rotulo: string }> = [
   { valor: "aberto", rotulo: "Aberto" },
+  { valor: "lancamento", rotulo: "Em lançamento" },
   { valor: "fechado", rotulo: "Fechado" },
   { valor: "cancelado", rotulo: "Cancelado" },
   { valor: "todos", rotulo: "Todos os status" },
 ];
 
-/** Aberto = tudo que não é CANCELADO nem FECHADO. */
-export function passaFiltroStatus(pedido: Pick<PedidoSyspro, "status">, filtro: FiltroStatus): boolean {
+/**
+ * Aberto = tudo que não é CANCELADO nem FECHADO — e sem os documentos em
+ * lançamento (numero 0), que ainda não são pedido e não passam pelo fluxo.
+ */
+export function passaFiltroStatus(
+  pedido: Pick<PedidoSyspro, "status" | "numero">,
+  filtro: FiltroStatus,
+): boolean {
   const status = String(pedido.status ?? "").trim().toUpperCase();
   if (filtro === "todos") return true;
   if (filtro === "cancelado") return status === "CANCELADO";
   if (filtro === "fechado") return status === "FECHADO";
-  return status !== "CANCELADO" && status !== "FECHADO";
+  if (filtro === "lancamento") return emLancamento(pedido) && status !== "CANCELADO";
+  return status !== "CANCELADO" && status !== "FECHADO" && !emLancamento(pedido);
 }
 
 /** Legenda = STATUS2 do pedido (PENDENTE, SEPARADO, EM ENTREGA...). */

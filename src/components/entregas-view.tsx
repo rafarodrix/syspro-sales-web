@@ -260,7 +260,29 @@ export function EntregasView({
       });
   }, [linhas, busca, status, legenda, apenasEstourados, documento, atendimento]);
 
-  const resumoPeriodo = useMemo(() => resumirPedidos(linhas, { hoje }), [linhas, hoje]);
+  // Métricas seguem o escopo estrutural (documento, atendimento e status),
+  // sem busca nem filtro de tempo — igual à "base do período" de compras.
+  const linhasEscopo = useMemo(
+    () =>
+      linhas.filter(
+        (linha) =>
+          passaFiltroDocumento(linha, documento) &&
+          passaFiltroAtendimento(linha, atendimento) &&
+          passaFiltroStatus(linha, status),
+      ),
+    [linhas, documento, atendimento, status],
+  );
+  const resumoPeriodo = useMemo(() => resumirPedidos(linhasEscopo, { hoje }), [linhasEscopo, hoje]);
+  const totalLancamento = useMemo(
+    () =>
+      linhas.filter(
+        (linha) =>
+          passaFiltroDocumento(linha, documento) &&
+          passaFiltroAtendimento(linha, atendimento) &&
+          passaFiltroStatus(linha, "lancamento"),
+      ).length,
+    [linhas, documento, atendimento],
+  );
 
   const filtrosAtivos =
     (busca.trim() ? 1 : 0) +
@@ -407,9 +429,21 @@ export function EntregasView({
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1.5">
-              <CardTitle>
-                {status === "aberto" ? "Pedidos em aberto" : "Pedidos do período"}
-              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle>
+                  {status === "aberto" ? "Pedidos em aberto" : "Pedidos do período"}
+                </CardTitle>
+                {totalLancamento > 0 && status !== "lancamento" ? (
+                  <button
+                    type="button"
+                    onClick={() => setStatus("lancamento")}
+                    title="Documentos ainda sem número: não são pedido e ficam fora do fluxo até serem efetivados"
+                    className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 transition-colors hover:bg-amber-500/25 dark:text-amber-500"
+                  >
+                    {totalLancamento} em lançamento
+                  </button>
+                ) : null}
+              </div>
               <p className="text-[11px] text-muted-foreground">
                 A. sep. / A. saída / A. fech. = tempo gasto naquela etapa (do marco anterior até ela).
               </p>
