@@ -1,7 +1,19 @@
 import { z } from "zod";
 
-export const UserRoleSchema = z.enum(["admin", "gerente", "supervisor", "vendas"]);
+export const UserRoleSchema = z.enum([
+  "admin",
+  "gerente",
+  "supervisor",
+  "vendas",
+  "analise_compras",
+  "analise_entregas",
+]);
 export type UserRole = z.infer<typeof UserRoleSchema>;
+
+const UserRolesSchema = z.array(UserRoleSchema)
+  .min(1, "Selecione ao menos um perfil de acesso.")
+  .max(6, "Quantidade de perfis inválida.")
+  .refine((roles) => new Set(roles).size === roles.length, "Não repita perfis de acesso.");
 
 export function sanitizarSysproUrl(rawUrl: string): string {
   const urlLimpa = rawUrl.trim();
@@ -43,8 +55,12 @@ export const usuarioCreateSchema = z.object({
   name: z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres."),
   email: z.string().trim().toLowerCase().email("E-mail invalido."),
   password: z.string().min(12, "Senha deve ter no minimo 12 caracteres."),
-  role: UserRoleSchema.default("vendas"),
-});
+  role: UserRoleSchema.optional(),
+  roles: UserRolesSchema.optional(),
+}).transform(({ role, roles, ...usuario }) => ({
+  ...usuario,
+  roles: roles ?? (role ? [role] : ["vendas"] satisfies UserRole[]),
+}));
 
 export const usuarioUpdateSchema = z.object({
   id: z.string().min(1, "ID da empresa e obrigatorio."),
@@ -52,7 +68,11 @@ export const usuarioUpdateSchema = z.object({
   email: z.string().trim().toLowerCase().email("E-mail invalido.").optional(),
   password: z.string().min(12, "Senha deve ter no minimo 12 caracteres.").optional().or(z.literal("")),
   role: UserRoleSchema.optional(),
-});
+  roles: UserRolesSchema.optional(),
+}).transform(({ role, roles, ...usuario }) => ({
+  ...usuario,
+  roles: roles ?? (role ? [role] : undefined),
+}));
 
 export const usuarioLiberarSchema = z.object({
   userId: z.string().min(1, "userId e obrigatorio."),

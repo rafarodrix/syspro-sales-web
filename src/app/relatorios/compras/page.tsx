@@ -7,7 +7,7 @@ export default async function RelatorioComprasPage({
 }: {
   searchParams: Promise<{ empresa?: string }>;
 }) {
-  const { empresas } = await requireAuth("estoque:visualizar");
+  const { empresas } = await requireAuth("compras:visualizar");
   const { empresa } = await searchParams;
   const empresaSelecionada =
     empresa && empresas.some((item) => item.id === empresa)

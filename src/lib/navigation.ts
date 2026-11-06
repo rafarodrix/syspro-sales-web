@@ -57,8 +57,8 @@ export const relatoriosVendas: ItemNavegacao[] = [
 
 export const itensRelatorios: ItemNavegacao[] = [
   ...relatoriosVendas,
-  { id: "compras", label: "Análise de Compras", titulo: "Análise de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "estoque:visualizar" },
-  { id: "entregas", label: "Análise de Entrega", titulo: "Análise de Entrega", categoria: "Relatórios", href: "/relatorios/entregas", icone: Truck, permissao: "vendas:visualizar" },
+  { id: "compras", label: "Análise de Compras", titulo: "Análise de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "compras:visualizar" },
+  { id: "entregas", label: "Análise de Entrega", titulo: "Análise de Entrega", categoria: "Relatórios", href: "/relatorios/entregas", icone: Truck, permissao: "entregas:visualizar" },
 ];
 
 export const itensAdministracao: ItemNavegacao[] = [

@@ -4,6 +4,7 @@ import { aplicarLimite, autenticarApi, validarJson } from "@/lib/api-route";
 import { prisma } from "@/lib/database";
 import { hashPassword } from "better-auth/crypto";
 import { usuarioCreateSchema, usuarioUpdateSchema } from "@/lib/validations";
+import { serializarPerfis } from "@/lib/role-permissions";
 
 export async function POST(request: NextRequest) {
   const autenticacao = await autenticarApi("usuarios:gerenciar", "Acesso restrito ao Administrador.");
@@ -15,7 +16,8 @@ export async function POST(request: NextRequest) {
 
   const json = await validarJson(request, usuarioCreateSchema, "Dados de usuário inválidos.");
   if (!json.ok) return json.response;
-  const { name, email, password, role } = json.value;
+  const { name, email, password, roles } = json.value;
+  const role = serializarPerfis(roles);
 
   const existente = await prisma.user.findUnique({ where: { email } });
   if (existente) {
@@ -49,7 +51,7 @@ export async function PATCH(request: NextRequest) {
 
   const json = await validarJson(request, usuarioUpdateSchema, "Dados inválidos para atualização.");
   if (!json.ok) return json.response;
-  const { id, role, name, email, password } = json.value;
+  const { id, roles, name, email, password } = json.value;
 
   const usuarioExistente = await prisma.user.findUnique({ where: { id } });
   if (!usuarioExistente) {
@@ -58,8 +60,8 @@ export async function PATCH(request: NextRequest) {
 
   const dataToUpdate: { role?: string; name?: string; email?: string } = {};
 
-  if (role) {
-    dataToUpdate.role = role;
+  if (roles) {
+    dataToUpdate.role = serializarPerfis(roles);
   }
 
   if (name) {

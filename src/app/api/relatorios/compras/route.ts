@@ -9,8 +9,8 @@ import { vendasQuerySchema } from "@/lib/validations";
 export async function POST(request: NextRequest) {
   try {
     const autenticacao = await autenticarApi(
-      "estoque:visualizar",
-      "Acesso à análise de compras restrito a Administrador e Gerência.",
+      "compras:visualizar",
+      "Perfil sem permissão para consultar a análise de compras.",
     );
     if (!autenticacao.ok) return autenticacao.response;
     const session = autenticacao.value;

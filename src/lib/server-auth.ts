@@ -2,17 +2,16 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/database";
-import { temAcessoTodasEmpresas, temPermissao, type Permissao } from "@/lib/role-permissions";
-import type { UserRole } from "@/lib/validations";
+import { rotaInicialPermitida, temAcessoTodasEmpresas, temPermissao, type Permissao } from "@/lib/role-permissions";
 
 export async function requireAuth(permissao?: Permissao) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
 
-  const userRole = (session.user.role ?? "vendas") as UserRole;
+  const userRole = session.user.role ?? "vendas";
 
   if (permissao && !temPermissao(userRole, permissao)) {
-    redirect("/dashboard");
+    redirect(rotaInicialPermitida(userRole));
   }
 
   const isAdmin = temAcessoTodasEmpresas(userRole);

@@ -4,7 +4,6 @@ import { requireAuth } from "@/lib/server-auth";
 import { calcularPeriodoAnterior, dataParaInput } from "@/lib/vendas";
 import { obterVendas, SalesIntegrationError, type EmpresaInfo } from "@/lib/sales-service";
 import type { VendaComEmpresa } from "@/lib/syspro-api";
-import type { UserRole } from "@/lib/validations";
 import type { Permissao } from "@/lib/role-permissions";
 import {
   resolverComparacao,
@@ -31,7 +30,7 @@ export interface ServerPageContextOptions {
 export interface ServerPageContextResult {
   session: unknown;
   userId: string;
-  userRole: UserRole;
+  userRole: string;
   isAdmin: boolean;
   empresas: EmpresaInfo[];
   empresaSelecionada: string;

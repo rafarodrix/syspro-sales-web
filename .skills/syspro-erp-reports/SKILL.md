@@ -48,7 +48,7 @@ prisma7.config.ts config do Prisma 7 (carrega .env via dotenv)
 ## Regras de arquitetura (validado nesta stack)
 - **O navegador NUNCA chama a API do Syspro** — só o backend (`app/api/vendas`). O backend filtra por `empresa_codigo`; o usuário vê só o que tem liberado.
 - **Multi-empresa:** uma base Syspro pode ter N empresas (`empresa_codigo` 1, 2...). Cada registro retornado traz `empresa_codigo`. A separação por usuário é via tabela `UserEmpresa` (CNPJ liberado por usuário); admin vê todas.
-- Perfis canônicos: `vendas`, `supervisor`, `gerente` e `admin`. Vendas, Supervisor e Gerente veem só CNPJs em `UserEmpresa`; Admin vê todas as empresas ativas.
+- Perfis canônicos: `vendas`, `analise_entregas`, `supervisor`, `analise_compras`, `gerente` e `admin`. Um usuário pode combinar perfis (IDs separados por vírgula no campo legado `User.role`); `admin` é exclusivo. Perfis não administrativos veem só CNPJs em `UserEmpresa`; Admin vê todas as empresas ativas.
 
 ## Comandos
 ```bash

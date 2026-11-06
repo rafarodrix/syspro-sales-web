@@ -45,35 +45,10 @@ import {
   type FiltroStatus,
   type LinhaPedido,
   type PedidoSyspro,
-  type ResumoEtapa,
-  type ResumoPedidos,
   type SituacaoPedido,
   emLancamento,
   tipoDocumento,
 } from "@/lib/pedidos";
-
-const RESUMO_ETAPA_VAZIO: ResumoEtapa = { media: null, dentro: 0, fora: 0, percentualNoPrazo: null, emAndamento: 0 };
-
-const RESUMO_VAZIO: ResumoPedidos = {
-  total: 0,
-  entregues: 0,
-  pendentes: 0,
-  emRota: 0,
-  cancelados: 0,
-  atrasados: 0,
-  maiorEsperaMinutos: null,
-  desistenciasComSaida: 0,
-  valorPerdido: 0,
-  entreguesSemSaida: 0,
-  entregasEmAberto: 0,
-  valorEmAberto: 0,
-  taxaDesistencia: null,
-  separacao: RESUMO_ETAPA_VAZIO,
-  saida: RESUMO_ETAPA_VAZIO,
-  fechamento: RESUMO_ETAPA_VAZIO,
-  totalExpedicao: RESUMO_ETAPA_VAZIO,
-  porEntregador: [],
-};
 
 const COLUNAS_EXPORTACAO_PEDIDOS = [
   "Data venda",
@@ -97,8 +72,15 @@ function horaCurta(hora: string | null): string {
 
 /** 27/10/2026 → 27/10 (o ano fica no tooltip e na exportação). */
 function dataCurta(data: string): string {
-  const [ano, mes, dia] = data.split("-");
+  const [, mes, dia] = data.split("-");
   return dia && mes ? `${dia}/${mes}` : (data ?? "—");
+}
+
+function dataLocalIso(data = new Date()): string {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
 }
 
 /** Cor do badge seguindo a legenda do Syspro. */
@@ -108,14 +90,6 @@ function badgeLegenda(status2: string) {
   if (legenda === "DESISTENCIA") return "destructive" as const;
   if (legenda === "EM ENTREGA" || legenda === "SEPARADO") return "outline" as const;
   return "secondary" as const;
-}
-
-function badgeSituacaoPedido(situacao: SituacaoPedido) {
-  if (situacao === "entregue") return "default" as const;
-  if (situacao === "pendente") return "secondary" as const;
-  if (situacao === "em-rota") return "outline" as const;
-  if (situacao === "cancelado") return "destructive" as const;
-  return "outline" as const;
 }
 
 /** Hora da etapa com o tempo decorrido logo abaixo, colorido pelo limite. */
@@ -137,26 +111,6 @@ function CelulaHoraEtapa({ hora, etapa }: { hora: string | null; etapa: Etapa })
   );
 }
 
-/** Verde dentro do limite, vermelho acima, âmbar quando a etapa ainda corre. */
-function CelulaEtapa({ etapa }: { etapa: Etapa }) {
-  if (etapa.minutos === null) return <span className="text-muted-foreground">—</span>;
-  if (etapa.emAndamento) {
-    return (
-      <span className="font-semibold text-amber-600 dark:text-amber-500" title="Etapa em andamento">
-        {formatarDuracaoMinutos(etapa.minutos)}…
-      </span>
-    );
-  }
-  return (
-    <span
-      className={etapa.estourou ? "font-semibold text-destructive" : "text-emerald-600 dark:text-emerald-500"}
-      title={`Limite de ${etapa.limite} min`}
-    >
-      {formatarDuracaoMinutos(etapa.minutos)}
-    </span>
-  );
-}
-
 export function EntregasView({
   empresaId,
   empresaNome,
@@ -167,7 +121,6 @@ export function EntregasView({
   const [periodo, setPeriodo] = useState<Periodo>(() => periodoUltimos7Dias());
   const [periodoConsultado, setPeriodoConsultado] = useState<Periodo | null>(null);
   const [linhas, setLinhas] = useState<LinhaPedido[]>([]);
-  const [resumo, setResumo] = useState<ResumoPedidos>(RESUMO_VAZIO);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [rotaNaoLiberada, setRotaNaoLiberada] = useState(false);
@@ -179,7 +132,7 @@ export function EntregasView({
   // Padrão: só pedidos de venda (orçamento não é entrega).
   const [documento, setDocumento] = useState<FiltroDocumento>("pedido");
   const [atendimento, setAtendimento] = useState<FiltroAtendimento>("entrega");
-  const [hoje, setHoje] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [hoje, setHoje] = useState<string>(() => dataLocalIso());
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
     if (!empresaId) {
@@ -201,7 +154,6 @@ export function EntregasView({
       });
       const dados = (await resposta.json().catch(() => ({}))) as {
         pedidos?: PedidoSyspro[];
-        resumo?: ResumoPedidos;
         error?: string;
         rotaNaoLiberada?: boolean;
       };
@@ -212,19 +164,17 @@ export function EntregasView({
       const agora = new Date();
       const montadas = montarLinhasPedido(dados.pedidos ?? [], {
         agoraMinutos: agora.getHours() * 60 + agora.getMinutes(),
-        hoje: agora.toISOString().slice(0, 10),
+        hoje: dataLocalIso(agora),
       });
       setLinhas(montadas);
-      setResumo(dados.resumo ?? resumirPedidos(montadas));
       setPeriodoConsultado({ ...proximoPeriodo });
-      setHoje(agora.toISOString().slice(0, 10));
+      setHoje(dataLocalIso(agora));
       salvarPeriodoCookie(proximoPeriodo);
       toast.success(`${montadas.length} pedido(s) no período.`);
     } catch (causa) {
       const mensagem = causa instanceof Error ? causa.message : "Erro ao consultar os pedidos.";
       setErro(mensagem);
       setLinhas([]);
-      setResumo(RESUMO_VAZIO);
       toast.error(mensagem);
     } finally {
       setLoading(false);
@@ -270,17 +220,16 @@ export function EntregasView({
       });
   }, [linhas, busca, status, legenda, apenasEstourados, documento, atendimento]);
 
-  // Métricas seguem o escopo estrutural (documento, atendimento e status),
-  // sem busca nem filtro de tempo — igual à "base do período" de compras.
+  // Métricas do período não mudam com filtros operacionais da tabela.
+  // Documento e atendimento definem o universo; status, busca e atrasos só refinam a lista.
   const linhasEscopo = useMemo(
     () =>
       linhas.filter(
         (linha) =>
           passaFiltroDocumento(linha, documento) &&
-          passaFiltroAtendimento(linha, atendimento) &&
-          passaFiltroStatus(linha, status),
+          passaFiltroAtendimento(linha, atendimento),
       ),
-    [linhas, documento, atendimento, status],
+    [linhas, documento, atendimento],
   );
   const resumoPeriodo = useMemo(() => resumirPedidos(linhasEscopo, { hoje }), [linhasEscopo, hoje]);
   const totalLancamento = useMemo(
@@ -300,7 +249,7 @@ export function EntregasView({
     (legenda !== "todas" ? 1 : 0) +
     (apenasEstourados ? 1 : 0) +
     (documento !== "pedido" ? 1 : 0) +
-    (atendimento !== "todos" ? 1 : 0);
+    (atendimento !== "entrega" ? 1 : 0);
 
   function exportarCsv() {
     if (linhasFiltradas.length === 0) {
@@ -324,7 +273,7 @@ export function EntregasView({
     ]);
     const periodoTexto = periodoConsultado
       ? `${periodoConsultado.inicial}_a_${periodoConsultado.final}`
-      : new Date().toISOString().slice(0, 10);
+      : dataLocalIso();
     exportarParaCSV(
       `entrega-${empresaNome.replace(/[^\w-]+/g, "-").toLowerCase()}-${periodoTexto}`,
       [...COLUNAS_EXPORTACAO_PEDIDOS],

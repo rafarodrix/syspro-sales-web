@@ -43,7 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { obterPerfilAcesso, PERFIS_ORDENADOS, type PerfilAcesso } from "@/lib/role-permissions";
+import { obterPerfisAcesso, PERFIS_ORDENADOS, type PerfilAcesso } from "@/lib/role-permissions";
 
 interface UsuarioRow {
   id: string;
@@ -65,6 +65,61 @@ interface Props {
   empresas: EmpresaRow[];
 }
 
+function SeletorPerfis({
+  value,
+  onChange,
+  idPrefix,
+}: {
+  value: PerfilAcesso[];
+  onChange: (perfis: PerfilAcesso[]) => void;
+  idPrefix: string;
+}) {
+  function alternar(perfil: PerfilAcesso) {
+    if (perfil === "admin") {
+      onChange(["admin"]);
+      return;
+    }
+    const semAdmin = value.filter((item) => item !== "admin");
+    const proximo = semAdmin.includes(perfil)
+      ? semAdmin.filter((item) => item !== perfil)
+      : [...semAdmin, perfil];
+    if (proximo.length > 0) onChange(proximo);
+  }
+
+  return (
+    <fieldset className="grid gap-2 sm:grid-cols-2">
+      <legend className="mb-1 text-xs font-semibold">Perfis de acesso</legend>
+      {PERFIS_ORDENADOS.map((perfil) => {
+        const selecionado = value.includes(perfil.id);
+        return (
+          <label
+            key={perfil.id}
+            htmlFor={`${idPrefix}-${perfil.id}`}
+            className={`flex min-h-11 cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 transition-colors ${
+              selecionado ? "border-primary bg-primary/5" : "border-border bg-background hover:bg-muted/40"
+            }`}
+          >
+            <input
+              id={`${idPrefix}-${perfil.id}`}
+              type="checkbox"
+              checked={selecionado}
+              onChange={() => alternar(perfil.id)}
+              className="mt-0.5 size-4 accent-primary"
+            />
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold">{perfil.nome}</span>
+              <span className="block text-[11px] leading-snug text-muted-foreground">{perfil.descricao}</span>
+            </span>
+          </label>
+        );
+      })}
+      <p className="text-[11px] text-muted-foreground sm:col-span-2">
+        É possível combinar perfis. Administrador já inclui todos os acessos e fica exclusivo.
+      </p>
+    </fieldset>
+  );
+}
+
 export function UsuariosClient({ usuarios, empresas }: Props) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
@@ -73,14 +128,14 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<PerfilAcesso>("vendas");
+  const [roles, setRoles] = useState<PerfilAcesso[]>(["vendas"]);
   const [criando, setCriando] = useState(false);
 
   // Edição
   const [usuarioParaEditar, setUsuarioParaEditar] = useState<UsuarioRow | null>(null);
   const [editNome, setEditNome] = useState("");
   const [editEmail, setEditEmail] = useState("");
-  const [editRole, setEditRole] = useState<PerfilAcesso>("vendas");
+  const [editRoles, setEditRoles] = useState<PerfilAcesso[]>(["vendas"]);
   const [editPassword, setEditPassword] = useState("");
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
@@ -88,15 +143,15 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<UsuarioRow | null>(null);
 
   function abrirEdicao(u: UsuarioRow) {
-    const perfil = obterPerfilAcesso(u.role);
-    if (!perfil) {
+    const perfis = obterPerfisAcesso(u.role);
+    if (perfis.length === 0) {
       toast.error("Este usuário possui um perfil inválido. Execute a normalização de perfis.");
       return;
     }
     setUsuarioParaEditar(u);
     setEditNome(u.name);
     setEditEmail(u.email);
-    setEditRole(perfil.id);
+    setEditRoles(perfis);
     setEditPassword("");
   }
 
@@ -118,7 +173,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
         id: usuarioParaEditar.id,
         name: editNome.trim(),
         email: editEmail.trim(),
-        role: editRole,
+        roles: editRoles,
         password: editPassword.trim() || undefined,
       }),
     });
@@ -150,7 +205,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
         name: name.trim(),
         email: email.trim(),
         password: password.trim(),
-        role,
+        roles,
       }),
     });
     setCriando(false);
@@ -163,7 +218,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
     setName("");
     setEmail("");
     setPassword("");
-    setRole("vendas");
+    setRoles(["vendas"]);
     router.refresh();
   }
 
@@ -219,7 +274,10 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
       (u) =>
         u.name.toLowerCase().includes(termo) ||
         u.email.toLowerCase().includes(termo) ||
-        u.role.toLowerCase().includes(termo) ||
+        obterPerfisAcesso(u.role).some((id) => {
+          const perfil = PERFIS_ORDENADOS.find((item) => item.id === id);
+          return id.includes(termo) || perfil?.nome.toLowerCase().includes(termo);
+        }) ||
         u.empresas.some((e) =>
           e.razaoSocial.toLowerCase().includes(termo) || e.cnpj.includes(termo)
         ),
@@ -229,14 +287,14 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
   const totaisPorPerfil = useMemo(() => Object.fromEntries(
     PERFIS_ORDENADOS.map((perfil) => [
       perfil.id,
-      usuarios.filter((u) => u.role === perfil.id).length,
+      usuarios.filter((u) => obterPerfisAcesso(u.role).includes(perfil.id)).length,
     ]),
   ) as Record<PerfilAcesso, number>, [usuarios]);
 
   return (
     <div className="space-y-6">
       {/* Resumo de Usuários e Permissões */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
         <Card className="bg-card/80 p-3.5 shadow-2xs">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total de Usuários</span>
           <div className="mt-1 flex items-baseline gap-2">
@@ -264,7 +322,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
             <CardTitle className="text-lg font-bold">Cadastrar Novo Usuário</CardTitle>
           </div>
           <CardDescription className="text-xs">
-            Cada perfil recebe apenas as permissões necessárias à sua função.
+            Combine um ou mais perfis para liberar somente as áreas necessárias.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -307,18 +365,8 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                 className="text-xs"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">Perfil de Acesso</Label>
-              <Select value={role} onValueChange={(v) => setRole(obterPerfilAcesso(v)?.id ?? "vendas")}>
-                <SelectTrigger className="text-xs font-medium">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PERFIS_ORDENADOS.map((perfil) => (
-                    <SelectItem key={perfil.id} value={perfil.id}>{perfil.nome} — {perfil.descricao}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="sm:col-span-2 lg:col-span-4">
+              <SeletorPerfis value={roles} onChange={setRoles} idPrefix="novo-perfil" />
             </div>
           </div>
           <Button
@@ -389,10 +437,8 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                   </tr>
                 ) : (
                   usuariosFiltrados.map((u) => {
-                    const perfil = obterPerfilAcesso(u.role);
-                    const isAdmin = perfil?.id === "admin";
-                    const isGerente = perfil?.id === "gerente";
-                    const isSupervisor = perfil?.id === "supervisor";
+                    const perfis = obterPerfisAcesso(u.role);
+                    const isAdmin = perfis.includes("admin");
                     const empresasDisponiveis = empresas.filter(
                       (e) => !u.empresas.some((ue) => ue.empresaId === e.id),
                     );
@@ -409,29 +455,23 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
                         </td>
 
                         <td className="p-3">
-                          <Badge
-                            variant={isAdmin ? "default" : isGerente || isSupervisor ? "secondary" : "outline"}
-                            className={`gap-1 font-bold text-[11px] ${
-                              isAdmin
-                                ? "bg-primary text-primary-foreground"
-                                : isGerente
-                                  ? "bg-blue-500/15 text-blue-700 dark:text-blue-300"
-                                  : isSupervisor
-                                    ? "bg-violet-500/15 text-violet-700 dark:text-violet-300"
-                                  : "text-foreground"
-                            }`}
-                          >
-                            {isAdmin ? (
-                              <Crown className="size-3" />
-                            ) : isGerente ? (
-                              <Briefcase className="size-3" />
-                            ) : isSupervisor ? (
-                              <Briefcase className="size-3" />
-                            ) : (
-                              <UserCheck className="size-3" />
-                            )}
-                            {perfil?.nome ?? "Perfil inválido"}
-                          </Badge>
+                          <div className="flex flex-wrap gap-1.5">
+                            {perfis.length > 0 ? perfis.map((perfilId) => {
+                              const perfil = PERFIS_ORDENADOS.find((item) => item.id === perfilId);
+                              return (
+                                <Badge
+                                  key={perfilId}
+                                  variant={perfilId === "admin" ? "default" : "outline"}
+                                  className="gap-1 text-[11px] font-bold"
+                                >
+                                  {perfilId === "admin" ? <Crown className="size-3" /> :
+                                    perfilId === "gerente" || perfilId === "supervisor" ? <Briefcase className="size-3" /> :
+                                      <UserCheck className="size-3" />}
+                                  {perfil?.nome ?? perfilId}
+                                </Badge>
+                              );
+                            }) : <Badge variant="destructive">Perfil inválido</Badge>}
+                          </div>
                         </td>
 
                         <td className="p-3">
@@ -566,17 +606,7 @@ export function UsuariosClient({ usuarios, empresas }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">Perfil de Acesso</Label>
-              <Select value={editRole} onValueChange={(v) => setEditRole(obterPerfilAcesso(v)?.id ?? "vendas")}>
-                <SelectTrigger className="text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PERFIS_ORDENADOS.map((perfil) => (
-                    <SelectItem key={perfil.id} value={perfil.id}>{perfil.nome} — {perfil.descricao}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SeletorPerfis value={editRoles} onChange={setEditRoles} idPrefix="editar-perfil" />
             </div>
             <div className="space-y-1 border-t pt-2">
               <Label htmlFor="editPassword" className="text-xs font-semibold flex items-center gap-1">

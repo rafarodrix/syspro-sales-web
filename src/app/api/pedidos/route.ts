@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aplicarLimite, autenticarApi, buscarEmpresaAutorizada, validarJson } from "@/lib/api-route";
-import { montarLinhasPedido, resumirPedidos } from "@/lib/pedidos";
 import { obterPedidos } from "@/lib/pedidos-service";
 import { SysproApiError } from "@/lib/syspro-api";
 import { vendasQuerySchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
-  const autenticacao = await autenticarApi("vendas:visualizar", "Acesso aos pedidos restrito a usuários com acesso a vendas.");
+  const autenticacao = await autenticarApi("entregas:visualizar", "Perfil sem permissão para consultar a análise de entregas.");
   if (!autenticacao.ok) return autenticacao.response;
   const session = autenticacao.value;
 
@@ -40,9 +39,8 @@ export async function POST(request: NextRequest) {
       final: dtFinal,
       signal: request.signal,
     });
-    const linhas = montarLinhasPedido(pedidos);
     return NextResponse.json(
-      { pedidos: linhas, resumo: resumirPedidos(linhas) },
+      { pedidos },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
