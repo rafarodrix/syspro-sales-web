@@ -172,9 +172,9 @@ describe("análise de entrega", () => {
   });
 
   it("filtra por status (aberto = nem cancelado nem fechado) e por legenda", () => {
-    const aberto = { status: "ABERTO", numero: "630517" };
-    const fechado = { status: "FECHADO", numero: "630518" };
-    const cancelado = { status: "CANCELADO", numero: "630519" };
+    const aberto = { status: "ABERTO", status2: "PENDENTE", numero: "630517" };
+    const fechado = { status: "FECHADO", status2: "ENTREGUE", numero: "630518" };
+    const cancelado = { status: "CANCELADO", status2: "DESISTENCIA", numero: "630519" };
     expect(passaFiltroStatus(aberto, "aberto")).toBe(true);
     // numero 0 não é pedido: fica de fora do "aberto" e ganha filtro próprio
     const lancando = { status: "ABERTO", numero: "0" };
