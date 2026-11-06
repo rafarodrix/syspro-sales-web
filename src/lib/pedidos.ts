@@ -183,8 +183,11 @@ export type TipoDocumento = "pedido" | "orcamento" | "outro";
 export function tipoDocumento(pedido: Pick<PedidoSyspro, "tipoPedido" | "origem">): TipoDocumento {
   const tipo = String(pedido.tipoPedido ?? "").trim().toUpperCase();
   const origem = String(pedido.origem ?? "").trim().toUpperCase();
-  if (tipo === "DAV-OR" || origem === "ORCAMENTO") return "orcamento";
+  // TP_PEDIDO manda: um pedido pode nascer de orçamento (ORIGEM=ORCAMENTO) e
+  // continuar sendo pedido de venda.
+  if (tipo === "DAV-OR") return "orcamento";
   if (tipo === "PV") return "pedido";
+  if (origem === "ORCAMENTO") return "orcamento";
   return "outro";
 }
 

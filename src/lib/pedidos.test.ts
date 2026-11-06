@@ -146,6 +146,8 @@ describe("análise de entrega", () => {
     expect(tipoDocumento({ tipoPedido: "PV", origem: "BALCAO" })).toBe("pedido");
     expect(tipoDocumento({ tipoPedido: "DAV-OR", origem: "ORCAMENTO" })).toBe("orcamento");
     expect(tipoDocumento({ tipoPedido: "DAV-OR", origem: "BALCAO" })).toBe("orcamento");
+    // pedido que veio de orçamento continua sendo pedido
+    expect(tipoDocumento({ tipoPedido: "PV", origem: "ORCAMENTO" })).toBe("pedido");
     expect(tipoDocumento({ tipoPedido: "", origem: "ORCAMENTO" })).toBe("orcamento");
     expect(tipoDocumento({ tipoPedido: "XX", origem: "BALCAO" })).toBe("outro");
 
