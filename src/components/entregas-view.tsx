@@ -317,11 +317,7 @@ export function EntregasView({
 
       {periodoConsultado && !erro ? (
         <section className="space-y-2">
-          <SecaoTitulo
-            eyebrow="Ação"
-            titulo="Pedidos do período"
-            descricao="A tela abre sem os entregues: o que está na fila é o que precisa de ação."
-          />
+          <SecaoTitulo eyebrow="Ação" titulo="O que precisa de decisão" />
           <MetricsStrip
             itens={[
               {
@@ -335,28 +331,16 @@ export function EntregasView({
                 rotulo: "Atrasados",
                 valor: formatarNumero(resumoPeriodo.atrasados, 0),
                 detalhe: "fora do limite ou parados",
-                attention: resumoFiltrado.atrasados > 0,
+                attention: resumoPeriodo.atrasados > 0,
                 definicao: "Pedidos em aberto que estouraram o limite em alguma etapa ou que continuam parados sendo de um dia anterior.",
               },
               {
-                rotulo: "Maior ciclo",
-                valor: formatarDuracaoMinutos(resumoPeriodo.maiorEsperaMinutos),
-                detalhe: "da venda até a saída",
-                definicao: "Maior ciclo (venda → saída) entre os pedidos do recorte. Só considera pedidos com saída registrada.",
+                rotulo: "Entregas em aberto",
+                valor: formatarMoeda(resumoPeriodo.valorEmAberto),
+                detalhe: `${formatarNumero(resumoPeriodo.entregasEmAberto, 0)} pedidos`,
+                attention: resumoPeriodo.entregasEmAberto > 0,
+                definicao: "Valor dos pedidos de entrega que ainda não foram entregues nem cancelados.",
               },
-              { rotulo: "Em entrega", valor: formatarNumero(resumoPeriodo.emRota, 0) },
-              { rotulo: "Entregues", valor: formatarNumero(resumoPeriodo.entregues, 0), detalhe: "no período" },
-              { rotulo: "Cancelados", valor: formatarNumero(resumoPeriodo.cancelados, 0), detalhe: "no período" },
-            ]}
-          />
-        </section>
-      ) : null}
-
-      {periodoConsultado && !erro ? (
-        <section className="space-y-2">
-          <SecaoTitulo eyebrow="Risco" titulo="Falhas de processo" />
-          <MetricsStrip
-            itens={[
               {
                 rotulo: "Viagens perdidas",
                 valor: formatarNumero(resumoPeriodo.desistenciasComSaida, 0),
@@ -365,25 +349,11 @@ export function EntregasView({
                 definicao: "Pedidos que saíram para entrega e voltaram como desistência: custo de entrega sem receita.",
               },
               {
-                rotulo: "Taxa de desistência",
-                valor: formatarPercentual(resumoPeriodo.taxaDesistencia, 1),
-                detalhe: "sobre o que saiu",
-                attention: (resumoPeriodo.taxaDesistencia ?? 0) > 5,
-                definicao: "Fórmula: desistências com saída ÷ pedidos que saíram para entrega.",
-              },
-              {
-                rotulo: "Entregue sem saída",
+                rotulo: "Sem saída registrada",
                 valor: formatarNumero(resumoPeriodo.entreguesSemSaida, 0),
-                detalhe: "registro incompleto",
+                detalhe: "processo não registrado",
                 attention: resumoPeriodo.entreguesSemSaida > 0,
                 definicao: "Pedido marcado como entrega e entregue, mas sem horário de saída — o processo não foi registrado no sistema.",
-              },
-              {
-                rotulo: "Entregas em aberto",
-                valor: formatarNumero(resumoPeriodo.entregasEmAberto, 0),
-                detalhe: formatarMoeda(resumoPeriodo.valorEmAberto),
-                attention: resumoPeriodo.entregasEmAberto > 0,
-                definicao: "Pedidos de entrega que ainda não foram entregues nem cancelados, com o valor em jogo.",
               },
             ]}
           />
@@ -392,81 +362,46 @@ export function EntregasView({
 
       {periodoConsultado && !erro ? (
         <section className="space-y-2">
-          <SecaoTitulo eyebrow="Tempo por etapa" titulo="Onde o processo trava" />
+          <SecaoTitulo eyebrow="Contexto" titulo="Desempenho do período" />
           <MetricsStrip
             itens={[
               {
                 rotulo: "Separação",
-                valor: formatarDuracaoMinutos(resumoFiltrado.separacao.media),
-                detalhe: resumoFiltrado.separacao.percentualNoPrazo === null
+                valor: formatarDuracaoMinutos(resumoPeriodo.separacao.media),
+                detalhe: resumoPeriodo.separacao.percentualNoPrazo === null
                   ? "sem dado"
-                  : `${formatarPercentual(resumoFiltrado.separacao.percentualNoPrazo, 0)} no prazo`,
-                attention: resumoFiltrado.separacao.fora > 0,
-                definicao: "Fórmula: separado (H) − venda (D). Limite 15 min. O Syspro não registra o início da separação, então esta etapa cobre separação + conferência.",
+                  : `${formatarPercentual(resumoPeriodo.separacao.percentualNoPrazo, 0)} no prazo`,
+                attention: resumoPeriodo.separacao.fora > 0,
+                definicao: "Fórmula: separado (H) − venda (D). Limite 15 min. Cobre separação + conferência, porque o Syspro não registra o início da separação.",
               },
               {
                 rotulo: "Saída",
-                valor: formatarDuracaoMinutos(resumoFiltrado.saida.media),
-                detalhe: resumoFiltrado.saida.percentualNoPrazo === null
+                valor: formatarDuracaoMinutos(resumoPeriodo.saida.media),
+                detalhe: resumoPeriodo.saida.percentualNoPrazo === null
                   ? "sem dado"
-                  : `${formatarPercentual(resumoFiltrado.saida.percentualNoPrazo, 0)} no prazo`,
-                attention: resumoFiltrado.saida.fora > 0,
+                  : `${formatarPercentual(resumoPeriodo.saida.percentualNoPrazo, 0)} no prazo`,
+                attention: resumoPeriodo.saida.fora > 0,
                 definicao: "Fórmula: saída para entrega (J) − separado (H). Limite 30 min.",
               },
               {
                 rotulo: "Fechamento",
-                valor: formatarDuracaoMinutos(resumoFiltrado.fechamento.media),
-                detalhe: resumoFiltrado.fechamento.percentualNoPrazo === null
+                valor: formatarDuracaoMinutos(resumoPeriodo.fechamento.media),
+                detalhe: resumoPeriodo.fechamento.percentualNoPrazo === null
                   ? "sem dado"
-                  : `${formatarPercentual(resumoFiltrado.fechamento.percentualNoPrazo, 0)} no prazo`,
-                attention: resumoFiltrado.fechamento.fora > 0,
+                  : `${formatarPercentual(resumoPeriodo.fechamento.percentualNoPrazo, 0)} no prazo`,
+                attention: resumoPeriodo.fechamento.fora > 0,
                 definicao: "Fórmula: fechamento (L) − saída (J). Limite provisório de 50 min.",
               },
               {
                 rotulo: "Ciclo total",
-                valor: formatarDuracaoMinutos(resumoFiltrado.totalExpedicao.media),
+                valor: formatarDuracaoMinutos(resumoPeriodo.totalExpedicao.media),
                 detalhe: "venda → saída",
                 definicao: "Fórmula: saída (J) − venda (D). Sem limite: mede o tempo total até a mercadoria sair.",
               },
-              {
-                rotulo: "Em andamento",
-                valor: formatarNumero(
-                  resumoFiltrado.separacao.emAndamento +
-                    resumoFiltrado.saida.emAndamento +
-                    resumoFiltrado.fechamento.emAndamento,
-                  0,
-                ),
-                detalhe: "etapas correndo agora",
-                attention:
-                  resumoFiltrado.separacao.emAndamento +
-                    resumoFiltrado.saida.emAndamento +
-                    resumoFiltrado.fechamento.emAndamento >
-                  0,
-                definicao: "Etapas que começaram e ainda não terminaram no dia corrente; o tempo é medido até agora.",
-              },
+              { rotulo: "Entregues", valor: formatarNumero(resumoPeriodo.entregues, 0) },
+              { rotulo: "Cancelados", valor: formatarNumero(resumoPeriodo.cancelados, 0) },
             ]}
           />
-        </section>
-      ) : null}
-
-      {periodoConsultado && !erro && resumoFiltrado.porEntregador.length > 0 ? (
-        <section className="space-y-2">
-          <SecaoTitulo eyebrow="Equipe" titulo="Desempenho por entregador" />
-          <div className="grid gap-px overflow-hidden rounded-lg bg-border/50 ring-1 ring-border/50 sm:grid-cols-2 lg:grid-cols-3">
-            {resumoFiltrado.porEntregador.slice(0, 9).map((item) => (
-              <div key={item.entregador} className="flex flex-col gap-0.5 bg-card px-3 py-2">
-                <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {item.entregador}
-                </span>
-                <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                  {formatarNumero(item.davs, 0)} DAV
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {formatarNumero(item.entregues, 0)} entregues · ciclo médio {formatarDuracaoMinutos(item.mediaExpedicao)}
-                </span>
-              </div>
-            ))}
-          </div>
         </section>
       ) : null}
 
