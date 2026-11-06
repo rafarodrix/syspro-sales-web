@@ -87,6 +87,21 @@ export function minutosEntre(inicio?: string | null, fim?: string | null): numbe
   return Math.round(diferenca * 10) / 10;
 }
 
+/**
+ * O Syspro grava o horário da venda em HR_FECHAMENTO enquanto o pedido está
+ * aberto. Só vale como fechamento quando é posterior à venda.
+ */
+export function fechamentoConfiavel(
+  horaVenda: string | null,
+  horaFechamento: string | null,
+): string | null {
+  if (!horaFechamento) return null;
+  const venda = horaParaMinutos(horaVenda);
+  const fechamento = horaParaMinutos(horaFechamento);
+  if (venda === null || fechamento === null) return horaFechamento;
+  return fechamento - venda > 0.001 ? horaFechamento : null;
+}
+
 function arredondar(minutos: number): number {
   return Math.round(minutos * 10) / 10;
 }

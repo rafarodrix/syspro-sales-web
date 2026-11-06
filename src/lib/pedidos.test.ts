@@ -7,6 +7,7 @@ import {
   montarLinhaPedido,
   montarLinhasPedido,
   passaFiltroSituacao,
+  fechamentoConfiavel,
   resumirPedidos,
   situacaoPedido,
   type PedidoSyspro,
@@ -135,6 +136,12 @@ describe("análise de entrega", () => {
     expect(resumo.atrasados).toBe(1);
     expect(resumo.maiorEsperaMinutos).toBe(30);
     expect(resumo.porEntregador[0]).toMatchObject({ entregador: "YAGO ARAÚJO ALVES", davs: 2 });
+  });
+
+  it("ignora fechamento igual à venda (padrão do Syspro em pedido aberto)", () => {
+    expect(fechamentoConfiavel("08:00:00", "08:00:00")).toBeNull();
+    expect(fechamentoConfiavel("08:00:00", "09:00:00")).toBe("09:00:00");
+    expect(fechamentoConfiavel("08:00:00", null)).toBeNull();
   });
 
   it("formata duração em minutos para leitura na tela", () => {

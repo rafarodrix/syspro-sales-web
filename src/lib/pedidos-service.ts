@@ -11,7 +11,7 @@
  */
 import { SysproApiError } from "@/lib/syspro-api";
 import { sanitizarSysproUrl } from "@/lib/validations";
-import type { PedidoSyspro } from "@/lib/pedidos";
+import { fechamentoConfiavel, type PedidoSyspro } from "@/lib/pedidos";
 import { normalizarDataIso } from "@/lib/periodo";
 
 export interface ConfigPedidos {
@@ -67,7 +67,8 @@ function normalizarPedido(registro: Record<string, unknown>): PedidoSyspro | nul
     horaSeparacao: null,
     horaConferido: texto(registro.hora_conferido),
     horaSaida: texto(registro.hora_saida),
-    horaFechamento: texto(registro.hora_fechamento),
+    // Enquanto o pedido está aberto o Syspro repete o horário da venda aqui.
+    horaFechamento: fechamentoConfiavel(texto(registro.hora_venda), texto(registro.hora_fechamento)),
     entregador: texto(registro.entregador),
     status: String(registro.status ?? "").trim().toUpperCase() || "—",
     status2: String(registro.status2 ?? "").trim().toUpperCase() || "—",
