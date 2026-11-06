@@ -494,7 +494,10 @@ export function ComprasView({
                           {item.semBaseEstoque ? (
                             <span className="text-muted-foreground">-</span>
                           ) : item.diasEmRuptura > 0 ? (
-                            <span className="font-semibold">
+                            <span
+                              className="font-semibold"
+                              title={`${item.diasEmRuptura} dia(s) sem saldo positivo em ${item.diasConsiderados ?? item.diasComEstoque + item.diasEmRuptura} dia(s) avaliados do período`}
+                            >
                               {formatarNumero(item.diasEmRuptura, 0)}
                               <span className="font-normal text-muted-foreground">
                                 /{formatarNumero(item.diasConsiderados ?? item.diasComEstoque + item.diasEmRuptura, 0)}
