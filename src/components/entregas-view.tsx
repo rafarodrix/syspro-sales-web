@@ -435,7 +435,7 @@ export function EntregasView({
         </section>
       ) : null}
 
-      <Card>
+      <Card className="overflow-visible">
         <CardHeader className="sticky top-0 z-20 rounded-t-xl border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1.5">
