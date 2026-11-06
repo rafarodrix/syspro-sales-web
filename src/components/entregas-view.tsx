@@ -129,6 +129,7 @@ export function EntregasView({
   // Padrão operacional: a tela abre nos pedidos que ainda precisam de ação.
   const [situacao, setSituacao] = useState<FiltroSituacao>("em-aberto");
   const [apenasEstourados, setApenasEstourados] = useState(false);
+  const [hoje, setHoje] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
     if (!empresaId) {
@@ -166,6 +167,7 @@ export function EntregasView({
       setLinhas(montadas);
       setResumo(dados.resumo ?? resumirPedidos(montadas));
       setPeriodoConsultado({ ...proximoPeriodo });
+      setHoje(agora.toISOString().slice(0, 10));
       salvarPeriodoCookie(proximoPeriodo);
       toast.success(`${montadas.length} pedido(s) no período.`);
     } catch (causa) {
@@ -215,7 +217,7 @@ export function EntregasView({
       });
   }, [linhas, busca, situacao, apenasEstourados]);
 
-  const resumoFiltrado = useMemo(() => resumirPedidos(linhasFiltradas), [linhasFiltradas]);
+  const resumoFiltrado = useMemo(() => resumirPedidos(linhasFiltradas, { hoje }), [linhasFiltradas, hoje]);
   const emAberto = resumoFiltrado.total - resumoFiltrado.entregues - resumoFiltrado.cancelados;
 
   const filtrosAtivos =
@@ -291,9 +293,9 @@ export function EntregasView({
               {
                 rotulo: "Atrasados",
                 valor: formatarNumero(resumoFiltrado.atrasados, 0),
-                detalhe: "estouraram alguma etapa",
+                detalhe: "fora do limite ou parados",
                 attention: resumoFiltrado.atrasados > 0,
-                definicao: "Pedidos em aberto que passaram do limite em separação, saída ou fechamento.",
+                definicao: "Pedidos em aberto que estouraram o limite em alguma etapa ou que continuam parados sendo de um dia anterior.",
               },
               {
                 rotulo: "Maior ciclo",

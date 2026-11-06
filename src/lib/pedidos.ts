@@ -253,7 +253,10 @@ function resumirEtapa(etapas: Etapa[]): ResumoEtapa {
   };
 }
 
-export function resumirPedidos(linhas: LinhaPedido[]): ResumoPedidos {
+export function resumirPedidos(
+  linhas: LinhaPedido[],
+  opcoes: { hoje?: string | null } = {},
+): ResumoPedidos {
   const porEntregador = new Map<string, LinhaPedido[]>();
   for (const linha of linhas) {
     if (!linha.entregador) continue;
@@ -277,7 +280,12 @@ export function resumirPedidos(linhas: LinhaPedido[]): ResumoPedidos {
     pendentes: linhas.filter((linha) => situacaoPedido(linha) === "pendente").length,
     emRota: linhas.filter((linha) => situacaoPedido(linha) === "em-rota").length,
     cancelados: linhas.filter((linha) => situacaoPedido(linha) === "cancelado").length,
-    atrasados: abertos.filter((linha) => linha.separacao.estourou || linha.saida.estourou || linha.fechamento.estourou).length,
+    // Atrasado = em aberto e (estourou alguma etapa OU é de dia anterior e continua parado).
+    atrasados: abertos.filter((linha) => {
+      const estourouAlguma = linha.separacao.estourou || linha.saida.estourou || linha.fechamento.estourou;
+      const paradoDeOutroDia = Boolean(opcoes.hoje) && linha.dataVenda < String(opcoes.hoje);
+      return estourouAlguma || paradoDeOutroDia;
+    }).length,
     maiorEsperaMinutos: ciclos.length > 0 ? Math.max(...ciclos) : null,
     separacao: resumirEtapa(linhas.map((linha) => linha.separacao)),
     saida: resumirEtapa(linhas.map((linha) => linha.saida)),
