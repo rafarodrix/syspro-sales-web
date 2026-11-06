@@ -254,7 +254,6 @@ export function EntregasView({
       });
   }, [linhas, busca, situacao, apenasEstourados, documento, atendimento]);
 
-  const resumoFiltrado = useMemo(() => resumirPedidos(linhasFiltradas, { hoje }), [linhasFiltradas, hoje]);
   const resumoPeriodo = useMemo(() => resumirPedidos(linhas, { hoje }), [linhas, hoje]);
 
   const filtrosAtivos =
@@ -348,13 +347,6 @@ export function EntregasView({
                 attention: resumoPeriodo.desistenciasComSaida > 0,
                 definicao: "Pedidos que saíram para entrega e voltaram como desistência: custo de entrega sem receita.",
               },
-              {
-                rotulo: "Sem saída registrada",
-                valor: formatarNumero(resumoPeriodo.entreguesSemSaida, 0),
-                detalhe: "processo não registrado",
-                attention: resumoPeriodo.entreguesSemSaida > 0,
-                definicao: "Pedido marcado como entrega e entregue, mas sem horário de saída — o processo não foi registrado no sistema.",
-              },
             ]}
           />
         </section>
@@ -398,8 +390,7 @@ export function EntregasView({
                 detalhe: "venda → saída",
                 definicao: "Fórmula: saída (J) − venda (D). Sem limite: mede o tempo total até a mercadoria sair.",
               },
-              { rotulo: "Entregues", valor: formatarNumero(resumoPeriodo.entregues, 0) },
-              { rotulo: "Cancelados", valor: formatarNumero(resumoPeriodo.cancelados, 0) },
+
             ]}
           />
         </section>
