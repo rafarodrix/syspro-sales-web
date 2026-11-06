@@ -92,6 +92,12 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Metadados no rodapé, não no cabeçalho:** período, comparação e horário ficam na linha de status inferior (`StatusRelatorio`, junto de universo e filtros). Textos curtos e truncamento (`min-w-0 truncate`) para não quebrar linha.
 - Telas sem seletor de visão (Curva ABC, Margens, Compras) mantêm só as ações à direita — não invente seletor vazio.
 
+## Sugestão de compra (ruptura)
+- **Média diária = demanda líquida ÷ dias COM estoque** (Kardex), nunca ÷ período inteiro — é o que corrige o ritmo de quem ficou em ruptura.
+- **Amostra curta não projeta ritmo:** com menos de `MIN_DIAS_BASE_DEMANDA` (15) dias de estoque, a base vira o período avaliado. Sem esse piso, produto com 1 dia de estoque e 36 vendas gerava média 36/dia e sugestão de 3.240 peças.
+- **Dias em ruptura é sobre dias avaliados, não sobre o período:** o produto só entra na conta a partir do 1º movimento. Exiba `ruptura/avaliados` na coluna — sem isso o usuário lê "36 dias em ruptura" como se fossem 36 de 90.
+- Base sem saldo positivo em nenhum dia → `sem-base`, sugestão 0 (não inventar média).
+
 ## Análise de Entrega (padrão da tela)
 - **Dois blocos de métricas, no máximo** — `AÇÃO · O que precisa de decisão` (Em aberto, Atrasados, Entregas em aberto em R$, Viagens perdidas) e `CONTEXTO · Desempenho do período` (Separação, Saída, Fechamento, Ciclo total). Sem bloco de equipe e sem "falhas de processo" separado; o colaborador já é coluna da tabela.
 - **Filtros padrão na abertura:** `Pedidos · Somente entrega · Aberto · Todas as legendas · Todos os pedidos`. "Limpar filtros" volta exatamente para isso, e `Filtros ativos` só conta o que difere do padrão.
