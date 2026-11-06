@@ -22,9 +22,7 @@ import {
 } from "@/components/date-range-filter";
 import { FeedbackState } from "@/components/feedback-state";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
@@ -212,7 +210,7 @@ export function ComprasView({
         icon={ShoppingBasket}
         title="Análise de Compras"
         description={`Vendas, devoluções de venda EDV e estoque atual por produto em ${empresaNome}.`}
-        footer={`Cobertura alvo inicial configurada para esta empresa: ${coberturaAlvoInicial} dias.`}
+        footer={`Cobertura alvo inicial: ${coberturaAlvoInicial} dias · Grupo de estoque: ${grupoEstoquePadrao}.`}
       >
         <DateRangeFilter
           value={periodo}

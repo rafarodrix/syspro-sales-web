@@ -106,6 +106,7 @@ fi
 if [ "$BUILD" -eq 1 ]; then
   etapa "3/7 prisma generate + migrate deploy"
   npx prisma generate || falhar "prisma generate falhou"
+  npm run db:ensure || falhar "preparo do SQLite falhou"
   npx prisma migrate deploy || falhar "prisma migrate deploy falhou"
 
   etapa "4/7 build standalone"

@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -51,14 +52,20 @@ function LoginForm() {
       <CardHeader className="space-y-3 text-center pb-4">
         {/* Logo Oficial Trilink com Tag Syspro ERP */}
         <div className="flex flex-col items-center justify-center gap-2">
-          <img
+          <Image
             src="/logo-escura.png"
             alt="Trilink Software"
+            width={256}
+            height={72}
+            style={{ width: "auto" }}
             className="h-9 w-auto block dark:hidden object-contain"
           />
-          <img
+          <Image
             src="/logo-clara.png"
             alt="Trilink Software"
+            width={256}
+            height={73}
+            style={{ width: "auto" }}
             className="h-9 w-auto hidden dark:block object-contain"
           />
           <Badge

@@ -25,7 +25,7 @@ export function ThemeToggle({ variant = "switch" }: { variant?: "icon" | "switch
   return (
     <button
       aria-label={isDark ? "Ativar tema claro" : "Ativar tema escuro"}
-      className="inline-flex items-center gap-1.5 rounded-full border bg-muted/60 p-1 text-muted-foreground transition-colors hover:bg-muted"
+      className="inline-flex min-h-11 items-center gap-1.5 rounded-full border bg-muted/60 px-2 py-1 text-muted-foreground transition-colors hover:bg-muted sm:min-h-0 sm:px-1"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       type="button"
     >

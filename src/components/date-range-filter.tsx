@@ -131,7 +131,7 @@ export function DateRangeFilter({
                 size="sm"
                 type="button"
                 variant={ativo ? "secondary" : "ghost"}
-                className={`h-8 px-2 text-[11px] font-semibold sm:text-xs ${
+                className={`h-11 px-2 text-[11px] font-semibold sm:h-8 sm:text-xs ${
                   ativo
                     ? "bg-background font-bold text-foreground shadow-2xs"
                     : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
@@ -159,7 +159,7 @@ export function DateRangeFilter({
               onChange={(event) =>
                 onChange({ ...value, inicial: event.target.value })
               }
-              className="h-8 w-[138px] border-border/60 text-xs font-mono font-medium"
+              className="h-11 w-[145px] border-border/60 text-xs font-mono font-medium sm:h-8 sm:w-[138px]"
               onKeyDown={(event) => {
                 if (event.key === "Enter" && onConsultar && !erro && !loading && !consultaDesabilitada) {
                   if (persistirCookie) salvarPeriodoCookie(value);
@@ -179,7 +179,7 @@ export function DateRangeFilter({
               onChange={(event) =>
                 onChange({ ...value, final: event.target.value })
               }
-              className="h-8 w-[138px] border-border/60 text-xs font-mono font-medium"
+              className="h-11 w-[145px] border-border/60 text-xs font-mono font-medium sm:h-8 sm:w-[138px]"
               onKeyDown={(event) => {
                 if (event.key === "Enter" && onConsultar && !erro && !loading && !consultaDesabilitada) {
                   if (persistirCookie) salvarPeriodoCookie(value);
@@ -197,7 +197,7 @@ export function DateRangeFilter({
               }}
               disabled={loading || !!erro || consultaDesabilitada}
               size="sm"
-              className="h-8 font-semibold gap-1.5 px-3.5 shadow-sm"
+              className="h-11 font-semibold gap-1.5 px-3.5 shadow-sm sm:h-8"
             >
               <SearchIcon className="size-3.5" />
               {loading ? "Consultando..." : "Consultar"}

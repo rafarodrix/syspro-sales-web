@@ -5,7 +5,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 process.env.BETTER_AUTH_URL = baseURL;
 process.env.BETTER_AUTH_SECRET = "e2e-local-secret-with-at-least-32-characters";
-process.env.DATABASE_URL ??= "file:./dev.db";
+process.env.DATABASE_URL ??= "file:./e2e.db";
 process.env.SEED_ADMIN_EMAIL ??= "e2e@trilink.local";
 process.env.SEED_ADMIN_PASSWORD ??= "e2e-senha-forte-123";
 
@@ -25,13 +25,29 @@ export default defineConfig({
     // Autentica uma vez e salva a sessão usada pelos testes de navegação.
     { name: "setup", testMatch: /auth\.setup\.ts/ },
     {
+      name: "guest",
+      testMatch: /login\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "chromium",
       use: { ...devices["Desktop Chrome"], storageState: "e2e/.auth/user.json" },
+      dependencies: ["setup"],
+      testIgnore: [/login\.spec\.ts/, /mobile\.spec\.ts/],
+    },
+    {
+      name: "mobile",
+      testMatch: /mobile\.spec\.ts/,
+      use: {
+        ...devices["Pixel 7"],
+        viewport: { width: 390, height: 844 },
+        storageState: "e2e/.auth/user.json",
+      },
       dependencies: ["setup"],
     },
   ],
   webServer: {
-    command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+    command: `npm run test:e2e:prepare && npx next dev --hostname 127.0.0.1 --port ${port}`,
     url: `${baseURL}/login`,
     reuseExistingServer: false,
     timeout: 120_000,

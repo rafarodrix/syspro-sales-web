@@ -27,7 +27,7 @@ export function FiltroRelatorio({
   return (
     <Select value={valor} onValueChange={onChange}>
       <SelectTrigger aria-label={rotulo} className={cn("h-9 text-xs", largura, className)}>
-        <SelectValue />
+        <SelectValue>{opcoes.find((opcao) => opcao.valor === valor)?.rotulo}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>

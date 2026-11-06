@@ -2,6 +2,7 @@ import { consultarVendas, type VendaComEmpresa } from "@/lib/syspro-api";
 import { dataInputParaSyspro } from "@/lib/vendas";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { consultarSysproAdaptativamente } from "@/lib/syspro-consulta-adaptativa";
+import { medirOperacao, registrarEvento } from "@/lib/observability";
 
 export interface EmpresaInfo {
   id: string;
@@ -20,6 +21,7 @@ interface CacheEntry {
 
 const MAX_CACHE_ENTRIES = 100;
 const vendasCache = new Map<string, CacheEntry>();
+const vendasEmAndamento = new Map<string, Promise<VendaComEmpresa[]>>();
 const CACHE_TTL_MS = 45 * 1000; // 45 segundos
 
 function limparCacheExpirado() {
@@ -126,37 +128,59 @@ export async function obterVendas({
     const emCache = vendasCache.get(cacheKey);
 
     if (!forcarAtualizacao && emCache && agora - emCache.timestamp < CACHE_TTL_MS) {
+      registrarEvento("sales_cache_hit", { empresaId: emp.id });
       return emCache.data;
     }
 
+    const consultaEmAndamento = vendasEmAndamento.get(cacheKey);
+    if (!forcarAtualizacao && consultaEmAndamento) {
+      registrarEvento("sales_inflight_join", { empresaId: emp.id });
+      return consultaEmAndamento;
+    }
+
+    const consulta = medirOperacao("sales_query", {
+      empresaId: emp.id,
+      periodoInicial: dtIniNormalizada,
+      periodoFinal: dtFimNormalizada,
+    }, async () => {
+      try {
+        const config = {
+          baseUrl: emp.sysproBaseUrl || "http://localhost:8080",
+          useIis: emp.sysproUseIis === true,
+        };
+
+        const dados = await consultarSysproAdaptativamente(
+          { inicial: dtIniNormalizada, final: dtFimNormalizada },
+          (janela) => consultarVendas(config, {
+            dtInicial: janela.inicial,
+            dtFinal: janela.final,
+          }, signal),
+        );
+
+        const filtradas: VendaComEmpresa[] = dados
+          .filter((v) => v.empresa_codigo === emp.empresaCodigo)
+          .map((v) => ({
+            ...v,
+            empresa_id: emp.id,
+            empresa_nome: emp.razaoSocial,
+            empresa_cnpj: emp.cnpj,
+          }));
+
+        vendasCache.set(cacheKey, { timestamp: Date.now(), data: filtradas });
+        return filtradas;
+      } catch (err) {
+        console.error(`[sales-service] Erro ao consultar vendas da empresa ${emp.id}:`, err);
+        throw new SalesIntegrationError(`Não foi possível consultar a filial ${emp.razaoSocial}. A consolidação não foi gerada para evitar totais incompletos.`, { cause: err });
+      }
+    });
+
+    vendasEmAndamento.set(cacheKey, consulta);
     try {
-      const config = {
-        baseUrl: emp.sysproBaseUrl || "http://localhost:8080",
-        useIis: emp.sysproUseIis === true,
-      };
-
-      const dados = await consultarSysproAdaptativamente(
-        { inicial: dtIniNormalizada, final: dtFimNormalizada },
-        (janela) => consultarVendas(config, {
-          dtInicial: janela.inicial,
-          dtFinal: janela.final,
-        }, signal),
-      );
-
-      const filtradas: VendaComEmpresa[] = dados
-        .filter((v) => v.empresa_codigo === emp.empresaCodigo)
-        .map((v) => ({
-          ...v,
-          empresa_id: emp.id,
-          empresa_nome: emp.razaoSocial,
-          empresa_cnpj: emp.cnpj,
-        }));
-
-      vendasCache.set(cacheKey, { timestamp: agora, data: filtradas });
-      return filtradas;
-    } catch (err) {
-      console.error(`[sales-service] Erro ao consultar vendas da empresa ${emp.razaoSocial} (${emp.cnpj}):`, err);
-      throw new SalesIntegrationError(`Não foi possível consultar a filial ${emp.razaoSocial}. A consolidação não foi gerada para evitar totais incompletos.`, { cause: err });
+      return await consulta;
+    } finally {
+      if (vendasEmAndamento.get(cacheKey) === consulta) {
+        vendasEmAndamento.delete(cacheKey);
+      }
     }
   };
 

@@ -15,22 +15,14 @@ test("menu de relatórios não tem mais a aba redundante de descontos", async ({
   await expect(page.getByRole("link", { name: /Descontos/ })).toHaveCount(0);
 });
 
-test("cada visão do relatório mantém o seletor acessível (não fica preso)", async ({ page }) => {
+test("cada visão do relatório mantém a navegação de relatórios acessível", async ({ page }) => {
   await page.goto("/relatorios?aba=departamentos");
 
-  const seletorResumo = page.getByRole("button", { name: "Resumo" }).first();
-  const seletorComparativo = page.getByRole("button", { name: "Comparativo" }).first();
-
-  await expect(seletorResumo).toBeVisible();
-
-  // Comparativo sem período comparado não renderiza tabela — o seletor precisa continuar ali.
-  await seletorComparativo.click();
-  await expect(seletorComparativo).toBeVisible();
-  await expect(seletorResumo).toBeVisible();
-
-  // E precisa ser possível voltar.
-  await seletorResumo.click();
-  await expect(seletorResumo).toBeVisible();
+  const destino = page.getByRole("link", { name: "Cidade e UF" }).first();
+  await expect(destino).toBeVisible();
+  await destino.click();
+  await expect(page).toHaveURL(/aba=geografico/);
+  await expect(page.getByRole("link", { name: "Cidade e UF" }).first()).toBeVisible();
 });
 
 test("período e comparação ficam no painel de consulta com botão Consultar", async ({ page }) => {

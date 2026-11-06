@@ -119,6 +119,24 @@ describe("serviço de vendas", () => {
     expect(atualizada[0].nf_numero).toBe("cache-2");
   });
 
+  it("reaproveita uma consulta idêntica ainda em andamento", async () => {
+    let resolver!: (valor: { empresa_codigo: string; nf_numero: string }[]) => void;
+    mocks.consultarVendas.mockReturnValue(new Promise((resolve) => {
+      resolver = resolve;
+    }));
+    const base = parametros({ dtInicial: "2025-05-01", dtFinal: "2025-05-31" });
+
+    const primeira = obterVendas(base);
+    const segunda = obterVendas(base);
+    await vi.waitFor(() => expect(mocks.consultarVendas).toHaveBeenCalledTimes(1));
+    resolver([{ empresa_codigo: "1", nf_numero: "compartilhada" }]);
+
+    await expect(Promise.all([primeira, segunda])).resolves.toEqual([
+      [expect.objectContaining({ nf_numero: "compartilhada" })],
+      [expect.objectContaining({ nf_numero: "compartilhada" })],
+    ]);
+  });
+
   it("aplica rate limit por usuário quando habilitado", async () => {
     mocks.checkRateLimit.mockReturnValue({ success: false });
 

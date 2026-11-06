@@ -14,5 +14,5 @@ test("vendas abre com o painel de consulta e o resumo de filtros", async ({ page
   await page.goto("/vendas");
 
   await expect(page.getByRole("button", { name: "Consultar" }).first()).toBeVisible();
-  await expect(page.getByText("Consulta de Vendas")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Consulta de Vendas", { exact: true })).toBeVisible();
 });

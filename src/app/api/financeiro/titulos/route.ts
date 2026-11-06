@@ -77,7 +77,6 @@ export async function POST(request: NextRequest) {
     }
 
     const config = { baseUrl: empresa.sysproBaseUrl, useIis: empresa.sysproUseIis === true };
-    const range = { dtInicial, dtFinal };
     const consultar = categoria === "pagar" ? consultarTitulosPagar : consultarTitulosReceber;
 
     let brutos: unknown[];
