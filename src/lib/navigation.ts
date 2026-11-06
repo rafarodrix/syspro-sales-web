@@ -12,6 +12,7 @@ import {
   PackageSearch,
   Settings,
   ShoppingBasket,
+  Truck,
   ShoppingCart,
   Sparkles,
   UserCheck,
@@ -57,6 +58,7 @@ export const relatoriosVendas: ItemNavegacao[] = [
 export const itensRelatorios: ItemNavegacao[] = [
   ...relatoriosVendas,
   { id: "compras", label: "Análise de Compras", titulo: "Análise de Compras", categoria: "Relatórios", href: "/relatorios/compras", icone: ShoppingBasket, permissao: "estoque:visualizar" },
+  { id: "pedidos", label: "Pedidos e Entregas", titulo: "Pedidos e Entregas", categoria: "Relatórios", href: "/relatorios/pedidos", icone: Truck, permissao: "vendas:visualizar" },
 ];
 
 export const itensAdministracao: ItemNavegacao[] = [

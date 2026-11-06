@@ -161,6 +161,31 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
       { termo: "Vínculo venda ↔ Kardex", definicao: "Feito exclusivamente pelo ID interno do produto (produto_id ↔ produto_id_produto). Código auxiliar e descrição aparecem na tela, mas não são usados para casar registros." },
     ],
   },
+  pedidos: {
+    resumo:
+      "Acompanha cada pedido (DAV) do horário da venda até o fechamento: saída para separação, conferência, saída para entrega e fechamento, com alerta quando alguma etapa passa do limite operacional.",
+    comoLer: [
+      "Os limites são o padrão da operação: separação 5 min, conferência 15 min, saída para entrega 30 min e fechamento 50 min — todos contados a partir do horário da venda.",
+      "Alerta em vermelho significa etapa estourada naquele pedido; em cinza, dentro do limite.",
+      "Pedido sem horário de conferência, saída ou fechamento é pedido que ainda não passou pela etapa (ou não usa entrega).",
+      "O horário de saída para separação ainda não é registrado pelo Syspro: as colunas 'Em separação' e 'Alerta sep.' aparecem vazias até o campo ser exposto pela API.",
+      "A coluna Conferido usa PEDIDO.HR_SEPARADO — é o fim da conferência, não o início da separação.",
+    ],
+    dica: "Filtre por 'Somente fora do limite' e ordene por alerta de conferência para achar o gargalo do dia; a coluna Entregador mostra quem está com o pedido.",
+    glossario: [
+      { termo: "Hora da venda", definicao: "Horário em que o pedido foi registrado (PEDIDO.HR_VENDA). É a base de todos os alertas." },
+      { termo: "Em separação", definicao: "Horário em que o pedido saiu para separação. Ainda não é exposto pela API do Syspro — o campo existe como pendência junto ao fornecedor." },
+      { termo: "Alerta separação", definicao: "Fórmula: (em separação − hora da venda), em minutos. Limite operacional: 5 min." },
+      { termo: "Conferido", definicao: "Horário em que a conferência terminou (PEDIDO.HR_SEPARADO). É o 'separado' da planilha operacional, renomeado para conferido." },
+      { termo: "Alerta conferência", definicao: "Fórmula: (conferido − hora da venda), em minutos. Limite operacional: 15 min." },
+      { termo: "Saída para entrega", definicao: "Horário em que a entrega saiu para a rua (ENTREGA.HR_SAIDA)." },
+      { termo: "Alerta saída", definicao: "Fórmula: (saída para entrega − hora da venda), em minutos. Limite operacional: 30 min." },
+      { termo: "Fechamento", definicao: "Horário em que o DAV foi fechado (PEDIDO.HR_FECHAMENTO)." },
+      { termo: "Alerta fechamento", definicao: "Fórmula: (fechamento − hora da venda), em minutos. Limite operacional: 50 min." },
+      { termo: "Entregador", definicao: "Participante vinculado à entrega do pedido (ENTREGA.ID_ENTREGADOR). Pedido sem entrega registrada aparece sem entregador." },
+      { termo: "Situação", definicao: "Entregue = status2 ENTREGUE; Em entrega = EM ENTREGA; Pendente = PENDENTE/SEPARADO/EM SEPARAÇÃO; Cancelado = status CANCELADO ou status2 DESISTÊNCIA." },
+    ],
+  },
   margens: {
     resumo:
       "Mostra o lucro bruto e a margem de cada produto antes e depois das devoluções de venda (EDV), usando o custo de reposição informado pela API.",
@@ -217,7 +242,7 @@ const TERMOS_PANORAMA = [
 
 // Todo relatório usa o Panorama, então todo guia ganha os termos correspondentes.
 // Exceção: Compras e Vendas & Margem têm tela própria (sem Panorama), então não herdam esses termos.
-const GUIAS_SEM_PANORAMA = new Set(["compras", "margens"]);
+const GUIAS_SEM_PANORAMA = new Set(["compras", "margens", "pedidos"]);
 for (const [chave, guia] of Object.entries(GUIAS_RELATORIOS)) {
   if (GUIAS_SEM_PANORAMA.has(chave)) continue;
   const existentes = new Set((guia.glossario ?? []).map((item) => item.termo));
