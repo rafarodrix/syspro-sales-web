@@ -218,7 +218,7 @@ export function EntregasView({
   }, [linhas, busca, situacao, apenasEstourados]);
 
   const resumoFiltrado = useMemo(() => resumirPedidos(linhasFiltradas, { hoje }), [linhasFiltradas, hoje]);
-  const emAberto = resumoFiltrado.total - resumoFiltrado.entregues - resumoFiltrado.cancelados;
+  const resumoPeriodo = useMemo(() => resumirPedidos(linhas, { hoje }), [linhas, hoje]);
 
   const filtrosAtivos =
     (busca.trim() ? 1 : 0) + (situacao !== "em-aberto" ? 1 : 0) + (apenasEstourados ? 1 : 0);
@@ -278,34 +278,34 @@ export function EntregasView({
         <section className="space-y-2">
           <SecaoTitulo
             eyebrow="Ação"
-            titulo="Pedidos em aberto"
+            titulo="Pedidos do período"
             descricao="A tela abre sem os entregues: o que está na fila é o que precisa de ação."
           />
           <MetricsStrip
             itens={[
               {
                 rotulo: "Em aberto",
-                valor: formatarNumero(emAberto, 0),
+                valor: formatarNumero(resumoPeriodo.total - resumoPeriodo.entregues - resumoPeriodo.cancelados, 0),
                 detalhe: "pendentes + em entrega",
-                attention: emAberto > 0,
+                attention: resumoPeriodo.total - resumoPeriodo.entregues - resumoPeriodo.cancelados > 0,
                 definicao: "Pedidos do recorte que ainda não foram entregues nem cancelados.",
               },
               {
                 rotulo: "Atrasados",
-                valor: formatarNumero(resumoFiltrado.atrasados, 0),
+                valor: formatarNumero(resumoPeriodo.atrasados, 0),
                 detalhe: "fora do limite ou parados",
                 attention: resumoFiltrado.atrasados > 0,
                 definicao: "Pedidos em aberto que estouraram o limite em alguma etapa ou que continuam parados sendo de um dia anterior.",
               },
               {
                 rotulo: "Maior ciclo",
-                valor: formatarDuracaoMinutos(resumoFiltrado.maiorEsperaMinutos),
+                valor: formatarDuracaoMinutos(resumoPeriodo.maiorEsperaMinutos),
                 detalhe: "da venda até a saída",
                 definicao: "Maior ciclo (venda → saída) entre os pedidos do recorte. Só considera pedidos com saída registrada.",
               },
-              { rotulo: "Em entrega", valor: formatarNumero(resumoFiltrado.emRota, 0) },
-              { rotulo: "Entregues", valor: formatarNumero(resumoFiltrado.entregues, 0) },
-              { rotulo: "Cancelados", valor: formatarNumero(resumoFiltrado.cancelados, 0) },
+              { rotulo: "Em entrega", valor: formatarNumero(resumoPeriodo.emRota, 0) },
+              { rotulo: "Entregues", valor: formatarNumero(resumoPeriodo.entregues, 0), detalhe: "no período" },
+              { rotulo: "Cancelados", valor: formatarNumero(resumoPeriodo.cancelados, 0), detalhe: "no período" },
             ]}
           />
         </section>
@@ -398,6 +398,9 @@ export function EntregasView({
               <CardTitle>
                 {situacao === "em-aberto" ? "Pedidos em aberto" : "Pedidos do período"}
               </CardTitle>
+              <p className="text-[11px] text-muted-foreground">
+                A. sep. / A. saída / A. fech. = tempo gasto naquela etapa (do marco anterior até ela).
+              </p>
             </div>
           </div>
           <DataFilterBar

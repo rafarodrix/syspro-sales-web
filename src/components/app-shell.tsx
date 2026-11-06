@@ -110,6 +110,9 @@ export function AppShell({
     if (pathname.startsWith("/relatorios/compras")) {
       return { secao: "Relatórios / Compras", pagina: "Análise de Compras" };
     }
+    if (pathname.startsWith("/relatorios/entregas") || pathname.startsWith("/relatorios/pedidos")) {
+      return { secao: "Relatórios / Entrega", pagina: "Análise de Entrega" };
+    }
     if (pathname.startsWith("/relatorios")) {
       const relatorio = relatoriosSubLinks.find((r) => r.id === abaAtiva);
       return { secao: "Relatórios", pagina: relatorio ? relatorio.label : "Central de Relatórios" };
