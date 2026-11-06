@@ -13,8 +13,11 @@
     "test:coverage": "vitest run --coverage",
     "test:coverage:critical": "vitest run --coverage --coverage.include=\"src/lib/{sales-service,syspro-api,compras-service,api-route}.ts\" --coverage.thresholds.perFile=true --coverage.thresholds.lines=70 --coverage.thresholds.statements=70 --coverage.thresholds.functions=70 --coverage.thresholds.branches=70",
     "test:e2e": "playwright test",
+    "test:e2e:prepare": "npm run db:ensure && prisma migrate deploy && tsx prisma/seed.ts",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm test",
+    "db:ensure": "node scripts/ensure-sqlite-file.mjs",
+    "db:migrate": "npm run db:ensure && prisma migrate deploy",
     "roles:normalize": "tsx prisma/normalizar-perfis.ts"
   },
   "dependencies": {

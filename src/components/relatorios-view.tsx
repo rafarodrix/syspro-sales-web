@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { ReportContext } from "./relatorios/report-context";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { FiltroRelatorio } from "./relatorios/filtro-relatorio";
 import { erroPeriodo } from "@/lib/periodo";
 import { REPORT_DEFINITIONS } from "./relatorios/report-definitions";
@@ -67,17 +68,7 @@ import {
   formatarPercentual,
 } from "@/lib/formatters";
 
-// Subcomponentes modulares de abas
-import { AbaCurvaABC } from "./relatorios/aba-curva-abc";
-import { AbaClientes } from "./relatorios/aba-clientes";
-import { AbaSazonalidade } from "./relatorios/aba-sazonalidade";
-import { AbaDepartamentos } from "./relatorios/aba-departamentos";
-import { AbaVendedores } from "./relatorios/aba-vendedores";
-import { AbaGeografico } from "./relatorios/aba-geografico";
-import { AbaFinanceiro } from "./relatorios/aba-financeiro";
-import { PanoramaPeriodo } from "./relatorios/panorama-periodo";
 import { StatusRelatorio } from "./relatorios/ui/status-relatorio";
-import { ConsolidacaoEmpresas } from "./relatorios/consolidacao-empresas";
 import {
   analisarFrequenciaClientes,
   normalizarClientes,
@@ -89,7 +80,18 @@ import {
 } from "@/lib/periodo-comparacao";
 import { ComparacaoPeriodo } from "./relatorios/comparacao-periodo";
 import { ReportDiagnostics } from "./relatorios/report-diagnostics";
-import { AbaMargens } from "./relatorios/aba-margens";
+
+const carregandoAba = () => <Skeleton className="h-72 w-full rounded-xl" />;
+const AbaCurvaABC = dynamic(() => import("./relatorios/aba-curva-abc").then((modulo) => modulo.AbaCurvaABC), { loading: carregandoAba });
+const AbaClientes = dynamic(() => import("./relatorios/aba-clientes").then((modulo) => modulo.AbaClientes), { loading: carregandoAba });
+const AbaSazonalidade = dynamic(() => import("./relatorios/aba-sazonalidade").then((modulo) => modulo.AbaSazonalidade), { loading: carregandoAba });
+const AbaDepartamentos = dynamic(() => import("./relatorios/aba-departamentos").then((modulo) => modulo.AbaDepartamentos), { loading: carregandoAba });
+const AbaVendedores = dynamic(() => import("./relatorios/aba-vendedores").then((modulo) => modulo.AbaVendedores), { loading: carregandoAba });
+const AbaGeografico = dynamic(() => import("./relatorios/aba-geografico").then((modulo) => modulo.AbaGeografico), { loading: carregandoAba });
+const AbaFinanceiro = dynamic(() => import("./relatorios/aba-financeiro").then((modulo) => modulo.AbaFinanceiro), { loading: carregandoAba });
+const PanoramaPeriodo = dynamic(() => import("./relatorios/panorama-periodo").then((modulo) => modulo.PanoramaPeriodo), { loading: carregandoAba });
+const ConsolidacaoEmpresas = dynamic(() => import("./relatorios/consolidacao-empresas").then((modulo) => modulo.ConsolidacaoEmpresas), { loading: carregandoAba });
+const AbaMargens = dynamic(() => import("./relatorios/aba-margens").then((modulo) => modulo.AbaMargens), { loading: carregandoAba });
 
 interface EmpresaOption {
   id: string;
@@ -1026,7 +1028,7 @@ export function RelatoriosView({
                 })}`,
               )
             }
-            className="min-w-0 flex-1 rounded-md border bg-background p-2"
+            className="min-h-11 min-w-0 flex-1 rounded-md border bg-background p-2"
           >
             {relatoriosOpcoes.map((opcao) => (
               <option key={opcao.id} value={opcao.id}>
@@ -1068,7 +1070,7 @@ export function RelatoriosView({
                 type="button"
                 size="sm"
                 variant="outline"
-                className="no-print h-9 text-xs"
+                className="no-print h-11 text-xs sm:h-9"
                 aria-pressed={visaoFavorita}
                 onClick={() => {
                   const proximo = !visaoFavorita;
@@ -1109,7 +1111,7 @@ export function RelatoriosView({
               </section>
               <Button
                 size="sm"
-                className="h-9 w-full shrink-0 lg:w-auto lg:self-end"
+                className="h-11 w-full shrink-0 sm:h-9 lg:w-auto lg:self-end"
                 disabled={loading || !!erroPeriodo(periodo)}
                 onClick={() => consultar()}
               >

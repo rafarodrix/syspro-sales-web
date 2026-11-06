@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
@@ -69,6 +70,7 @@ export function AppShell({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [relatoriosOpen, setRelatoriosOpen] = useState(true);
+  const fecharMenuRef = useRef<HTMLButtonElement>(null);
 
   // Carregar preferência salva
   useEffect(() => {
@@ -84,11 +86,20 @@ export function AppShell({
     localStorage.setItem("syspro_sidebar_collapsed", String(next));
   }
 
-  // Fechar gaveta mobile em mudança de rota
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setMobileOpen(false));
-    return () => cancelAnimationFrame(frame);
-  }, [pathname, searchParams]);
+    if (!mobileOpen) return;
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    fecharMenuRef.current?.focus();
+    const fecharComEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("keydown", fecharComEscape);
+    return () => {
+      document.body.style.overflow = overflowAnterior;
+      document.removeEventListener("keydown", fecharComEscape);
+    };
+  }, [mobileOpen]);
 
   // Determinar breadcrumb da página atual
   const breadcrumb = useMemo(() => {
@@ -170,14 +181,20 @@ export function AppShell({
               </div>
             ) : (
               <div className="flex items-center gap-2 min-w-0">
-                <img
+                <Image
                   src="/logo-escura.png"
                   alt="Trilink"
+                  width={256}
+                  height={72}
+                  style={{ width: "auto" }}
                   className="h-6 w-auto block dark:hidden object-contain shrink-0"
                 />
-                <img
+                <Image
                   src="/logo-clara.png"
                   alt="Trilink"
+                  width={256}
+                  height={73}
+                  style={{ width: "auto" }}
                   className="h-6 w-auto hidden dark:block object-contain shrink-0"
                 />
                 <Badge
@@ -437,22 +454,35 @@ export function AppShell({
         <div className="fixed inset-0 z-50 flex lg:hidden">
           {/* Overlay escuro */}
           <div
+            aria-hidden="true"
             className="fixed inset-0 bg-black/60 backdrop-blur-xs animate-in fade-in"
             onClick={() => setMobileOpen(false)}
           />
 
           {/* Gaveta */}
-          <div className="relative flex w-72 flex-col bg-card border-r border-border p-4 shadow-2xl animate-in slide-in-from-left duration-200">
+          <div
+            aria-label="Navegação principal"
+            aria-modal="true"
+            className="relative flex w-72 flex-col bg-card border-r border-border p-4 shadow-2xl animate-in slide-in-from-left duration-200"
+            id="mobile-navigation"
+            role="dialog"
+          >
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
-                <img
+                <Image
                   src="/logo-escura.png"
                   alt="Trilink"
+                  width={256}
+                  height={72}
+                  style={{ width: "auto" }}
                   className="h-6 w-auto block dark:hidden object-contain"
                 />
-                <img
+                <Image
                   src="/logo-clara.png"
                   alt="Trilink"
+                  width={256}
+                  height={73}
+                  style={{ width: "auto" }}
                   className="h-6 w-auto hidden dark:block object-contain"
                 />
                 <Badge
@@ -463,21 +493,27 @@ export function AppShell({
                 </Badge>
               </div>
               <Button
+                ref={fecharMenuRef}
+                aria-label="Fechar menu"
                 variant="ghost"
                 size="icon"
-                className="size-8"
                 onClick={() => setMobileOpen(false)}
               >
                 <X className="size-4" />
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-4 space-y-4">
+            <div
+              className="flex-1 overflow-y-auto py-4 space-y-4"
+              onClick={(event) => {
+                if ((event.target as HTMLElement).closest("a")) setMobileOpen(false);
+              }}
+            >
               <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground">Geral</span>
                 <Link
                   href={criarLinkComEmpresa("/dashboard")}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
+                  className={`flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
                     pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                   }`}
                 >
@@ -486,7 +522,7 @@ export function AppShell({
                 </Link>
                 <Link
                   href={criarLinkComEmpresa("/vendas")}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
+                  className={`flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
                     pathname === "/vendas" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                   }`}
                 >
@@ -496,7 +532,7 @@ export function AppShell({
                 {podeVerEstoque && (
                   <Link
                     href={criarLinkComEmpresa("/estoque")}
-                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
+                    className={`flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
                       pathname === "/estoque" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                     }`}
                   >
@@ -513,7 +549,7 @@ export function AppShell({
                     <Link
                       key={item.id}
                       href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+                      className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
                     >
                       <item.icone className={`size-3.5 ${item.cor}`} />
                       {item.label}
@@ -526,7 +562,7 @@ export function AppShell({
                       </span>
                       <Link
                         href={criarLinkComEmpresa("/relatorios/compras")}
-                        className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs ${
+                        className={`flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs ${
                           pathname === "/relatorios/compras"
                             ? "bg-muted font-bold text-foreground"
                             : "text-muted-foreground hover:bg-muted"
@@ -545,14 +581,14 @@ export function AppShell({
                   <span className="text-[10px] font-bold uppercase text-muted-foreground">Administração</span>
                   <Link
                     href="/usuarios"
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
+                    className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
                   >
                     <UserCog className="size-4" />
                     Usuários
                   </Link>
                   <Link
                     href="/configuracoes"
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
+                    className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
                   >
                     <Settings className="size-4" />
                     Configurações
@@ -583,9 +619,12 @@ export function AppShell({
           {/* Lado Esquerdo: Mobile Trigger + Breadcrumb + Status API */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 overflow-hidden">
             <Button
+              aria-controls="mobile-navigation"
+              aria-expanded={mobileOpen}
+              aria-label="Abrir menu"
               variant="outline"
               size="icon"
-              className="size-8 shrink-0 lg:hidden"
+              className="shrink-0 lg:hidden"
               onClick={() => setMobileOpen(true)}
             >
               <Menu className="size-4" />

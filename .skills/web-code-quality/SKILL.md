@@ -28,13 +28,15 @@ Nunca aceite a tarefa sem entender o "porquê":
 - Respeite as armadilhas da skill `syspro-erp-reports` (datas DD/MM/AAAA, Suspense, Prisma 7 adapter...).
 
 ## ETAPA 4 — Revisar antes de entregar
-- `npx tsc --noEmit` limpo (ignorar ruído de lint de node_modules quando roda por arquivo).
+- `npm run check` passa; warnings novos precisam ser justificados ou corrigidos.
 - `npm run build` passa (prerender OK).
-- Teste manual do fluxo real (login + chamada) — **não** apenas "compilou".
-- Commit pequeno e descritivo; push para o repositório configurado do SysproERP Reports.
+- `npm run test:e2e` passa usando o banco E2E dedicado; teste o fluxo real quando a API Syspro estiver disponível.
+- Em mudança visual, valide desktop e 390×844, console, overflow e interação principal.
+- Commit e push somente quando o usuário solicitar.
 
 ## Checklists rápidos
 - **Rota nova**: autenticada? admin vs user? valida input? erro claro?
 - **Tela nova**: Suspense se usar useSearchParams; dados via server component quando possível.
+- **Componente client grande**: separar estado/orquestração de visualização e carregar módulos pesados sob demanda.
 - **Schema novo**: `prisma migrate dev` + `prisma generate` + seed atualizado se precisar.
 - **Data**: sempre DD/MM/AAAA na API do Syspro.

@@ -43,6 +43,8 @@ if exist ".next\standalone\.next" xcopy /E /I /Y ".next\static" ".next\standalon
 if exist "public" xcopy /E /I /Y "public" ".next\standalone\public" >nul
 
 echo Migrations e bootstrap inicial...
+call npm run db:ensure
+if errorlevel 1 ( pause & exit /b 1 )
 call npx prisma migrate deploy
 if errorlevel 1 ( pause & exit /b 1 )
 call npx tsx prisma/seed.ts

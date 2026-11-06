@@ -1,4 +1,4 @@
-import { movimentoCompoeSaldo, type MovimentoKardex } from "@/lib/kardex";
+import type { MovimentoKardex } from "@/lib/kardex";
 import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
 import { diasBaseDemanda, reconstruirDiasEstoque, semBaseDeEstoque } from "@/lib/ruptura";

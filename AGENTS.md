@@ -18,6 +18,10 @@ Este repo versiona skills próprias em `.skills/` (formato SKILL.md). Consulte-a
 - **`.skills/syspro-erp-reports/SKILL.md`** — arquitetura, estrutura, comandos e **armadilhas** do app. Leia antes de QUALQUER mudança de código.
 - **`.skills/syspro-api-exporta/SKILL.md`** — API de exportação do Syspro: URLs (com/sem IIS), datas DD/MM/AAAA, rotas, campos. Consulte ao mexer em consultas.
 - **`.skills/web-code-quality/SKILL.md`** — fluxo de dev em 4 etapas (questionar → arquitetar → implementar → revisar) e checklists.
+- **`.skills/frontend-performance/SKILL.md`** — boundaries React/Next, bundle, renderização e consultas pesadas.
+- **`.skills/mobile-accessibility/SKILL.md`** — responsividade, toque, teclado e validação mobile.
+- **`.skills/testing-ci/SKILL.md`** — Vitest, Playwright, banco E2E isolado e CI reproduzível.
+- **`.skills/scalability-observability/SKILL.md`** — concorrência Syspro, cache, SQLite, logs e critérios para Postgres/Nest.
 - **`.skills/syspro-erp-reports-deploy/SKILL.md`** — instalar/atualizar o app no servidor do cliente (PM2 + standalone + .env de produção).
 - **`.skills/syspro-mcp/SKILL.md`** — conectar o MCP do Syspro (endpoint `/syspro` :3333, auth Bearer GUID) ao Hermes/Grok/ChatGPT; guia completo em `.skills/syspro-mcp/guia-configuracao.md`.
 
@@ -27,3 +31,4 @@ Este repo versiona skills próprias em `.skills/` (formato SKILL.md). Consulte-a
 - Datas para a API do Syspro: **DD/MM/AAAA** (nunca ISO/AAAA-MM-DD) — input date converte com split `[a,m,d]`.
 - Valide com `npx tsc --noEmit` e `npm run build` antes de declarar pronto; teste o fluxo real (login + consulta).
 - Ignore o ruído de tipo de node_modules que aparece quando o lint roda por arquivo isolado; o check do projeto é o que vale.
+- Alterações visuais precisam passar pelo projeto Playwright `mobile` em 390×844.

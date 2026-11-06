@@ -19,6 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run db:ensure
       - run: npx prisma migrate deploy
       - run: npm run check
       - run: npm run test:coverage:critical
@@ -27,3 +28,5 @@ jobs:
       - run: npm run test:e2e
         env:
           CI: "true"
+          SEED_ADMIN_EMAIL: e2e@trilink.local
+          SEED_ADMIN_PASSWORD: e2e-senha-forte-123
