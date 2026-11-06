@@ -4,27 +4,28 @@
  * Cada alerta mede o tempo gasto NA PRÓPRIA ETAPA — não o acumulado desde a
  * venda. Assim dá para ver onde o processo trava:
  *
- *   venda --E--> em separação --G--> conferido --I--> saída --K--> fechamento
+ *   venda (D) ──▶ separado (H) ──▶ saída (J) ──▶ fechamento (L)
  *
- *   E = separação   (F - D) limite 5 min
- *   G = conferência (H - F) limite 15 min
- *   I = saída       (J - H) limite 30 min
- *   K = fechamento  (L - J) limite a definir (50 min por padrão)
- *   Total até expedição = J - D
+ *   Separação  = H − D  limite 15 min
+ *   Saída      = J − H  limite 30 min
+ *   Fechamento = L − J  limite 50 min (provisório)
+ *   Ciclo total até expedição = J − D
  *
- * O Syspro ainda não registra o início da separação (F). Enquanto isso, o
- * alerta de conferência usa a venda como início (D) e a linha é marcada com
- * `baseAlternativa` — é o caso descrito pelo Rafael: H é o fim de separação +
- * conferência quando o sistema não separa as duas etapas.
+ * O Syspro NÃO registra o início da separação (o "em separação" da planilha):
+ * só existe o fim, PEDIDO.HR_SEPARADO — o campo "Separado". Por isso o alerta
+ * de separação mede da venda até o separado, cobrindo separação + conferência.
+ * Se o fornecedor passar a expor o início, basta usar `horaSeparacao` como
+ * marco intermediário (o modelo já prevê o campo).
  *
  * Fonte: PEDIDO / ENTREGA / PARTICIPANTE via `/api/dynamic/query` do SysproServer.
  */
 
 export const SLA_ENTREGA = {
-  separacaoMinutos: 5,
-  conferenciaMinutos: 15,
+  /** Da venda até o separado (separação + conferência). */
+  separacaoMinutos: 15,
+  /** Do separado até a saída para entrega. */
   saidaMinutos: 30,
-  /** Limite provisório — o valor de fechamento ainda será definido. */
+  /** Da saída até o fechamento da DAV. Limite provisório. */
   fechamentoMinutos: 50,
 } as const;
 
@@ -33,13 +34,13 @@ export interface PedidoSyspro {
   cliente: string;
   dataVenda: string;
   horaVenda: string | null;
-  /** Início da separação (F). O Syspro ainda não expõe este horário. */
+  /** Início da separação — ainda não registrado pelo Syspro (fica sempre nulo). */
   horaSeparacao: string | null;
-  /** Fim de separação/conferência (H) — PEDIDO.HR_SEPARADO. */
+  /** "Separado": fim da separação/conferência (PEDIDO.HR_SEPARADO). */
   horaConferido: string | null;
-  /** Saída para entrega (J) — ENTREGA.HR_SAIDA. */
+  /** Saída para entrega (ENTREGA.HR_SAIDA). */
   horaSaida: string | null;
-  /** Fechamento da DAV (L) — PEDIDO.HR_FECHAMENTO. */
+  /** Fechamento da DAV (PEDIDO.HR_FECHAMENTO). */
   horaFechamento: string | null;
   entregador: string | null;
   status: string;
@@ -55,16 +56,13 @@ export interface Etapa {
   estourou: boolean;
   /** Sem fim, mas com início: a etapa ainda está correndo. */
   emAndamento: boolean;
-  /** A etapa usou outro marco como início por falta do horário real. */
-  baseAlternativa: boolean;
 }
 
 export interface LinhaPedido extends PedidoSyspro {
   separacao: Etapa;
-  conferencia: Etapa;
   saida: Etapa;
   fechamento: Etapa;
-  /** J - D: da venda até sair para entrega. */
+  /** J − D: da venda até sair para entrega. */
   totalExpedicao: Etapa;
 }
 
@@ -79,7 +77,7 @@ export function horaParaMinutos(hora?: string | null): number | null {
   return horas * 60 + minutos + segundos / 60;
 }
 
-/** Diferença em minutos entre dois horários do MESMO dia (final - inicial). */
+/** Diferença em minutos entre dois horários do MESMO dia (final − inicial). */
 export function minutosEntre(inicio?: string | null, fim?: string | null): number | null {
   const a = horaParaMinutos(inicio);
   const b = horaParaMinutos(fim);
@@ -96,43 +94,30 @@ function arredondar(minutos: number): number {
 /**
  * Monta uma etapa do fluxo.
  *
- * @param base         horário que abre a etapa (marco anterior)
- * @param inicioReal   horário real de início da etapa, quando existe
- * @param fim          horário que fecha a etapa
- * @param limite       limite em minutos
- * @param agoraMinutos minuto atual, para medir etapa em andamento
+ * @param inicio        horário que abre a etapa
+ * @param fim           horário que fecha a etapa
+ * @param limite        limite em minutos
+ * @param agoraMinutos  minuto atual, para medir etapa em andamento
  */
 function montarEtapa(
-  base: string | null,
-  inicioReal: string | null,
+  inicio: string | null,
   fim: string | null,
   limite: number,
   agoraMinutos: number | null,
 ): Etapa {
-  const inicio = inicioReal ?? base;
-  const baseAlternativa = !inicioReal && Boolean(base);
   const minutos = minutosEntre(inicio, fim);
-
   if (minutos !== null) {
-    return { inicio, fim, minutos, limite, estourou: minutos > limite, emAndamento: false, baseAlternativa };
+    return { inicio, fim, minutos, limite, estourou: minutos > limite, emAndamento: false };
   }
 
   // Sem fim e com início: a etapa está correndo — mede até agora.
   const inicioMinutos = horaParaMinutos(inicio);
   if (fim === null && inicioMinutos !== null && agoraMinutos !== null && agoraMinutos > inicioMinutos) {
     const decorridos = arredondar(agoraMinutos - inicioMinutos);
-    return {
-      inicio,
-      fim,
-      minutos: decorridos,
-      limite,
-      estourou: decorridos > limite,
-      emAndamento: true,
-      baseAlternativa,
-    };
+    return { inicio, fim, minutos: decorridos, limite, estourou: decorridos > limite, emAndamento: true };
   }
 
-  return { inicio, fim, minutos: null, limite, estourou: false, emAndamento: false, baseAlternativa };
+  return { inicio, fim, minutos: null, limite, estourou: false, emAndamento: false };
 }
 
 export interface OpcoesLinha {
@@ -145,40 +130,14 @@ export interface OpcoesLinha {
 export function montarLinhaPedido(pedido: PedidoSyspro, opcoes: OpcoesLinha = {}): LinhaPedido {
   const mesmoDia = !opcoes.hoje || pedido.dataVenda === opcoes.hoje;
   const agora = mesmoDia ? (opcoes.agoraMinutos ?? null) : null;
+  // Sem o início da separação registrado, o marco é a própria venda.
+  const inicioSeparacao = pedido.horaSeparacao ?? pedido.horaVenda;
 
   return {
     ...pedido,
-    // Sem F, a separação não é mensurável: o intervalo D->H já é a conferência.
-    separacao: {
-      inicio: pedido.horaVenda,
-      fim: pedido.horaSeparacao,
-      minutos: minutosEntre(pedido.horaVenda, pedido.horaSeparacao),
-      limite: SLA_ENTREGA.separacaoMinutos,
-      estourou: false,
-      emAndamento: false,
-      baseAlternativa: false,
-    },
-    conferencia: montarEtapa(
-      pedido.horaVenda,
-      pedido.horaSeparacao,
-      pedido.horaConferido,
-      SLA_ENTREGA.conferenciaMinutos,
-      agora,
-    ),
-    saida: montarEtapa(
-      pedido.horaConferido,
-      pedido.horaConferido,
-      pedido.horaSaida,
-      SLA_ENTREGA.saidaMinutos,
-      agora,
-    ),
-    fechamento: montarEtapa(
-      pedido.horaSaida,
-      pedido.horaSaida,
-      pedido.horaFechamento,
-      SLA_ENTREGA.fechamentoMinutos,
-      agora,
-    ),
+    separacao: montarEtapa(inicioSeparacao, pedido.horaConferido, SLA_ENTREGA.separacaoMinutos, agora),
+    saida: montarEtapa(pedido.horaConferido, pedido.horaSaida, SLA_ENTREGA.saidaMinutos, agora),
+    fechamento: montarEtapa(pedido.horaSaida, pedido.horaFechamento, SLA_ENTREGA.fechamentoMinutos, agora),
     totalExpedicao: {
       inicio: pedido.horaVenda,
       fim: pedido.horaSaida,
@@ -186,7 +145,6 @@ export function montarLinhaPedido(pedido: PedidoSyspro, opcoes: OpcoesLinha = {}
       limite: 0,
       estourou: false,
       emAndamento: false,
-      baseAlternativa: false,
     },
   };
 }
@@ -207,13 +165,24 @@ export function situacaoPedido(pedido: Pick<PedidoSyspro, "status" | "status2">)
   return "outro";
 }
 
-export const SITUACOES_PEDIDO_OPCOES: Array<{ valor: SituacaoPedido; rotulo: string }> = [
-  { valor: "entregue", rotulo: "Entregue" },
-  { valor: "pendente", rotulo: "Pendente" },
+/** Filtro padrão da tela: tudo menos os já entregues. */
+export type FiltroSituacao = "em-aberto" | "todas" | SituacaoPedido;
+
+export const FILTROS_SITUACAO_ENTREGA: Array<{ valor: FiltroSituacao; rotulo: string }> = [
+  { valor: "em-aberto", rotulo: "Em aberto" },
+  { valor: "pendente", rotulo: "Pendentes" },
   { valor: "em-rota", rotulo: "Em entrega" },
-  { valor: "cancelado", rotulo: "Cancelado" },
-  { valor: "outro", rotulo: "Outro" },
+  { valor: "entregue", rotulo: "Entregues" },
+  { valor: "cancelado", rotulo: "Cancelados" },
+  { valor: "todas", rotulo: "Todas as situações" },
 ];
+
+export function passaFiltroSituacao(pedido: Pick<PedidoSyspro, "status" | "status2">, filtro: FiltroSituacao): boolean {
+  if (filtro === "todas") return true;
+  const situacao = situacaoPedido(pedido);
+  if (filtro === "em-aberto") return situacao !== "entregue" && situacao !== "cancelado";
+  return situacao === filtro;
+}
 
 export const ROTULO_SITUACAO_PEDIDO: Record<SituacaoPedido, string> = {
   entregue: "Entregue",
@@ -223,7 +192,7 @@ export const ROTULO_SITUACAO_PEDIDO: Record<SituacaoPedido, string> = {
   outro: "Outro",
 };
 
-/** 13,4 -> "13,4 min"; 63 -> "1h03"; null -> "—". */
+/** 13,4 → "13,4 min"; 63 → "1h03"; null → "—". */
 export function formatarDuracaoMinutos(minutos: number | null | undefined): string {
   if (minutos === null || minutos === undefined || !Number.isFinite(minutos)) return "—";
   if (minutos < 60) return `${Math.round(minutos * 10) / 10} min`;
@@ -254,8 +223,11 @@ export interface ResumoPedidos {
   pendentes: number;
   emRota: number;
   cancelados: number;
+  /** Pedidos fora de qualquer etapa concluída dentro do prazo. */
+  atrasados: number;
+  /** Maior ciclo medido (venda -> saída), em minutos. */
+  maiorEsperaMinutos: number | null;
   separacao: ResumoEtapa;
-  conferencia: ResumoEtapa;
   saida: ResumoEtapa;
   fechamento: ResumoEtapa;
   totalExpedicao: ResumoEtapa;
@@ -290,14 +262,24 @@ export function resumirPedidos(linhas: LinhaPedido[]): ResumoPedidos {
     else porEntregador.set(linha.entregador, [linha]);
   }
 
+  const abertos = linhas.filter((linha) => {
+    const situacao = situacaoPedido(linha);
+    return situacao !== "entregue" && situacao !== "cancelado";
+  });
+  // Maior ciclo medido (venda -> saída) entre os pedidos do recorte.
+  const ciclos = linhas
+    .map((linha) => linha.totalExpedicao.minutos)
+    .filter((valor): valor is number => valor !== null);
+
   return {
     total: linhas.length,
     entregues: linhas.filter((linha) => situacaoPedido(linha) === "entregue").length,
     pendentes: linhas.filter((linha) => situacaoPedido(linha) === "pendente").length,
     emRota: linhas.filter((linha) => situacaoPedido(linha) === "em-rota").length,
     cancelados: linhas.filter((linha) => situacaoPedido(linha) === "cancelado").length,
+    atrasados: abertos.filter((linha) => linha.separacao.estourou || linha.saida.estourou || linha.fechamento.estourou).length,
+    maiorEsperaMinutos: ciclos.length > 0 ? Math.max(...ciclos) : null,
     separacao: resumirEtapa(linhas.map((linha) => linha.separacao)),
-    conferencia: resumirEtapa(linhas.map((linha) => linha.conferencia)),
     saida: resumirEtapa(linhas.map((linha) => linha.saida)),
     fechamento: resumirEtapa(linhas.map((linha) => linha.fechamento)),
     totalExpedicao: resumirEtapa(linhas.map((linha) => linha.totalExpedicao)),
