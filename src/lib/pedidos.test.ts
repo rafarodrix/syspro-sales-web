@@ -6,16 +6,20 @@ import {
   minutosEntre,
   montarLinhaPedido,
   montarLinhasPedido,
+  passaFiltroDocumento,
   passaFiltroSituacao,
   fechamentoConfiavel,
   resumirPedidos,
   situacaoPedido,
+  tipoDocumento,
   type PedidoSyspro,
 } from "@/lib/pedidos";
 
 function pedido(parcial: Partial<PedidoSyspro> = {}): PedidoSyspro {
   return {
     numero: "628099",
+    tipoPedido: "PV",
+    origem: "BALCAO",
     cliente: "AUTO MECANICA 4 RODAS",
     dataVenda: "2026-10-27",
     horaVenda: "08:00:00",
@@ -136,6 +140,21 @@ describe("análise de entrega", () => {
     expect(resumo.atrasados).toBe(1);
     expect(resumo.maiorEsperaMinutos).toBe(30);
     expect(resumo.porEntregador[0]).toMatchObject({ entregador: "YAGO ARAÚJO ALVES", davs: 2 });
+  });
+
+  it("distingue pedido de venda de orçamento pelo TP_PEDIDO", () => {
+    expect(tipoDocumento({ tipoPedido: "PV", origem: "BALCAO" })).toBe("pedido");
+    expect(tipoDocumento({ tipoPedido: "DAV-OR", origem: "ORCAMENTO" })).toBe("orcamento");
+    expect(tipoDocumento({ tipoPedido: "DAV-OR", origem: "BALCAO" })).toBe("orcamento");
+    expect(tipoDocumento({ tipoPedido: "", origem: "ORCAMENTO" })).toBe("orcamento");
+    expect(tipoDocumento({ tipoPedido: "XX", origem: "BALCAO" })).toBe("outro");
+
+    const orcamento = { tipoPedido: "DAV-OR", origem: "ORCAMENTO" };
+    const venda = { tipoPedido: "PV", origem: "BALCAO" };
+    expect(passaFiltroDocumento(orcamento, "pedido")).toBe(false);
+    expect(passaFiltroDocumento(venda, "pedido")).toBe(true);
+    expect(passaFiltroDocumento(orcamento, "orcamento")).toBe(true);
+    expect(passaFiltroDocumento(orcamento, "todos")).toBe(true);
   });
 
   it("ignora fechamento igual à venda (padrão do Syspro em pedido aberto)", () => {

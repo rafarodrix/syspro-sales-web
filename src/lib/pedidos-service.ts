@@ -35,6 +35,8 @@ function montarSql(inicial: string, final: string): string {
     "  part.NOME as entregador,",
     "  p.STATUS as status,",
     "  p.STATUS2 as status2,",
+    "  p.TP_PEDIDO as tipo_pedido,",
+    "  p.ORIGEM as origem,",
     "  emp.CD_EMPRESA as empresa_codigo",
     "from PEDIDO p",
     "left join ENTREGA e on e.ID_PEDIDO = p.ID_PEDIDO",
@@ -70,6 +72,8 @@ function normalizarPedido(registro: Record<string, unknown>): PedidoSyspro | nul
     // Enquanto o pedido está aberto o Syspro repete o horário da venda aqui.
     horaFechamento: fechamentoConfiavel(texto(registro.hora_venda), texto(registro.hora_fechamento)),
     entregador: texto(registro.entregador),
+    tipoPedido: String(registro.tipo_pedido ?? "").trim().toUpperCase(),
+    origem: String(registro.origem ?? "").trim().toUpperCase(),
     status: String(registro.status ?? "").trim().toUpperCase() || "—",
     status2: String(registro.status2 ?? "").trim().toUpperCase() || "—",
     empresaCodigo: String(registro.empresa_codigo ?? "").trim(),

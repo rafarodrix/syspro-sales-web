@@ -24,20 +24,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import {
+  FILTROS_DOCUMENTO,
   FILTROS_SITUACAO_ENTREGA,
   ROTULO_SITUACAO_PEDIDO,
   formatarDuracaoMinutos,
   montarLinhasPedido,
+  passaFiltroDocumento,
   passaFiltroSituacao,
   resumirPedidos,
   situacaoPedido,
   type Etapa,
+  type FiltroDocumento,
   type FiltroSituacao,
   type LinhaPedido,
   type PedidoSyspro,
   type ResumoEtapa,
   type ResumoPedidos,
   type SituacaoPedido,
+  tipoDocumento,
 } from "@/lib/pedidos";
 
 const RESUMO_ETAPA_VAZIO: ResumoEtapa = { media: null, dentro: 0, fora: 0, percentualNoPrazo: null, emAndamento: 0 };
@@ -148,6 +152,8 @@ export function EntregasView({
   // Padrão operacional: a tela abre nos pedidos que ainda precisam de ação.
   const [situacao, setSituacao] = useState<FiltroSituacao>("em-aberto");
   const [apenasEstourados, setApenasEstourados] = useState(false);
+  // Padrão: só pedidos de venda (orçamento não é entrega).
+  const [documento, setDocumento] = useState<FiltroDocumento>("pedido");
   const [hoje, setHoje] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
@@ -211,6 +217,7 @@ export function EntregasView({
     };
     return linhas
       .filter((linha) => {
+        if (!passaFiltroDocumento(linha, documento)) return false;
         if (!passaFiltroSituacao(linha, situacao)) return false;
         if (
           apenasEstourados &&
@@ -234,13 +241,16 @@ export function EntregasView({
         if (a.dataVenda !== b.dataVenda) return a.dataVenda < b.dataVenda ? -1 : 1;
         return (a.horaVenda ?? "").localeCompare(b.horaVenda ?? "");
       });
-  }, [linhas, busca, situacao, apenasEstourados]);
+  }, [linhas, busca, situacao, apenasEstourados, documento]);
 
   const resumoFiltrado = useMemo(() => resumirPedidos(linhasFiltradas, { hoje }), [linhasFiltradas, hoje]);
   const resumoPeriodo = useMemo(() => resumirPedidos(linhas, { hoje }), [linhas, hoje]);
 
   const filtrosAtivos =
-    (busca.trim() ? 1 : 0) + (situacao !== "em-aberto" ? 1 : 0) + (apenasEstourados ? 1 : 0);
+    (busca.trim() ? 1 : 0) +
+    (situacao !== "em-aberto" ? 1 : 0) +
+    (apenasEstourados ? 1 : 0) +
+    (documento !== "pedido" ? 1 : 0);
 
   function exportarCsv() {
     if (linhasFiltradas.length === 0) {
@@ -431,8 +441,15 @@ export function EntregasView({
               setBusca("");
               setSituacao("em-aberto");
               setApenasEstourados(false);
+              setDocumento("pedido");
             }}
           >
+            <FiltroRelatorio
+              rotulo="Filtrar por documento"
+              valor={documento}
+              opcoes={FILTROS_DOCUMENTO.map((opcao) => ({ valor: opcao.valor, rotulo: opcao.rotulo }))}
+              onChange={(valor) => setDocumento(valor as FiltroDocumento)}
+            />
             <FiltroRelatorio
               rotulo="Filtrar por situação"
               valor={situacao}
@@ -491,7 +508,16 @@ export function EntregasView({
                     kind: "name",
                     className: "w-20 whitespace-nowrap",
                     value: (linha) => linha.numero,
-                    cell: (linha) => <span className="font-mono text-[11px] font-semibold">{linha.numero}</span>,
+                    cell: (linha) => (
+                      <span className="flex items-center gap-1">
+                        <span className="font-mono text-[11px] font-semibold">{linha.numero}</span>
+                        {tipoDocumento(linha) === "orcamento" ? (
+                          <span className="rounded bg-muted px-1 text-[9px] font-semibold uppercase text-muted-foreground">
+                            orç
+                          </span>
+                        ) : null}
+                      </span>
+                    ),
                   },
                   {
                     id: "cliente",

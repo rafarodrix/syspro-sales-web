@@ -173,6 +173,7 @@ export const GUIAS_RELATORIOS: Record<string, GuiaRelatorio> = {
     ],
     dica: "Comece pelos 'Atrasados' e olhe o percentual no prazo de cada etapa: a etapa com mais pedidos fora do limite é onde a operação perde tempo.",
     glossario: [
+      { termo: "Pedido x orçamento", definicao: "O Syspro grava os dois no mesmo cadastro: TP_PEDIDO = 'PV' é pedido de venda e 'DAV-OR' é orçamento (ORIGEM repete: BALCAO x ORCAMENTO). A tela abre somente com pedidos; orçamentos ficam no filtro de documento." },
       { termo: "Venda (D)", definicao: "Horário em que o pedido foi registrado (PEDIDO.HR_VENDA). É a origem de todos os cálculos." },
       { termo: "Separado (H)", definicao: "Horário em que a separação/conferência terminou (PEDIDO.HR_SEPARADO). O início da separação não é registrado pelo Syspro." },
       { termo: "Alerta separação", definicao: "Fórmula: separado (H) − venda (D). Limite 15 min. Como o início da separação não existe no Syspro, este tempo cobre separação + conferência." },

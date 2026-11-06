@@ -31,6 +31,10 @@ export const SLA_ENTREGA = {
 
 export interface PedidoSyspro {
   numero: string;
+  /** TP_PEDIDO: "PV" (pedido de venda) ou "DAV-OR" (orçamento). */
+  tipoPedido: string;
+  /** ORIGEM: "BALCAO", "ORCAMENTO" etc. */
+  origem: string;
   cliente: string;
   dataVenda: string;
   horaVenda: string | null;
@@ -166,6 +170,38 @@ export function montarLinhaPedido(pedido: PedidoSyspro, opcoes: OpcoesLinha = {}
 
 export function montarLinhasPedido(pedidos: PedidoSyspro[], opcoes: OpcoesLinha = {}): LinhaPedido[] {
   return pedidos.map((pedido) => montarLinhaPedido(pedido, opcoes));
+}
+
+/**
+ * O Syspro separa documento e orçamento no próprio registro:
+ *   TP_PEDIDO = "PV"     -> pedido de venda
+ *   TP_PEDIDO = "DAV-OR" -> orçamento
+ * (ORIGEM repete a mesma ideia: BALCAO x ORCAMENTO.)
+ */
+export type TipoDocumento = "pedido" | "orcamento" | "outro";
+
+export function tipoDocumento(pedido: Pick<PedidoSyspro, "tipoPedido" | "origem">): TipoDocumento {
+  const tipo = String(pedido.tipoPedido ?? "").trim().toUpperCase();
+  const origem = String(pedido.origem ?? "").trim().toUpperCase();
+  if (tipo === "DAV-OR" || origem === "ORCAMENTO") return "orcamento";
+  if (tipo === "PV") return "pedido";
+  return "outro";
+}
+
+export type FiltroDocumento = "pedido" | "orcamento" | "todos";
+
+export const FILTROS_DOCUMENTO: Array<{ valor: FiltroDocumento; rotulo: string }> = [
+  { valor: "pedido", rotulo: "Pedidos" },
+  { valor: "orcamento", rotulo: "Orçamentos" },
+  { valor: "todos", rotulo: "Pedidos e orçamentos" },
+];
+
+export function passaFiltroDocumento(
+  pedido: Pick<PedidoSyspro, "tipoPedido" | "origem">,
+  filtro: FiltroDocumento,
+): boolean {
+  if (filtro === "todos") return true;
+  return tipoDocumento(pedido) === filtro;
 }
 
 export type SituacaoPedido = "entregue" | "pendente" | "em-rota" | "cancelado" | "outro";
