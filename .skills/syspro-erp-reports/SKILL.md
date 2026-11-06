@@ -92,6 +92,15 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Metadados no rodapé, não no cabeçalho:** período, comparação e horário ficam na linha de status inferior (`StatusRelatorio`, junto de universo e filtros). Textos curtos e truncamento (`min-w-0 truncate`) para não quebrar linha.
 - Telas sem seletor de visão (Curva ABC, Margens, Compras) mantêm só as ações à direita — não invente seletor vazio.
 
+## Análise de Entrega (padrão da tela)
+- **Dois blocos de métricas, no máximo** — `AÇÃO · O que precisa de decisão` (Em aberto, Atrasados, Entregas em aberto em R$, Viagens perdidas) e `CONTEXTO · Desempenho do período` (Separação, Saída, Fechamento, Ciclo total). Sem bloco de equipe e sem "falhas de processo" separado; o colaborador já é coluna da tabela.
+- **Filtros padrão na abertura:** `Pedidos · Somente entrega · Aberto · Todas as legendas · Todos os pedidos`. "Limpar filtros" volta exatamente para isso, e `Filtros ativos` só conta o que difere do padrão.
+- **Status x legenda:** status vem de `PEDIDO.STATUS` (Aberto = nem CANCELADO nem FECHADO); legenda vem de `PEDIDO.STATUS2` e é o que a coluna **Legenda** exibe. Nunca derivar uma "situação" própria para a coluna, senão a tela contradiz o ERP.
+- **Lançamento:** `NUMERO = 0` não é pedido. Fica fora de "Aberto", tem status próprio ("Em lançamento") e um chip clicável com a contagem ao lado do título. `NUMERO = 0` + cancelado conta como cancelado.
+- **Métricas seguem o escopo estrutural** (documento, atendimento, status), não a busca nem o filtro de tempo — senão a faixa não fecha com a lista.
+- **Cabeçalho do card é `sticky`** para os filtros não sumirem com 100 linhas por página. O `Card` do shadcn usa `overflow-hidden`, que anula `position: sticky`: passe `className="overflow-visible"` nesse card.
+- **Sem texto técnico na tela:** nada de legenda de siglas no cabeçalho nem linha "Fonte: ... /api/dynamic/query" no rodapé. Isso vai para o "Como interpretar" (`relatorio-guia.tsx`), que precisa ser atualizado junto com qualquer mudança de coluna/filtro.
+
 ## Polimento visual (anti-ruído de bordas)
 - **Borda só onde há affordance** (inputs, selects, botões, popovers). Painéis de agrupamento usam tom de fundo (`bg-muted/25`, `rounded-lg`) em vez de caixa com borda — borda em volta de tudo deixa a tela "quadriculada".
 - **Card já tem `ring`** na base: não adicione `border` + `shadow` no `className` do Card (duplica o contorno). Use no máximo `shadow-2xs`.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock, Truck } from "lucide-react";
+import { Truck } from "lucide-react";
 import { toast } from "sonner";
 import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
@@ -178,7 +178,7 @@ export function EntregasView({
   const [apenasEstourados, setApenasEstourados] = useState(false);
   // Padrão: só pedidos de venda (orçamento não é entrega).
   const [documento, setDocumento] = useState<FiltroDocumento>("pedido");
-  const [atendimento, setAtendimento] = useState<FiltroAtendimento>("todos");
+  const [atendimento, setAtendimento] = useState<FiltroAtendimento>("entrega");
   const [hoje, setHoje] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
@@ -454,9 +454,6 @@ export function EntregasView({
                   </button>
                 ) : null}
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                A. sep. / A. saída / A. fech. = tempo gasto naquela etapa (do marco anterior até ela).
-              </p>
             </div>
           </div>
           <DataFilterBar
@@ -470,7 +467,7 @@ export function EntregasView({
               setLegenda("todas");
               setApenasEstourados(false);
               setDocumento("pedido");
-              setAtendimento("todos");
+              setAtendimento("entrega");
             }}
           >
             <FiltroRelatorio
@@ -647,18 +644,10 @@ export function EntregasView({
                     itens={[
                       { rotulo: "Pedidos", valor: formatarNumero(linhasRodape.length, 0) },
                       {
-                        rotulo: "Período",
-                        valor: periodoConsultado
-                          ? `${periodoConsultado.inicial.split("-").reverse().join("/")} a ${periodoConsultado.final.split("-").reverse().join("/")}`
-                          : "—",
-                        destaque: true,
-                        definicao: "Período consultado no Syspro.",
-                      },
-                      {
                         rotulo: "Filtros ativos",
                         valor: formatarNumero(filtrosAtivos, 0),
                         destaque: true,
-                        definicao: "Conta busca textual, situação e filtro de tempo.",
+                        definicao: "Conta busca, documento, atendimento, status, legenda e filtro de tempo diferentes do padrão.",
                       },
                     ]}
                   />
@@ -680,11 +669,6 @@ export function EntregasView({
           )}
         </CardContent>
       </Card>
-
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Clock className="size-3.5" />
-        <span>Fonte: PEDIDO / ENTREGA / PARTICIPANTE via /api/dynamic/query do SysproServer.</span>
-      </div>
 
       <GlossarioRelatorio
         itens={GUIAS_RELATORIOS.entregas.glossario ?? []}
