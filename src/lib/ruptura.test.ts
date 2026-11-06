@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  MIN_DIAS_BASE_DEMANDA,
   diasBaseDemanda,
   reconstruirDiasEstoque,
   semBaseDeEstoque,
@@ -123,5 +124,29 @@ describe("dias com estoque (sugestão de ruptura)", () => {
     expect(dias.diasConsiderados).toBe(0);
     expect(dias.diasComEstoque).toBe(0);
     expect(semBaseDeEstoque(dias)).toBe(true);
+  });
+
+  it("não projeta sobre amostra curta: base cai no período avaliado", () => {
+    // 1 dia com estoque e 36 em ruptura dentro de 37 dias avaliados
+    const dias = {
+      diasComEstoque: 1,
+      diasEmRuptura: 36,
+      diasConsiderados: 37,
+      saldoAbertura: 0,
+      saldoFechamento: 0,
+    };
+    expect(diasBaseDemanda(dias, 90)).toBe(37);
+    expect(MIN_DIAS_BASE_DEMANDA).toBeGreaterThan(1);
+  });
+
+  it("mantém o ritmo das rupturas quando a amostra é confiável", () => {
+    const dias = {
+      diasComEstoque: 60,
+      diasEmRuptura: 30,
+      diasConsiderados: 90,
+      saldoAbertura: 10,
+      saldoFechamento: 0,
+    };
+    expect(diasBaseDemanda(dias, 90)).toBe(60);
   });
 });

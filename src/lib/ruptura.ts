@@ -121,8 +121,18 @@ export function reconstruirDiasEstoque(
  * estoque). Nesse caso a média é a mesma de antes, então `semBaseEstoque`
  * precisa ser checado por quem decide a compra.
  */
+export const MIN_DIAS_BASE_DEMANDA = 15;
+
 export function diasBaseDemanda(dias: DiasEstoqueProduto, diasPeriodo: number): number {
-  if (dias.diasComEstoque > 0) return dias.diasComEstoque;
+  if (dias.diasComEstoque > 0) {
+    // Amostra curta não define ritmo: produto que apareceu por 1 dia com 36
+    // vendas geraria 36/dia e uma sugestão de 3.240 peças. Abaixo do mínimo,
+    // vale o período avaliado inteiro (sem ajuste de ruptura).
+    if (dias.diasComEstoque < MIN_DIAS_BASE_DEMANDA) {
+      return Math.max(dias.diasComEstoque, dias.diasConsiderados);
+    }
+    return dias.diasComEstoque;
+  }
   return diasPeriodo > 0 ? diasPeriodo : 0;
 }
 

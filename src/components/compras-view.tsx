@@ -482,7 +482,11 @@ export function ComprasView({
                     },
                     {
                       id: "ruptura",
-                      header: <span title="Dias do período em que o produto ficou sem saldo positivo no Kardex. A média diária e a sugestão desconsideram esses dias">Dias em ruptura</span>,
+                      header: (
+                        <span title="Dias em ruptura de dias avaliados. O produto só é avaliado a partir do primeiro movimento no período, por isso o total pode ser menor que o período inteiro">
+                          Dias em ruptura
+                        </span>
+                      ),
                       kind: "number",
                       value: (item) => item.diasEmRuptura,
                       cell: (item) => (
@@ -490,7 +494,12 @@ export function ComprasView({
                           {item.semBaseEstoque ? (
                             <span className="text-muted-foreground">-</span>
                           ) : item.diasEmRuptura > 0 ? (
-                            <span className="font-semibold">{formatarNumero(item.diasEmRuptura, 0)}</span>
+                            <span className="font-semibold">
+                              {formatarNumero(item.diasEmRuptura, 0)}
+                              <span className="font-normal text-muted-foreground">
+                                /{formatarNumero(item.diasConsiderados ?? item.diasComEstoque + item.diasEmRuptura, 0)}
+                              </span>
+                            </span>
                           ) : (
                             <span className="text-muted-foreground">0</span>
                           )}

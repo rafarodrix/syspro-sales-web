@@ -39,6 +39,8 @@ export interface ItemRelatorioCompras {
   diasComEstoque: number;
   /** Dias do período em que o produto ficou sem saldo positivo. */
   diasEmRuptura: number;
+  /** Dias efetivamente avaliados (período menos o que antecede o 1º movimento). */
+  diasConsiderados?: number;
   /** true quando o Kardex nunca registrou saldo positivo no período (base sem controle de estoque). */
   semBaseEstoque: boolean;
   dataUltimoMovimento: string | null;
@@ -279,6 +281,7 @@ export function montarRelatorioCompras(
     const baseDias = diasBaseDemanda(diasEstoque, diasPeriodo);
     item.diasComEstoque = diasEstoque.diasComEstoque;
     item.diasEmRuptura = diasEstoque.diasEmRuptura;
+  item.diasConsiderados = diasEstoque.diasConsiderados;
     item.semBaseEstoque = semBaseDeEstoque(diasEstoque);
     item.mediaDiaria = baseDias > 0 ? item.demandaLiquida / baseDias : 0;
     item.coberturaDias = calcularCoberturaEstoque(item.estoqueAtual, item.demandaLiquida, baseDias);
@@ -339,6 +342,7 @@ export function montarRelatorioCompras(
       coberturaDias: item.coberturaDias,
       diasComEstoque: item.diasComEstoque,
       diasEmRuptura: item.diasEmRuptura,
+    diasConsiderados: item.diasConsiderados,
       semBaseEstoque: item.semBaseEstoque,
       dataUltimoMovimento: item.dataUltimoMovimento,
       produtoId: item.produtoId,
