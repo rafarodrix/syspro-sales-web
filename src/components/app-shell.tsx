@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { EmpresaNavSelect } from "@/components/empresa-nav-select";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AlterarSenhaDialog } from "@/components/alterar-senha-dialog";
 import { LogOutButton } from "@/components/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -475,8 +476,15 @@ export function AppShell({
                 </span>
               </div>
             )}
+            {!collapsed && <AlterarSenhaDialog compacto />}
             {!collapsed && <LogOutButton />}
           </div>
+
+          {collapsed ? (
+            <div className="flex justify-center">
+              <AlterarSenhaDialog compacto />
+            </div>
+          ) : null}
 
           {/* Botão de Colapsar / Expandir */}
           <Button
@@ -674,7 +682,10 @@ export function AppShell({
                 </div>
                 <span>{userName}</span>
               </div>
-              <LogOutButton />
+              <div className="flex items-center gap-2">
+                <AlterarSenhaDialog compacto />
+                <LogOutButton />
+              </div>
             </div>
           </div>
         </div>
