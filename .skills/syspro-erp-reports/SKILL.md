@@ -92,6 +92,12 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Metadados no rodapé, não no cabeçalho:** período, comparação e horário ficam na linha de status inferior (`StatusRelatorio`, junto de universo e filtros). Textos curtos e truncamento (`min-w-0 truncate`) para não quebrar linha.
 - Telas sem seletor de visão (Curva ABC, Margens, Compras) mantêm só as ações à direita — não invente seletor vazio.
 
+## Autoatendimento do usuário (senha)
+- **O usuário troca a própria senha** pelo rodapé da sidebar (`AlterarSenhaDialog`, ícone de chave ao lado de "Sair"), com senha atual + nova + confirmação, mínimo de 8 e `revokeOtherSessions: true`.
+- **Empresa vinculada e perfil de acesso são exclusivos do administrador** — nunca exponha esses campos no autoatendimento.
+- Regras e tradução dos erros do Better Auth ficam em `src/lib/senha.ts` (testado), não dentro do componente.
+- Better Auth rejeita `change-password` sem cabeçalho `Origin` (403 `MISSING_OR_NULL_ORIGIN`): teste a rota com `Origin` explícito, senão parece bug.
+
 ## Sugestão de compra (ruptura)
 - **Média diária = demanda líquida ÷ dias COM estoque** (Kardex), nunca ÷ período inteiro — é o que corrige o ritmo de quem ficou em ruptura.
 - **Amostra curta não projeta ritmo:** com menos de `MIN_DIAS_BASE_DEMANDA` (15) dias de estoque, a base vira o período avaliado. Sem esse piso, produto com 1 dia de estoque e 36 vendas gerava média 36/dia e sugestão de 3.240 peças.
