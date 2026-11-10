@@ -166,22 +166,22 @@ export function AbaMargens({
         <ActionMetricCard
           titulo="Venda total"
           valor={formatarMoeda(resumo.faturamentoAntesEdv)}
-          descricao="Faturamento bruto do período, antes das devoluções."
+          descricao="Antes das devoluções."
         />
         <ActionMetricCard
           titulo="Devoluções"
           valor={formatarMoeda(resumo.devolucoesEdv)}
-          descricao="Valor devolvido pelo cliente no período."
+          descricao="Devolvido pelo cliente."
         />
         <ActionMetricCard
           titulo="Vendas líquidas"
           valor={formatarMoeda(resumo.faturamentoDepoisEdv)}
-          descricao="Venda total menos devoluções."
+          descricao="Venda total − devoluções."
         />
         <ActionMetricCard
           titulo="Lucro após devoluções"
           valor={formatarMoeda(resumo.lucroDepoisEdv)}
-          descricao="Lucro bruto só nos produtos com custo de reposição informado."
+          descricao="Só produtos com custo informado."
         />
       </div>
 
@@ -265,9 +265,9 @@ export function AbaMargens({
             { id: "faturamento", header: <>Venda total</>, kind: "currency", value: (item) => item.valorVendido, cell: (item) => <>{formatarMoeda(item.valorVendido)}</> },
             { id: "edv", header: <>Devoluções</>, kind: "currency", value: (item) => item.valorDevolvido, cell: (item) => <>{formatarMoeda(item.valorDevolvido)}</> },
             { id: "faturamentoLiquido", header: <>Vendas líquidas</>, kind: "currency", value: (item) => item.valorVendaLiquida, cell: (item) => <>{formatarMoeda(item.valorVendaLiquida)}</> },
-            { id: "margemAntes", header: <>Margem antes</>, kind: "percent", value: (item) => item.margemAntesEdv, exportValue: (item) => item.margemAntesEdv === null ? "Sem custo" : formatarPercentual(item.margemAntesEdv, 1), cell: (item) => <>{item.margemAntesEdv === null ? "—" : formatarPercentual(item.margemAntesEdv, 1)}</> },
-            { id: "margemDepois", header: <>Margem após dev.</>, kind: "percent", value: (item) => item.margemDepoisEdv, exportValue: (item) => item.margemDepoisEdv === null ? "Sem custo" : formatarPercentual(item.margemDepoisEdv, 1), cell: (item) => <span className={item.margemDepoisEdv !== null && item.margemDepoisEdv < 0 ? "font-semibold text-destructive" : ""}>{item.margemDepoisEdv === null ? "—" : formatarPercentual(item.margemDepoisEdv, 1)}</span> },
-  { id: "lucroDepois", header: <>Lucro após dev.</>, kind: "currency", value: (item) => item.lucroDepoisEdv, exportValue: (item) => item.lucroDepoisEdv ?? "Sem custo", cell: (item) => <span className={item.lucroDepoisEdv !== null && item.lucroDepoisEdv < 0 ? "font-semibold text-destructive" : ""}>{item.lucroDepoisEdv === null ? "—" : formatarMoeda(item.lucroDepoisEdv)}</span> },
+            { id: "margemAntes", header: <span title="Margem antes das devoluções">Margem ant.</span>, kind: "percent", value: (item) => item.margemAntesEdv, exportValue: (item) => item.margemAntesEdv === null ? "Sem custo" : formatarPercentual(item.margemAntesEdv, 1), cell: (item) => <>{item.margemAntesEdv === null ? "—" : formatarPercentual(item.margemAntesEdv, 1)}</> },
+            { id: "margemDepois", header: <span title="Margem depois de descontar as devoluções">Margem líq.</span>, kind: "percent", value: (item) => item.margemDepoisEdv, exportValue: (item) => item.margemDepoisEdv === null ? "Sem custo" : formatarPercentual(item.margemDepoisEdv, 1), cell: (item) => <span className={item.margemDepoisEdv !== null && item.margemDepoisEdv < 0 ? "font-semibold text-destructive" : ""}>{item.margemDepoisEdv === null ? "—" : formatarPercentual(item.margemDepoisEdv, 1)}</span> },
+  { id: "lucroDepois", header: <span title="Lucro bruto após as devoluções">Lucro líq.</span>, kind: "currency", value: (item) => item.lucroDepoisEdv, exportValue: (item) => item.lucroDepoisEdv ?? "Sem custo", cell: (item) => <span className={item.lucroDepoisEdv !== null && item.lucroDepoisEdv < 0 ? "font-semibold text-destructive" : ""}>{item.lucroDepoisEdv === null ? "—" : formatarMoeda(item.lucroDepoisEdv)}</span> },
             { id: "impacto", header: <>Impacto no lucro</>, kind: "currency", value: (item) => item.impactoLucroEdv, exportValue: (item) => item.impactoLucroEdv ?? "Sem custo", cell: (item) => <>{item.impactoLucroEdv === null ? "—" : formatarMoeda(item.impactoLucroEdv)}</> },
           ]}
         />
@@ -284,7 +284,7 @@ export function AbaMargens({
           { id: "vendaTotal", header: <>Venda total</>, kind: "currency", value: (linha) => linha.vendaTotal, cell: (linha) => <>{formatarMoeda(linha.vendaTotal)}</> },
           { id: "devolucoes", header: <>Devoluções</>, kind: "currency", value: (linha) => linha.devolucoes, cell: (linha) => <>{formatarMoeda(linha.devolucoes)}</> },
           { id: "vendaLiquida", header: <>Vendas líquidas</>, kind: "currency", value: (linha) => linha.vendaLiquida, cell: (linha) => <>{formatarMoeda(linha.vendaLiquida)}</> },
-          { id: "lucro", header: <>Lucro após dev.</>, kind: "currency", value: (linha) => linha.lucro, cell: (linha) => <span className={linha.lucro < 0 ? "font-semibold text-negativo" : ""}>{formatarMoeda(linha.lucro)}</span> },
+          { id: "lucro", header: <span title="Lucro bruto após as devoluções">Lucro líq.</span>, kind: "currency", value: (linha) => linha.lucro, cell: (linha) => <span className={linha.lucro < 0 ? "font-semibold text-negativo" : ""}>{formatarMoeda(linha.lucro)}</span> },
           { id: "margem", header: <>Margem</>, kind: "percent", value: (linha) => linha.margem, cell: (linha) => <span className={linha.margem !== null && linha.margem < 0 ? "font-semibold text-negativo" : ""}>{linha.margem === null ? "—" : formatarPercentual(linha.margem, 1)}</span> },
         ]}
         rodape={(linhas) => (
