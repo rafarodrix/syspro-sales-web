@@ -202,3 +202,96 @@ export function montarAnaliseMargens(
     consultadoEm: new Date().toISOString(),
   };
 }
+
+/** Faixas de margem usadas na visão de distribuição. */
+export const FAIXAS_MARGEM = [
+  { id: "negativa", rotulo: "Margem negativa" },
+  { id: "ate10", rotulo: "Até 10%" },
+  { id: "10a20", rotulo: "10% a 20%" },
+  { id: "20a30", rotulo: "20% a 30%" },
+  { id: "acima30", rotulo: "Acima de 30%" },
+  { id: "sem-custo", rotulo: "Sem custo informado" },
+] as const;
+
+export type FaixaMargem = (typeof FAIXAS_MARGEM)[number]["id"];
+
+export function faixaDeMargem(margem: number | null): FaixaMargem {
+  if (margem === null || !Number.isFinite(margem)) return "sem-custo";
+  if (margem < 0) return "negativa";
+  if (margem < 10) return "ate10";
+  if (margem < 20) return "10a20";
+  if (margem < 30) return "20a30";
+  return "acima30";
+}
+
+export type DimensaoMargem = "curva" | "faixa";
+
+export interface LinhaAgregadaMargem {
+  chave: string;
+  rotulo: string;
+  produtos: number;
+  vendaTotal: number;
+  devolucoes: number;
+  vendaLiquida: number;
+  lucro: number;
+  margem: number | null;
+}
+
+/**
+ * Agrupa os produtos por curva ABC ou por faixa de margem. Serve para responder
+ * "onde está o problema" sem obrigar a ler produto por produto.
+ */
+export function agregarMargens(
+  itens: ItemAnaliseMargem[],
+  dimensao: DimensaoMargem,
+): LinhaAgregadaMargem[] {
+  const grupos = new Map<string, LinhaAgregadaMargem>();
+
+  const garantir = (chave: string, rotulo: string): LinhaAgregadaMargem => {
+    const atual = grupos.get(chave);
+    if (atual) return atual;
+    const novo: LinhaAgregadaMargem = {
+      chave,
+      rotulo,
+      produtos: 0,
+      vendaTotal: 0,
+      devolucoes: 0,
+      vendaLiquida: 0,
+      lucro: 0,
+      margem: null,
+    };
+    grupos.set(chave, novo);
+    return novo;
+  };
+
+  for (const item of itens) {
+    const chave = dimensao === "curva" ? `curva-${item.curva}` : faixaDeMargem(item.margemDepoisEdv);
+    const rotulo =
+      dimensao === "curva"
+        ? `Curva ${item.curva}`
+        : (FAIXAS_MARGEM.find((faixa) => faixa.id === chave)?.rotulo ?? chave);
+
+    const grupo = garantir(chave, rotulo);
+    grupo.produtos += 1;
+    grupo.vendaTotal += item.valorVendido;
+    grupo.devolucoes += item.valorDevolvido;
+    grupo.vendaLiquida += item.valorVendaLiquida;
+    grupo.lucro += item.lucroDepoisEdv ?? 0;
+  }
+
+  const ordemCurva = ["curva-A", "curva-B", "curva-C"];
+  const ordemFaixa = FAIXAS_MARGEM.map((faixa) => faixa.id as string);
+
+  return [...grupos.values()]
+    .map((grupo) => ({
+      ...grupo,
+      margem: grupo.vendaLiquida > 0 ? (grupo.lucro / grupo.vendaLiquida) * 100 : null,
+    }))
+    .sort((a, b) => {
+      const ordem = dimensao === "curva" ? ordemCurva : ordemFaixa;
+      const posicaoA = ordem.indexOf(a.chave);
+      const posicaoB = ordem.indexOf(b.chave);
+      if (posicaoA !== posicaoB) return posicaoA - posicaoB;
+      return b.vendaLiquida - a.vendaLiquida;
+    });
+}

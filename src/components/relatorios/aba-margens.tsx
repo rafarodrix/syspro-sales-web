@@ -17,18 +17,25 @@ import {
 } from "@/components/ui/select";
 import type { Periodo } from "@/lib/periodo";
 import {
+  agregarMargens,
   CRITERIOS_ORDENACAO_MARGEM,
   ordenarItensMargem,
   type AnaliseMargens,
   type CriterioOrdenacaoMargem,
   type ItemAnaliseMargem,
+  type LinhaAgregadaMargem,
 } from "@/lib/analise-margens";
 import { chaveConsulta } from "@/lib/cache-consulta";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { useConsulta } from "@/lib/use-consulta";
 import { ReportTable } from "./report-table";
 import { FiltroRelatorio } from "./filtro-relatorio";
+import { ReportBarraVisao, ReportVisaoProvider } from "./report-barra";
 import { ReportMetricStrip } from "./report-toolbar";
+import { ReportViewSelector } from "./report-view-toggle";
+import { LayoutList, Layers, PieChart } from "lucide-react";
+
+type VisaoMargem = "produto" | "curva" | "faixa";
 
 type SituacaoMargem = "todas" | "negativa" | "baixa" | "saudavel" | "sem-custo";
 
@@ -80,6 +87,7 @@ export function AbaMargens({
     usuarioId,
   });
 
+  const [visao, setVisao] = useState<VisaoMargem>("produto");
   const [produtoSelecionado, setProdutoSelecionado] = useState<ItemAnaliseMargem | null>(null);
   const [ordenacao, setOrdenacao] = useState<CriterioOrdenacaoMargem>("faturamento");
   const [curva, setCurva] = useState<"todas" | "A" | "B" | "C">("todas");
@@ -111,8 +119,14 @@ export function AbaMargens({
     return ordenarItensMargem(filtrados, ordenacao);
   }, [busca, curva, dados?.itens, ordenacao, situacao]);
 
+  const agregado = useMemo(
+    () => (visao === "produto" ? [] : agregarMargens(itens, visao)),
+    [itens, visao],
+  );
+
+
   if (erro && !dados) {
-    return <FeedbackState variant="error" title="Não foi possível calcular as margens com EDV" description={erro} />;
+    return <FeedbackState variant="error" title="Não foi possível calcular as margens" description={erro} />;
   }
   if (carregando && !dados) {
     return <div className="space-y-3 py-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-72 w-full" /></div>;
@@ -131,44 +145,51 @@ export function AbaMargens({
         timeZone: "America/Sao_Paulo",
       }).format(new Date(dados.consultadoEm));
 
+  const seletorVisao = (
+    <ReportViewSelector
+      view={visao}
+      options={[
+        { value: "produto", label: "Produto", icon: LayoutList },
+        { value: "curva", label: "Curva ABC", icon: Layers },
+        { value: "faixa", label: "Faixa de margem", icon: PieChart },
+      ]}
+      onViewChange={(proxima) => setVisao(proxima as VisaoMargem)}
+    />
+  );
+
   return (
+    <ReportVisaoProvider>
     <div className="space-y-4">
+      <ReportBarraVisao>{seletorVisao}</ReportBarraVisao>
+
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <ActionMetricCard
-          titulo="Margem após EDV"
-          valor={formatarPercentual(resumo.margemDepoisEdv, 1)}
-          descricao={`Lucro bruto sobre o faturamento líquido de devoluções, só onde há custo de reposição. Antes das devoluções: ${formatarPercentual(resumo.margemAntesEdv, 1)}.`}
+          titulo="Venda total"
+          valor={formatarMoeda(resumo.faturamentoAntesEdv)}
+          descricao="Faturamento bruto do período, antes das devoluções."
         />
         <ActionMetricCard
-          titulo="Impacto das devoluções (EDV)"
-          valor={formatarMoeda(resumo.impactoLucroEdv)}
-          descricao={`Perda de lucro bruto causada pelas devoluções: ${formatarMoeda(resumo.devolucoesEdv)} devolvidos.`}
+          titulo="Devoluções"
+          valor={formatarMoeda(resumo.devolucoesEdv)}
+          descricao="Valor devolvido pelo cliente no período."
         />
         <ActionMetricCard
-          titulo="Margem negativa"
-          valor={formatarNumero(resumo.produtosMargemNegativa, 0)}
-          descricao={`Produtos com custo informado e margem abaixo de zero. ${formatarNumero(resumo.produtosMargemBaixa, 0)} estão abaixo de 20%.`}
-          acaoTitulo="Filtrar produtos com margem negativa"
-          onClick={() => {
-            setSituacao("baixa");
-            setCurva("todas");
-            setOrdenacao("margem");
-          }}
+          titulo="Vendas líquidas"
+          valor={formatarMoeda(resumo.faturamentoDepoisEdv)}
+          descricao="Venda total menos devoluções."
         />
         <ActionMetricCard
-          titulo="Faturamento sem custo"
-          valor={formatarMoeda(resumo.faturamentoSemCusto)}
-          descricao={`Fica fora do cálculo porque a API não informou custo de reposição. Cobertura de custo: ${formatarPercentual(resumo.coberturaCusto, 1)}.`}
-          acaoTitulo="Ver produtos sem custo informado"
-          onClick={() => setSituacao("sem-custo")}
+          titulo="Lucro após devoluções"
+          valor={formatarMoeda(resumo.lucroDepoisEdv)}
+          descricao="Lucro bruto só nos produtos com custo de reposição informado."
         />
       </div>
 
       <ReportMetricStrip items={[
-        { label: "Vendas antes de EDV", value: formatarMoeda(resumo.faturamentoAntesEdv) },
-        { label: "Vendas líquidas de EDV", value: formatarMoeda(resumo.faturamentoDepoisEdv) },
-        { label: "Lucro antes de EDV", value: formatarMoeda(resumo.lucroAntesEdv) },
-        { label: "Lucro após EDV", value: formatarMoeda(resumo.lucroDepoisEdv), attention: resumo.lucroDepoisEdv < 0 },
+        { label: "Margem após devoluções", value: formatarPercentual(resumo.margemDepoisEdv, 1) },
+        { label: "Impacto no lucro", value: formatarMoeda(resumo.impactoLucroEdv), attention: resumo.impactoLucroEdv < 0 },
+        { label: "Margem negativa", value: `${formatarNumero(resumo.produtosMargemNegativa, 0)} produto(s)` },
+        { label: "Sem custo informado", value: formatarMoeda(resumo.faturamentoSemCusto) },
       ]} />
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -230,27 +251,55 @@ export function AbaMargens({
         />
       </DataFilterBar>
 
-      <ReportTable<ItemAnaliseMargem>
-        caption="Margem por produto antes e depois das devoluções de venda"
-        label="produtos"
-        data={itens}
-        rowKey={(item) => `${item.empresaId}-${item.produtoId ?? item.codigo}`}
+      {visao === "produto" ? (
+        <ReportTable<ItemAnaliseMargem>
+          caption="Margem por produto antes e depois das devoluções"
+          label="produtos"
+          data={itens}
+          rowKey={(item) => `${item.empresaId}-${item.produtoId ?? item.codigo}`}
+          stickyFirst
+          exportObservacoes="Margens calculadas exclusivamente com custo de reposição. A devolução é vinculada por ID interno do produto (não exportado); o Kardex não permite atribuir devolução a vendedor ou cliente."
+          columns={[
+            { id: "produto", header: <>Produto</>, kind: "name", value: (item) => item.produto, exportValue: (item) => item.produto, cell: (item) => <button type="button" className="text-left hover:text-primary hover:underline" onClick={() => setProdutoSelecionado(item)}><span className="block font-medium">{item.produto}</span><span className="block font-mono text-[11px] text-muted-foreground">{item.codigo || "Sem código auxiliar"}</span></button> },
+            { id: "empresa", header: <>Empresa</>, kind: "name", value: (item) => item.empresaNome, cell: (item) => <>{item.empresaNome}</> },
+            { id: "faturamento", header: <>Venda total</>, kind: "currency", value: (item) => item.valorVendido, cell: (item) => <>{formatarMoeda(item.valorVendido)}</> },
+            { id: "edv", header: <>Devoluções</>, kind: "currency", value: (item) => item.valorDevolvido, cell: (item) => <>{formatarMoeda(item.valorDevolvido)}</> },
+            { id: "faturamentoLiquido", header: <>Vendas líquidas</>, kind: "currency", value: (item) => item.valorVendaLiquida, cell: (item) => <>{formatarMoeda(item.valorVendaLiquida)}</> },
+            { id: "margemAntes", header: <>Margem antes</>, kind: "percent", value: (item) => item.margemAntesEdv, exportValue: (item) => item.margemAntesEdv === null ? "Sem custo" : formatarPercentual(item.margemAntesEdv, 1), cell: (item) => <>{item.margemAntesEdv === null ? "—" : formatarPercentual(item.margemAntesEdv, 1)}</> },
+            { id: "margemDepois", header: <>Margem após dev.</>, kind: "percent", value: (item) => item.margemDepoisEdv, exportValue: (item) => item.margemDepoisEdv === null ? "Sem custo" : formatarPercentual(item.margemDepoisEdv, 1), cell: (item) => <span className={item.margemDepoisEdv !== null && item.margemDepoisEdv < 0 ? "font-semibold text-destructive" : ""}>{item.margemDepoisEdv === null ? "—" : formatarPercentual(item.margemDepoisEdv, 1)}</span> },
+  { id: "lucroDepois", header: <>Lucro após dev.</>, kind: "currency", value: (item) => item.lucroDepoisEdv, exportValue: (item) => item.lucroDepoisEdv ?? "Sem custo", cell: (item) => <span className={item.lucroDepoisEdv !== null && item.lucroDepoisEdv < 0 ? "font-semibold text-destructive" : ""}>{item.lucroDepoisEdv === null ? "—" : formatarMoeda(item.lucroDepoisEdv)}</span> },
+            { id: "impacto", header: <>Impacto no lucro</>, kind: "currency", value: (item) => item.impactoLucroEdv, exportValue: (item) => item.impactoLucroEdv ?? "Sem custo", cell: (item) => <>{item.impactoLucroEdv === null ? "—" : formatarMoeda(item.impactoLucroEdv)}</> },
+          ]}
+        />
+      ) : (
+      <ReportTable<LinhaAgregadaMargem>
+        caption={visao === "curva" ? "Margem por curva ABC" : "Margem por faixa de margem"}
+        label="faixas"
+        data={agregado}
+        rowKey={(linha) => linha.chave}
         stickyFirst
-        exportObservacoes="Margens calculadas exclusivamente com custo de reposição. EDV é vinculada por ID interno do produto; o ID não é exportado. O Kardex não permite atribuir a EDV com segurança a vendedor ou cliente."
         columns={[
-          { id: "produto", header: <>Produto</>, kind: "name", value: (item) => item.produto, exportValue: (item) => item.produto, cell: (item) => <button type="button" className="text-left hover:text-primary hover:underline" onClick={() => setProdutoSelecionado(item)}><span className="block font-medium">{item.produto}</span><span className="block font-mono text-[11px] text-muted-foreground">{item.codigo || "Sem código auxiliar"}</span></button> },
-          { id: "empresa", header: <>Empresa</>, kind: "name", value: (item) => item.empresaNome, cell: (item) => <>{item.empresaNome}</> },
-          { id: "faturamento", header: <>Fat. antes EDV</>, kind: "currency", value: (item) => item.valorVendido, cell: (item) => <>{formatarMoeda(item.valorVendido)}</> },
-          { id: "edv", header: <>EDV</>, kind: "currency", value: (item) => item.valorDevolvido, cell: (item) => <>{formatarMoeda(item.valorDevolvido)}</> },
-          { id: "faturamentoLiquido", header: <>Fat. após EDV</>, kind: "currency", value: (item) => item.valorVendaLiquida, cell: (item) => <>{formatarMoeda(item.valorVendaLiquida)}</> },
-          { id: "margemAntes", header: <>Margem antes</>, kind: "percent", value: (item) => item.margemAntesEdv, exportValue: (item) => item.margemAntesEdv === null ? "Sem custo" : formatarPercentual(item.margemAntesEdv, 1), cell: (item) => <>{item.margemAntesEdv === null ? "—" : formatarPercentual(item.margemAntesEdv, 1)}</> },
-          { id: "margemDepois", header: <>Margem após EDV</>, kind: "percent", value: (item) => item.margemDepoisEdv, exportValue: (item) => item.margemDepoisEdv === null ? "Sem custo" : formatarPercentual(item.margemDepoisEdv, 1), cell: (item) => <span className={item.margemDepoisEdv !== null && item.margemDepoisEdv < 0 ? "font-semibold text-destructive" : ""}>{item.margemDepoisEdv === null ? "—" : formatarPercentual(item.margemDepoisEdv, 1)}</span> },
-{ id: "lucroDepois", header: <>Lucro após EDV</>, kind: "currency", value: (item) => item.lucroDepoisEdv, exportValue: (item) => item.lucroDepoisEdv ?? "Sem custo", cell: (item) => <span className={item.lucroDepoisEdv !== null && item.lucroDepoisEdv < 0 ? "font-semibold text-destructive" : ""}>{item.lucroDepoisEdv === null ? "—" : formatarMoeda(item.lucroDepoisEdv)}</span> },
-          { id: "impacto", header: <>Impacto no lucro</>, kind: "currency", value: (item) => item.impactoLucroEdv, exportValue: (item) => item.impactoLucroEdv ?? "Sem custo", cell: (item) => <>{item.impactoLucroEdv === null ? "—" : formatarMoeda(item.impactoLucroEdv)}</> },
+          { id: "grupo", header: <>{visao === "curva" ? "Curva" : "Faixa"}</>, kind: "name", value: (linha) => linha.rotulo, cell: (linha) => <span className="font-medium">{linha.rotulo}</span> },
+          { id: "produtos", header: <>Produtos</>, kind: "number", value: (linha) => linha.produtos, cell: (linha) => <>{formatarNumero(linha.produtos, 0)}</> },
+          { id: "vendaTotal", header: <>Venda total</>, kind: "currency", value: (linha) => linha.vendaTotal, cell: (linha) => <>{formatarMoeda(linha.vendaTotal)}</> },
+          { id: "devolucoes", header: <>Devoluções</>, kind: "currency", value: (linha) => linha.devolucoes, cell: (linha) => <>{formatarMoeda(linha.devolucoes)}</> },
+          { id: "vendaLiquida", header: <>Vendas líquidas</>, kind: "currency", value: (linha) => linha.vendaLiquida, cell: (linha) => <>{formatarMoeda(linha.vendaLiquida)}</> },
+          { id: "lucro", header: <>Lucro após dev.</>, kind: "currency", value: (linha) => linha.lucro, cell: (linha) => <span className={linha.lucro < 0 ? "font-semibold text-negativo" : ""}>{formatarMoeda(linha.lucro)}</span> },
+          { id: "margem", header: <>Margem</>, kind: "percent", value: (linha) => linha.margem, cell: (linha) => <span className={linha.margem !== null && linha.margem < 0 ? "font-semibold text-negativo" : ""}>{linha.margem === null ? "—" : formatarPercentual(linha.margem, 1)}</span> },
         ]}
+        rodape={(linhas) => (
+          <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-[11px] text-muted-foreground">
+            <span>{formatarNumero(linhas.length, 0)} {visao === "curva" ? "curvas" : "faixas"}</span>
+            <span>Venda total: <strong className="num text-foreground">{formatarMoeda(linhas.reduce((t, l) => t + l.vendaTotal, 0))}</strong></span>
+            <span>Vendas líquidas: <strong className="num text-foreground">{formatarMoeda(linhas.reduce((t, l) => t + l.vendaLiquida, 0))}</strong></span>
+          </div>
+        )}
       />
+
+      )}
+
       <p className="text-xs text-muted-foreground">
-        A EDV é relacionada pela chave interna do produto, mas somente o código auxiliar é exibido. Como o Kardex não informa um vínculo confiável com vendedor e nota original, o impacto de devolução é apresentado por produto e empresa, sem rateio estimado.
+        A devolução é relacionada pela chave interna do produto; só o código auxiliar é exibido. O Kardex não informa vínculo confiável com vendedor e nota original, então o impacto aparece por produto e empresa, sem rateio estimado.
       </p>
       <Dialog open={Boolean(produtoSelecionado)} onOpenChange={(aberto) => { if (!aberto) setProdutoSelecionado(null); }}>
         <DialogContent className="!inset-y-0 !right-0 !left-auto !top-0 h-dvh !max-w-md !translate-x-0 !translate-y-0 content-start overflow-y-auto !rounded-none p-6 sm:!max-w-md" aria-label="Detalhes do produto">
@@ -264,13 +313,13 @@ export function AbaMargens({
             <dl className="grid grid-cols-2 gap-3">
               {[
                 ["Faturamento antes", formatarMoeda(produtoSelecionado.valorVendido)],
-                ["Devoluções EDV", formatarMoeda(produtoSelecionado.valorDevolvido)],
-                ["Faturamento após EDV", formatarMoeda(produtoSelecionado.valorVendaLiquida)],
+                ["Devoluções", formatarMoeda(produtoSelecionado.valorDevolvido)],
+                ["Vendas líquidas", formatarMoeda(produtoSelecionado.valorVendaLiquida)],
                 ["Quantidade líquida", formatarNumero(produtoSelecionado.quantidadeLiquidaReal, 2)],
                 ["Custo de reposição", produtoSelecionado.custoReposicaoMedio == null ? "Sem custo" : formatarMoeda(produtoSelecionado.custoReposicaoMedio)],
-                ["Lucro após EDV", produtoSelecionado.lucroDepoisEdv == null ? "—" : formatarMoeda(produtoSelecionado.lucroDepoisEdv)],
+                ["Lucro após devoluções", produtoSelecionado.lucroDepoisEdv == null ? "—" : formatarMoeda(produtoSelecionado.lucroDepoisEdv)],
                 ["Margem antes", produtoSelecionado.margemAntesEdv == null ? "—" : formatarPercentual(produtoSelecionado.margemAntesEdv, 1)],
-                ["Margem após EDV", produtoSelecionado.margemDepoisEdv == null ? "—" : formatarPercentual(produtoSelecionado.margemDepoisEdv, 1)],
+                ["Margem após devoluções", produtoSelecionado.margemDepoisEdv == null ? "—" : formatarPercentual(produtoSelecionado.margemDepoisEdv, 1)],
               ].map(([rotulo, valor]) => <div key={rotulo} className="rounded-lg border p-3"><dt className="text-xs text-muted-foreground">{rotulo}</dt><dd className="mt-1 font-mono font-semibold tabular-nums">{valor}</dd></div>)}
             </dl>
             <p className="text-xs leading-relaxed text-muted-foreground">Margem calculada somente pelo custo de reposição. O ID interno foi usado no relacionamento com o Kardex, mas não é exibido.</p>
@@ -278,5 +327,6 @@ export function AbaMargens({
         </DialogContent>
       </Dialog>
     </div>
+    </ReportVisaoProvider>
   );
 }
