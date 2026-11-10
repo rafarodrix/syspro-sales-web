@@ -3,7 +3,10 @@
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -138,6 +141,80 @@ export function GraficoLinha({
             isAnimationActive={false}
           />
         </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/**
+ * Ranking em barras horizontais: responde "quem puxou o resultado".
+ * Barra positiva fica neutra; negativa fica vermelha (o desvio é que tem cor).
+ */
+export function GraficoBarras({
+  dados,
+  rotulo = "Valor",
+  formato = "moeda",
+  onBarraSelecionada,
+  altura = 240,
+}: {
+  dados: Array<{ rotulo: string; valor: number }>;
+  rotulo?: string;
+  formato?: "moeda" | "numero";
+  onBarraSelecionada?: (indice: number) => void;
+  altura?: number;
+}) {
+  if (dados.length === 0) return null;
+  const formatar = (valor: number) =>
+    formato === "moeda" ? formatarMoeda(valor) : new Intl.NumberFormat("pt-BR").format(valor);
+
+  return (
+    <div className="w-full" style={{ height: altura }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={dados} layout="vertical" margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
+          <CartesianGrid horizontal={false} stroke="var(--linha)" />
+          <XAxis
+            type="number"
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 10.5, fill: "var(--muted-foreground)" }}
+            tickFormatter={(valor: number) => formatar(valor)}
+          />
+          <YAxis
+            type="category"
+            dataKey="rotulo"
+            width={150}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 11, fill: "var(--foreground)" }}
+          />
+          <Tooltip
+            cursor={{ fill: "var(--muted)", opacity: 0.25 }}
+            contentStyle={{
+              background: "var(--popover)",
+              border: "1px solid var(--linha)",
+              borderRadius: "var(--radius-md)",
+              fontSize: 12,
+              boxShadow: "none",
+            }}
+            labelStyle={{ color: "var(--muted-foreground)", fontSize: 11 }}
+            formatter={(valor) => [formatar(Number(valor)), rotulo]}
+          />
+          <Bar
+            dataKey="valor"
+            radius={[0, 2, 2, 0]}
+            barSize={14}
+            isAnimationActive={false}
+            onClick={(_dado, indice) => onBarraSelecionada?.(indice)}
+            className={onBarraSelecionada ? "cursor-pointer" : undefined}
+          >
+            {dados.map((ponto, indice) => (
+              <Cell
+                key={`${ponto.rotulo}-${indice}`}
+                fill={ponto.valor < 0 ? "var(--negativo)" : "var(--muted-foreground)"}
+              />
+            ))}
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );

@@ -1,5 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
 export function ActionMetricCard({
   titulo,
   valor,
@@ -16,8 +14,7 @@ export function ActionMetricCard({
   const clicavel = Boolean(onClick);
 
   return (
-    <Card
-      size="sm"
+    <div
       onClick={onClick}
       role={clicavel ? "button" : undefined}
       tabIndex={clicavel ? 0 : undefined}
@@ -28,15 +25,21 @@ export function ActionMetricCard({
           onClick?.();
         }
       } : undefined}
-      className={clicavel
-        ? "cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        : undefined}
+      className={`flex min-w-0 flex-col justify-between border-t border-linha pt-3 ${
+        clicavel
+          ? "cursor-pointer rounded-sm transition-colors hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          : ""
+      }`}
     >
-      <CardHeader>
-        <CardDescription>{titulo}</CardDescription>
-        <CardTitle className="font-mono text-2xl tabular-nums">{valor}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-xs text-muted-foreground">{descricao}</CardContent>
-    </Card>
+      <div className="min-w-0">
+        <span className="truncate text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+          {titulo}
+        </span>
+        <div className="num mt-1.5 text-[22px] font-semibold leading-none tracking-tight text-foreground">
+          {valor}
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] leading-snug text-muted-foreground">{descricao}</p>
+    </div>
   );
 }

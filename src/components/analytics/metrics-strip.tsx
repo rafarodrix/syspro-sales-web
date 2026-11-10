@@ -17,12 +17,12 @@ export interface MetricsStripItem {
  */
 export function MetricsStrip({ itens }: { itens: MetricsStripItem[] }) {
   return (
-    <div className="grid gap-px overflow-hidden rounded-lg bg-border/50 ring-1 ring-border/50 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]">
+    <div className="grid gap-px overflow-hidden bg-linha [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]">
       {itens.map((item) => (
         <div
           key={item.rotulo}
           title={item.definicao}
-          className={`flex min-w-0 flex-col gap-0.5 bg-card px-3 py-2 ${
+          className={`flex min-w-0 flex-col gap-0.5 bg-background px-3 py-2 ${
             item.definicao ? "cursor-help" : ""
           }`}
         >
@@ -30,8 +30,8 @@ export function MetricsStrip({ itens }: { itens: MetricsStripItem[] }) {
             {item.rotulo}
           </span>
           <span
-            className={`truncate font-mono text-sm font-semibold tabular-nums ${
-              item.attention ? "text-destructive" : "text-foreground"
+            className={`num truncate text-sm font-semibold ${
+              item.attention ? "text-negativo" : "text-foreground"
             }`}
           >
             {item.valor}
