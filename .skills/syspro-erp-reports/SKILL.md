@@ -98,7 +98,7 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Nada de gradiente/sombra/`hover:scale`** em conteúdo de dado; `Card` só para blocos com conteúdo próprio (tabela, gráfico).
 - **`.num` obrigatório** em coluna de valor (`tabular-nums`), senão as colunas dançam ao atualizar.
 - **Cor só com significado:** `text-positivo` / `text-negativo` / `text-atencao` (tokens `--positivo/--negativo/--atencao`); sparkline é forma → sempre neutra; delta sempre com seta + valor do período anterior (`vs. X`).
-- **Gráficos:** Recharts via `src/components/analytics/grafico.tsx` (`Sparkline`, `GraficoLinha` com drill-down por clique). `isAnimationActive={false}` para não piscar em atualização; grade só horizontal em `var(--linha)`.
+- **Gráficos:** Recharts via `src/components/analytics/grafico.tsx` (`Sparkline`, `GraficoLinha` e `GraficoBarras` com drill-down por clique; barras com `LabelList` no valor e rótulo de categoria em 190px). `isAnimationActive={false}` para não piscar em atualização; grade só horizontal em `var(--linha)`.
 - **Stack decidida:** Recharts + Motion adotados; TanStack Table/Query postergados (ReportTable e `useConsulta` já cobrem); Kibo UI como referência de bloco, não dependência.
 
 ## Cache de consulta cliente (`cache-consulta.ts` + `useConsulta`)
