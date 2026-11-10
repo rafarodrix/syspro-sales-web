@@ -25,6 +25,12 @@ export interface ServerPageContextOptions {
   comparacaoCalendarioClientes?: boolean;
   comparacaoMesAnteriorPadrao?: boolean;
   ignorarPeriodoCookie?: boolean;
+  /**
+   * Aba que busca os próprios dados no cliente (ex.: Vendas & Margem) não
+   * precisa das vendas do período no servidor — evitava-se a consulta pesada
+   * ao Syspro a cada navegação entre relatórios.
+   */
+  semVendas?: boolean;
 }
 
 export interface ServerPageContextResult {
@@ -52,6 +58,7 @@ export async function resolveServerPageContext({
   comparacaoCalendarioClientes = false,
   comparacaoMesAnteriorPadrao = false,
   ignorarPeriodoCookie = false,
+  semVendas = false,
 }: ServerPageContextOptions): Promise<ServerPageContextResult> {
   const { session, userRole, isAdmin, empresas } = await requireAuth(permissao);
   const {
@@ -143,7 +150,10 @@ export async function resolveServerPageContext({
   let comparacaoDisponivel = !carregarPeriodoAnterior;
   let erroInicial: string | undefined;
 
-  try {
+  if (semVendas) {
+    // Aba com consulta própria: nenhuma chamada ao Syspro aqui.
+  } else {
+    try {
     if (carregarPeriodoAnterior && periodoAnterior) {
       const [atual, anterior] = await Promise.all([
         obterVendas({
@@ -173,10 +183,11 @@ export async function resolveServerPageContext({
         dtFinal: periodo.final,
       });
     }
-  } catch (error) {
-    erroInicial = error instanceof SalesIntegrationError
-      ? error.message
-      : "Não foi possível carregar os dados de vendas.";
+    } catch (error) {
+      erroInicial = error instanceof SalesIntegrationError
+        ? error.message
+        : "Não foi possível carregar os dados de vendas.";
+    }
   }
 
   return {

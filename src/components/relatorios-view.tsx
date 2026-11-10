@@ -1290,6 +1290,7 @@ export function RelatoriosView({
                     busca={busca}
                     onBuscaChange={setBusca}
                     situacaoInicial={margemInicial}
+                    usuarioId={userId}
                   />
                 )}
 

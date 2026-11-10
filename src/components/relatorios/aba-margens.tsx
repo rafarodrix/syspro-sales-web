@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
@@ -23,24 +23,14 @@ import {
   type CriterioOrdenacaoMargem,
   type ItemAnaliseMargem,
 } from "@/lib/analise-margens";
+import { chaveConsulta } from "@/lib/cache-consulta";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { useConsulta } from "@/lib/use-consulta";
 import { ReportTable } from "./report-table";
 import { FiltroRelatorio } from "./filtro-relatorio";
 import { ReportMetricStrip } from "./report-toolbar";
 
 type SituacaoMargem = "todas" | "negativa" | "baixa" | "saudavel" | "sem-custo";
-
-/**
- * Cache em memória do resultado de margens. A aba é remontada a cada troca de
- * visão no relatório; sem isso, cada acesso dispara de novo a consulta pesada
- * (vendas + Kardex, sem saldo atual) e a tela pisca por dezenas de segundos.
- */
-const CACHE_MARGENS = new Map<string, { dados: AnaliseMargens; em: number }>();
-const TTL_CACHE_MARGENS = 5 * 60 * 1000;
-
-function chaveCacheMargens(empresaId: string, inicial: string, final: string) {
-  return `${empresaId}|${inicial}|${final}`;
-}
 
 export function AbaMargens({
   empresaId,
@@ -48,34 +38,54 @@ export function AbaMargens({
   busca,
   onBuscaChange,
   situacaoInicial,
+  usuarioId,
 }: {
   empresaId: string;
   periodo: Periodo;
   busca: string;
   onBuscaChange: (valor: string) => void;
   situacaoInicial?: string;
+  /** Compõe a chave do cache: dado de um usuário nunca é servido para outro. */
+  usuarioId?: string;
 }) {
-  const [atualizarForcado, setAtualizarForcado] = useState(false);
-  const chaveCache = chaveCacheMargens(empresaId, periodo.inicial, periodo.final);
-  const [dados, setDados] = useState<AnaliseMargens | null>(
-    () => CACHE_MARGENS.get(chaveCache)?.dados ?? null,
-  );
-  const [chaveDados, setChaveDados] = useState(chaveCache);
+  // Uma consulta por empresa + período + usuário. Mudar ordenação, curva ou
+  // situação NÃO consulta: esses filtros são aplicados sobre o resultado local.
+  const chave = chaveConsulta({
+    relatorio: "margens",
+    usuario: usuarioId,
+    empresa: empresaId,
+    inicial: periodo.inicial,
+    final: periodo.final,
+  });
 
-  // Troca de período/empresa: aproveita o cache na hora, sem refazer a consulta.
-  const dadosEmCache = CACHE_MARGENS.get(chaveCache);
-  if (chaveDados !== chaveCache) {
-    setChaveDados(chaveCache);
-    setDados(dadosEmCache ? dadosEmCache.dados : null);
-  }
-  const [loading, setLoading] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
+  const buscar = useCallback(async () => {
+    const resposta = await fetch("/api/relatorios/margens", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        empresaId,
+        dtInicial: periodo.inicial,
+        dtFinal: periodo.final,
+      }),
+    });
+    const json = (await resposta.json().catch(() => ({}))) as AnaliseMargens & { error?: string };
+    if (!resposta.ok) throw new Error(json.error || "Erro ao consultar margens.");
+    return json;
+  }, [empresaId, periodo.inicial, periodo.final]);
+
+  const { dados, erro, carregando, atualizando, consultadoEm, atualizar } = useConsulta<AnaliseMargens>({
+    chave,
+    buscar,
+    habilitado: Boolean(empresaId && periodo.inicial && periodo.final),
+    usuarioId,
+  });
+
   const [produtoSelecionado, setProdutoSelecionado] = useState<ItemAnaliseMargem | null>(null);
   const [ordenacao, setOrdenacao] = useState<CriterioOrdenacaoMargem>("faturamento");
   const [curva, setCurva] = useState<"todas" | "A" | "B" | "C">("todas");
   const [situacao, setSituacao] = useState<SituacaoMargem>(() => {
     return ["negativa", "baixa", "saudavel", "sem-custo"].includes(situacaoInicial ?? "")
-      ? situacaoInicial as SituacaoMargem
+      ? (situacaoInicial as SituacaoMargem)
       : "todas";
   });
 
@@ -85,47 +95,6 @@ export function AbaMargens({
     else params.set("margem", situacao);
     window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
   }, [situacao]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const emCache = CACHE_MARGENS.get(chaveCache);
-    const cacheValido =
-      emCache && Date.now() - emCache.em < TTL_CACHE_MARGENS && !atualizarForcado;
-    // Cache fresco: a tela já está preenchida pelo estado derivado acima.
-    if (cacheValido) return () => controller.abort();
-    async function carregar() {
-      setLoading(true);
-      setErro(null);
-      try {
-        const resposta = await fetch("/api/relatorios/margens", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            empresaId,
-            dtInicial: periodo.inicial,
-            dtFinal: periodo.final,
-          }),
-          signal: controller.signal,
-        });
-        const json = (await resposta.json().catch(() => ({}))) as AnaliseMargens & {
-          error?: string;
-        };
-        if (!resposta.ok) throw new Error(json.error || "Erro ao consultar margens.");
-        CACHE_MARGENS.set(chaveCache, { dados: json, em: Date.now() });
-        setDados(json);
-      } catch (causa) {
-        if (causa instanceof DOMException && causa.name === "AbortError") return;
-        setErro(causa instanceof Error ? causa.message : "Erro ao consultar margens.");
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-          setAtualizarForcado(false);
-        }
-      }
-    }
-    void carregar();
-    return () => controller.abort();
-  }, [atualizarForcado, chaveCache, empresaId, periodo.inicial, periodo.final]);
 
   const itens = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
@@ -142,19 +111,25 @@ export function AbaMargens({
     return ordenarItensMargem(filtrados, ordenacao);
   }, [busca, curva, dados?.itens, ordenacao, situacao]);
 
-  if (loading) {
-    return <div className="space-y-3 py-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-72 w-full" /></div>;
-  }
-  if (erro) {
+  if (erro && !dados) {
     return <FeedbackState variant="error" title="Não foi possível calcular as margens com EDV" description={erro} />;
+  }
+  if (carregando && !dados) {
+    return <div className="space-y-3 py-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-72 w-full" /></div>;
   }
   if (!dados) return null;
   const resumo = dados.resumo;
-  const consultadoEm = new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "medium",
-    timeZone: "America/Sao_Paulo",
-  }).format(new Date(dados.consultadoEm));
+  const consultadoTexto = consultadoEm
+    ? new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "medium",
+        timeZone: "America/Sao_Paulo",
+      }).format(new Date(consultadoEm))
+    : new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "medium",
+        timeZone: "America/Sao_Paulo",
+      }).format(new Date(dados.consultadoEm));
 
   return (
     <div className="space-y-4">
@@ -199,20 +174,17 @@ export function AbaMargens({
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <p>{itens.length} de {dados.itens.length} produto(s) no universo analisado.</p>
         <p className="flex items-center gap-2">
-          Dados atualizados em {consultadoEm}
+          {atualizando ? "Atualizando..." : `Dados atualizados em ${consultadoTexto}`}
           <Button
             type="button"
             size="sm"
             variant="ghost"
             className="h-7 text-xs"
-            disabled={loading}
-            onClick={() => {
-              CACHE_MARGENS.delete(chaveCache);
-              setAtualizarForcado(true);
-            }}
+            disabled={carregando}
+            onClick={atualizar}
             title="Ignorar o cache e consultar o Syspro novamente"
           >
-            Atualizar
+            {carregando ? "Consultando..." : "Atualizar"}
           </Button>
         </p>
       </div>

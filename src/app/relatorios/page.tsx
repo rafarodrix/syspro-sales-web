@@ -26,6 +26,9 @@ export default async function RelatoriosPage({
     carregarPeriodoAnterior: true,
     comparacaoMesAnteriorPadrao: true,
     ignorarPeriodoCookie: true,
+    // Vendas & Margem consulta a própria API (vendas + Kardex) no cliente;
+    // carregar vendas aqui duplicava a consulta pesada a cada navegação.
+    semVendas: params.aba === "margens",
   });
 
   return (
