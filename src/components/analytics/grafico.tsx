@@ -7,6 +7,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -182,7 +183,7 @@ export function GraficoBarras({
           <YAxis
             type="category"
             dataKey="rotulo"
-            width={150}
+            width={190}
             tickLine={false}
             axisLine={false}
             tick={{ fontSize: 11, fill: "var(--foreground)" }}
@@ -213,6 +214,13 @@ export function GraficoBarras({
                 fill={ponto.valor < 0 ? "var(--negativo)" : "var(--muted-foreground)"}
               />
             ))}
+            <LabelList
+              dataKey="valor"
+              position="right"
+              className="num"
+              style={{ fontSize: 10.5, fill: "var(--muted-foreground)" }}
+              formatter={(valor) => formatar(Number(valor))}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

@@ -104,7 +104,7 @@ export function AbaMargens({
       .sort((a, b) => (b.lucroDepoisEdv ?? 0) - (a.lucroDepoisEdv ?? 0))
       .slice(0, 8)
       .map((item) => ({
-        rotulo: item.produto.length > 26 ? `${item.produto.slice(0, 25)}…` : item.produto,
+        rotulo: item.produto.length > 34 ? `${item.produto.slice(0, 33)}…` : item.produto,
         valor: item.lucroDepoisEdv ?? 0,
         item,
       }));
