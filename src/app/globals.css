@@ -4,6 +4,28 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Base de leitura analítica (Enterprise Analytics) */
+@layer utilities {
+  /* Números alinhados por dígito: colunas de valores não "dançam". */
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: -0.011em;
+  }
+  /* Painel sem borda: separa por tom, não por contorno. */
+  .superficie {
+    background-color: color-mix(in oklab, var(--muted) 45%, transparent);
+    border-radius: var(--radius-md);
+  }
+  /* Divisor de 1px sem borda acumulada. */
+  .hairline-t {
+    box-shadow: inset 0 1px 0 var(--linha);
+  }
+  .hairline-b {
+    box-shadow: inset 0 -1px 0 var(--linha);
+  }
+}
+
 /* Scroll horizontal suave em tabelas no celular (iOS/Android) */
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
@@ -28,6 +50,10 @@
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
+  --color-positivo: var(--positivo);
+  --color-negativo: var(--negativo);
+  --color-atencao: var(--atencao);
+  --color-linha: var(--linha);
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -80,6 +106,11 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  /* Semântica de resultado: neutro para dado, verde favorável, vermelho alerta. */
+  --positivo: oklch(0.55 0.13 155);
+  --negativo: oklch(0.56 0.19 25);
+  --atencao: oklch(0.7 0.14 80);
+  --linha: oklch(0.91 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -115,6 +146,10 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  --positivo: oklch(0.76 0.15 155);
+  --negativo: oklch(0.72 0.17 25);
+  --atencao: oklch(0.8 0.14 80);
+  --linha: oklch(1 0 0 / 10%);
   --sidebar: oklch(0.17 0.015 260);
   --sidebar-foreground: oklch(0.98 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);

@@ -478,15 +478,11 @@ export function DashboardView({
       >
         {loading ? (
           Array.from({ length: 6 }).map((_, index) => (
-            <Card key={index} className="border-border/60 p-4">
-              <div className="flex items-center gap-3">
-                <Skeleton className="size-11 rounded-xl" />
-                <div className="flex flex-col gap-2 flex-1">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-6 w-28" />
-                </div>
-              </div>
-            </Card>
+            <div key={index} className="border-t border-linha pt-3">
+              <Skeleton className="h-2.5 w-20" />
+              <Skeleton className="mt-2 h-6 w-28" />
+              <Skeleton className="mt-3 h-2.5 w-24" />
+            </div>
           ))
         ) : (
           <>
