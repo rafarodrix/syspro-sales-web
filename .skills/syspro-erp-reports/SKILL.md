@@ -92,6 +92,14 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Metadados no rodapé, não no cabeçalho:** período, comparação e horário ficam na linha de status inferior (`StatusRelatorio`, junto de universo e filtros). Textos curtos e truncamento (`min-w-0 truncate`) para não quebrar linha.
 - Telas sem seletor de visão (Curva ABC, Margens, Compras) mantêm só as ações à direita — não invente seletor vazio.
 
+## Cache de consulta cliente (`cache-consulta.ts` + `useConsulta`)
+- **Toda consulta pesada feita no cliente passa por `useConsulta`** (`src/lib/use-consulta.ts`): cache com TTL, dedupe de requisições simultâneas, `atualizar()` manual e chave por usuário/empresa/período. Não escreva `Map` local no componente nem `useEffect` + `fetch` solto.
+- **Chave = o que muda o resultado.** Ordenação, busca, curva, situação e visão são filtros locais: aplicar `useMemo` sobre `dados`, nunca dentro da chave.
+- **Nunca abortar a consulta ao desmontar**: deixe terminar para o cache esquentar. Abortar perdia ~20s de trabalho a cada troca de aba.
+- **`loading` só quando não há dado**: `carregando && !dados` mostra skeleton; com dado em cache a tela abre preenchida. Estado inicial `loading=true` + early-return no efeito deixa a aba presa em skeleton (bug real que existia aqui).
+- **Escopo do usuário**: chame `definirUsuarioDoCache(userId)`; trocar de usuário limpa o cache inteiro.
+- **Servidor também não deve consultar o que a aba não usa**: `/relatorios` aceita `semVendas` e a aba `margens` (consulta própria) não carrega vendas — era 8,7 MB / 5,5 s por navegação contra 79 KB / 2,2 s.
+
 ## Autoatendimento do usuário (senha)
 - **O usuário troca a própria senha** pelo rodapé da sidebar (`AlterarSenhaDialog`, ícone de chave ao lado de "Sair"), com senha atual + nova + confirmação, mínimo de 8 e `revokeOtherSessions: true`.
 - **Empresa vinculada e perfil de acesso são exclusivos do administrador** — nunca exponha esses campos no autoatendimento.
