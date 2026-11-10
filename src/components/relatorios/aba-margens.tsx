@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { FeedbackState } from "@/components/feedback-state";
 import { ActionMetricCard } from "@/components/analytics/action-metric-card";
-import { GraficoBarras } from "@/components/analytics/grafico";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -97,19 +96,6 @@ export function AbaMargens({
     window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
   }, [situacao]);
 
-  /** Ranking do gráfico: quem mais contribuiu para o lucro após devoluções. */
-  const rankingLucro = useMemo(() => {
-    return [...(dados?.itens ?? [])]
-      .filter((item) => item.lucroDepoisEdv !== null && item.lucroDepoisEdv !== undefined)
-      .sort((a, b) => (b.lucroDepoisEdv ?? 0) - (a.lucroDepoisEdv ?? 0))
-      .slice(0, 8)
-      .map((item) => ({
-        rotulo: item.produto.length > 34 ? `${item.produto.slice(0, 33)}…` : item.produto,
-        valor: item.lucroDepoisEdv ?? 0,
-        item,
-      }));
-  }, [dados?.itens]);
-
   const itens = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
     const filtrados = (dados?.itens ?? []).filter((item) => {
@@ -184,26 +170,6 @@ export function AbaMargens({
         { label: "Lucro antes de EDV", value: formatarMoeda(resumo.lucroAntesEdv) },
         { label: "Lucro após EDV", value: formatarMoeda(resumo.lucroDepoisEdv), attention: resumo.lucroDepoisEdv < 0 },
       ]} />
-
-      {rankingLucro.length > 0 ? (
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Onde está o lucro · top 8 produtos após devoluções
-            </h3>
-            <p className="text-[11px] text-muted-foreground">Clique na barra para abrir o produto</p>
-          </div>
-          <GraficoBarras
-            dados={rankingLucro}
-            rotulo="Lucro após EDV"
-            altura={Math.max(140, rankingLucro.length * 30)}
-            onBarraSelecionada={(indice) => {
-              const alvo = rankingLucro[indice]?.item;
-              if (alvo) setProdutoSelecionado(alvo);
-            }}
-          />
-        </section>
-      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <p>{itens.length} de {dados.itens.length} produto(s) no universo analisado.</p>

@@ -1,5 +1,4 @@
 import type { Periodo } from "@/lib/periodo";
-import { ReportChart } from "./report-chart";
 import { ReportTable } from "./report-table";
 import { useState } from "react";
 import { CalendarDays, CalendarRange, ChartLine } from "lucide-react";
@@ -285,34 +284,7 @@ export function AbaSazonalidade({
   const exibeDiaSemana = visao === "dia-semana";
   const exibeEvolucao = visao === "evolucao";
   const exibeMensal = exibeEvolucao && granularidade === "mensal";
-  const somaMediasDiaSemana = porDiaSemana.reduce(
-    (total, item) => total + (item.faturamentoMedioPorOcorrencia ?? 0),
-    0,
-  );
 
-  const serie = [];
-  const mensal = exibeMensal;
-  const valores = new Map(
-    (mensal ? relatorioEvolucao.mensal : relatorioEvolucao.diario).map(
-      (item) => [
-        item.periodo,
-        metrica === "lucro" ? item.lucroBruto : item.faturamento,
-      ],
-    ),
-  );
-  const cursor = new Date(`${periodo.inicial}T00:00:00Z`);
-  if (mensal) cursor.setUTCDate(1);
-  while (cursor.toISOString().slice(0, 10) <= periodo.final) {
-    const iso = cursor.toISOString().slice(0, mensal ? 7 : 10);
-    serie.push({
-      label: mensal
-        ? `${iso.slice(5)}/${iso.slice(0, 4)}`
-        : iso.split("-").reverse().join("/"),
-      value: valores.get(iso) ?? 0,
-    });
-    if (mensal) cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-    else cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
   return (
     <ReportVisaoProvider>
     <div className="space-y-4">
@@ -354,36 +326,6 @@ export function AbaSazonalidade({
           ]}
         />
       </ReportBarraVisao>
-      <ReportChart
-        key={`${visao}-${granularidade}-${metrica}`}
-        temporal={exibeEvolucao}
-        rotulo={metrica === "lucro" ? "Lucro bruto" : "Faturamento"}
-        points={
-          exibeEvolucao
-            ? serie
-            : (exibeDiaSemana ? porDiaSemana : porQuinzena).map((item) => ({
-                label: item.rotulo,
-                value:
-                  exibeDiaSemana
-                    ? metrica === "lucro"
-                      ? item.lucroBruto / Math.max(item.ocorrencias ?? 1, 1)
-                      : item.faturamentoMedioPorOcorrencia ?? 0
-                    : metrica === "lucro"
-                      ? item.lucroBruto
-                      : item.faturamento,
-                percentual:
-                  metrica === "faturamento" &&
-                  exibeDiaSemana &&
-                  somaMediasDiaSemana > 0
-                    ? ((item.faturamentoMedioPorOcorrencia ?? 0) /
-                        somaMediasDiaSemana) *
-                      100
-                    : metrica === "faturamento"
-                      ? item.percentual
-                      : undefined,
-              }))
-        }
-      />
       {exibeEvolucao ? (
         <TabelaEvolucao
           itens={granularidade === "diario" ? relatorioEvolucao.diario : relatorioEvolucao.mensal}
