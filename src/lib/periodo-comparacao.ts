@@ -93,9 +93,23 @@ export function resolverComparacao(
       final: iso(new Date(inicio.getTime() - DIA)),
     };
   }
-  if (anterior.final >= atual.inicial)
-    throw new Error(
-      "A comparação deve terminar antes do período atual. Para intervalos longos, use Automático, Ano anterior ou Personalizado.",
-    );
+  if (anterior.final >= atual.inicial) {
+    // Período maior que um mês + "mesmo intervalo do mês anterior" gerava
+    // sobreposição e derrubava a tela inteira. Quando o modo é automático,
+    // recua para a janela imediatamente anterior de mesma duração.
+    if (modo === "personalizado") {
+      throw new Error(
+        "A comparação deve terminar antes do período atual. Para intervalos longos, use Automático, Ano anterior ou Personalizado.",
+      );
+    }
+    const duracao = fim.getTime() - inicio.getTime() + DIA;
+    anterior = {
+      inicial: iso(new Date(inicio.getTime() - duracao)),
+      final: iso(new Date(inicio.getTime() - DIA)),
+    };
+    if (anterior.final >= atual.inicial) {
+      throw new Error("Não foi possível determinar um período de comparação anterior.");
+    }
+  }
   return anterior;
 }
