@@ -27,7 +27,7 @@ Documento normativo. Vale para toda tela nova e para o que for sendo tocado nas 
 - Proibido em indicador: `bg-gradient-*`, `shadow-*`, `ring-1` envolvendo cada célula, `hover:scale/rotate` no conteúdo do dado.
 - `Card` do shadcn continua valendo para blocos com conteúdo próprio (tabela, gráfico) — sem `border` extra nem `shadow` além do `ring` que ele já tem.
 
-## Gráficos (Recharts)
+## Gráficos (Recharts) — somente no Dashboard
 
 Escolha pelo tipo de pergunta, não pela aparência:
 
@@ -37,6 +37,8 @@ Escolha pelo tipo de pergunta, não pela aparência:
 | Quem puxou o resultado? | barras horizontais ordenadas |
 | Como se distribui? | barras empilhadas; pizza só até 4 fatias |
 | Estamos acima ou abaixo do período anterior? | linha atual + linha de referência tracejada |
+
+**Onde gráfico é permitido:** apenas no Dashboard. Relatórios (`/relatorios/*`, Vendas & Margem, Sazonalidade, Compras, Entrega) são **tabulares**: quem precisa de leitura visual usa o Dashboard ou uma aba nova de Dashboard por tema. Gráfico em relatório concorre com a tabela e come a dobra.
 
 Regras técnicas: `CartesianGrid` só horizontal em `var(--linha)`; sem eixo Y duplicado; tooltip com fundo `var(--popover)` e `boxShadow: none`; animação desligada (`isAnimationActive={false}`) para não "piscar" ao atualizar dados; clique no ponto dispara drill-down. Componentes em `src/components/analytics/grafico.tsx`.
 
