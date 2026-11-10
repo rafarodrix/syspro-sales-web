@@ -723,7 +723,7 @@ export function DashboardView({
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
                   <span className="font-mono font-bold text-foreground text-sm">
-                    {destaques.melhorDia.data}
+                    {destaques.melhorDia.data.split("-").reverse().join("/")}
                   </span>
                   <span className="font-mono font-extrabold text-primary text-base">
                     {formatarMoeda(destaques.melhorDia.total)}

@@ -74,12 +74,13 @@ export function KpiCard({
         </div>
 
         {sparklineData && sparklineData.length > 1 ? (
-          <Sparkline dados={sparklineData} tom={tom} altura={26} />
+          // Forma é dado, não julgamento: a sparkline fica neutra e a cor fica no delta.
+          <Sparkline dados={sparklineData} tom="neutro" altura={26} />
         ) : null}
       </div>
 
       {variacao || valorAnterior ? (
-        <div className="mt-2.5 flex items-baseline justify-between gap-2">
+        <div className="mt-2.5 flex items-baseline gap-1.5">
           {variacao ? (
             <span
               className={`num inline-flex items-center gap-0.5 text-[11.5px] font-semibold ${corVariacao}`}
@@ -92,19 +93,17 @@ export function KpiCard({
               <IconeVariacao className="size-3" aria-hidden />
               {variacao}
             </span>
-          ) : (
-            <span />
-          )}
+          ) : null}
           {valorAnterior ? (
             <span
-              className="num truncate text-right text-[11px] text-muted-foreground"
+              className="num truncate text-[11px] text-muted-foreground"
               title={
                 periodoComparado
                   ? `Período anterior (${periodoComparado}): ${valorAnterior}`
                   : `Período anterior: ${valorAnterior}`
               }
             >
-              {valorAnterior}
+              vs. {valorAnterior}
             </span>
           ) : null}
         </div>
