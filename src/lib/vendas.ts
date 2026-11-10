@@ -1368,7 +1368,11 @@ export function analiseSazonalidade(
 }
 
 /** Agrega a evolução cronológica usando exclusivamente a data de emissão da NF. */
-export function analiseEvolucaoVendas(vendas: VendaProduto[]): RelatorioEvolucaoVendas {
+export function analiseEvolucaoVendas(
+  vendas: VendaProduto[],
+  /** Quando informado, completa dias/meses sem venda com zero (sazonalidade precisa do vazio). */
+  periodo?: { inicial: string; final: string },
+): RelatorioEvolucaoVendas {
   type AcumuladorEvolucao = {
     faturamento: number;
     descontos: number;
@@ -1416,7 +1420,44 @@ export function analiseEvolucaoVendas(vendas: VendaProduto[]): RelatorioEvolucao
       ...finalizarRentabilidade(dados.rentabilidade),
     }));
 
-  return { diario: montar(diario), mensal: montar(mensal) };
+  const resultado: RelatorioEvolucaoVendas = { diario: montar(diario), mensal: montar(mensal) };
+  if (!periodo) return resultado;
+
+  const itemZerado = (chave: string): ItemEvolucaoVendas => ({
+    periodo: chave,
+    faturamento: 0,
+    pedidos: 0,
+    ticketMedio: 0,
+    descontos: 0,
+    percentual: 0,
+    ...finalizarRentabilidade(novoAcumuladorRentabilidade()),
+  });
+
+  const porChave = (itens: ItemEvolucaoVendas[]) => new Map(itens.map((item) => [item.periodo, item]));
+
+  const diarioPorChave = porChave(resultado.diario);
+  const diarioCompleto: ItemEvolucaoVendas[] = [];
+  const [anoI, mesI, diaI] = periodo.inicial.split("-").map(Number);
+  const [anoF, mesF, diaF] = periodo.final.split("-").map(Number);
+  const cursor = new Date(Date.UTC(anoI, mesI - 1, diaI));
+  const limite = new Date(Date.UTC(anoF, mesF - 1, diaF));
+  while (cursor <= limite) {
+    const chave = cursor.toISOString().slice(0, 10);
+    diarioCompleto.push(diarioPorChave.get(chave) ?? itemZerado(chave));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  const mensalPorChave = porChave(resultado.mensal);
+  const mensalCompleto: ItemEvolucaoVendas[] = [];
+  const mesCursor = new Date(Date.UTC(anoI, mesI - 1, 1));
+  const mesLimite = new Date(Date.UTC(anoF, mesF - 1, 1));
+  while (mesCursor <= mesLimite) {
+    const chave = mesCursor.toISOString().slice(0, 7);
+    mensalCompleto.push(mensalPorChave.get(chave) ?? itemZerado(chave));
+    mesCursor.setUTCMonth(mesCursor.getUTCMonth() + 1);
+  }
+
+  return { diario: diarioCompleto, mensal: mensalCompleto };
 }
 
 /** Produto consolidado dentro de cliente ou vendedor, para leitura de mix comercial. */

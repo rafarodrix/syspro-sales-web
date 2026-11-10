@@ -473,7 +473,7 @@ export function RelatoriosView({
 
   const relatorioEvolucao = useMemo(() => {
     if (abaAtiva !== "sazonalidade") return { diario: [], mensal: [] };
-    return analiseEvolucaoVendas(vendas);
+    return analiseEvolucaoVendas(vendas, periodoConsultado);
   }, [vendas, abaAtiva]);
 
   const produtosPorVendedor = useMemo(() => {

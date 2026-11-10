@@ -198,6 +198,24 @@ describe("cálculos de vendas", () => {
 });
 
 describe("métricas de gestão (comparativo e concentração)", () => {
+  it("completa dias e meses sem venda quando recebe o período", () => {
+    const resultado = analiseEvolucaoVendas(
+      [vendaBase({ nf_numero: "1", nf_dt_emissao: "2026-09-02", produto_vlr_total_liquido: 200 })],
+      { inicial: "2026-09-01", final: "2026-09-04" },
+    );
+
+    expect(resultado.diario.map((item) => item.periodo)).toEqual([
+      "2026-09-01",
+      "2026-09-02",
+      "2026-09-03",
+      "2026-09-04",
+    ]);
+    // o dia sem venda existe com zero — sazonalidade precisa do vazio visível
+    expect(resultado.diario[0]).toMatchObject({ faturamento: 0, pedidos: 0 });
+    expect(resultado.diario[1]).toMatchObject({ faturamento: 200, pedidos: 1 });
+    expect(resultado.mensal.map((item) => item.periodo)).toEqual(["2026-09"]);
+  });
+
   it("consolida a evolução por data e por mês de emissão", () => {
     const resultado = analiseEvolucaoVendas([
       vendaBase({ nf_numero: "1", nf_dt_emissao: "2026-09-02", produto_vlr_total_liquido: 200, produto_vlr_desconto: 20, produto_vlr_custo_reposicao: 50 }),
