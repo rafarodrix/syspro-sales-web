@@ -19,7 +19,8 @@ describe("permissões por perfil", () => {
 
   it("mantém vendas no menor privilégio", () => {
     expect(temPermissao("vendas", "vendas:visualizar")).toBe(true);
-    expect(temPermissao("vendas", "entregas:visualizar")).toBe(true);
+    // Perfil Vendas não enxerga a Análise de Entrega (tem perfil dedicado para isso).
+    expect(temPermissao("vendas", "entregas:visualizar")).toBe(false);
     expect(temPermissao("vendas", "relatorios:visualizar")).toBe(false);
   });
 

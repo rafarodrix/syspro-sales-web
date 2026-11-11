@@ -2,8 +2,8 @@ export const PERFIS_ACESSO = {
   vendas: {
     id: "vendas",
     nome: "Vendas",
-    descricao: "Dashboard, vendas e análise de entregas.",
-    permissoes: ["dashboard:visualizar", "vendas:visualizar", "entregas:visualizar"],
+    descricao: "Dashboard e vendas.",
+    permissoes: ["dashboard:visualizar", "vendas:visualizar"],
   },
   analise_entregas: {
     id: "analise_entregas",
