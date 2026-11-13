@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aplicarLimite, autenticarApi, validarJson } from "@/lib/api-route";
 import { prisma } from "@/lib/database";
+import { limparCacheVendas } from "@/lib/sales-service";
 import { mesmoServidor, tokenDoServidor } from "@/lib/servidor-syspro";
 import { empresaCreateSchema, empresaUpdateSchema, limitesEstoqueEmpresaSchema } from "@/lib/validations";
 
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
         data: { sysproToken: tokenServidor },
       });
     }
+    limparCacheVendas();
     return NextResponse.json({ empresa }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -163,6 +165,7 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
+    limparCacheVendas();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Erro ao atualizar empresa." }, { status: 500 });
@@ -186,6 +189,7 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await prisma.empresa.delete({ where: { id } });
+    limparCacheVendas();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Erro ao remover empresa." }, { status: 500 });

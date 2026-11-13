@@ -95,6 +95,16 @@ export class SalesIntegrationError extends Error {
   }
 }
 
+/**
+ * Descarta o cache de vendas (45s). Chamado quando o cadastro da empresa muda:
+ * correção de empresa_codigo/URL/token precisa refletir na próxima consulta,
+ * sem o admin precisar esperar o TTL ou marcar "forçar atualização".
+ */
+export function limparCacheVendas(): void {
+  vendasCache.clear();
+  vendasEmAndamento.clear();
+}
+
 export async function obterVendas({
   actorId,
   empresasLiberadas,
