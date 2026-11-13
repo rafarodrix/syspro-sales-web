@@ -92,6 +92,11 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 - **Metadados no rodapé, não no cabeçalho:** período, comparação e horário ficam na linha de status inferior (`StatusRelatorio`, junto de universo e filtros). Textos curtos e truncamento (`min-w-0 truncate`) para não quebrar linha.
 - Telas sem seletor de visão (Curva ABC, Margens, Compras) mantêm só as ações à direita — não invente seletor vazio.
 
+## Onboarding de empresa nova (Syspro)
+- **A origem do Syspro precisa estar em `SYSPRO_ALLOWED_ORIGINS`** (`src/lib/validations.ts` → `sanitizarSysproUrl`). Sem isso, salvar a empresa em Configurações falha com "A origem da API Syspro não está na allowlist". Editar `.env` **e** `.next/standalone/.env` e reiniciar (`deploy-local.sh --no-build`).
+- **`empresa_codigo` tem que ser idêntico ao que a API devolve** — o Syspro retorna `"1"`, não `"001"`. Código com zero à esquerda filtra tudo e a tela mostra zero vendas **sem erro**: sempre confira `empresa_codigo` no retorno da exportação antes de culpar token/rede.
+- **Ordem de teste do cliente novo:** `produto/venda` (token + IIS + código) → `produto/kardex` (exige `codigoAuxiliar`) → `/api/dynamic/query` (usado pela Análise de Entrega).
+
 ## Enterprise Analytics (padrão visual)
 - **Guia normativo:** `docs/design/enterprise-analytics.md`. Consulte antes de criar tela ou indicador.
 - **Número é o herói:** indicador sem cartão — `border-t border-linha pt-3`, valor 22–26px `font-semibold`, rótulo 10,5px uppercase. `KpiCard` é a referência implementada.
