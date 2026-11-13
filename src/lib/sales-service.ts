@@ -3,6 +3,7 @@ import { dataInputParaSyspro } from "@/lib/vendas";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { consultarSysproAdaptativamente } from "@/lib/syspro-consulta-adaptativa";
 import { medirOperacao, registrarEvento } from "@/lib/observability";
+import { mesmaEmpresaCodigo } from "@/lib/empresa-codigo";
 
 export interface EmpresaInfo {
   id: string;
@@ -170,7 +171,7 @@ export async function obterVendas({
         );
 
         const filtradas: VendaComEmpresa[] = dados
-          .filter((v) => v.empresa_codigo === emp.empresaCodigo)
+          .filter((v) => mesmaEmpresaCodigo(v.empresa_codigo, emp.empresaCodigo))
           .map((v) => ({
             ...v,
             empresa_id: emp.id,

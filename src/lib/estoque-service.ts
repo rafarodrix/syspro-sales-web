@@ -7,6 +7,7 @@ import {
 import { dataInputParaSyspro } from "@/lib/vendas";
 import type { EmpresaInfo } from "@/lib/sales-service";
 import { consultarSysproAdaptativamente } from "@/lib/syspro-consulta-adaptativa";
+import { mesmaEmpresaCodigo } from "@/lib/empresa-codigo";
 
 export class EstoqueQueryError extends Error {
   constructor(message: string, public status: 400 | 429) {
@@ -52,7 +53,7 @@ export async function obterMovimentosEstoque({
 
   return dados
     .map(normalizarMovimentoKardex)
-    .filter((movimento) => movimento.empresaCodigo === empresa.empresaCodigo)
+    .filter((movimento) => mesmaEmpresaCodigo(movimento.empresaCodigo, empresa.empresaCodigo))
     .filter((movimento) => !codigoNormalizado
       || movimento.produtoCodigoAuxiliar.trim().toLocaleUpperCase("pt-BR") === codigoNormalizado)
     .map((movimento) => ({

@@ -13,6 +13,7 @@ import { SysproApiError } from "@/lib/syspro-api";
 import { sanitizarSysproUrl } from "@/lib/validations";
 import { fechamentoConfiavel, type PedidoSyspro } from "@/lib/pedidos";
 import { normalizarDataIso } from "@/lib/periodo";
+import { mesmaEmpresaCodigo } from "@/lib/empresa-codigo";
 
 export interface ConfigPedidos {
   baseUrl?: string | null;
@@ -49,10 +50,7 @@ function montarSql(inicial: string, final: string): string {
   ].join("\n");
 }
 
-/** "01" e "1" representam a mesma empresa. */
-function normalizarEmpresa(codigo: unknown): string {
-  return String(codigo ?? "").trim().replace(/^0+/, "") || "0";
-}
+/* "01" e "1" são a mesma empresa: regra em @/lib/empresa-codigo. */
 
 function texto(valor: unknown): string | null {
   const limpo = String(valor ?? "").trim();
@@ -150,10 +148,9 @@ export async function obterPedidos({
 
   const dados = (await resposta.json().catch(() => null)) as { result?: unknown } | null;
   const linhas = Array.isArray(dados?.result) ? dados!.result : [];
-  const esperada = normalizarEmpresa(empresa.empresaCodigo);
-
+  
   return linhas
     .map((linha) => normalizarPedido(linha as Record<string, unknown>))
     .filter((pedido): pedido is PedidoSyspro => pedido !== null)
-    .filter((pedido) => normalizarEmpresa(pedido.empresaCodigo) === esperada);
+    .filter((pedido) => mesmaEmpresaCodigo(pedido.empresaCodigo, empresa.empresaCodigo));
 }
