@@ -94,7 +94,7 @@ npm run roles:normalize # migra perfis legados para os valores canônicos
 
 ## Onboarding de empresa nova (Syspro)
 - **A origem do Syspro precisa estar em `SYSPRO_ALLOWED_ORIGINS`** (`src/lib/validations.ts` → `sanitizarSysproUrl`). Sem isso, salvar a empresa em Configurações falha com "A origem da API Syspro não está na allowlist". Editar `.env` **e** `.next/standalone/.env` e reiniciar (`deploy-local.sh --no-build`).
-- **`empresa_codigo` tem que ser idêntico ao que a API devolve** — o Syspro retorna `"1"`, não `"001"`. Código com zero à esquerda filtra tudo e a tela mostra zero vendas **sem erro**: sempre confira `empresa_codigo` no retorno da exportação antes de culpar token/rede.
+- **`empresa_codigo` é comparado com normalização** (`@/lib/empresa-codigo`: `"01"` = `"001"` = `"1"`). Antes, cadastro com zero à esquerda filtrava tudo e a tela mostrava zero vendas **sem erro**; se zerar, confira `empresa_codigo` no retorno da exportação antes de culpar token/rede. Editar a empresa limpa o cache de vendas (45s), então o ajuste reflete na hora.
 - **Ordem de teste do cliente novo:** `produto/venda` (token + IIS + código) → `produto/kardex` (exige `codigoAuxiliar`) → `/api/dynamic/query` (usado pela Análise de Entrega).
 
 ## Enterprise Analytics (padrão visual)
