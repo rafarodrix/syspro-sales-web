@@ -9,6 +9,8 @@ export type ContextoExportacao = Parameters<
 
 interface Props {
   titulo: string;
+  /** Saídas específicas da tela, exibidas no mesmo menu de exportação. */
+  extras?: import("@/components/export-dropdown").ExportExtra[];
   contexto: ContextoExportacao;
   colunas: string[];
   linhas: (string | number)[][];
@@ -20,6 +22,7 @@ interface Props {
 /** Recebe a coleção filtrada completa, independentemente da página da tabela. */
 export function ExportarVisao({
   titulo,
+  extras,
   contexto,
   colunas,
   linhas,
@@ -43,6 +46,7 @@ export function ExportarVisao({
   }
   return (
     <ExportDropdown
+      extras={extras}
       label={rotulo}
       disabled={linhas.length === 0}
       onExportarCsv={() => {

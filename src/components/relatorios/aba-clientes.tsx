@@ -22,7 +22,7 @@ import type { VendaProduto } from "@/lib/syspro-api";
 import { COLUNAS_ITENS_CLIENTE, indexarContatos, montarItensPorCliente, normalizarNomeCliente } from "@/lib/itens-por-cliente";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Table2, Users } from "lucide-react";
 import { FiltroRelatorio } from "./filtro-relatorio";
 
 interface AbaClientesProps {
@@ -174,22 +174,79 @@ export function AbaClientes({
         toast.warning("Nenhum item para exportar com os filtros atuais.");
         return;
       }
-      exportarParaCSV("vendas-por-cliente-itens", COLUNAS_ITENS_CLIENTE, linhas);
-      toast.success(`${linhas.length} item(ns) exportados.`);
+      const semTelefone = linhas.filter((linha) => !String(linha[2]).trim()).length;
+      exportarParaCSV(
+        `vendas-por-cliente-itens-${contexto.periodo.inicial}-a-${contexto.periodo.final}`,
+        COLUNAS_ITENS_CLIENTE,
+        linhas,
+      );
+      toast.success(
+        semTelefone > 0
+          ? `${linhas.length} item(ns) exportados · ${semTelefone} sem telefone no cadastro.`
+          : `${linhas.length} item(ns) exportados.`,
+      );
     } finally {
       setExportandoItens(false);
     }
   }
 
-  const acoesItens = (
-    <Button size="sm" variant="outline" onClick={exportarItens} disabled={exportandoItens}>
-      <Download className="mr-1.5 size-3.5" />
-      {exportandoItens ? "Montando..." : "Exportar itens"}
-    </Button>
-  );
+  const exportExtras = [
+    {
+      id: "itens-por-cliente",
+      titulo: "Itens por cliente (CSV)",
+      descricao: "Cliente, produto, quantidade, unitário e total",
+      icone: Table2,
+      onSelect: exportarItens,
+      disabled: exportandoItens,
+    },
+    {
+      id: "cadastro-clientes",
+      titulo: "Cadastro de clientes (CSV)",
+      descricao: "Código, nome e telefone para cruzamento",
+      icone: Users,
+      onSelect: exportarCadastro,
+      disabled: exportandoItens,
+    },
+  ];
+
+  async function exportarCadastro() {
+    setExportandoItens(true);
+    try {
+      const resposta = await fetch("/api/clientes/cadastro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresaId,
+          dtInicial: contexto.periodo.inicial,
+          dtFinal: contexto.periodo.final,
+        }),
+      });
+      const json = (await resposta.json().catch(() => ({}))) as {
+        clientes?: { codigo: string; nome: string; telefone: string }[];
+        error?: string;
+      };
+      if (!resposta.ok || !json.clientes) {
+        toast.error(json.error ?? "Não foi possível ler o cadastro de clientes.");
+        return;
+      }
+      const linhas = json.clientes.map((cliente) => [
+        cliente.codigo,
+        cliente.nome,
+        cliente.telefone || "sem telefone",
+      ]);
+      exportarParaCSV(
+        `cadastro-clientes-${contexto.periodo.inicial}-a-${contexto.periodo.final}`,
+        ["Código do cliente", "Nome do cliente", "Telefone/WhatsApp"],
+        linhas,
+      );
+      toast.success(`${linhas.length} cliente(s) exportados.`);
+    } finally {
+      setExportandoItens(false);
+    }
+  }
 
   const barraVisao = (
-    <ReportBarraVisao controlesDireita={acoesItens}>{seletorVisao}</ReportBarraVisao>
+    <ReportBarraVisao>{seletorVisao}</ReportBarraVisao>
   );
 
   return (
@@ -220,6 +277,7 @@ export function AbaClientes({
             />          </div>
           {/* Ranking de clientes no padrão único de relatórios */}
           <ReportTable
+            exportExtras={exportExtras}
             data={clientesOrdenados}
             rowKey={(cli) => cli.nome}
             label="clientes"

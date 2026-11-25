@@ -11,7 +11,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+export interface ExportExtra {
+  id: string;
+  titulo: string;
+  descricao: string;
+  /** Ícone lucide (já renderizado com o tamanho do menu). */
+  icone?: React.ElementType;
+  onSelect: () => void;
+  disabled?: boolean;
+}
+
 export interface ExportDropdownProps {
+  /**
+   * Saídas específicas da tela (ex.: "Itens por cliente", "Cadastro de
+   * clientes"). Ficam dentro do menu para não poluir a barra com botões.
+   */
+  extras?: ExportExtra[];
   onExportarPdf?: () => void;
   onExportarCsv?: () => void;
   onImprimir?: () => void;
@@ -21,6 +36,7 @@ export interface ExportDropdownProps {
 }
 
 export function ExportDropdown({
+  extras = [],
   onExportarPdf,
   onExportarCsv,
   onImprimir = () => window.print(),
@@ -46,6 +62,30 @@ export function ExportDropdown({
         <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1">
           Opções de Saída
         </DropdownMenuLabel>
+
+        {extras.map((extra) => {
+          const Icone = extra.icone ?? Table;
+          return (
+            <DropdownMenuItem
+              key={extra.id}
+              onClick={extra.onSelect}
+              disabled={extra.disabled}
+              className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium cursor-pointer rounded-md hover:bg-muted/60"
+            >
+              <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+                <Icone className="size-3.5" />
+              </div>
+              <div className="flex flex-col text-left min-w-0">
+                <span className="font-bold text-foreground leading-tight">{extra.titulo}</span>
+                <span className="text-[10px] text-muted-foreground">{extra.descricao}</span>
+              </div>
+            </DropdownMenuItem>
+          );
+        })}
+
+        {extras.length > 0 && (onExportarPdf || onExportarCsv) ? (
+          <DropdownMenuSeparator className="my-1 border-border/50" />
+        ) : null}
 
         {onExportarPdf && (
           <DropdownMenuItem

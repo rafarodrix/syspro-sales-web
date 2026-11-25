@@ -72,6 +72,7 @@ export function ReportTable<T>({
   pagination = true,
   showExport = true,
   exportObservacoes,
+  exportExtras,
   acoes,
   acoesExtras,
   rodape,
@@ -87,6 +88,8 @@ export function ReportTable<T>({
   pagination?: boolean;
   showExport?: boolean;
   exportObservacoes?: string;
+  /** Saídas extras no mesmo dropdown de exportação da tabela. */
+  exportExtras?: import("@/components/export-dropdown").ExportExtra[];
   /** Controles renderizados à esquerda da barra da tabela (ex.: seletor de visão). */
   acoes?: ReactNode;
   /** Ações extras à direita (ex.: exportação com formato próprio). */
@@ -200,6 +203,7 @@ export function ReportTable<T>({
       {(() => { const conteudo = (
         <ReportToolbar acoes={acoes}>
           {showExport && report && visibleColumns.every((column) => column.value) ? <ExportarVisao
+              extras={exportExtras}
             titulo={`${report.titulo} - ${caption ?? headerText(columns[0]?.header)}`}
             rotulo="Exportar"
             contexto={report.contexto}
