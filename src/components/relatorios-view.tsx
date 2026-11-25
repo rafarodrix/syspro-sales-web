@@ -1265,6 +1265,8 @@ export function RelatoriosView({
                 {abaAtiva === "clientes" && frequenciaClientes && (
                   <AbaClientes
                     key={`${periodoConsultado.inicial}-${periodoConsultado.final}`}
+                    vendas={vendas}
+                    empresaId={empresaId}
                     clientesFiltrados={clientesFiltrados}
                     notasAgrupadas={notasAgrupadasRelatorio}
                     notasAnteriores={notasClientesAnteriores}

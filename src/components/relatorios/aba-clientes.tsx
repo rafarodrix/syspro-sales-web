@@ -18,10 +18,18 @@ import { formatarDataInputParaBR } from "@/lib/vendas";
 import type { RelatorioFrequencia } from "@/lib/clientes-frequencia";
 import { VisaoFrequenciaClientes } from "./visao-frequencia-clientes";
 import type { ContextoExportacao } from "./exportar-visao";
+import type { VendaProduto } from "@/lib/syspro-api";
+import { COLUNAS_ITENS_CLIENTE, indexarContatos, montarItensPorCliente, normalizarNomeCliente } from "@/lib/itens-por-cliente";
+import { exportarParaCSV } from "@/lib/exportar-csv";
+import { toast } from "sonner";
+import { Download } from "lucide-react";
 import { FiltroRelatorio } from "./filtro-relatorio";
 
 interface AbaClientesProps {
   clientesFiltrados: ItemClienteAnalise[];
+  /** Linhas de venda (item a item) do período: base do "Exportar itens". */
+  vendas: VendaProduto[];
+  empresaId: string;
   notasAnteriores: VendaAgrupada[];
   intervaloAnterior: Periodo | null;
   /** Notas do período (agrupadas por NF), usadas na visão analítica. */
@@ -35,6 +43,8 @@ interface AbaClientesProps {
 
 export function AbaClientes({
   clientesFiltrados,
+  vendas,
+  empresaId,
   notasAnteriores,
   intervaloAnterior,
   notasAgrupadas,
@@ -128,8 +138,58 @@ export function AbaClientes({
     />
   );
 
+  const [exportandoItens, setExportandoItens] = useState(false);
+
+  async function exportarItens() {
+    setExportandoItens(true);
+    try {
+      // Código e telefone não vêm na rota de vendas: buscamos no cadastro.
+      let contatos: Awaited<ReturnType<typeof indexarContatos>> | undefined;
+      try {
+        const resposta = await fetch("/api/clientes/cadastro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresaId,
+            dtInicial: contexto.periodo.inicial,
+            dtFinal: contexto.periodo.final,
+          }),
+        });
+        const json = (await resposta.json().catch(() => ({}))) as {
+          clientes?: { codigo: string; nome: string; telefone: string }[];
+          error?: string;
+        };
+        if (resposta.ok && json.clientes) contatos = indexarContatos(json.clientes);
+        else toast.warning(json.error ?? "Cadastro de clientes indisponível: exportando sem telefone.");
+      } catch {
+        toast.warning("Cadastro de clientes indisponível: exportando sem telefone.");
+      }
+
+      const nomes = new Set([...nomesFiltrados].map(normalizarNomeCliente));
+      const linhas = montarItensPorCliente(
+        vendas.filter((venda) => nomes.has(normalizarNomeCliente(venda.cliente_nome))),
+        contatos,
+      );
+      if (linhas.length === 0) {
+        toast.warning("Nenhum item para exportar com os filtros atuais.");
+        return;
+      }
+      exportarParaCSV("vendas-por-cliente-itens", COLUNAS_ITENS_CLIENTE, linhas);
+      toast.success(`${linhas.length} item(ns) exportados.`);
+    } finally {
+      setExportandoItens(false);
+    }
+  }
+
+  const acoesItens = (
+    <Button size="sm" variant="outline" onClick={exportarItens} disabled={exportandoItens}>
+      <Download className="mr-1.5 size-3.5" />
+      {exportandoItens ? "Montando..." : "Exportar itens"}
+    </Button>
+  );
+
   const barraVisao = (
-    <ReportBarraVisao>{seletorVisao}</ReportBarraVisao>
+    <ReportBarraVisao controlesDireita={acoesItens}>{seletorVisao}</ReportBarraVisao>
   );
 
   return (
