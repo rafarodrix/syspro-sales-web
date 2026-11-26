@@ -205,3 +205,7 @@ A visibilidade fica no `localStorage` por `preferenceScope` + `caption`. Guardar
 ### Curva ABC: Produto × Fornecedor
 
 A mesma métrica (faturamento/quantidade/lucro/custo) classifica produtos e fornecedores — `curvaAbcPorFornecedor()` em `analise-fornecedores.ts` usa `classificarCurvaABC` sobre o percentual acumulado anterior, igual à curva de produtos. Análises por fornecedor ficam aqui (curva) e em `Fornecedores` (carteira, itens, devoluções); não criar aba de curva dentro de Fornecedores.
+
+### Grupo de estoque: `GERAL (1)` / `GERAL (2)`
+
+`produto_grupo_estoque` do Kardex traz o **código do depósito** entre parênteses ("GERAL (2)"), enquanto a empresa é configurada como "GERAL". Comparação por string exata descartava 100% dos movimentos — sintoma: análise de compras com `estoqueAtual: null` e `semBaseEstoque: true` em todos os itens, sem erro nenhum. Use `normalizarGrupoEstoque`/`grupoEstoqueCorresponde` (`src/lib/grupo-estoque.ts`) e, para o saldo, **some o último saldo de cada depósito** do grupo — nunca pegue só o último movimento, senão o estoque de dois depósitos vira o de um.
