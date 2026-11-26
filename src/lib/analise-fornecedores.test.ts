@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { analisarFornecedores, concentracaoHhi, evolucaoFornecedores, rotuloConcentracao } from "@/lib/analise-fornecedores";
+import {
+  analisarFornecedores,
+  concentracaoHhi,
+  devolucoesPorFornecedor,
+  evolucaoFornecedores,
+  produtosPorFornecedor,
+  rotuloConcentracao,
+} from "@/lib/analise-fornecedores";
 
 function venda(over: Record<string, unknown> = {}) {
   return {
@@ -75,5 +82,70 @@ describe("análise por fornecedor", () => {
     expect(meses).toEqual(["2026-09", "2026-10"]);
     expect(series[0]).toEqual({ fornecedor: "A", valores: [50, 70] });
     expect(series[1]).toEqual({ fornecedor: "B", valores: [0, 30] });
+  });
+});
+
+describe("curva ABC, produtos e devoluções por fornecedor", () => {
+  function v(over: Record<string, unknown> = {}) {
+    return {
+      nf_dt_emissao: "2026-11-05",
+      cliente_nome: "Cliente",
+      produto_id: "P1",
+      produto_codigo_auxiliar: "P1",
+      produto_descricao: "Produto",
+      produto_qtde: 1,
+      produto_vlr_item: 100,
+      produto_vlr_total_item: 100,
+      produto_vlr_total_liquido: 100,
+      produto_vlr_desconto: 0,
+      produto_vlr_custo_reposicao: 60,
+      fornecedor_nome: "A",
+      ...over,
+    } as never;
+  }
+
+  it("classifica fornecedores em A/B/C por participação acumulada", () => {
+    const vendas = [
+      v({ fornecedor_nome: "Grande", produto_vlr_total_liquido: 80 }),
+      v({ fornecedor_nome: "Medio", produto_vlr_total_liquido: 15 }),
+      v({ fornecedor_nome: "Pequeno", produto_vlr_total_liquido: 5 }),
+    ];
+    const { linhas } = analisarFornecedores(vendas);
+    expect(linhas.map((linha) => [linha.fornecedor, linha.classe])).toEqual([
+      ["Grande", "A"],
+      ["Medio", "B"],
+      ["Pequeno", "C"],
+    ]);
+    expect(linhas[0].participacaoAcumulada).toBeCloseTo(80, 0);
+  });
+
+  it("agrupa produtos por fornecedor somando quantidade e venda", () => {
+    const mapa = produtosPorFornecedor([
+      v({ fornecedor_nome: "A", produto_codigo_auxiliar: "X", produto_qtde: 2, produto_vlr_total_liquido: 50 }),
+      v({ fornecedor_nome: "A", produto_codigo_auxiliar: "X", produto_qtde: 1, produto_vlr_total_liquido: 25 }),
+      v({ fornecedor_nome: "B", produto_codigo_auxiliar: "Y", produto_vlr_total_liquido: 40 }),
+    ]);
+    const deA = mapa.get("A")!;
+    expect(deA).toHaveLength(1);
+    expect(deA[0].quantidade).toBe(3);
+    expect(deA[0].venda).toBe(75);
+    expect(mapa.get("B")![0].produto).toBe("Produto");
+  });
+
+  it("atribui devolução ao fornecedor do produto vendido", () => {
+    const { linhas, vinculo, semVinculo } = devolucoesPorFornecedor(
+      [
+        { codigo: "X", valorVendido: 1000, valorDevolvido: 100 },
+        { codigo: "ORFAO", valorVendido: 500, valorDevolvido: 50 },
+        { codigo: "X", valorVendido: 1000, valorDevolvido: 0 },
+      ],
+      [v({ fornecedor_nome: "A", produto_codigo_auxiliar: "X" })],
+    );
+    expect(vinculo).toBe(1);
+    expect(semVinculo).toBe(1);
+    expect(linhas[0].fornecedor).toBe("A");
+    expect(linhas[0].devolvido).toBe(100);
+    expect(linhas[0].taxa).toBeCloseTo(10, 5);
+    expect(linhas[1].fornecedor).toBe("Sem fornecedor informado");
   });
 });

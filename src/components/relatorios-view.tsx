@@ -1270,6 +1270,9 @@ export function RelatoriosView({
                   <AbaFornecedores
                     key={`${periodoConsultado.inicial}-${periodoConsultado.final}`}
                     vendas={vendas}
+                    empresaId={empresaId}
+                    periodo={periodoConsultado}
+                    usuarioId={userId}
                   />
                 )}
 

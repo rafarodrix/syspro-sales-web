@@ -3,8 +3,13 @@ import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
 import { valorItem } from "@/lib/vendas";
 
+export type ClasseFornecedor = "A" | "B" | "C";
+
 export interface LinhaFornecedor {
   fornecedor: string;
+  classe: ClasseFornecedor;
+  /** % de venda acumulado até este fornecedor (curva ABC). */
+  participacaoAcumulada: number;
   valorVendido: number;
   /** Descontos concedidos nos itens do fornecedor. */
   descontos: number;
@@ -98,6 +103,8 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
   const linhas: LinhaFornecedor[] = [...mapa.entries()]
     .map(([chave, dados]) => ({
       fornecedor: nomesExibicao.get(chave) ?? chave,
+      classe: "C" as ClasseFornecedor,
+      participacaoAcumulada: 0,
       valorVendido: dados.valorVendido,
       descontos: dados.descontos,
       acrescimos: dados.acrescimos,
@@ -110,6 +117,20 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
       participacao: calcularPercentual(dados.valorLiquido, vendaTotal),
     }))
     .sort((a, b) => b.valorLiquido - a.valorLiquido);
+
+  // Curva ABC de fornecedores: A até 80% da venda, B até 95%, C o restante.
+  let acumulado = 0;
+  for (const linha of linhas) {
+    const semFornecedor = linha.fornecedor.toUpperCase() === SEM_FORNECEDOR.toUpperCase();
+    if (semFornecedor) {
+      linha.classe = "C";
+      linha.participacaoAcumulada = 100;
+      continue;
+    }
+    acumulado += linha.participacao;
+    linha.participacaoAcumulada = Math.min(100, acumulado);
+    linha.classe = acumulado <= 80 ? "A" : acumulado <= 95 ? "B" : "C";
+  }
 
   const comFornecedor = linhas.filter((linha) => linha.fornecedor.toUpperCase() !== SEM_FORNECEDOR.toUpperCase());
   const semFornecedor = linhas.find((linha) => linha.fornecedor.toUpperCase() === SEM_FORNECEDOR.toUpperCase());
@@ -168,4 +189,111 @@ export function evolucaoFornecedores(
       valores: meses.map((mes) => porMes.get(mes)?.get(fornecedor) ?? 0),
     })),
   };
+}
+
+export interface ProdutoDoFornecedor {
+  codigo: string;
+  produto: string;
+  quantidade: number;
+  venda: number;
+  devolvido: number;
+  lucro: number;
+  margem: number | null;
+}
+
+/** Produtos vendidos de cada fornecedor — base do detalhamento na tela e no CSV. */
+export function produtosPorFornecedor(vendas: VendaProduto[]): Map<string, ProdutoDoFornecedor[]> {
+  const mapa = new Map<string, Map<string, ProdutoDoFornecedor>>();
+
+  for (const venda of vendas) {
+    const fornecedor = String(venda.fornecedor_nome ?? "").replace(/\s+/g, " ").trim() || SEM_FORNECEDOR;
+    const codigo = String(venda.produto_codigo_auxiliar ?? venda.produto_id ?? "").trim() || venda.produto_descricao;
+    const produtos = mapa.get(fornecedor) ?? new Map<string, ProdutoDoFornecedor>();
+    const atual = produtos.get(codigo) ?? {
+      codigo,
+      produto: venda.produto_descricao,
+      quantidade: 0,
+      venda: 0,
+      devolvido: 0,
+      lucro: 0,
+      margem: null,
+    };
+
+    const liquido = valorItem(venda);
+    const margemItem = calcularMargemItem(venda);
+    atual.quantidade += paraNumero(venda.produto_qtde);
+    atual.venda += liquido;
+    atual.devolvido += Math.max(0, paraNumero(venda.produto_vlr_total_item) - liquido);
+    atual.lucro += margemItem.lucro ?? 0;
+    produtos.set(codigo, atual);
+    mapa.set(fornecedor, produtos);
+  }
+
+  const saida = new Map<string, ProdutoDoFornecedor[]>();
+  for (const [fornecedor, produtos] of mapa) {
+    saida.set(
+      fornecedor,
+      [...produtos.values()]
+        .map((produto) => ({
+          ...produto,
+          margem: produto.venda > 0 ? (produto.lucro / produto.venda) * 100 : null,
+        }))
+        .sort((a, b) => b.venda - a.venda),
+    );
+  }
+  return saida;
+}
+
+export interface DevolucaoPorFornecedor {
+  fornecedor: string;
+  vendido: number;
+  devolvido: number;
+  /** Devolvido ÷ vendido (%). */
+  taxa: number;
+  itens: number;
+}
+
+/**
+ * Devoluções (EDV) por fornecedor. A devolução vem do Kardex (mesma fonte da
+ * aba Vendas & Margem), então o produto é ligado ao fornecedor pela venda.
+ */
+export function devolucoesPorFornecedor(
+  itensMargem: { codigo: string; valorVendido: number; valorDevolvido: number }[],
+  vendas: VendaProduto[],
+): { linhas: DevolucaoPorFornecedor[]; vinculo: number; semVinculo: number } {
+  const fornecedorPorCodigo = new Map<string, string>();
+  for (const venda of vendas) {
+    const codigo = String(venda.produto_codigo_auxiliar ?? venda.produto_id ?? "").trim().toUpperCase();
+    const fornecedor = String(venda.fornecedor_nome ?? "").replace(/\s+/g, " ").trim();
+    if (codigo && fornecedor) fornecedorPorCodigo.set(codigo, fornecedor);
+  }
+
+  const mapa = new Map<string, { vendido: number; devolvido: number; itens: number }>();
+  let vinculo = 0;
+  let semVinculo = 0;
+
+  for (const item of itensMargem) {
+    if (!item.valorDevolvido) continue;
+    const fornecedor = fornecedorPorCodigo.get(String(item.codigo ?? "").trim().toUpperCase());
+    if (fornecedor) vinculo += 1;
+    else semVinculo += 1;
+    const chave = fornecedor ?? SEM_FORNECEDOR;
+    const atual = mapa.get(chave) ?? { vendido: 0, devolvido: 0, itens: 0 };
+    atual.vendido += item.valorVendido;
+    atual.devolvido += item.valorDevolvido;
+    atual.itens += 1;
+    mapa.set(chave, atual);
+  }
+
+  const linhas = [...mapa.entries()]
+    .map(([chave, dados]) => ({
+      fornecedor: chave,
+      vendido: dados.vendido,
+      devolvido: dados.devolvido,
+      taxa: dados.vendido > 0 ? (dados.devolvido / dados.vendido) * 100 : 0,
+      itens: dados.itens,
+    }))
+    .sort((a, b) => b.devolvido - a.devolvido);
+
+  return { linhas, vinculo, semVinculo };
 }
