@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { GraficoBarras } from "@/components/analytics/grafico";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
+import { FeedbackState } from "@/components/feedback-state";
 import { KpiCard } from "@/components/kpi-card";
 import { ReportTable } from "@/components/relatorios/report-table";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
@@ -39,6 +40,18 @@ export function AbaFornecedores({
   );
 
   const concentracao = rotuloConcentracao(resumo.concentracaoHhi);
+  // Base cujo SysproServer ainda não devolve fornecedor: nada a analisar.
+  const somenteSemFornecedor = vendas.length > 0 && resumo.fornecedoresAtivos === 0;
+
+  if (somenteSemFornecedor) {
+    return (
+      <FeedbackState
+        variant="empty"
+        title="Esta empresa ainda não devolve fornecedor"
+        description={`Os ${formatarNumero(resumo.itensSemFornecedor, 0)} itens vendidos no período vieram sem fornecedor na rota produto/venda. Atualize o SysproServer desta base com a versão que envia fornecedor_codigo e fornecedor_nome — a análise passa a funcionar sem mudança no portal.`}
+      />
+    );
+  }
 
   return (
     <div className="space-y-5">
