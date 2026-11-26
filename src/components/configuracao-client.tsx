@@ -218,6 +218,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
     setEditCoberturaAtencao(empresa.coberturaAtencaoDias);
     setEditCoberturaExcesso(empresa.coberturaExcessoDias);
     setEditCoberturaCompra(empresa.coberturaCompraDias);
+    setEditGrupoEstoque(empresa.grupoEstoquePadrao || "GERAL");
   }
 
   async function salvarEdicao() {
@@ -248,6 +249,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
         coberturaAtencaoDias: editCoberturaAtencao,
         coberturaExcessoDias: editCoberturaExcesso,
         coberturaCompraDias: editCoberturaCompra,
+        grupoEstoquePadrao: editGrupoEstoque.trim() || "GERAL",
       }),
     });
     setSalvandoEdicao(false);
@@ -528,6 +530,9 @@ export function ConfiguracaoClient({ empresas }: Props) {
                         <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] text-muted-foreground">
                           {empresa.coberturaCriticaDias}/{empresa.coberturaAtencaoDias}/{empresa.coberturaExcessoDias} dias
                           <span className="block">Compra: {empresa.coberturaCompraDias} dias</span>
+                          <span className="block" title="Grupos de estoque desta empresa (só dela)">
+                            Estoque: {empresa.grupoEstoquePadrao || "GERAL"}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           <button
@@ -697,17 +702,20 @@ export function ConfiguracaoClient({ empresas }: Props) {
 
               <div className="mt-3 space-y-2">
                 <Label htmlFor="grupoEstoqueEditar" className="text-xs font-semibold">
-                  Grupo de estoque padrão
+                  Grupo(s) de estoque
                 </Label>
                 <Input
                   id="grupoEstoqueEditar"
                   value={editGrupoEstoque}
                   onChange={(e) => setEditGrupoEstoque(e.target.value.toUpperCase())}
-                  placeholder="Ex: GERAL, FISCAL, OUTRO"
+                  placeholder="GERAL  ou  GERAL (1);GERAL (2)"
                   className="text-xs font-mono"
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  Informe exatamente como vem no campo <code>produto_grupo_estoque</code> do Kardex. Padrão: GERAL.
+                  Vale só para esta empresa. Só o grupo (<span className="font-mono">GERAL</span>) soma
+                  todos os depósitos; com o código (<span className="font-mono">GERAL (2)</span>) usa
+                  apenas aquele depósito. Para mais de um, separe com{" "}
+                  <span className="font-mono">;</span>.
                 </p>
               </div>
 

@@ -145,7 +145,7 @@ export const empresaUpdateSchema = z.object({
   coberturaAtencaoDias: diasCoberturaSchema.optional(),
   coberturaExcessoDias: diasCoberturaSchema.optional(),
   coberturaCompraDias: diasCoberturaSchema.optional(),
-  grupoEstoquePadrao: z.string().trim().max(50).optional(),
+  grupoEstoquePadrao: z.string().trim().max(200).optional(),
 });
 
 const padraoDataBR = /^\d{2}\/\d{2}\/\d{4}$/;
