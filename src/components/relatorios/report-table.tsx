@@ -111,9 +111,9 @@ export function ReportTable<T>({
   const [size, setSize] = useState(25);
   const [density, setDensity] = useState<"compacta" | "confortavel">("confortavel");
   const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>([]);
-  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const [chaveCarregada, setChaveCarregada] = useState<string | null>(null);
   const preferenceKey = report
-    ? `syspro:report-table:v2:${report.preferenceScope}:${caption ?? label}`
+    ? `syspro:report-table:v3:${report.preferenceScope}:${caption ?? label}`
     : null;
   const columnIdsKey = columns.map((column) => column.id).join("|");
 
@@ -140,7 +140,10 @@ export function ReportTable<T>({
       } catch {
         setVisibleColumnIds(columns.map((column) => column.id));
       } finally {
-        setPreferencesLoaded(true);
+        // Só libera a gravação depois de ler a preferência DESTA tabela; senão o
+        // efeito de salvar grava a visibilidade antiga (de outra visão) e esconde
+        // colunas que a tabela nova acabou de ganhar.
+        setChaveCarregada(preferenceKey);
       }
     });
     return () => { ativo = false; };
@@ -149,7 +152,7 @@ export function ReportTable<T>({
   }, [preferenceKey, columnIdsKey]);
 
   useEffect(() => {
-    if (!preferenceKey || !preferencesLoaded) return;
+    if (!preferenceKey || chaveCarregada !== preferenceKey) return;
     localStorage.setItem(
       preferenceKey,
       JSON.stringify({
@@ -161,7 +164,7 @@ export function ReportTable<T>({
           .map((column) => column.id),
       }),
     );
-  }, [density, preferenceKey, preferencesLoaded, size, sort, visibleColumnIds]);
+  }, [chaveCarregada, density, preferenceKey, size, sort, visibleColumnIds]);
 
   const visibleColumns = visibleColumnIds.length
     ? columns.filter((column) => visibleColumnIds.includes(column.id))
