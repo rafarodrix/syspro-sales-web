@@ -56,6 +56,9 @@ export interface VendaProduto {
   produto_vlr_outros?: number | string;
   produto_vlr_total_liquido?: number | string;
   vendedor_nome: string;
+  /** Fornecedor do produto (a rota passou a devolver em 11/2026). */
+  fornecedor_codigo?: string;
+  fornecedor_nome?: string;
   nf_dt_emissao: string; // DD/MM/AAAA
   nf_modelo: string; // ex.: 55, 65
   nf_forma_pagto: string;
@@ -311,6 +314,8 @@ function normalizarVenda(item: unknown, indice: number): VendaProduto {
     // produto_vlr_total_item é o BRUTO (não abate desconto).
     produto_vlr_total_liquido: numeroOpcional("produto_vlr_total_liquido"),
     vendedor_nome: texto("vendedor_nome"),
+    fornecedor_codigo: texto("fornecedor_codigo"),
+    fornecedor_nome: texto("fornecedor_nome"),
     nf_dt_emissao: texto("nf_dt_emissao"),
     nf_modelo: texto("nf_modelo"),
     nf_forma_pagto: texto("nf_forma_pagto"),
