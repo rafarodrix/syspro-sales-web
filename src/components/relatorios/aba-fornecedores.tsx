@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { ArrowLeftRight, Boxes, Factory, LayoutList } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Boxes, Factory } from "lucide-react";
 
 import { FeedbackState } from "@/components/feedback-state";
 import { ReportBarraVisao, ReportVisaoProvider } from "@/components/relatorios/report-barra";
@@ -10,24 +10,20 @@ import { ReportMetricStrip } from "@/components/relatorios/report-toolbar";
 import { ReportTable } from "@/components/relatorios/report-table";
 import { ReportViewSelector } from "@/components/relatorios/report-view-toggle";
 import { Badge } from "@/components/ui/badge";
-import { chaveConsulta } from "@/lib/cache-consulta";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
-import { useConsulta } from "@/lib/use-consulta";
 import {
   analisarFornecedores,
-  devolucoesPorFornecedor,
   produtosPorFornecedor,
   rotuloConcentracao,
   type ClasseFornecedor,
   type LinhaFornecedor,
   type ProdutoDoFornecedor,
 } from "@/lib/analise-fornecedores";
-import type { AnaliseMargens } from "@/lib/analise-margens";
 import type { Periodo } from "@/components/date-range-filter";
 import type { VendaComEmpresa, VendaProduto } from "@/lib/syspro-api";
 
-type VisaoFornecedor = "sintese" | "fornecedores" | "itens" | "devolucoes";
+type VisaoFornecedor = "carteira" | "itens";
 
 const CORES_CLASSE: Record<ClasseFornecedor, string> = {
   A: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
@@ -49,22 +45,17 @@ function SeloClasse({ classe }: { classe: ClasseFornecedor }) {
 /**
  * Análise de Fornecedores (Relatórios › Vendas).
  *
- * Quatro leituras do mesmo período sobre o fornecedor que vem no item de venda:
- * síntese (o que importa), carteira (quem vende quanto), curva ABC de fornecedores
- * (dependência) e devoluções (o que voltou, por fornecedor).
+ * Duas leituras sobre o fornecedor que vem no item de venda: carteira (quem vende
+ * quanto, com classe ABC e diagnóstico de dependência) e itens (produto × fornecedor).
  */
 export function AbaFornecedores({
   vendas,
-  empresaId,
   periodo,
-  usuarioId,
 }: {
   vendas: (VendaProduto | VendaComEmpresa)[];
-  empresaId?: string;
   periodo?: Periodo;
-  usuarioId?: string;
 }) {
-  const [visao, setVisao] = useState<VisaoFornecedor>("sintese");
+  const [visao, setVisao] = useState<VisaoFornecedor>("carteira");
   const [busca, setBusca] = useState("");
 
   const { linhas, resumo } = useMemo(() => analisarFornecedores(vendas), [vendas]);
@@ -73,59 +64,11 @@ export function AbaFornecedores({
   // Base cujo SysproServer ainda não devolve fornecedor: nada a analisar.
   const somenteSemFornecedor = vendas.length > 0 && resumo.fornecedoresAtivos === 0;
 
-  // Devoluções (EDV) vêm do Kardex pela rota de margens — mesma chave de cache da
-  // aba Vendas & Margem, então quem já abriu aquela visão não paga a consulta.
-  const chaveDevolucoes = chaveConsulta({
-    relatorio: "margens",
-    usuario: usuarioId,
-    empresa: empresaId,
-    inicial: periodo?.inicial,
-    final: periodo?.final,
-  });
-
-  const buscarDevolucoes = useCallback(async () => {
-    const resposta = await fetch("/api/relatorios/margens", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        empresaId,
-        dtInicial: periodo?.inicial,
-        dtFinal: periodo?.final,
-      }),
-    });
-    const json = (await resposta.json().catch(() => ({}))) as AnaliseMargens & { error?: string };
-    if (!resposta.ok) throw new Error(json.error || "Erro ao consultar devoluções.");
-    return json;
-  }, [empresaId, periodo?.inicial, periodo?.final]);
-
-  const devolucoes = useConsulta<AnaliseMargens>({
-    chave: chaveDevolucoes,
-    buscar: buscarDevolucoes,
-    habilitado: visao === "devolucoes" && Boolean(empresaId && periodo?.inicial && periodo?.final),
-  });
-
-  const analiseDevolucoes = useMemo(
-    () =>
-      devolucoes.dados
-        ? devolucoesPorFornecedor(
-            devolucoes.dados.itens.map((item) => ({
-              codigo: item.codigo,
-              valorVendido: item.valorVendido,
-              valorDevolvido: item.valorDevolvido,
-            })),
-            vendas,
-          )
-        : null,
-    [devolucoes.dados, vendas],
-  );
-
   const filtradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     if (!termo) return linhas;
     return linhas.filter((linha) => linha.fornecedor.toLowerCase().includes(termo));
   }, [linhas, busca]);
-
-  const top15 = useMemo(() => filtradas.slice(0, 15), [filtradas]);
 
   const itensLista = useMemo(() => {
     const lista: (ProdutoDoFornecedor & { fornecedor: string })[] = [];
@@ -225,10 +168,8 @@ export function AbaFornecedores({
           <ReportViewSelector
             view={visao}
             options={[
-              { value: "sintese", label: "Síntese", icon: LayoutList },
-              { value: "fornecedores", label: "Carteira", icon: Factory },
+              { value: "carteira", label: "Carteira", icon: Factory },
               { value: "itens", label: "Itens", icon: Boxes },
-              { value: "devolucoes", label: "Devoluções", icon: ArrowLeftRight },
             ]}
             onViewChange={(proxima) => setVisao(proxima as VisaoFornecedor)}
           />
@@ -256,28 +197,9 @@ export function AbaFornecedores({
           ]}
         />
 
-        {visao === "sintese" ? (
+        {visao === "carteira" ? (
           <div className="space-y-3">
             <ReportDiagnostics titulo="Como ler a carteira de fornecedores" metricas={diagnostico} />
-            <ReportTable
-              label="top fornecedores"
-              caption="Principais fornecedores do período"
-              data={top15}
-              rowKey={(linha) => linha.fornecedor}
-              stickyFirst
-              exportObservacoes="Mostra os 15 maiores por venda líquida. A visão Carteira traz todos os fornecedores."
-              columns={colunasBase()}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {formatarNumero(filtradas.length, 0)} fornecedor(es) no período · a visão{" "}
-              <strong className="text-foreground">Carteira</strong> traz a lista completa e{" "}
-              <strong className="text-foreground">Devoluções</strong> mostra o que voltou.
-            </p>
-          </div>
-        ) : null}
-
-        {visao === "fornecedores" ? (
-          <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <input
                 value={busca}
@@ -307,7 +229,7 @@ export function AbaFornecedores({
                 },
               ]}
               columns={[
-                ...colunasBase(false),
+                ...colunasBase(),
                 {
                   id: "vendaBruta",
                   header: <>Venda bruta</>,
@@ -440,87 +362,7 @@ export function AbaFornecedores({
           </div>
         ) : null}
 
-        {visao === "devolucoes" ? (
-          <div className="space-y-3">
-            {devolucoes.erro ? (
-              <FeedbackState
-                variant="error"
-                title="Não foi possível carregar as devoluções"
-                description={devolucoes.erro}
-                onRetry={() => devolucoes.atualizar()}
-              />
-            ) : null}
 
-            {!devolucoes.erro && !analiseDevolucoes ? (
-              <FeedbackState
-                variant="empty"
-                title="Carregando devoluções"
-                description="A devolução vem do Kardex (mesma fonte da aba Vendas & Margem); a consulta pode levar alguns segundos."
-              />
-            ) : null}
-
-            {analiseDevolucoes ? (
-              <>
-                <ReportTable
-                  label="devolucoes por fornecedor"
-                  caption="Devoluções por fornecedor"
-                  data={analiseDevolucoes.linhas}
-                  rowKey={(linha) => linha.fornecedor}
-                  stickyFirst
-                  exportObservacoes={`Devolução (EDV) lida do Kardex. ${formatarNumero(analiseDevolucoes.vinculo, 0)} produto(s) ligados ao fornecedor pela venda, ${formatarNumero(analiseDevolucoes.semVinculo, 0)} sem vínculo.`}
-                  columns={[
-                    {
-                      id: "fornecedor",
-                      header: <>Fornecedor</>,
-                      kind: "name" as const,
-                      value: (linha) => linha.fornecedor,
-                      cell: (linha) => (
-                        <span className="block truncate font-medium">{linha.fornecedor}</span>
-                      ),
-                    },
-                    {
-                      id: "vendido",
-                      header: <>Vendido</>,
-                      kind: "currency" as const,
-                      value: (linha) => linha.vendido,
-                      cell: (linha) => <>{formatarMoeda(linha.vendido)}</>,
-                    },
-                    {
-                      id: "devolvido",
-                      header: <>Devolvido</>,
-                      kind: "currency" as const,
-                      value: (linha) => linha.devolvido,
-                      cell: (linha) => (
-                        <span className="font-semibold text-negativo">{formatarMoeda(linha.devolvido)}</span>
-                      ),
-                    },
-                    {
-                      id: "taxa",
-                      header: <span title="Devolvido ÷ vendido">Taxa</span>,
-                      kind: "percent" as const,
-                      value: (linha) => linha.taxa,
-                      cell: (linha) => <>{linha.taxa === null ? "—" : formatarPercentual(linha.taxa, 2)}</>,
-                    },
-                    {
-                      id: "itens",
-                      header: <>Produtos</>,
-                      kind: "number" as const,
-                      value: (linha) => linha.itens,
-                      cell: (linha) => <>{formatarNumero(linha.itens, 0)}</>,
-                    },
-                  ]}
-                />
-                {analiseDevolucoes.semVinculo > 0 ? (
-                  <p className="text-[11px] text-muted-foreground">
-                    {formatarNumero(analiseDevolucoes.semVinculo, 0)} produto(s) com devolução não foram
-                    vendidos no período e por isso não têm fornecedor identificado — aparecem em “Sem
-                    fornecedor informado”.
-                  </p>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        ) : null}
       </div>
     </ReportVisaoProvider>
   );
