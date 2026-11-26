@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { ArrowLeftRight, Boxes, Factory, Layers, LayoutList } from "lucide-react";
+import { ArrowLeftRight, Boxes, Factory, LayoutList } from "lucide-react";
 
 import { FeedbackState } from "@/components/feedback-state";
 import { ReportBarraVisao, ReportVisaoProvider } from "@/components/relatorios/report-barra";
@@ -27,7 +27,7 @@ import type { AnaliseMargens } from "@/lib/analise-margens";
 import type { Periodo } from "@/components/date-range-filter";
 import type { VendaComEmpresa, VendaProduto } from "@/lib/syspro-api";
 
-type VisaoFornecedor = "sintese" | "fornecedores" | "curva" | "devolucoes";
+type VisaoFornecedor = "sintese" | "fornecedores" | "itens" | "devolucoes";
 
 const CORES_CLASSE: Record<ClasseFornecedor, string> = {
   A: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
@@ -127,35 +127,24 @@ export function AbaFornecedores({
 
   const top15 = useMemo(() => filtradas.slice(0, 15), [filtradas]);
 
-  const porClasse = useMemo(() => {
-    const mapa = new Map<
-      ClasseFornecedor,
-      { fornecedores: number; venda: number; lucro: number; skus: number }
-    >();
-    for (const linha of linhas) {
-      if (linha.fornecedor.toUpperCase() === "SEM FORNECEDOR INFORMADO") continue;
-      const atual = mapa.get(linha.classe) ?? { fornecedores: 0, venda: 0, lucro: 0, skus: 0 };
-      atual.fornecedores += 1;
-      atual.venda += linha.valorLiquido;
-      atual.lucro += linha.lucro;
-      atual.skus += linha.skus;
-      mapa.set(linha.classe, atual);
+  const itensLista = useMemo(() => {
+    const lista: (ProdutoDoFornecedor & { fornecedor: string })[] = [];
+    for (const [fornecedor, listaDoFornecedor] of produtos) {
+      for (const produto of listaDoFornecedor) lista.push({ ...produto, fornecedor });
     }
-    let acumulado = 0;
-    return (["A", "B", "C"] as ClasseFornecedor[])
-      .filter((classe) => mapa.has(classe))
-      .map((classe) => {
-        const dados = mapa.get(classe)!;
-        acumulado += dados.venda;
-        return {
-          classe,
-          ...dados,
-          participacao: resumo.vendaTotal > 0 ? (dados.venda / resumo.vendaTotal) * 100 : 0,
-          acumulada: resumo.vendaTotal > 0 ? (acumulado / resumo.vendaTotal) * 100 : 0,
-          margem: dados.venda > 0 ? (dados.lucro / dados.venda) * 100 : null,
-        };
-      });
-  }, [linhas, resumo.vendaTotal]);
+    return lista.sort((a, b) => b.venda - a.venda);
+  }, [produtos]);
+
+  const itensFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return itensLista;
+    return itensLista.filter(
+      (item) =>
+        item.produto.toLowerCase().includes(termo) ||
+        item.fornecedor.toLowerCase().includes(termo) ||
+        item.codigo.toLowerCase().includes(termo),
+    );
+  }, [itensLista, busca]);
 
   const fornecedoresClasseA = useMemo(
     () =>
@@ -238,7 +227,7 @@ export function AbaFornecedores({
             options={[
               { value: "sintese", label: "Síntese", icon: LayoutList },
               { value: "fornecedores", label: "Carteira", icon: Factory },
-              { value: "curva", label: "Curva ABC", icon: Layers },
+              { value: "itens", label: "Itens", icon: Boxes },
               { value: "devolucoes", label: "Devoluções", icon: ArrowLeftRight },
             ]}
             onViewChange={(proxima) => setVisao(proxima as VisaoFornecedor)}
@@ -278,7 +267,6 @@ export function AbaFornecedores({
               stickyFirst
               exportObservacoes="Mostra os 15 maiores por venda líquida. A visão Carteira traz todos os fornecedores."
               columns={colunasBase()}
-              rodape={(linhasRodape) => resumoRodape(linhasRodape, linhas.length)}
             />
             <p className="text-[11px] text-muted-foreground">
               {formatarNumero(filtradas.length, 0)} fornecedor(es) no período · a visão{" "}
@@ -353,81 +341,101 @@ export function AbaFornecedores({
               ]}
               renderDetalhe={(linha) => <DetalheProdutos lista={produtos.get(linha.fornecedor) ?? []} />}
               modoDetalhe="fechado"
-              rodape={(linhasRodape) => resumoRodape(linhasRodape)}
             />
           </div>
         ) : null}
 
-        {visao === "curva" ? (
+        {visao === "itens" ? (
           <div className="space-y-3">
-            <ReportDiagnostics titulo="Dependência da carteira" metricas={diagnostico} />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <input
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="Filtrar por produto, código ou fornecedor..."
+                className="h-8 w-full rounded-md border bg-background px-2.5 text-xs sm:w-96"
+                aria-label="Filtrar itens"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {formatarNumero(itensFiltrados.length, 0)} de {formatarNumero(itensLista.length, 0)} itens
+              </p>
+            </div>
             <ReportTable
-              label="curva abc de fornecedores"
-              caption="Curva ABC de fornecedores"
-              data={porClasse}
-              rowKey={(linha) => linha.classe}
-              exportObservacoes="Classe A acumula até 80% da venda, B até 95% e C o restante — mesma lógica de Pareto da Curva ABC de produtos."
+              label="itens por fornecedor"
+              caption="Itens vendidos por fornecedor"
+              data={itensFiltrados}
+              rowKey={(item) => `${item.fornecedor}-${item.codigo}`}
+              stickyFirst
+              exportObservacoes="Um item por produto e fornecedor. Venda é líquida de desconto; margem só existe onde há custo de reposição informado."
+              exportExtras={[
+                {
+                  id: "produtos-por-fornecedor",
+                  titulo: "Todos os itens (CSV)",
+                  descricao: "SKU, quantidade, venda, lucro e margem",
+                  icone: Boxes,
+                  onSelect: exportarProdutos,
+                },
+              ]}
               columns={[
                 {
-                  id: "classe",
-                  header: <>Classe</>,
+                  id: "fornecedor",
+                  header: <>Fornecedor</>,
                   kind: "name" as const,
-                  value: (linha) => linha.classe,
-                  cell: (linha) => <SeloClasse classe={linha.classe} />,
+                  value: (item) => item.fornecedor,
+                  cell: (item) => (
+                    <span className="block max-w-[18rem] truncate">{item.fornecedor}</span>
+                  ),
                 },
                 {
-                  id: "fornecedores",
-                  header: <>Fornecedores</>,
-                  kind: "number" as const,
-                  value: (linha) => linha.fornecedores,
-                  cell: (linha) => <>{formatarNumero(linha.fornecedores, 0)}</>,
+                  id: "codigo",
+                  header: <>Código</>,
+                  kind: "name" as const,
+                  value: (item) => item.codigo,
+                  cell: (item) => <>{item.codigo}</>,
                 },
                 {
-                  id: "skus",
-                  header: <>SKUs</>,
+                  id: "produto",
+                  header: <>Produto</>,
+                  kind: "name" as const,
+                  value: (item) => item.produto,
+                  cell: (item) => <span className="block max-w-[24rem] truncate">{item.produto}</span>,
+                },
+                {
+                  id: "quantidade",
+                  header: <>Qtd</>,
                   kind: "number" as const,
-                  value: (linha) => linha.skus,
-                  cell: (linha) => <>{formatarNumero(linha.skus, 0)}</>,
+                  value: (item) => item.quantidade,
+                  cell: (item) => <>{formatarNumero(item.quantidade, 2)}</>,
                 },
                 {
                   id: "venda",
-                  header: <>Venda líquida</>,
+                  header: <>Venda</>,
                   kind: "currency" as const,
-                  value: (linha) => linha.venda,
-                  cell: (linha) => <>{formatarMoeda(linha.venda)}</>,
+                  value: (item) => item.venda,
+                  cell: (item) => <>{formatarMoeda(item.venda)}</>,
                 },
                 {
-                  id: "participacao",
-                  header: <>% da venda</>,
-                  kind: "percent" as const,
-                  value: (linha) => linha.participacao,
-                  cell: (linha) => <>{formatarPercentual(linha.participacao, 1)}</>,
-                },
-                {
-                  id: "acumulada",
-                  header: <>% acumulado</>,
-                  kind: "percent" as const,
-                  value: (linha) => linha.acumulada,
-                  cell: (linha) => <>{formatarPercentual(linha.acumulada, 1)}</>,
+                  id: "lucro",
+                  header: <>Lucro</>,
+                  kind: "currency" as const,
+                  value: (item) => item.lucro,
+                  cell: (item) => (
+                    <span className={item.lucro < 0 ? "font-semibold text-negativo" : ""}>
+                      {formatarMoeda(item.lucro)}
+                    </span>
+                  ),
                 },
                 {
                   id: "margem",
                   header: <>Margem</>,
                   kind: "percent" as const,
-                  value: (linha) => linha.margem,
-                  cell: (linha) => <>{linha.margem === null ? "—" : formatarPercentual(linha.margem, 1)}</>,
+                  value: (item) => item.margem,
+                  cell: (item) => (
+                    <span className={item.margem !== null && item.margem < 0 ? "font-semibold text-negativo" : ""}>
+                      {item.margem === null ? "—" : formatarPercentual(item.margem, 1)}
+                    </span>
+                  ),
                 },
               ]}
-              rodape={() => (
-                <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-[11px] text-muted-foreground">
-                  <span>{formatarNumero(resumo.fornecedoresAtivos, 0)} fornecedor(es) ativos</span>
-                  <span>
-                    Classe A:{" "}
-                    <strong className="num text-foreground">{formatarNumero(fornecedoresClasseA, 0)}</strong>{" "}
-                    fornecedor(es) respondendo por 80% da venda
-                  </span>
-                </div>
-              )}
             />
           </div>
         ) : null}
@@ -501,24 +509,6 @@ export function AbaFornecedores({
                       cell: (linha) => <>{formatarNumero(linha.itens, 0)}</>,
                     },
                   ]}
-                  rodape={(linhasRodape) => {
-                    const vendido = linhasRodape.reduce((total, linha) => total + linha.vendido, 0);
-                    const devolvido = linhasRodape.reduce((total, linha) => total + linha.devolvido, 0);
-                    return (
-                      <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-[11px] text-muted-foreground">
-                        <span>{formatarNumero(linhasRodape.length, 0)} fornecedor(es) com devolução</span>
-                        <span>
-                          Devolvido: <strong className="num text-foreground">{formatarMoeda(devolvido)}</strong>
-                        </span>
-                        <span>
-                          Taxa geral:{" "}
-                          <strong className="num text-foreground">
-                            {formatarPercentual(vendido > 0 ? (devolvido / vendido) * 100 : 0, 2)}
-                          </strong>
-                        </span>
-                      </div>
-                    );
-                  }}
                 />
                 {analiseDevolucoes.semVinculo > 0 ? (
                   <p className="text-[11px] text-muted-foreground">
@@ -598,32 +588,6 @@ function colunasBase(comClasse = true) {
       cell: (linha: LinhaFornecedor) => <>{formatarNumero(linha.clientes, 0)}</>,
     },
   ];
-}
-
-function resumoRodape(linhas: LinhaFornecedor[], totalGeral?: number) {
-  const liquido = linhas.reduce((total, linha) => total + linha.valorLiquido, 0);
-  const lucro = linhas.reduce((total, linha) => total + linha.lucro, 0);
-  return (
-    <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-[11px] text-muted-foreground">
-      <span>
-        {totalGeral && totalGeral > linhas.length
-          ? `${formatarNumero(linhas.length, 0)} exibidos de ${formatarNumero(totalGeral, 0)} fornecedor(es)`
-          : `${formatarNumero(linhas.length, 0)} fornecedor(es)`}
-      </span>
-      <span>
-        Venda líquida: <strong className="num text-foreground">{formatarMoeda(liquido)}</strong>
-      </span>
-      <span>
-        Lucro: <strong className="num text-foreground">{formatarMoeda(lucro)}</strong>
-      </span>
-      <span>
-        Margem:{" "}
-        <strong className="num text-foreground">
-          {formatarPercentual(liquido > 0 ? (lucro / liquido) * 100 : 0, 1)}
-        </strong>
-      </span>
-    </div>
-  );
 }
 
 /** Produtos do fornecedor, abertos na própria linha da tabela. */

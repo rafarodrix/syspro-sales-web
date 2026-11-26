@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   analisarFornecedores,
   concentracaoHhi,
+  curvaAbcPorFornecedor,
   devolucoesPorFornecedor,
   evolucaoFornecedores,
   produtosPorFornecedor,
@@ -157,5 +158,64 @@ describe("curva ABC, produtos e devoluções por fornecedor", () => {
     expect(
       devolucoesPorFornecedor([{ codigo: "NAO-VENDIDO", valorVendido: 0, valorDevolvido: 50 }], []).linhas[0].taxa,
     ).toBeNull();
+  });
+});
+
+describe("curva ABC por fornecedor", () => {
+  function v(over: Record<string, unknown> = {}) {
+    return {
+      nf_dt_emissao: "2026-11-05",
+      cliente_nome: "Cliente",
+      produto_id: "P1",
+      produto_codigo_auxiliar: "P1",
+      produto_descricao: "Produto",
+      produto_qtde: 1,
+      produto_vlr_item: 100,
+      produto_vlr_total_item: 100,
+      produto_vlr_total_liquido: 100,
+      produto_vlr_desconto: 0,
+      produto_vlr_custo_reposicao: 60,
+      fornecedor_nome: "A",
+      ...over,
+    } as never;
+  }
+
+  const vendas = [
+    v({ fornecedor_nome: "Grande", produto_codigo_auxiliar: "G1", produto_vlr_total_liquido: 80 }),
+    v({ fornecedor_nome: "Medio", produto_codigo_auxiliar: "M1", produto_vlr_total_liquido: 15 }),
+    v({ fornecedor_nome: "Pequeno", produto_codigo_auxiliar: "P1", produto_vlr_total_liquido: 5 }),
+    v({ fornecedor_nome: "Grande", produto_codigo_auxiliar: "G2", produto_vlr_total_liquido: 0.01 }),
+  ];
+
+  it("classifica fornecedores por faturamento com as mesmas faixas da curva de produtos", () => {
+    const curva = curvaAbcPorFornecedor(vendas, "faturamento");
+    expect(curva.itens.map((item) => [item.fornecedor, item.classe])).toEqual([
+      ["Grande", "A"],
+      ["Medio", "B"],
+      ["Pequeno", "C"],
+    ]);
+    expect(curva.itens[0].skus).toBe(2);
+    expect(curva.itens[0].percentualAcumulado).toBeCloseTo(curva.itens[0].percentual, 5);
+    expect(curva.concentracaoTop10.percentualTop).toBeCloseTo(100, 0);
+  });
+
+  it("reordena quando a métrica é quantidade", () => {
+    const curva = curvaAbcPorFornecedor(
+      [
+        v({ fornecedor_nome: "MuitasUnidades", produto_qtde: 500, produto_vlr_total_liquido: 10 }),
+        v({ fornecedor_nome: "MuitoValor", produto_qtde: 1, produto_vlr_total_liquido: 9000 }),
+      ],
+      "quantidade",
+    );
+    expect(curva.itens[0].fornecedor).toBe("MuitasUnidades");
+    expect(curva.itens[0].classe).toBe("A");
+  });
+
+  it("soma custo e lucro quando a métrica é custo", () => {
+    const curva = curvaAbcPorFornecedor(vendas, "custo");
+    expect(curva.itens[0].fornecedor).toBe("Grande");
+    // dois itens × custo 60 = 120; lucro = (80−60) + (0,01−60)
+    expect(curva.itens[0].custo).toBeCloseTo(120, 5);
+    expect(curva.itens[0].lucro).toBeCloseTo(-39.99, 2);
   });
 });

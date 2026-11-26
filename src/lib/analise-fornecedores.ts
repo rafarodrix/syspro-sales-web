@@ -1,4 +1,9 @@
-import { calcularMargemItem, calcularPercentual, paraNumero } from "@/lib/metricas-negocio";
+import {
+  calcularMargemItem,
+  calcularPercentual,
+  classificarCurvaABC,
+  paraNumero,
+} from "@/lib/metricas-negocio";
 import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
 import { valorItem } from "@/lib/vendas";
@@ -301,4 +306,110 @@ export function devolucoesPorFornecedor(
     .sort((a, b) => b.devolvido - a.devolvido);
 
   return { linhas, vinculo, semVinculo };
+}
+
+export interface ItemCurvaFornecedor {
+  fornecedor: string;
+  classe: ClasseFornecedor;
+  skus: number;
+  quantidade: number;
+  faturamento: number;
+  custo: number;
+  lucro: number;
+  percentual: number;
+  percentualAcumulado: number;
+  /** Valor da métrica que classificou a curva. */
+  valorClassificacao: number;
+}
+
+/**
+ * Curva ABC por fornecedor com a mesma métrica da curva de produtos
+ * (faturamento, quantidade, lucro bruto ou custo de reposição).
+ */
+export function curvaAbcPorFornecedor(
+  vendas: VendaProduto[],
+  metrica: "faturamento" | "quantidade" | "lucro" | "custo" = "faturamento",
+): {
+  itens: ItemCurvaFornecedor[];
+  valorTotal: number;
+  totalFornecedores: number;
+  concentracaoTop10: { itensNoTop: number; percentualTop: number };
+  concentracaoTop20: { itensNoTop: number; percentualTop: number };
+} {
+  const mapa = new Map<
+    string,
+    { quantidade: number; faturamento: number; custo: number; lucro: number; skus: Set<string> }
+  >();
+
+  for (const venda of vendas) {
+    const fornecedor = String(venda.fornecedor_nome ?? "").replace(/\s+/g, " ").trim() || SEM_FORNECEDOR;
+    const atual = mapa.get(fornecedor) ?? {
+      quantidade: 0,
+      faturamento: 0,
+      custo: 0,
+      lucro: 0,
+      skus: new Set<string>(),
+    };
+    const margem = calcularMargemItem(venda);
+    atual.quantidade += paraNumero(venda.produto_qtde);
+    atual.faturamento += valorItem(venda);
+    atual.custo += margem.custoTotal ?? 0;
+    atual.lucro += margem.lucro ?? 0;
+    atual.skus.add(String(venda.produto_codigo_auxiliar ?? venda.produto_id ?? ""));
+    mapa.set(fornecedor, atual);
+  }
+
+  const valorDaMetrica = (item: { faturamento: number; quantidade: number; lucro: number; custo: number }) => {
+    if (metrica === "lucro") return Math.max(0, item.lucro);
+    if (metrica === "quantidade") return Math.max(0, item.quantidade);
+    if (metrica === "custo") return Math.max(0, item.custo);
+    return Math.max(0, item.faturamento);
+  };
+
+  const ordenados = [...mapa.entries()]
+    .map(([fornecedor, dados]) => ({
+      fornecedor,
+      skus: dados.skus.size,
+      quantidade: dados.quantidade,
+      faturamento: dados.faturamento,
+      custo: dados.custo,
+      lucro: dados.lucro,
+      valorClassificacao: valorDaMetrica(dados),
+    }))
+    .sort((a, b) => b.valorClassificacao - a.valorClassificacao);
+
+  const valorTotal = ordenados.reduce((total, item) => total + item.valorClassificacao, 0);
+  let acumulado = 0;
+
+  const itens: ItemCurvaFornecedor[] = ordenados.map((item) => {
+    const percentual = valorTotal > 0 ? (item.valorClassificacao / valorTotal) * 100 : 0;
+    const percentualAnterior = valorTotal > 0 ? (acumulado / valorTotal) * 100 : 100;
+    acumulado += item.valorClassificacao;
+    const percentualAcumulado = valorTotal > 0 ? (acumulado / valorTotal) * 100 : 100;
+    return {
+      ...item,
+      percentual,
+      percentualAcumulado,
+      classe: classificarCurvaABC(percentualAnterior),
+    };
+  });
+
+  const concentracao = (limite: number) => {
+    const top = itens.slice(0, limite);
+    const soma = top.reduce((total, item) => total + item.valorClassificacao, 0);
+    return {
+      itensNoTop: top.length,
+      percentualTop: valorTotal > 0 ? (soma / valorTotal) * 100 : 0,
+    };
+  };
+
+  return {
+    itens,
+    valorTotal,
+    totalFornecedores: itens.filter(
+      (item) => item.fornecedor.toUpperCase() !== SEM_FORNECEDOR.toUpperCase(),
+    ).length,
+    concentracaoTop10: concentracao(10),
+    concentracaoTop20: concentracao(20),
+  };
 }

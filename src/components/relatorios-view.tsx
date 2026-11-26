@@ -1251,6 +1251,7 @@ export function RelatoriosView({
                     relatorioABC={relatorioABC}
                     metrica={metricaCurvaABC}
                     onMetricaChange={setMetricaCurvaABC}
+                    vendas={vendas}
                     itensFiltrados={itensAbcFiltrados}
                     concentracaoTop10={
                       concentracaoProdutosTop20
