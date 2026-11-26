@@ -132,9 +132,11 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
       linha.participacaoAcumulada = 100;
       continue;
     }
+    // Mesma regra da curva ABC de produtos: a classe considera o acumulado
+    // ANTES do item (o item que cruza a faixa ainda pertence à faixa anterior).
+    linha.classe = classificarCurvaABC(acumulado);
     acumulado += linha.participacao;
     linha.participacaoAcumulada = Math.min(100, acumulado);
-    linha.classe = acumulado <= 80 ? "A" : acumulado <= 95 ? "B" : "C";
   }
 
   const comFornecedor = linhas.filter((linha) => linha.fornecedor.toUpperCase() !== SEM_FORNECEDOR.toUpperCase());
