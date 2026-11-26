@@ -162,3 +162,16 @@ Nenhuma tabela manual restante: as telas não têm mais `<Table>` próprio, pagi
 Usuário loga → seleciona CNPJ autorizado → Next identifica empresa_codigo
 → backend consulta API do Syspro → filtra por empresa_codigo → apresenta
 ```
+
+### Navegação não vem de `navigation.ts`
+
+O menu lateral (`app-shell.tsx`) é **hardcoded**: existe em bloco desktop e em bloco mobile, cada um com `podeVerX` calculado por `temPermissao`. Adicionar item em `navigation.ts` **não** faz o link aparecer.
+
+Para publicar uma visão nova:
+1. adicione o item em `navigation.ts` (paleta/atalhos) **e** o `<Link>` nos dois blocos de `app-shell.tsx`;
+2. dê URL própria (`/dashboard?visao=fornecedores`) em vez de só estado interno — link de menu para a mesma rota não remonta o componente;
+3. no componente, sincronize estado com `useSearchParams` e escreva a URL no clique (`router.replace`), senão o botão do menu navega mas a tela não troca.
+
+### Aba que depende de campo novo do SysproServer
+
+Ao consumir campo recém-adicionado na rota (ex.: `fornecedor_nome`), trate a base antiga: se nenhum item traz o campo, mostre `FeedbackState` explicando que a empresa precisa atualizar o SysproServer. KPIs zerados parecem bug.
