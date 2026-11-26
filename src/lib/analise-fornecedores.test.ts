@@ -39,6 +39,8 @@ describe("análise por fornecedor", () => {
     expect(x.descontos).toBe(0);
     // venda líquida pode ser maior que a bruta (frete/outros entram no líquido)
     expect(x.valorVendido).toBe(200);
+    // bruto − descontos + acréscimos = líquido (conta visível na tabela)
+    expect(x.valorVendido - x.descontos + x.acrescimos).toBeCloseTo(x.valorLiquido, 5);
     expect(x.skus).toBe(2);
     expect(x.margem).toBeCloseTo(((90 - 60) + (100 - 60)) / 190 * 100, 5);
     expect(resumo.fornecedoresAtivos).toBe(2);

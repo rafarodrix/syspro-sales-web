@@ -8,6 +8,8 @@ export interface LinhaFornecedor {
   valorVendido: number;
   /** Descontos concedidos nos itens do fornecedor. */
   descontos: number;
+  /** Frete, seguro e outros acréscimos que entram no valor líquido. */
+  acrescimos: number;
   valorLiquido: number;
   lucro: number;
   margem: number | null;
@@ -52,7 +54,7 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
 } {
   const mapa = new Map<
     string,
-    { valorVendido: number; descontos: number; valorLiquido: number; lucro: number; itens: number; skus: Set<string>; clientes: Set<string> }
+    { valorVendido: number; descontos: number; acrescimos: number; valorLiquido: number; lucro: number; itens: number; skus: Set<string>; clientes: Set<string> }
   >();
 
   const nomesExibicao = new Map<string, string>();
@@ -65,6 +67,7 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
     const atual = mapa.get(nome) ?? {
       valorVendido: 0,
       descontos: 0,
+      acrescimos: 0,
       valorLiquido: 0,
       lucro: 0,
       itens: 0,
@@ -86,12 +89,18 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
     mapa.set(nome, atual);
   }
 
+  for (const dados of mapa.values()) {
+    // Fecha a conta exibida: bruto − descontos + acréscimos = líquido.
+    dados.acrescimos = dados.valorLiquido - dados.valorVendido + dados.descontos;
+  }
+
   const vendaTotal = [...mapa.values()].reduce((total, item) => total + item.valorLiquido, 0);
   const linhas: LinhaFornecedor[] = [...mapa.entries()]
     .map(([chave, dados]) => ({
       fornecedor: nomesExibicao.get(chave) ?? chave,
       valorVendido: dados.valorVendido,
       descontos: dados.descontos,
+      acrescimos: dados.acrescimos,
       valorLiquido: dados.valorLiquido,
       lucro: dados.lucro,
       margem: dados.valorLiquido > 0 ? (dados.lucro / dados.valorLiquido) * 100 : null,

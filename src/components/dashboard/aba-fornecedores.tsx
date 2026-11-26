@@ -121,6 +121,13 @@ export function AbaFornecedores({
             cell: (linha) => <>{formatarMoeda(linha.descontos)}</>,
           },
           {
+            id: "acrescimos",
+            header: <span title="Frete, seguro e outros acréscimos somados ao item">Acréscimos</span>,
+            kind: "currency",
+            value: (linha) => linha.acrescimos,
+            cell: (linha) => <>{formatarMoeda(linha.acrescimos)}</>,
+          },
+          {
             id: "liquido",
             header: <>Venda líquida</>,
             kind: "currency",
