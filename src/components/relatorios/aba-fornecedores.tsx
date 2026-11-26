@@ -278,7 +278,7 @@ export function AbaFornecedores({
               stickyFirst
               exportObservacoes="Mostra os 15 maiores por venda líquida. A visão Carteira traz todos os fornecedores."
               columns={colunasBase()}
-              rodape={(linhasRodape) => resumoRodape(linhasRodape)}
+              rodape={(linhasRodape) => resumoRodape(linhasRodape, linhas.length)}
             />
             <p className="text-[11px] text-muted-foreground">
               {formatarNumero(filtradas.length, 0)} fornecedor(es) no período · a visão{" "}
@@ -600,12 +600,16 @@ function colunasBase(comClasse = true) {
   ];
 }
 
-function resumoRodape(linhas: LinhaFornecedor[]) {
+function resumoRodape(linhas: LinhaFornecedor[], totalGeral?: number) {
   const liquido = linhas.reduce((total, linha) => total + linha.valorLiquido, 0);
   const lucro = linhas.reduce((total, linha) => total + linha.lucro, 0);
   return (
     <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-[11px] text-muted-foreground">
-      <span>{formatarNumero(linhas.length, 0)} fornecedor(es)</span>
+      <span>
+        {totalGeral && totalGeral > linhas.length
+          ? `${formatarNumero(linhas.length, 0)} exibidos de ${formatarNumero(totalGeral, 0)} fornecedor(es)`
+          : `${formatarNumero(linhas.length, 0)} fornecedor(es)`}
+      </span>
       <span>
         Venda líquida: <strong className="num text-foreground">{formatarMoeda(liquido)}</strong>
       </span>

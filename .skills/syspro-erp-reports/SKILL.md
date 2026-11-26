@@ -185,3 +185,15 @@ Checklist para nova aba de relatório:
 2. `src/lib/navigation.ts` — item em `relatoriosVendas` (o `app-shell` **itera** essa lista; grupo VENDAS/COMPRAS/ENTREGA são blocos separados);
 3. `src/components/relatorios-view.tsx` — `dynamic()` + render `{abaAtiva === "<id>" && <Aba .../>}`; a view recebe vendas do servidor (só `aba=margens` usa `semVendas`);
 4. permissão `relatorios:visualizar` (perfil vendas não vê relatórios).
+
+### Relatórios: não duplicar os KPIs da página
+
+`RelatoriosView` já renderiza a faixa de KPIs do período (Faturamento, Pedidos/NF, Ticket médio, Margem bruta) para todas as abas. Aba nova **não** cria cards com esses mesmos números — some redundância visível e o usuário cobra. Use só `ReportMetricStrip` com métricas específicas daquela análise.
+
+### Taxa sobre devolução/retorno: denominador é o total
+
+Ao calcular taxa de devolução por fornecedor/produto, some o **vendido de todos os itens** do grupo; somar apenas os itens que tiveram devolução infla a taxa (apareceu 53% e 95% onde o real era 21% e 31%). Quando o grupo não vendeu no período, taxa = `null` e a tela mostra "—", não 0%.
+
+### Devolução por fornecedor
+
+Não existe no payload de vendas. Vem do Kardex pela rota `/api/relatorios/margens` (mesma `chaveConsulta({ relatorio: "margens", ... })` da aba Vendas & Margem — cache compartilhado, sem consulta extra). Ligue produto → fornecedor pelo código da venda e declare na tela/export que produtos não vendidos no período caem em "Sem fornecedor informado".
