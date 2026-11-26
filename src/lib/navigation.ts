@@ -45,11 +45,11 @@ export const itensGerais: ItemNavegacao[] = [
 ];
 
 export const relatoriosVendas: ItemNavegacao[] = [
-  { id: "fornecedores", label: "Fornecedores", titulo: "Análise de Fornecedores", categoria: "Relatórios", href: "/relatorios?aba=fornecedores", icone: Factory, cor: "text-amber-600", permissao: "relatorios:visualizar" },
   { id: "curva-abc", label: "Curva ABC", titulo: "Curva ABC", categoria: "Relatórios", href: "/relatorios?aba=curva-abc", icone: Sparkles, cor: "text-amber-500", permissao: "relatorios:visualizar" },
   { id: "departamentos", label: "Departamentos", titulo: "Departamentos", categoria: "Relatórios", href: "/relatorios?aba=departamentos", icone: Layers, cor: "text-blue-500", permissao: "relatorios:visualizar" },
   { id: "clientes", label: "Clientes", titulo: "Clientes", categoria: "Relatórios", href: "/relatorios?aba=clientes", icone: UserCheck, cor: "text-emerald-500", permissao: "relatorios:visualizar" },
   { id: "margens", label: "Vendas & Margem", titulo: "Vendas & Margem", categoria: "Relatórios", href: "/relatorios?aba=margens", icone: BadgeDollarSign, cor: "text-emerald-600", permissao: "relatorios:visualizar" },
+  { id: "fornecedores", label: "Fornecedores", titulo: "Análise de Fornecedores", categoria: "Relatórios", href: "/relatorios?aba=fornecedores", icone: Factory, cor: "text-amber-600", permissao: "relatorios:visualizar" },
   { id: "sazonalidade", label: "Sazonalidade & Evolução", titulo: "Sazonalidade & Evolução", categoria: "Relatórios", href: "/relatorios?aba=sazonalidade", icone: CalendarDays, cor: "text-indigo-500", permissao: "relatorios:visualizar" },
   { id: "vendedores", label: "Vendedores", titulo: "Vendedores", categoria: "Relatórios", href: "/relatorios?aba=vendedores", icone: Users, cor: "text-violet-500", permissao: "relatorios:visualizar" },
   { id: "geografico", label: "Cidade e UF", titulo: "Cidade e UF", categoria: "Relatórios", href: "/relatorios?aba=geografico", icone: MapPin, cor: "text-teal-500", permissao: "relatorios:visualizar" },
