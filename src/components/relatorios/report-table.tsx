@@ -113,7 +113,7 @@ export function ReportTable<T>({
   const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>([]);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const preferenceKey = report
-    ? `syspro:report-table:${report.preferenceScope}:${caption ?? label}`
+    ? `syspro:report-table:v2:${report.preferenceScope}:${caption ?? label}`
     : null;
   const columnIdsKey = columns.map((column) => column.id).join("|");
 
@@ -127,13 +127,16 @@ export function ReportTable<T>({
           sort?: { id: string; descending: boolean } | null;
           size?: number;
           density?: "compacta" | "confortavel";
-          visibleColumnIds?: string[];
+          /** Colunas que o usuário escondeu — novas colunas aparecem por padrão. */
+          hiddenColumnIds?: string[];
         } | null;
         if (saved?.sort && columns.some((column) => column.id === saved.sort?.id)) setSort(saved.sort);
         if ([10, 25, 50, 100].includes(saved?.size ?? 0)) setSize(saved!.size!);
         if (saved?.density === "compacta" || saved?.density === "confortavel") setDensity(saved.density);
-        const validIds = saved?.visibleColumnIds?.filter((id) => columns.some((column) => column.id === id));
-        setVisibleColumnIds(validIds?.length ? validIds : columns.map((column) => column.id));
+        const escondidas = saved?.hiddenColumnIds?.filter((id) =>
+          columns.some((column) => column.id === id),
+        );
+        setVisibleColumnIds(columns.filter((column) => !escondidas?.includes(column.id)).map((column) => column.id));
       } catch {
         setVisibleColumnIds(columns.map((column) => column.id));
       } finally {
@@ -147,7 +150,17 @@ export function ReportTable<T>({
 
   useEffect(() => {
     if (!preferenceKey || !preferencesLoaded) return;
-    localStorage.setItem(preferenceKey, JSON.stringify({ sort, size, density, visibleColumnIds }));
+    localStorage.setItem(
+      preferenceKey,
+      JSON.stringify({
+        sort,
+        size,
+        density,
+        hiddenColumnIds: columns
+          .filter((column) => !visibleColumnIds.includes(column.id))
+          .map((column) => column.id),
+      }),
+    );
   }, [density, preferenceKey, preferencesLoaded, size, sort, visibleColumnIds]);
 
   const visibleColumns = visibleColumnIds.length
