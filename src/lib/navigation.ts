@@ -38,6 +38,7 @@ export interface ItemNavegacao {
 export const itensGerais: ItemNavegacao[] = [
   { id: "dashboard", label: "Dashboard", titulo: "Dashboard Executivo", categoria: "Navegação", href: "/dashboard", icone: LayoutDashboard, permissao: "dashboard:visualizar" },
   { id: "vendas", label: "Vendas", titulo: "Consulta Analítica de Vendas", categoria: "Navegação", href: "/vendas", icone: ShoppingCart, permissao: "vendas:visualizar" },
+  { id: "fornecedores", label: "Fornecedores", titulo: "Vendas por Fornecedor", categoria: "Navegação", href: "/dashboard?visao=fornecedores", icone: Factory, permissao: "dashboard:visualizar" },
   { id: "estoque", label: "Estoque", titulo: "Movimentações / Kardex", categoria: "Navegação", href: "/estoque", icone: PackageSearch, permissao: "estoque:visualizar" },
   { id: "producao", label: "Produção", titulo: "Produção", categoria: "Navegação", href: "/producao", icone: Factory, permissao: "relatorios:visualizar" },
   { id: "pagar", label: "Contas a Pagar", titulo: "Contas a Pagar", categoria: "Navegação", href: "/financeiro/pagar", icone: BanknoteArrowDown, permissao: "relatorios:visualizar" },

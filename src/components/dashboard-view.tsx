@@ -76,6 +76,7 @@ interface Props {
   initialComparacaoPersonalizada?: Periodo;
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialComparacaoDisponivel?: boolean;
+  initialVisao?: "resultado" | "fornecedores";
   initialError?: string;
 }
 
@@ -95,6 +96,7 @@ export function DashboardView({
   initialComparacaoPersonalizada,
   initialVendasAnteriores = [],
   initialComparacaoDisponivel = true,
+  initialVisao,
   initialError,
 }: Props) {
   const [empresaId, setEmpresaId] = useState(() => resolverEmpresaSelecionada(empresaInicial, empresas));
@@ -116,7 +118,7 @@ export function DashboardView({
     initialVendasAnteriores,
   );
   const [erro, setErro] = useState<string | null>(initialError ?? null);
-  const [visao, setVisao] = useState<"resultado" | "fornecedores">("resultado");
+  const [visao, setVisao] = useState<"resultado" | "fornecedores">(initialVisao ?? "resultado");
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
   const [metricaTopProdutos, setMetricaTopProdutos] =
     useState<"faturamento" | "lucro">("faturamento");
