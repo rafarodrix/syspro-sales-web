@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { ArrowLeftRight, Boxes, Factory, Layers, LayoutList, Users } from "lucide-react";
+import { ArrowLeftRight, Boxes, Factory, Layers, LayoutList } from "lucide-react";
 
-import { ActionMetricCard } from "@/components/analytics/action-metric-card";
 import { FeedbackState } from "@/components/feedback-state";
 import { ReportBarraVisao, ReportVisaoProvider } from "@/components/relatorios/report-barra";
 import { ReportDiagnostics } from "@/components/relatorios/report-diagnostics";
@@ -245,29 +244,6 @@ export function AbaFornecedores({
             onViewChange={(proxima) => setVisao(proxima as VisaoFornecedor)}
           />
         </ReportBarraVisao>
-
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <ActionMetricCard
-            titulo="Venda líquida"
-            valor={formatarMoeda(resumo.vendaTotal)}
-            descricao="Itens vendidos, líquidos de desconto."
-          />
-          <ActionMetricCard
-            titulo="Fornecedores ativos"
-            valor={formatarNumero(resumo.fornecedoresAtivos, 0)}
-            descricao="Com pelo menos uma venda no período."
-          />
-          <ActionMetricCard
-            titulo="Top 5 no faturamento"
-            valor={formatarPercentual(resumo.participacaoTop5, 1)}
-            descricao={`Concentração ${rotuloConcentracao(resumo.concentracaoHhi).toLowerCase()}.`}
-          />
-          <ActionMetricCard
-            titulo="Margem bruta"
-            valor={formatarPercentual(resumo.margemGeral, 1)}
-            descricao="Só itens com custo de reposição."
-          />
-        </div>
 
         <ReportMetricStrip
           items={[
@@ -615,9 +591,7 @@ function colunasBase(comClasse = true) {
     {
       id: "clientes",
       header: (
-        <span title="Clientes distintos que compraram itens deste fornecedor">
-          <Users className="inline size-3" aria-label="Clientes" />
-        </span>
+        <span title="Clientes distintos que compraram itens deste fornecedor">Clientes</span>
       ),
       kind: "number" as const,
       value: (linha: LinhaFornecedor) => linha.clientes,
