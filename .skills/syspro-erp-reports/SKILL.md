@@ -208,4 +208,13 @@ A mesma métrica (faturamento/quantidade/lucro/custo) classifica produtos e forn
 
 ### Grupo de estoque: `GERAL (1)` / `GERAL (2)`
 
-`produto_grupo_estoque` do Kardex traz o **código do depósito** entre parênteses ("GERAL (2)"), enquanto a empresa é configurada como "GERAL". Comparação por string exata descartava 100% dos movimentos — sintoma: análise de compras com `estoqueAtual: null` e `semBaseEstoque: true` em todos os itens, sem erro nenhum. Use `normalizarGrupoEstoque`/`grupoEstoqueCorresponde` (`src/lib/grupo-estoque.ts`) e, para o saldo, **some o último saldo de cada depósito** do grupo — nunca pegue só o último movimento, senão o estoque de dois depósitos vira o de um.
+`produto_grupo_estoque` do Kardex traz o **código do depósito** entre parênteses ("GERAL (2)"), e cada depósito tem saldo próprio. A configuração da empresa aceita:
+
+| Config | Efeito |
+|---|---|
+| `GERAL` | todos os depósitos do grupo, somados |
+| `GERAL (2)` | só aquele depósito |
+| `GERAL (1);GERAL (2)` | soma os depósitos informados (exclui os não listados) |
+| `GERAL;FISCAL` | mais de um grupo |
+
+Regras: compare com `movimentoNoGrupoConfigurado()` (`src/lib/grupo-estoque.ts`) — nunca por string crua, que descarta 100% dos movimentos quando a base devolve `(N)`; e para o saldo **some o último saldo de cada depósito** do grupo, com a chave do mapa sendo o identificador cru do depósito, não o grupo normalizado.
