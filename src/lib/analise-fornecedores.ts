@@ -272,22 +272,27 @@ export function devolucoesPorFornecedor(
   let vinculo = 0;
   let semVinculo = 0;
 
+  // Percorre TODOS os produtos: a taxa precisa do vendido inteiro do fornecedor,
+  // não só do que teve devolução (senão a taxa estoura).
   for (const item of itensMargem) {
-    if (!item.valorDevolvido) continue;
     const fornecedor = fornecedorPorCodigo.get(String(item.codigo ?? "").trim().toUpperCase());
-    if (fornecedor) vinculo += 1;
-    else semVinculo += 1;
     const chave = fornecedor ?? SEM_FORNECEDOR;
     const atual = mapa.get(chave) ?? { vendido: 0, devolvido: 0, itens: 0 };
     atual.vendido += item.valorVendido;
-    atual.devolvido += item.valorDevolvido;
-    atual.itens += 1;
+
+    if (item.valorDevolvido > 0) {
+      atual.devolvido += item.valorDevolvido;
+      atual.itens += 1;
+      if (fornecedor) vinculo += 1;
+      else semVinculo += 1;
+    }
     mapa.set(chave, atual);
   }
 
   const linhas = [...mapa.entries()]
-    .map(([chave, dados]) => ({
-      fornecedor: chave,
+    .filter(([, dados]) => dados.devolvido > 0)
+    .map(([fornecedor, dados]) => ({
+      fornecedor,
       vendido: dados.vendido,
       devolvido: dados.devolvido,
       taxa: dados.vendido > 0 ? (dados.devolvido / dados.vendido) * 100 : 0,

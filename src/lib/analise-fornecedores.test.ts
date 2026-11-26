@@ -132,20 +132,25 @@ describe("curva ABC, produtos e devoluções por fornecedor", () => {
     expect(mapa.get("B")![0].produto).toBe("Produto");
   });
 
-  it("atribui devolução ao fornecedor do produto vendido", () => {
+  it("atribui devolução ao fornecedor e usa o vendido total na taxa", () => {
     const { linhas, vinculo, semVinculo } = devolucoesPorFornecedor(
       [
         { codigo: "X", valorVendido: 1000, valorDevolvido: 100 },
         { codigo: "ORFAO", valorVendido: 500, valorDevolvido: 50 },
-        { codigo: "X", valorVendido: 1000, valorDevolvido: 0 },
+        { codigo: "Z", valorVendido: 1000, valorDevolvido: 0 },
       ],
-      [v({ fornecedor_nome: "A", produto_codigo_auxiliar: "X" })],
+      [
+        v({ fornecedor_nome: "A", produto_codigo_auxiliar: "X" }),
+        v({ fornecedor_nome: "A", produto_codigo_auxiliar: "Z" }),
+      ],
     );
     expect(vinculo).toBe(1);
     expect(semVinculo).toBe(1);
     expect(linhas[0].fornecedor).toBe("A");
     expect(linhas[0].devolvido).toBe(100);
-    expect(linhas[0].taxa).toBeCloseTo(10, 5);
+    // 100 devolvido sobre 2.000 vendidos (X + Z), não sobre 1.000
+    expect(linhas[0].vendido).toBe(2000);
+    expect(linhas[0].taxa).toBeCloseTo(5, 5);
     expect(linhas[1].fornecedor).toBe("Sem fornecedor informado");
   });
 });
