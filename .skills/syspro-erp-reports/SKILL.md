@@ -175,3 +175,13 @@ Para publicar uma visão nova:
 ### Aba que depende de campo novo do SysproServer
 
 Ao consumir campo recém-adicionado na rota (ex.: `fornecedor_nome`), trate a base antiga: se nenhum item traz o campo, mostre `FeedbackState` explicando que a empresa precisa atualizar o SysproServer. KPIs zerados parecem bug.
+
+### Onde criar uma análise nova: Relatórios, não Dashboard
+
+Pergunta de negócio → `Relatórios` (`/relatorios?aba=<id>`). Dashboard é só resultado/resumo; o usuário cobra o padrão ("não deveria ir para aba relatórios?").
+
+Checklist para nova aba de relatório:
+1. `src/components/relatorios/report-definitions.ts` — entra no union type de `id` e no array `REPORT_DEFINITIONS` (label, menuLabel, ícone, cor, desc);
+2. `src/lib/navigation.ts` — item em `relatoriosVendas` (o `app-shell` **itera** essa lista; grupo VENDAS/COMPRAS/ENTREGA são blocos separados);
+3. `src/components/relatorios-view.tsx` — `dynamic()` + render `{abaAtiva === "<id>" && <Aba .../>}`; a view recebe vendas do servidor (só `aba=margens` usa `semVendas`);
+4. permissão `relatorios:visualizar` (perfil vendas não vê relatórios).
