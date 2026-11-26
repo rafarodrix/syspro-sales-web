@@ -197,3 +197,11 @@ Ao calcular taxa de devolução por fornecedor/produto, some o **vendido de todo
 ### Devolução por fornecedor
 
 Não existe no payload de vendas. Vem do Kardex pela rota `/api/relatorios/margens` (mesma `chaveConsulta({ relatorio: "margens", ... })` da aba Vendas & Margem — cache compartilhado, sem consulta extra). Ligue produto → fornecedor pelo código da venda e declare na tela/export que produtos não vendidos no período caem em "Sem fornecedor informado".
+
+### ReportTable: preferência de colunas
+
+A visibilidade fica no `localStorage` por `preferenceScope` + `caption`. Guardar a lista de colunas **visíveis** esconde colunas novas (a lista antiga não as contém) — foi o que sumiu com Fornecedor/SKUs/Faturamento na curva por fornecedor. O padrão correto é guardar `hiddenColumnIds` e, antes de gravar, exigir que a preferência **daquela** tabela já tenha sido carregada (`chaveCarregada === preferenceKey`); ao trocar de visão o efeito de salvar rodava primeiro e gravava a lista da visão anterior.
+
+### Curva ABC: Produto × Fornecedor
+
+A mesma métrica (faturamento/quantidade/lucro/custo) classifica produtos e fornecedores — `curvaAbcPorFornecedor()` em `analise-fornecedores.ts` usa `classificarCurvaABC` sobre o percentual acumulado anterior, igual à curva de produtos. Análises por fornecedor ficam aqui (curva) e em `Fornecedores` (carteira, itens, devoluções); não criar aba de curva dentro de Fornecedores.
