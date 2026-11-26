@@ -37,6 +37,9 @@ import {
 } from "@/components/date-range-filter";
 import { erroPeriodo } from "@/lib/periodo";
 import { KpiCard } from "@/components/kpi-card";
+import { AbaFornecedores } from "@/components/dashboard/aba-fornecedores";
+import { ReportViewSelector } from "@/components/relatorios/report-view-toggle";
+import { LayoutDashboard, Truck } from "lucide-react";
 import { RankingCard } from "@/components/ranking-card";
 import { PieChartCard } from "@/components/pie-chart-card";
 import { ExportDropdown } from "@/components/export-dropdown";
@@ -113,6 +116,7 @@ export function DashboardView({
     initialVendasAnteriores,
   );
   const [erro, setErro] = useState<string | null>(initialError ?? null);
+  const [visao, setVisao] = useState<"resultado" | "fornecedores">("resultado");
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
   const [metricaTopProdutos, setMetricaTopProdutos] =
     useState<"faturamento" | "lucro">("faturamento");
@@ -442,6 +446,16 @@ export function DashboardView({
         </CardContent>
       </Card>
 
+      <ReportViewSelector
+        view={visao}
+        onViewChange={(proxima) => setVisao(proxima as "resultado" | "fornecedores")}
+        options={[
+          { value: "resultado", label: "Resultado", icon: LayoutDashboard },
+          { value: "fornecedores", label: "Fornecedores", icon: Truck },
+        ]}
+        ariaLabel="Visão do dashboard"
+      />
+
       {erro ? (
         <FeedbackState
           variant="error"
@@ -460,6 +474,8 @@ export function DashboardView({
           retryLabel="Consultar novamente"
         />
       ) : null}
+
+      {visao === "resultado" ? (<>
 
       {!loading && !erro && alertasGerenciais.length > 0 ? (
         <DashboardAlerts
@@ -906,6 +922,10 @@ export function DashboardView({
           />
         </div>
       </section>
+
+      </>) : (
+        <AbaFornecedores vendas={vendas} carregando={loading} />
+      )}
 
       {/* Footer Executivo */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-4 text-xs text-muted-foreground">
