@@ -26,7 +26,7 @@ function venda(over: Record<string, unknown> = {}) {
 }
 
 describe("análise por fornecedor", () => {
-  it("consolida venda, devolução, lucro e margem por fornecedor", () => {
+  it("consolida venda, desconto, lucro e margem por fornecedor", () => {
     const { linhas, resumo } = analisarFornecedores([
       venda({ fornecedor_nome: "Fornecedor X", produto_vlr_total_item: 100, produto_vlr_total_liquido: 90 }),
       venda({ fornecedor_nome: "fornecedor   x ", produto_codigo_auxiliar: "P2", produto_vlr_total_item: 100, produto_vlr_total_liquido: 100 }),
@@ -36,7 +36,9 @@ describe("análise por fornecedor", () => {
     expect(linhas).toHaveLength(2);
     const x = linhas.find((linha) => linha.fornecedor === "Fornecedor X")!;
     expect(x.valorLiquido).toBe(190);
-    expect(x.devolvido).toBe(10);
+    expect(x.descontos).toBe(0);
+    // venda líquida pode ser maior que a bruta (frete/outros entram no líquido)
+    expect(x.valorVendido).toBe(200);
     expect(x.skus).toBe(2);
     expect(x.margem).toBeCloseTo(((90 - 60) + (100 - 60)) / 190 * 100, 5);
     expect(resumo.fornecedoresAtivos).toBe(2);

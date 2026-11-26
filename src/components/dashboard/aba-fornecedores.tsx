@@ -114,11 +114,11 @@ export function AbaFornecedores({
             cell: (linha) => <>{formatarMoeda(linha.valorVendido)}</>,
           },
           {
-            id: "devolvido",
-            header: <span title="Diferença entre valor bruto e líquido dos itens">Devolvido</span>,
+            id: "descontos",
+            header: <span title="Descontos concedidos nos itens deste fornecedor">Descontos</span>,
             kind: "currency",
-            value: (linha) => linha.devolvido,
-            cell: (linha) => <>{formatarMoeda(linha.devolvido)}</>,
+            value: (linha) => linha.descontos,
+            cell: (linha) => <>{formatarMoeda(linha.descontos)}</>,
           },
           {
             id: "liquido",

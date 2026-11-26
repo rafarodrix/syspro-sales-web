@@ -6,7 +6,8 @@ import { valorItem } from "@/lib/vendas";
 export interface LinhaFornecedor {
   fornecedor: string;
   valorVendido: number;
-  devolvido: number;
+  /** Descontos concedidos nos itens do fornecedor. */
+  descontos: number;
   valorLiquido: number;
   lucro: number;
   margem: number | null;
@@ -51,7 +52,7 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
 } {
   const mapa = new Map<
     string,
-    { valorVendido: number; devolvido: number; valorLiquido: number; lucro: number; itens: number; skus: Set<string>; clientes: Set<string> }
+    { valorVendido: number; descontos: number; valorLiquido: number; lucro: number; itens: number; skus: Set<string>; clientes: Set<string> }
   >();
 
   const nomesExibicao = new Map<string, string>();
@@ -63,7 +64,7 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
     if (!nomesExibicao.has(nome)) nomesExibicao.set(nome, nomeOriginal || SEM_FORNECEDOR);
     const atual = mapa.get(nome) ?? {
       valorVendido: 0,
-      devolvido: 0,
+      descontos: 0,
       valorLiquido: 0,
       lucro: 0,
       itens: 0,
@@ -77,7 +78,7 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
 
     atual.valorVendido += bruto;
     atual.valorLiquido += liquido;
-    atual.devolvido += Math.max(0, bruto - liquido);
+    atual.descontos += paraNumero(venda.produto_vlr_desconto);
     atual.lucro += margem.lucro ?? 0;
     atual.itens += 1;
     atual.skus.add(String(venda.produto_codigo_auxiliar ?? venda.produto_id ?? ""));
@@ -90,7 +91,7 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
     .map(([chave, dados]) => ({
       fornecedor: nomesExibicao.get(chave) ?? chave,
       valorVendido: dados.valorVendido,
-      devolvido: dados.devolvido,
+      descontos: dados.descontos,
       valorLiquido: dados.valorLiquido,
       lucro: dados.lucro,
       margem: dados.valorLiquido > 0 ? (dados.lucro / dados.valorLiquido) * 100 : null,
