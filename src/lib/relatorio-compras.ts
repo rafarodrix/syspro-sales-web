@@ -1,3 +1,4 @@
+import { grupoEstoqueCorresponde, normalizarGrupoEstoque } from "@/lib/grupo-estoque";
 import type { MovimentoKardex } from "@/lib/kardex";
 import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
@@ -107,6 +108,8 @@ export function montarRelatorioCompras(
       quantidadeComCustoAquisicao: number;
       quantidadeComCustoReposicao: number;
       documentosDevolucao?: Set<string>;
+      /** Último saldo de cada depósito do grupo configurado ("GERAL (1)", "GERAL (2)"...). */
+      saldosPorGrupo?: Map<string, { data: string; ordem: number; saldo: number }>;
     }
   >();
   const chavePorId = new Map<string, string>();
@@ -148,6 +151,7 @@ export function montarRelatorioCompras(
       quantidadeComCustoAquisicao: 0,
       quantidadeComCustoReposicao: 0,
       ordemUltimoMovimento: -1,
+      saldosPorGrupo: new Map(),
     };
     const quantidade = paraNumero(venda.produto_qtde);
     atual.quantidadeVendida += quantidade;
@@ -175,8 +179,8 @@ export function montarRelatorioCompras(
   for (const movimento of movimentos) {
     if (movimento.grupoDocumento.trim().toUpperCase() !== "EDV") continue;
     if (!estaNoPeriodo(movimento.dataMovimento, periodo.inicial, periodo.final)) continue;
-    const grupoEstoque = String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
-    const grupoPadrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
+    const grupoEstoque = normalizarGrupoEstoque(movimento.grupoEstoque);
+    const grupoPadrao = normalizarGrupoEstoque(empresa?.grupoEstoquePadrao);
     if (grupoEstoque !== grupoPadrao) continue;
     const chaveDoc = `${normalizarCodigoProduto(movimento.produtoIdProduto, "")}:${movimento.documento}:${grupoEstoque}`;
     edvPorDocumento.set(chaveDoc, (edvPorDocumento.get(chaveDoc) ?? 0) + movimento.quantidadeMovimentada);
@@ -222,6 +226,7 @@ export function montarRelatorioCompras(
         quantidadeComCustoAquisicao: 0,
         quantidadeComCustoReposicao: 0,
         ordemUltimoMovimento: -1,
+      saldosPorGrupo: new Map(),
       };
       chavePorId.set(codigoId, chave);
       porProduto.set(chave, atual);
@@ -233,12 +238,12 @@ export function montarRelatorioCompras(
 
     // O grupo documental classifica o movimento, mas não decide o saldo. O saldo atual
     // vem exclusivamente do último movimento do grupo de estoque configurado na empresa.
-    const grupoEstoque = String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
-    const grupoPadrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
+    const grupoEstoque = normalizarGrupoEstoque(movimento.grupoEstoque);
+    const grupoPadrao = normalizarGrupoEstoque(empresa?.grupoEstoquePadrao);
 
     // Soma devoluções de venda apenas do grupo de estoque configurado na empresa
     // e apenas o saldo líquido do documento (ignora cancelamentos).
-    if (ehDevolucaoVendaNoPeriodo && grupoEstoque === grupoPadrao) {
+    if (ehDevolucaoVendaNoPeriodo && grupoEstoqueCorresponde(grupoEstoque, grupoPadrao)) {
       const chaveDoc = `${codigoId}:${movimento.documento}:${grupoEstoque}`;
       const saldoDoc = edvPorDocumento.get(chaveDoc) ?? 0;
       const valorDoc = edvValorPorDocumento.get(chaveDoc) ?? 0;
@@ -253,11 +258,25 @@ export function montarRelatorioCompras(
       }
     }
 
-    if (grupoEstoque !== grupoPadrao) return;
+    if (!grupoEstoqueCorresponde(grupoEstoque, grupoPadrao)) return;
+    // A chave do saldo é o depósito físico ("GERAL (1)", "GERAL (2)"), não o grupo
+    // normalizado: cada depósito tem saldo próprio e o estoque é a soma deles.
+    const deposito =
+      String(movimento.grupoEstoque ?? "").trim().toUpperCase().replace(/\s+/g, " ") || grupoPadrao;
     const dataAtual = movimento.dataMovimento.slice(0, 10);
+    const anteriorDoDeposito = atual.saldosPorGrupo?.get(deposito);
+    // Cada depósito tem o próprio saldo: o estoque do grupo é a soma do último
+    // saldo de cada um ("GERAL (1)" + "GERAL (2)"), nunca o saldo de um só.
+    if (
+      atual.saldosPorGrupo &&
+      (!anteriorDoDeposito ||
+        dataAtual > anteriorDoDeposito.data ||
+        (dataAtual === anteriorDoDeposito.data && indice > anteriorDoDeposito.ordem))
+    ) {
+      atual.saldosPorGrupo.set(deposito, { data: dataAtual, ordem: indice, saldo: movimento.saldo });
+    }
     const dataAnterior = atual.dataUltimoMovimento?.slice(0, 10) ?? "";
     if (dataAtual > dataAnterior || (dataAtual === dataAnterior && indice > atual.ordemUltimoMovimento)) {
-      atual.estoqueAtual = movimento.saldo;
       atual.marca = movimento.produtoMarca?.trim() || atual.marca;
       atual.dataUltimoMovimento = movimento.dataMovimento;
       atual.ordemUltimoMovimento = indice;
@@ -266,6 +285,12 @@ export function montarRelatorioCompras(
 
   const diasPeriodo = calcularDiasInclusivos(periodo.inicial, periodo.final);
   for (const [produtoId, item] of porProduto.entries()) {
+    if (item.saldosPorGrupo?.size) {
+      item.estoqueAtual = [...item.saldosPorGrupo.values()].reduce(
+        (total, saldo) => total + saldo.saldo,
+        0,
+      );
+    }
     item.quantidadeLiquidaReal = item.quantidadeVendida - item.quantidadeDevolvida;
     item.demandaLiquida = calcularDemandaLiquida(item.quantidadeVendida, item.quantidadeDevolvida);
     item.taxaDevolucao = calcularPercentual(item.quantidadeDevolvida, item.quantidadeVendida);

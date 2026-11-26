@@ -15,12 +15,11 @@ export type CategoriaKardex =
  * que vem do Syspro). Quando não vem, assume GERAL para manter compatibilidade.
  */
 export function grupoEstoqueDoProduto(movimento: MovimentoKardex): string {
-  return String(movimento.grupoEstoque ?? "").trim().toUpperCase() || "GERAL";
+  return normalizarGrupoEstoque(movimento.grupoEstoque);
 }
 
 export function obterGruposSaldoEstoque(empresa?: { grupoEstoquePadrao?: string | null }): string[] {
-  const padrao = String(empresa?.grupoEstoquePadrao ?? "GERAL").trim().toUpperCase() || "GERAL";
-  return [padrao];
+  return [normalizarGrupoEstoque(empresa?.grupoEstoquePadrao)];
 }
 
 export function movimentoCompoeSaldo(
@@ -155,4 +154,5 @@ export function validarPeriodoKardex(inicial: string, final: string): boolean {
   };
   const inicio = converter(inicial); const fim = converter(final);
   return Boolean(inicio && fim && inicio <= fim);
-}
+}import { normalizarGrupoEstoque } from "@/lib/grupo-estoque";
+

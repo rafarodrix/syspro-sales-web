@@ -417,4 +417,22 @@ describe("relatorio de compras", () => {
       { inicial: "2026-10-01", final: "2026-10-19" },
     ]);
   });
+
+  it("soma o saldo dos depósitos do grupo quando o Syspro devolve GERAL (1)/(2)", () => {
+    const relatorio = montarRelatorioCompras(
+      [venda("PROD-9", 4)],
+      [
+        { ...movimento("PROD-9", "2026-10-10", "EVP", -1, 3), grupoEstoque: "GERAL (2)" },
+        { ...movimento("PROD-9", "2026-10-12", "ENP", -1, 5), grupoEstoque: "GERAL (1)" },
+        { ...movimento("PROD-9", "2026-10-13", "EVP", -1, 999), grupoEstoque: "FISCAL" },
+      ],
+      { inicial: "2026-10-01", final: "2026-10-31" },
+      { grupoEstoquePadrao: "GERAL" },
+    );
+
+    const item = relatorio.itens.find((linha) => linha.produtoId === "PROD-9")!;
+    expect(item.estoqueAtual).toBe(8);
+    expect(item.semBaseEstoque).toBe(false);
+  });
+
 });
