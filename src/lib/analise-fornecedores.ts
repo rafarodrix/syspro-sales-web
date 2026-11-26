@@ -248,8 +248,8 @@ export interface DevolucaoPorFornecedor {
   fornecedor: string;
   vendido: number;
   devolvido: number;
-  /** Devolvido ÷ vendido (%). */
-  taxa: number;
+  /** Devolvido ÷ vendido (%); null quando o fornecedor não vendeu no período. */
+  taxa: number | null;
   itens: number;
 }
 
@@ -295,7 +295,7 @@ export function devolucoesPorFornecedor(
       fornecedor,
       vendido: dados.vendido,
       devolvido: dados.devolvido,
-      taxa: dados.vendido > 0 ? (dados.devolvido / dados.vendido) * 100 : 0,
+      taxa: dados.vendido > 0 ? (dados.devolvido / dados.vendido) * 100 : null,
       itens: dados.itens,
     }))
     .sort((a, b) => b.devolvido - a.devolvido);

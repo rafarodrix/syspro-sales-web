@@ -515,7 +515,7 @@ export function AbaFornecedores({
                       header: <span title="Devolvido ÷ vendido">Taxa</span>,
                       kind: "percent" as const,
                       value: (linha) => linha.taxa,
-                      cell: (linha) => <>{formatarPercentual(linha.taxa, 2)}</>,
+                      cell: (linha) => <>{linha.taxa === null ? "—" : formatarPercentual(linha.taxa, 2)}</>,
                     },
                     {
                       id: "itens",

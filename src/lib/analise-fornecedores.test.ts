@@ -151,6 +151,11 @@ describe("curva ABC, produtos e devoluções por fornecedor", () => {
     // 100 devolvido sobre 2.000 vendidos (X + Z), não sobre 1.000
     expect(linhas[0].vendido).toBe(2000);
     expect(linhas[0].taxa).toBeCloseTo(5, 5);
+    // produto sem venda no período: aparece, mas sem base para taxa
     expect(linhas[1].fornecedor).toBe("Sem fornecedor informado");
+    expect(linhas[1].taxa).toBeCloseTo(10, 5);
+    expect(
+      devolucoesPorFornecedor([{ codigo: "NAO-VENDIDO", valorVendido: 0, valorDevolvido: 50 }], []).linhas[0].taxa,
+    ).toBeNull();
   });
 });
