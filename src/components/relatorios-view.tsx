@@ -84,6 +84,10 @@ import { ReportDiagnostics } from "./relatorios/report-diagnostics";
 const carregandoAba = () => <Skeleton className="h-72 w-full rounded-xl" />;
 const AbaCurvaABC = dynamic(() => import("./relatorios/aba-curva-abc").then((modulo) => modulo.AbaCurvaABC), { loading: carregandoAba });
 const AbaClientes = dynamic(() => import("./relatorios/aba-clientes").then((modulo) => modulo.AbaClientes), { loading: carregandoAba });
+const AbaFornecedores = dynamic(
+  () => import("./relatorios/aba-fornecedores").then((modulo) => modulo.AbaFornecedores),
+  { loading: carregandoAba },
+);
 const AbaSazonalidade = dynamic(() => import("./relatorios/aba-sazonalidade").then((modulo) => modulo.AbaSazonalidade), { loading: carregandoAba });
 const AbaDepartamentos = dynamic(() => import("./relatorios/aba-departamentos").then((modulo) => modulo.AbaDepartamentos), { loading: carregandoAba });
 const AbaVendedores = dynamic(() => import("./relatorios/aba-vendedores").then((modulo) => modulo.AbaVendedores), { loading: carregandoAba });
@@ -1259,6 +1263,13 @@ export function RelatoriosView({
                         : null
                     }
                     concentracaoTop20={concentracaoProdutosTop20}
+                  />
+                )}
+
+                {abaAtiva === "fornecedores" && (
+                  <AbaFornecedores
+                    key={`${periodoConsultado.inicial}-${periodoConsultado.final}`}
+                    vendas={vendas}
                   />
                 )}
 

@@ -36,11 +36,7 @@ import {
   type Periodo,
 } from "@/components/date-range-filter";
 import { erroPeriodo } from "@/lib/periodo";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { KpiCard } from "@/components/kpi-card";
-import { AbaFornecedores } from "@/components/dashboard/aba-fornecedores";
-import { ReportViewSelector } from "@/components/relatorios/report-view-toggle";
-import { LayoutDashboard, Truck } from "lucide-react";
 import { RankingCard } from "@/components/ranking-card";
 import { PieChartCard } from "@/components/pie-chart-card";
 import { ExportDropdown } from "@/components/export-dropdown";
@@ -77,7 +73,6 @@ interface Props {
   initialComparacaoPersonalizada?: Periodo;
   initialVendasAnteriores?: (VendaProduto | VendaComEmpresa)[];
   initialComparacaoDisponivel?: boolean;
-  initialVisao?: "resultado" | "fornecedores";
   initialError?: string;
 }
 
@@ -97,7 +92,6 @@ export function DashboardView({
   initialComparacaoPersonalizada,
   initialVendasAnteriores = [],
   initialComparacaoDisponivel = true,
-  initialVisao,
   initialError,
 }: Props) {
   const [empresaId, setEmpresaId] = useState(() => resolverEmpresaSelecionada(empresaInicial, empresas));
@@ -119,24 +113,6 @@ export function DashboardView({
     initialVendasAnteriores,
   );
   const [erro, setErro] = useState<string | null>(initialError ?? null);
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const visaoDaUrl = searchParams.get("visao") === "fornecedores" ? "fornecedores" : "resultado";
-  const [visao, setVisao] = useState<"resultado" | "fornecedores">(initialVisao ?? visaoDaUrl);
-
-  // Mantém a tela sincronizada com o link do menu (?visao=fornecedores).
-  useEffect(() => {
-    setVisao(visaoDaUrl);
-  }, [visaoDaUrl]);
-
-  function trocarVisao(proxima: "resultado" | "fornecedores") {
-    setVisao(proxima);
-    const params = new URLSearchParams(searchParams.toString());
-    if (proxima === "fornecedores") params.set("visao", "fornecedores");
-    else params.delete("visao");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
   const [metricaTopProdutos, setMetricaTopProdutos] =
     useState<"faturamento" | "lucro">("faturamento");
@@ -466,16 +442,6 @@ export function DashboardView({
         </CardContent>
       </Card>
 
-      <ReportViewSelector
-        view={visao}
-        onViewChange={(proxima) => trocarVisao(proxima as "resultado" | "fornecedores")}
-        options={[
-          { value: "resultado", label: "Resultado", icon: LayoutDashboard },
-          { value: "fornecedores", label: "Fornecedores", icon: Truck },
-        ]}
-        ariaLabel="Visão do dashboard"
-      />
-
       {erro ? (
         <FeedbackState
           variant="error"
@@ -494,8 +460,6 @@ export function DashboardView({
           retryLabel="Consultar novamente"
         />
       ) : null}
-
-      {visao === "resultado" ? (<>
 
       {!loading && !erro && alertasGerenciais.length > 0 ? (
         <DashboardAlerts
@@ -942,10 +906,6 @@ export function DashboardView({
           />
         </div>
       </section>
-
-      </>) : (
-        <AbaFornecedores vendas={vendas} carregando={loading} />
-      )}
 
       {/* Footer Executivo */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-4 text-xs text-muted-foreground">

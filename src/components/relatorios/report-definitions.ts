@@ -3,6 +3,7 @@ import {
   BadgeDollarSign,
   CalendarDays,
   CreditCard,
+  Factory,
   Layers,
   MapPin,
   Sparkles,
@@ -19,7 +20,8 @@ export interface ReportDefinition {
     | "departamentos"
     | "vendedores"
     | "geografico"
-    | "financeiro";
+    | "financeiro"
+    | "fornecedores";
   label: string;
   menuLabel: string;
   icone: LucideIcon;
@@ -83,6 +85,14 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     icone: MapPin,
     cor: "text-teal-500",
     desc: "Distribuição por cidade ou UF, clientes atendidos e frete rateado",
+  },
+  {
+    id: "fornecedores",
+    label: "Análise de Fornecedores",
+    menuLabel: "Fornecedores",
+    icone: Factory,
+    cor: "text-amber-600",
+    desc: "Vendas, margem e concentração por fornecedor do produto",
   },
   {
     id: "financeiro",

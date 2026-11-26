@@ -12,13 +12,8 @@ export default async function DashboardPage({
     comparacao?: string;
     comparacaoInicial?: string;
     comparacaoFinal?: string;
-    visao?: string;
   }>;
 }) {
-  const params = await searchParams;
-  const searchParamsVisao =
-    params.visao === "fornecedores" ? ("fornecedores" as const) : undefined;
-
   const ctx = await resolveServerPageContext({
     permissao: "dashboard:visualizar",
     searchParams,
@@ -44,7 +39,6 @@ export default async function DashboardPage({
         initialComparacaoPersonalizada={ctx.comparacaoPersonalizada}
         initialVendasAnteriores={ctx.vendasAnteriores ?? []}
         initialComparacaoDisponivel={ctx.comparacaoDisponivel}
-        initialVisao={searchParamsVisao}
         initialError={ctx.erroInicial}
       />
     </NavApp>
