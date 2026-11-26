@@ -243,13 +243,28 @@ export function AppShell({
                 href={criarLinkComEmpresa("/dashboard")}
                 title="Dashboard"
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
-                  pathname === "/dashboard"
+                  pathname === "/dashboard" && searchParams.get("visao") !== "fornecedores"
                     ? "bg-primary text-primary-foreground shadow-xs font-bold"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
                 <LayoutDashboard className="size-4 shrink-0" />
                 {!collapsed && <span>Dashboard</span>}
+              </Link>
+            )}
+
+            {podeVerDashboard && (
+              <Link
+                href={criarLinkComEmpresa("/dashboard?visao=fornecedores")}
+                title="Fornecedores"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                  pathname === "/dashboard" && searchParams.get("visao") === "fornecedores"
+                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                } ${collapsed ? "justify-center px-2" : ""}`}
+              >
+                <Factory className="size-4 shrink-0" />
+                {!collapsed && <span>Fornecedores</span>}
               </Link>
             )}
 
@@ -569,11 +584,24 @@ export function AppShell({
                   <Link
                     href={criarLinkComEmpresa("/dashboard")}
                     className={`flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
-                      pathname === "/dashboard" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      pathname === "/dashboard" && searchParams.get("visao") !== "fornecedores" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                     }`}
                   >
                     <LayoutDashboard className="size-4" />
                     Dashboard
+                  </Link>
+                )}
+                {podeVerDashboard && (
+                  <Link
+                    href={criarLinkComEmpresa("/dashboard?visao=fornecedores")}
+                    className={`flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold ${
+                      pathname === "/dashboard" && searchParams.get("visao") === "fornecedores"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    <Factory className="size-4" />
+                    Fornecedores
                   </Link>
                 )}
                 {podeVerVendas && (
