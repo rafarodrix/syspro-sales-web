@@ -210,7 +210,7 @@ export function ComprasView({
         icon={ShoppingBasket}
         title="Análise de Compras"
         description={`Vendas, devoluções de venda EDV e estoque atual por produto em ${empresaNome}.`}
-        footer={`Cobertura alvo inicial: ${coberturaAlvoInicial} dias · Grupo de estoque: ${grupoEstoquePadrao}.`}
+        footer={`Cobertura alvo inicial: ${coberturaAlvoInicial} dias · Grupo de estoque: ${grupoEstoquePadrao.includes(";") ? grupoEstoquePadrao.split(";").map((item) => item.trim()).join(" + ") : grupoEstoquePadrao}.`}
       >
         <DateRangeFilter
           value={periodo}

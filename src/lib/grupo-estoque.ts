@@ -17,5 +17,48 @@ export function normalizarGrupoEstoque(valor: unknown): string {
 }
 
 export function grupoEstoqueCorresponde(valor: unknown, padrao: unknown): boolean {
-  return normalizarGrupoEstoque(valor) === normalizarGrupoEstoque(padrao);
+  return movimentoNoGrupoConfigurado(valor, padrao);
+}
+
+/** Identificador do depósito como o Syspro manda: "GERAL (2)", "GERAL", "FISCAL". */
+export function identificadorDeposito(valor: unknown): string {
+  return String(valor ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .replace(/\(\s*(\d+)\s*\)/g, "($1)");
+}
+
+/** Lista configurada na empresa (separada por `;` ou `,`). */
+export function listaGruposEstoque(valor: unknown): string[] {
+  const bruto = String(valor ?? "").trim();
+  if (!bruto) return ["GERAL"];
+  const entradas = bruto
+    .split(/[;,]/)
+    .map((entrada) => identificadorDeposito(entrada))
+    .filter(Boolean);
+  return entradas.length ? entradas : ["GERAL"];
+}
+
+/**
+ * O movimento entra no saldo?
+ *
+ * Entrada **sem** código de depósito (ex.: `GERAL`) vale para todos os depósitos
+ * do grupo; entrada **com** código (ex.: `GERAL (2)`) vale só para aquele.
+ */
+export function movimentoNoGrupoConfigurado(
+  grupoDoMovimento: unknown,
+  configurado: unknown,
+): boolean {
+  const deposito = identificadorDeposito(grupoDoMovimento) || "GERAL";
+  const grupoDoDeposito = normalizarGrupoEstoque(deposito);
+
+  return listaGruposEstoque(configurado).some((entrada) =>
+    entrada.includes("(") ? entrada === deposito : entrada === grupoDoDeposito,
+  );
+}
+
+/** Texto curto para a tela ("GERAL (1) + GERAL (2)" ou "GERAL"). */
+export function rotuloGruposEstoque(valor: unknown): string {
+  return listaGruposEstoque(valor).join(" + ");
 }

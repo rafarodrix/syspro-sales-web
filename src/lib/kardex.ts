@@ -19,15 +19,14 @@ export function grupoEstoqueDoProduto(movimento: MovimentoKardex): string {
 }
 
 export function obterGruposSaldoEstoque(empresa?: { grupoEstoquePadrao?: string | null }): string[] {
-  return [normalizarGrupoEstoque(empresa?.grupoEstoquePadrao)];
+  return listaGruposEstoque(empresa?.grupoEstoquePadrao);
 }
 
 export function movimentoCompoeSaldo(
   movimento: MovimentoKardex,
   empresa?: { grupoEstoquePadrao?: string | null },
 ): boolean {
-  const grupos = obterGruposSaldoEstoque(empresa);
-  return grupos.includes(grupoEstoqueDoProduto(movimento));
+  return movimentoNoGrupoConfigurado(movimento.grupoEstoque, empresa?.grupoEstoquePadrao);
 }
 
 export interface ClassificacaoKardex {
@@ -154,5 +153,9 @@ export function validarPeriodoKardex(inicial: string, final: string): boolean {
   };
   const inicio = converter(inicial); const fim = converter(final);
   return Boolean(inicio && fim && inicio <= fim);
-}import { normalizarGrupoEstoque } from "@/lib/grupo-estoque";
+}import {
+  listaGruposEstoque,
+  movimentoNoGrupoConfigurado,
+  normalizarGrupoEstoque,
+} from "@/lib/grupo-estoque";
 

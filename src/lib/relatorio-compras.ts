@@ -1,4 +1,4 @@
-import { grupoEstoqueCorresponde, normalizarGrupoEstoque } from "@/lib/grupo-estoque";
+import { grupoEstoqueCorresponde, movimentoNoGrupoConfigurado, normalizarGrupoEstoque } from "@/lib/grupo-estoque";
 import type { MovimentoKardex } from "@/lib/kardex";
 import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
@@ -179,9 +179,8 @@ export function montarRelatorioCompras(
   for (const movimento of movimentos) {
     if (movimento.grupoDocumento.trim().toUpperCase() !== "EDV") continue;
     if (!estaNoPeriodo(movimento.dataMovimento, periodo.inicial, periodo.final)) continue;
+    if (!movimentoNoGrupoConfigurado(movimento.grupoEstoque, empresa?.grupoEstoquePadrao)) continue;
     const grupoEstoque = normalizarGrupoEstoque(movimento.grupoEstoque);
-    const grupoPadrao = normalizarGrupoEstoque(empresa?.grupoEstoquePadrao);
-    if (grupoEstoque !== grupoPadrao) continue;
     const chaveDoc = `${normalizarCodigoProduto(movimento.produtoIdProduto, "")}:${movimento.documento}:${grupoEstoque}`;
     edvPorDocumento.set(chaveDoc, (edvPorDocumento.get(chaveDoc) ?? 0) + movimento.quantidadeMovimentada);
     edvValorPorDocumento.set(chaveDoc, (edvValorPorDocumento.get(chaveDoc) ?? 0) + movimento.valorTotal);
@@ -243,7 +242,7 @@ export function montarRelatorioCompras(
 
     // Soma devoluções de venda apenas do grupo de estoque configurado na empresa
     // e apenas o saldo líquido do documento (ignora cancelamentos).
-    if (ehDevolucaoVendaNoPeriodo && grupoEstoqueCorresponde(grupoEstoque, grupoPadrao)) {
+    if (ehDevolucaoVendaNoPeriodo && movimentoNoGrupoConfigurado(movimento.grupoEstoque, empresa?.grupoEstoquePadrao)) {
       const chaveDoc = `${codigoId}:${movimento.documento}:${grupoEstoque}`;
       const saldoDoc = edvPorDocumento.get(chaveDoc) ?? 0;
       const valorDoc = edvValorPorDocumento.get(chaveDoc) ?? 0;
@@ -258,7 +257,7 @@ export function montarRelatorioCompras(
       }
     }
 
-    if (!grupoEstoqueCorresponde(grupoEstoque, grupoPadrao)) return;
+    if (!movimentoNoGrupoConfigurado(movimento.grupoEstoque, empresa?.grupoEstoquePadrao)) return;
     // A chave do saldo é o depósito físico ("GERAL (1)", "GERAL (2)"), não o grupo
     // normalizado: cada depósito tem saldo próprio e o estoque é a soma deles.
     const deposito =

@@ -435,17 +435,21 @@ export function ConfiguracaoClient({ empresas }: Props) {
 
             <div className="mt-3 space-y-2">
               <Label htmlFor="grupoEstoquePadrao" className="text-xs font-semibold">
-                Grupo de estoque padrão
+                Grupo(s) de estoque
               </Label>
               <Input
                 id="grupoEstoquePadrao"
                 value={grupoEstoquePadrao}
                 onChange={(e) => setGrupoEstoquePadrao(e.target.value.toUpperCase())}
-                placeholder="Ex: GERAL, FISCAL, OUTRO"
+                placeholder="GERAL  ou  GERAL (1);GERAL (2)"
                 className="text-xs font-mono"
               />
               <p className="text-[11px] text-muted-foreground">
-                Define qual grupo de estoque do Kardex será usado para calcular o saldo atual.
+                Define quais grupos do Kardex entram no saldo. Use só o grupo para somar
+                todos os depósitos dele (<span className="font-mono">GERAL</span>) ou informe
+                o depósito (<span className="font-mono">GERAL (2)</span>). Para mais de um,
+                separe com <span className="font-mono">;</span> — ex.:{" "}
+                <span className="font-mono">GERAL (1);GERAL (2)</span>.
               </p>
             </div>
           </div>
