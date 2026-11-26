@@ -36,6 +36,7 @@ import {
   type Periodo,
 } from "@/components/date-range-filter";
 import { erroPeriodo } from "@/lib/periodo";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { KpiCard } from "@/components/kpi-card";
 import { AbaFornecedores } from "@/components/dashboard/aba-fornecedores";
 import { ReportViewSelector } from "@/components/relatorios/report-view-toggle";
@@ -118,7 +119,24 @@ export function DashboardView({
     initialVendasAnteriores,
   );
   const [erro, setErro] = useState<string | null>(initialError ?? null);
-  const [visao, setVisao] = useState<"resultado" | "fornecedores">(initialVisao ?? "resultado");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const visaoDaUrl = searchParams.get("visao") === "fornecedores" ? "fornecedores" : "resultado";
+  const [visao, setVisao] = useState<"resultado" | "fornecedores">(initialVisao ?? visaoDaUrl);
+
+  // Mantém a tela sincronizada com o link do menu (?visao=fornecedores).
+  useEffect(() => {
+    setVisao(visaoDaUrl);
+  }, [visaoDaUrl]);
+
+  function trocarVisao(proxima: "resultado" | "fornecedores") {
+    setVisao(proxima);
+    const params = new URLSearchParams(searchParams.toString());
+    if (proxima === "fornecedores") params.set("visao", "fornecedores");
+    else params.delete("visao");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
   const [metrica, setMetrica] = useState<MetricaDeVendas>("faturamento");
   const [metricaTopProdutos, setMetricaTopProdutos] =
     useState<"faturamento" | "lucro">("faturamento");
@@ -450,7 +468,7 @@ export function DashboardView({
 
       <ReportViewSelector
         view={visao}
-        onViewChange={(proxima) => setVisao(proxima as "resultado" | "fornecedores")}
+        onViewChange={(proxima) => trocarVisao(proxima as "resultado" | "fornecedores")}
         options={[
           { value: "resultado", label: "Resultado", icon: LayoutDashboard },
           { value: "fornecedores", label: "Fornecedores", icon: Truck },
