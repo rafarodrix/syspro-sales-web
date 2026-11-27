@@ -5,8 +5,6 @@ import { Boxes, Factory } from "lucide-react";
 
 import { FeedbackState } from "@/components/feedback-state";
 import { ReportBarraVisao, ReportVisaoProvider } from "@/components/relatorios/report-barra";
-import { ReportDiagnostics } from "@/components/relatorios/report-diagnostics";
-import { ReportMetricStrip } from "@/components/relatorios/report-toolbar";
 import { ReportTable } from "@/components/relatorios/report-table";
 import { ReportViewSelector } from "@/components/relatorios/report-view-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -146,33 +144,6 @@ export function AbaFornecedores({
     );
   }
 
-  const diagnostico = [
-    {
-      label: "Maior fornecedor",
-      value: formatarPercentual(linhas[0]?.participacao ?? 0, 1),
-      detail: linhas[0]?.fornecedor,
-    },
-    {
-      label: "Fornecedores para 80% da venda",
-      value: `${formatarNumero(fornecedoresClasseA, 0)} de ${formatarNumero(resumo.fornecedoresAtivos, 0)}`,
-      detail: "Quanto menor a proporção, mais dependente de poucos parceiros.",
-      attention:
-        resumo.fornecedoresAtivos > 0 && fornecedoresClasseA / resumo.fornecedoresAtivos < 0.2,
-    },
-    {
-      label: "Margem negativa",
-      value: `${formatarNumero(fornecedoresMargemNegativa, 0)} fornecedor(es)`,
-      detail: "Vendendo abaixo do custo de reposição informado.",
-      attention: fornecedoresMargemNegativa > 0,
-    },
-    {
-      label: "Concentração (HHI)",
-      value: `${formatarNumero(resumo.concentracaoHhi, 0)} · ${rotuloConcentracao(resumo.concentracaoHhi)}`,
-      detail: "Soma dos quadrados das participações de venda.",
-      attention: resumo.concentracaoHhi >= 2500,
-    },
-  ];
-
   return (
     <ReportVisaoProvider>
       <div className="space-y-4">
@@ -187,31 +158,8 @@ export function AbaFornecedores({
           />
         </ReportBarraVisao>
 
-        <ReportMetricStrip
-          items={[
-            { label: "Classe A", value: `${formatarNumero(fornecedoresClasseA, 0)} fornecedor(es)` },
-            {
-              label: "Margem negativa",
-              value: `${formatarNumero(fornecedoresMargemNegativa, 0)} fornecedor(es)`,
-              attention: fornecedoresMargemNegativa > 0,
-            },
-            {
-              label: "Itens sem fornecedor",
-              value: formatarNumero(resumo.itensSemFornecedor, 0),
-              attention: resumo.itensSemFornecedor > 0,
-            },
-            {
-              label: "Venda média por fornecedor",
-              value: formatarMoeda(
-                resumo.fornecedoresAtivos > 0 ? resumo.vendaTotal / resumo.fornecedoresAtivos : 0,
-              ),
-            },
-          ]}
-        />
-
         {visao === "carteira" ? (
           <div className="space-y-3">
-            <ReportDiagnostics titulo="Como ler a carteira de fornecedores" metricas={diagnostico} />
             <div className="flex flex-wrap items-center justify-between gap-2">
               <input
                 value={busca}
@@ -316,6 +264,13 @@ export function AbaFornecedores({
                   cell: (linha: LinhaFornecedor) => <>{formatarMoeda(linha.valorVendido)}</>,
                 },
                 {
+                  id: "descontos",
+                  header: <span title="Descontos concedidos nos itens deste fornecedor">Descontos</span>,
+                  kind: "currency" as const,
+                  value: (linha: LinhaFornecedor) => linha.descontos,
+                  cell: (linha: LinhaFornecedor) => <>{formatarMoeda(linha.descontos)}</>,
+                },
+                {
                   id: "acrescimos",
                   header: (
                     <span title="Frete, seguro e outros acréscimos somados ao item">Acréscimos</span>
@@ -357,6 +312,7 @@ export function AbaFornecedores({
               ]}
               renderDetalhe={(linha) => <DetalheProdutos lista={produtos.get(linha.fornecedor) ?? []} />}
               modoDetalhe="fechado"
+              detalhePrimeiraColuna
             />
           </div>
         ) : null}

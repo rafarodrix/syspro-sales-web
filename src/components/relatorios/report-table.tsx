@@ -78,6 +78,7 @@ export function ReportTable<T>({
   rodape,
   renderDetalhe,
   modoDetalhe = "fechado",
+  detalhePrimeiraColuna = false,
 }: {
   data: T[];
   columns: ReportColumn<T>[];
@@ -100,6 +101,8 @@ export function ReportTable<T>({
   renderDetalhe?: (row: T) => ReactNode;
   /** Estado inicial de todas as linhas de detalhe (use junto de `key` para alternar). */
   modoDetalhe?: "aberto" | "fechado";
+  /** Coloca o botão de detalhe na primeira coluna (sempre visível) em vez da última. */
+  detalhePrimeiraColuna?: boolean;
 }) {
   const report = useReportContext();
   const barra = useBarraRelatorio();
@@ -210,8 +213,8 @@ export function ReportTable<T>({
       stickyFirst &&
         index === 0 &&
         (header
-          ? "sticky left-0 z-20 bg-background shadow-sm"
-          : "sticky left-0 z-10 bg-background shadow-sm"),
+          ? `sticky ${detalhePrimeiraColuna ? "left-8" : "left-0"} z-20 bg-background shadow-sm`
+          : `sticky ${detalhePrimeiraColuna ? "left-8" : "left-0"} z-10 bg-background shadow-sm`),
     );
   }
   return (
@@ -284,6 +287,13 @@ export function ReportTable<T>({
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <TableHeader className="bg-background">
           <TableRow>
+            {renderDetalhe && detalhePrimeiraColuna ? (
+              <TableHead
+                scope="col"
+                className={cn("w-8 px-1", stickyFirst && "sticky left-0 z-20 bg-background")}
+                aria-label="Detalhe"
+              />
+            ) : null}
             {visibleColumns.map((column, index) => (
               <TableHead
                 key={column.id}
@@ -339,12 +349,27 @@ export function ReportTable<T>({
               return (
               <Fragment key={chave}>
               <TableRow>
+                {renderDetalhe && detalhePrimeiraColuna ? (
+                  <TableCell className={cn("w-8 px-1", stickyFirst && "sticky left-0 z-10 bg-background")}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      aria-expanded={aberta}
+                      title={aberta ? "Recolher itens" : "Ver itens"}
+                      onClick={() => setDetalhesAbertos((atual) => ({ ...atual, [chave]: !atual[chave] }))}
+                    >
+                      <ChevronDown className={cn("size-3.5 transition-transform", aberta && "rotate-180")} />
+                    </Button>
+                  </TableCell>
+                ) : null}
                 {visibleColumns.map((column, index) => (
                   <TableCell key={column.id} className={cn(classes(column, index), density === "compacta" && "py-1")}>
                     {column.cell(row, rowIndex)}
                   </TableCell>
                 ))}
-                {renderDetalhe ? (
+                {renderDetalhe && !detalhePrimeiraColuna ? (
                   <TableCell className="w-8 px-1">
                     <Button
                       type="button"
@@ -371,7 +396,7 @@ export function ReportTable<T>({
               );
             })
           ) : <TableEmptyState
-            colSpan={visibleColumns.length}
+            colSpan={visibleColumns.length + (renderDetalhe ? 1 : 0)}
             title="Nenhum registro neste recorte"
             description="Ajuste a busca ou os filtros aplicados nesta visão."
           />}
