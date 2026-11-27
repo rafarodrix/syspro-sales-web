@@ -13,12 +13,15 @@ export interface DiagnosticoMetrica {
 }
 
 export function ReportDiagnostics({
-  titulo = "Diagnóstico do período",
+  titulo = "Outros indicadores",
+  tema,
   metricas = [],
   crescimento = [],
   queda = [],
 }: {
   titulo?: string;
+  /** Tema do conjunto, exibido discretamente ao lado do título. */
+  tema?: string;
   metricas?: DiagnosticoMetrica[];
   crescimento?: ItemContribuicaoVariacao[];
   queda?: ItemContribuicaoVariacao[];
@@ -38,6 +41,9 @@ export function ReportDiagnostics({
         </span>
       </summary>
       <section className="space-y-2 border-t border-border/60 p-3" aria-label={titulo}>
+        {tema ? (
+          <p className="text-[11px] text-muted-foreground">{tema}</p>
+        ) : null}
 
       {metricas.length ? (
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">

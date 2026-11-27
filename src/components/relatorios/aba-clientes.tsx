@@ -314,14 +314,17 @@ export function AbaClientes({
                 id: "cliente",
                 header: "Cliente",
                 kind: "name",
+                className: "max-w-[340px]",
                 value: (cli) => cli.nome,
                 cell: (cli) => (
                   <Button
                     variant="link"
                     size="sm"
+                    title={cli.nome}
+                    className="h-auto max-w-full justify-start truncate p-0 text-left"
                     onClick={() => abrirAnaliticoDoCliente(cli.nome)}
                   >
-                    {cli.nome}
+                    <span className="truncate">{cli.nome}</span>
                   </Button>
                 ),
               },

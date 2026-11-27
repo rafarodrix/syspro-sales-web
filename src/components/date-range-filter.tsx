@@ -116,6 +116,14 @@ export function DateRangeFilter({
     return maximoDias === undefined || dias <= maximoDias;
   });
 
+  const diasPeriodo = (() => {
+    if (!value.inicial || !value.final) return 0;
+    const inicio = new Date(`${value.inicial}T00:00:00`);
+    const fim = new Date(`${value.final}T00:00:00`);
+    const dias = Math.round((fim.getTime() - inicio.getTime()) / 86_400_000) + 1;
+    return Number.isFinite(dias) && dias > 0 ? dias : 0;
+  })();
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       {/* Grupo Esquerdo: Filtros Rápidos + Inputs de Data inline */}
@@ -137,7 +145,7 @@ export function DateRangeFilter({
               className="h-8 w-36 text-xs"
               disabled={loading}
             >
-              <SelectValue placeholder="Atalho" />
+              <SelectValue placeholder="Personalizado" />
             </SelectTrigger>
             <SelectContent>
               {presets.map((preset) => (
@@ -177,6 +185,16 @@ export function DateRangeFilter({
           })}
         </div>
         )}
+
+        {/* Duração do recorte */}
+        {!erro ? (
+          <span
+            className="hidden whitespace-nowrap rounded-md bg-muted/50 px-1.5 py-1 text-[11px] font-medium text-muted-foreground sm:inline"
+            title="Dias entre a data inicial e a final (inclusive)"
+          >
+            {diasPeriodo} {diasPeriodo === 1 ? "dia" : "dias"}
+          </span>
+        ) : null}
 
         {/* Divisor Vertical */}
         <div className="hidden h-5 w-px bg-border/40 sm:block" />

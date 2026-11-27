@@ -769,7 +769,7 @@ export function RelatoriosView({
       const top10 = concentracaoTopN(clientesIdentificados, 10);
       return (
         <ReportDiagnostics
-          titulo="Outros indicadores · saúde da carteira"
+          tema="saúde da carteira"
           metricas={[
             ...(cicloClientes
               ? [
@@ -823,8 +823,28 @@ export function RelatoriosView({
       );
       return (
         <ReportDiagnostics
-          titulo="Outros indicadores · da equipe"
+          tema="da equipe"
           metricas={[
+            {
+              label: "Vendedores",
+              value: formatarNumero(relatorioVendedores.length, 0),
+              detail: relatorioVendedores[0]
+                ? `Maior: ${relatorioVendedores[0].nome} (${formatarPercentual(relatorioVendedores[0].percentual, 1)})`
+                : "Sem vendedor identificado",
+            },
+            {
+              label: "Ticket da equipe",
+              value: relatorioVendedores.length
+                ? formatarMoeda(
+                    relatorioVendedores.reduce((t, v) => t + v.faturamento, 0) /
+                      Math.max(
+                        1,
+                        relatorioVendedores.reduce((t, v) => t + v.pedidos, 0),
+                      ),
+                  )
+                : "—",
+              detail: "Faturamento ÷ pedidos no período",
+            },
             {
               label: "Concentração Top 3 / 5",
               value: `${formatarPercentual(
@@ -868,12 +888,24 @@ export function RelatoriosView({
       const top3 = concentracaoTopN(relatorioDeptos, 3);
       return (
         <ReportDiagnostics
-          titulo="Outros indicadores · mix por departamento"
+          tema="mix por departamento"
           metricas={[
             {
               label: "Concentração Top 3",
               value: formatarPercentual(top3.percentualTop, 1),
               detail: "Receita concentrada nos três maiores departamentos",
+            },
+            {
+              label: "Departamentos com venda",
+              value: formatarNumero(relatorioDeptos.length, 0),
+              detail: relatorioDeptos[0]
+                ? `Maior: ${relatorioDeptos[0].nome} (${formatarPercentual(relatorioDeptos[0].percentual, 1)})`
+                : "Sem departamento identificado",
+            },
+            {
+              label: "Ticket do líder",
+              value: relatorioDeptos[0] ? formatarMoeda(relatorioDeptos[0].ticketMedio) : "—",
+              detail: "Média por pedido do maior departamento",
             },
           ]}
           crescimento={contribuicaoAtiva?.crescimento ?? []}
@@ -886,12 +918,26 @@ export function RelatoriosView({
       const top5 = concentracaoTopN(relatorioGeografico, 5);
       return (
         <ReportDiagnostics
-          titulo="Outros indicadores · geografia"
+          tema="geografia"
           metricas={[
             {
               label: "Concentração Top 5 cidades",
               value: formatarPercentual(top5.percentualTop, 1),
               detail: "Participação das cinco maiores praças",
+            },
+            {
+              label: "Praças",
+              value: formatarNumero(relatorioGeografico.length, 0),
+              detail: relatorioGeografico[0]
+                ? `Maior: ${relatorioGeografico[0].cidade}/${relatorioGeografico[0].uf}`
+                : "Sem praça identificada",
+            },
+            {
+              label: "UF líder",
+              value: relatorioUFs[0]?.uf ?? "—",
+              detail: relatorioUFs[0]
+                ? `${formatarPercentual(relatorioUFs[0].percentual, 1)} do faturamento`
+                : "Sem UF identificada",
             },
           ]}
           crescimento={contribuicaoAtiva?.crescimento ?? []}
@@ -903,8 +949,18 @@ export function RelatoriosView({
     if (abaAtiva === "curva-abc" && comparacaoDisponivel) {
       return (
         <ReportDiagnostics
-          titulo="Outros indicadores · mudança de mix"
+          tema="mudança de mix"
           metricas={[
+            {
+              label: "Itens",
+              value: formatarNumero(relatorioABC.itens.length, 0),
+              detail: "Produtos com venda no período",
+            },
+            {
+              label: "Concentração Top 20",
+              value: formatarPercentual(concentracaoProdutosTop20?.percentualTop ?? 0, 1),
+              detail: "Participação dos 20 maiores na métrica da curva",
+            },
             ...(mudancaMix
               ? [
                   {
@@ -936,6 +992,78 @@ export function RelatoriosView({
       );
     }
 
+    if (abaAtiva === "financeiro" && relatorioFinanceiro.formasPagamento.length) {
+      const lider = relatorioFinanceiro.formasPagamento[0];
+      const modeloLider = relatorioFinanceiro.modelosDocumento[0];
+      return (
+        <ReportDiagnostics
+          tema="recebimento"
+          metricas={[
+            {
+              label: `Líder: ${lider.nome}`,
+              value: formatarPercentual(lider.percentual, 1),
+              detail: `${formatarMoeda(lider.total)} em ${formatarNumero(lider.pedidos, 0)} pedidos`,
+            },
+            {
+              label: "Formas de pagamento",
+              value: formatarNumero(relatorioFinanceiro.formasPagamento.length, 0),
+              detail: "Distintas no período",
+            },
+            {
+              label: "Ticket médio (líder)",
+              value: formatarMoeda(lider.ticketMedio),
+              detail: "Média por pedido na forma líder",
+            },
+            ...(modeloLider
+              ? [
+                  {
+                    label: `Modelo: ${modeloLider.nome}`,
+                    value: formatarPercentual(modeloLider.percentual, 1),
+                    detail: `${formatarMoeda(modeloLider.total)} faturados`,
+                  },
+                ]
+              : []),
+          ]}
+        />
+      );
+    }
+
+    if (abaAtiva === "financeiro" && relatorioFinanceiro.formasPagamento.length) {
+      const lider = relatorioFinanceiro.formasPagamento[0];
+      const modeloLider = relatorioFinanceiro.modelosDocumento[0];
+      return (
+        <ReportDiagnostics
+          tema="recebimento"
+          metricas={[
+            {
+              label: `Líder: ${lider.nome}`,
+              value: formatarPercentual(lider.percentual, 1),
+              detail: `${formatarMoeda(lider.total)} em ${formatarNumero(lider.pedidos, 0)} pedidos`,
+            },
+            {
+              label: "Formas de pagamento",
+              value: formatarNumero(relatorioFinanceiro.formasPagamento.length, 0),
+              detail: "Distintas no período",
+            },
+            {
+              label: "Ticket médio (líder)",
+              value: formatarMoeda(lider.ticketMedio),
+              detail: "Média por pedido na forma líder",
+            },
+            ...(modeloLider
+              ? [
+                  {
+                    label: `Modelo: ${modeloLider.nome}`,
+                    value: formatarPercentual(modeloLider.percentual, 1),
+                    detail: `${formatarMoeda(modeloLider.total)} faturados`,
+                  },
+                ]
+              : []),
+          ]}
+        />
+      );
+    }
+
     return null;
   }, [
     abaAtiva,
@@ -949,6 +1077,9 @@ export function RelatoriosView({
     relatorioGeografico,
     mudancaMix,
     classeAEmQueda,
+    relatorioABC,
+    concentracaoProdutosTop20,
+    relatorioFinanceiro,
   ]);
 
   async function consultar(proximoPeriodo: Periodo = periodo) {
@@ -1115,11 +1246,7 @@ export function RelatoriosView({
               >
                 {loading ? "Consultando..." : "Consultar"}
               </Button>
-              {consultadoEm ? (
-                <span className="text-[11px] text-muted-foreground">
-                  Atualizado às {consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              ) : null}
+
             </div>
             {periodo.inicial !== periodoConsultado.inicial ||
             periodo.final !== periodoConsultado.final ||
@@ -1219,6 +1346,16 @@ export function RelatoriosView({
                 ) : null}
 
                 <div className="border-t border-border/60" />
+
+                {/* Separador de seção: resultados ficam abaixo, leitura no fim */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="rotulo">Resultados</p>
+                  {consultadoEm ? (
+                    <span className="text-[11px] text-muted-foreground">
+                      Atualizado às {consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  ) : null}
+                </div>
 
                 {/* Renderização condicional da aba ativa através de componentes modulares */}
                 {abaAtiva === "curva-abc" && (

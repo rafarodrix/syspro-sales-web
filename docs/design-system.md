@@ -219,6 +219,23 @@ Antes → depois medido:
 
 ---
 
+
+Estrutura fixa do relatório, de cima para baixo:
+
+```
+PageHeader
+filtros (atalho + dias + datas + comparativo + Consultar)   → 1 linha
+──── RESULTADOS ────            (separador antes das tabelas)
+KPIs · tabelas · rodapé padrão
+──── LEITURA DO PERÍODO ────    (separador antes do fechamento)
+▸ Outros indicadores            (título único; o tema vai dentro do painel)
+▸ Como interpretar e definições
+```
+
+Ajustes finos de filtro: atalhos viram select no modo compacto (placeholder "Personalizado" quando o recorte não casa com nenhum atalho), a duração em dias aparece ao lado das datas, e a janela comparada só é exibida a partir de `2xl` (fica no `title` do elemento).
+
+---
+
 ## 4. Auditoria atual (UX01)
 
 Medido em 2026-11-26 sobre `src/` (215 arquivos TS/TSX, 82 componentes):

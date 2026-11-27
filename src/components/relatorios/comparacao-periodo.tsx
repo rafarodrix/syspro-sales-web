@@ -72,10 +72,11 @@ export function ComparacaoPeriodo({
       <span
         className={
           invalido
-            ? "whitespace-nowrap text-xs text-destructive"
-            : "whitespace-nowrap text-xs text-muted-foreground"
+            ? "hidden whitespace-nowrap text-xs text-destructive 2xl:inline"
+            : "hidden whitespace-nowrap text-xs text-muted-foreground 2xl:inline"
         }
         role={invalido ? "alert" : undefined}
+        title={descricao}
       >
         {descricao}
       </span>
