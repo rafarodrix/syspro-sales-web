@@ -62,7 +62,7 @@ const colunasMovimento: ReportColumn<MovimentoKardexPublico>[] = [
     cell: (item) => (
       <>
         <p className="text-xs font-medium">{item.produtoDescricao || "Produto sem descrição"}</p>
-        <p className="font-mono text-[10px] text-muted-foreground">
+        <p className="font-mono text-[11px] text-muted-foreground">
           {item.produtoCodigoAuxiliar || "Sem código auxiliar"}
         </p>
       </>
@@ -83,7 +83,7 @@ const colunasMovimento: ReportColumn<MovimentoKardexPublico>[] = [
     cell: (item) => (
       <div className="flex flex-col items-start gap-1">
         <Badge variant="outline">{item.grupoDocumento || "Sem grupo"}</Badge>
-        <span className="text-[10px] text-muted-foreground">{item.classificacao.rotulo}</span>
+        <span className="text-[11px] text-muted-foreground">{item.classificacao.rotulo}</span>
       </div>
     ),
   },

@@ -220,7 +220,7 @@ export function AppShell({
                 />
                 <Badge
                   variant="outline"
-                  className="text-[9.5px] font-mono font-bold tracking-tight uppercase px-1.5 py-0 bg-muted/60 border-border/80 text-primary shrink-0"
+                  className="text-[11px] font-mono font-bold tracking-tight uppercase px-1.5 py-0 bg-muted/60 border-border/80 text-primary shrink-0"
                 >
                   Syspro ERP
                 </Badge>
@@ -234,7 +234,7 @@ export function AppShell({
           {/* Grupo 1: Geral */}
           <div className="space-y-1">
             {!collapsed && (
-              <span className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+              <span className="px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
                 Geral
               </span>
             )}
@@ -335,7 +335,7 @@ export function AppShell({
               {!collapsed ? (
                 <div
                   onClick={() => setRelatoriosOpen(!relatoriosOpen)}
-                  className="flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 cursor-pointer hover:text-foreground transition-colors"
+                  className="flex items-center justify-between px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 cursor-pointer hover:text-foreground transition-colors"
                 >
                   <span>Relatórios</span>
                   <ChevronDown
@@ -366,7 +366,7 @@ export function AppShell({
                   <div className="space-y-0.5 pl-1 animate-in fade-in duration-150">
                     {podeVerRelatorios ? (
                       <>
-                        <span className="px-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">Vendas</span>
+                        <span className="px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Vendas</span>
                         {relatoriosVendas.map((item) => {
                           const Icone = item.icone;
                           const ativo = pathname === "/relatorios" && abaAtiva === item.id;
@@ -376,7 +376,7 @@ export function AppShell({
                     ) : null}
                     {podeVerCompras ? (
                       <>
-                        <span className="mt-2 block px-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                        <span className="mt-2 block px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
                           Compras
                         </span>
                         <Link
@@ -394,7 +394,7 @@ export function AppShell({
                     ) : null}
                     {podeVerEntregas ? (
                       <>
-                        <span className="mt-2 block px-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                        <span className="mt-2 block px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
                           Entrega
                         </span>
                         <Link
@@ -420,7 +420,7 @@ export function AppShell({
           {podeVerAdmin && (
             <div className="space-y-1">
               {!collapsed ? (
-                <span className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                <span className="px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
                   Administração
                 </span>
               ) : (
@@ -472,7 +472,7 @@ export function AppShell({
                 <span className="truncate text-xs font-bold text-foreground" title={userName}>
                   {userName}
                 </span>
-                <span className="text-[10px] font-medium text-muted-foreground">
+                <span className="text-[11px] font-medium text-muted-foreground">
                   {perfilLabel}
                 </span>
               </div>
@@ -542,7 +542,7 @@ export function AppShell({
                 />
                 <Badge
                   variant="outline"
-                  className="text-[9.5px] font-mono font-bold tracking-tight uppercase px-1.5 py-0 bg-muted/60 border-border/80 text-primary shrink-0"
+                  className="text-[11px] font-mono font-bold tracking-tight uppercase px-1.5 py-0 bg-muted/60 border-border/80 text-primary shrink-0"
                 >
                   Syspro ERP
                 </Badge>
@@ -565,7 +565,7 @@ export function AppShell({
               }}
             >
               <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground">Geral</span>
+                <span className="text-[11px] font-bold uppercase text-muted-foreground">Geral</span>
                 {podeVerDashboard && (
                   <Link
                     href={criarLinkComEmpresa("/dashboard")}
@@ -603,7 +603,7 @@ export function AppShell({
 
               {podeVerAlgumRelatorio && (
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Relatórios</span>
+                  <span className="text-[11px] font-bold uppercase text-muted-foreground">Relatórios</span>
                   {podeVerRelatorios
                     ? relatoriosSubLinks.map((item) => (
                         <Link
@@ -618,7 +618,7 @@ export function AppShell({
                     : null}
                   {podeVerCompras ? (
                     <>
-                      <span className="mt-3 block text-[10px] font-bold uppercase text-muted-foreground">
+                      <span className="mt-3 block text-[11px] font-bold uppercase text-muted-foreground">
                         Compras
                       </span>
                       <Link
@@ -636,7 +636,7 @@ export function AppShell({
                   ) : null}
                   {podeVerEntregas ? (
                     <>
-                      <span className="mt-3 block text-[10px] font-bold uppercase text-muted-foreground">
+                      <span className="mt-3 block text-[11px] font-bold uppercase text-muted-foreground">
                         Entrega
                       </span>
                       <Link
@@ -657,7 +657,7 @@ export function AppShell({
 
               {podeVerAdmin && (
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Administração</span>
+                  <span className="text-[11px] font-bold uppercase text-muted-foreground">Administração</span>
                   <Link
                     href="/usuarios"
                     className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted"

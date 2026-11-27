@@ -585,7 +585,7 @@ export function ComprasView({
                       cell: (item) => (
                         <>
                           {formatarMoeda(item.valorDevolvido)}
-                          <span className="block text-[10px] text-muted-foreground">
+                          <span className="block text-[11px] text-muted-foreground">
                             {formatarPercentual(item.taxaDevolucaoValor, 1)}
                           </span>
                         </>

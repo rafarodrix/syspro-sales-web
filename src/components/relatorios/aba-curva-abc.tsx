@@ -66,7 +66,7 @@ function Dependencia({
             <span className="text-xs font-semibold text-muted-foreground">{" / "}</span>
             {formatarPercentual(top20?.percentualTop ?? 0, 1)}
           </div>
-          <div className="text-[10px] text-muted-foreground">Top 10 / Top 20</div>
+          <div className="text-[11px] text-muted-foreground">Top 10 / Top 20</div>
         </div>
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">

@@ -585,7 +585,7 @@ export function DashboardView({
       {!loading && vendas.length > 0 && (
         <section className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-muted/20 p-3.5 shadow-2xs sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Taxa Média Desconto
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -599,7 +599,7 @@ export function DashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               SKUs / Pedido
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -613,7 +613,7 @@ export function DashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Clientes Recorrentes
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -627,7 +627,7 @@ export function DashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Impacto do Frete
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -718,7 +718,7 @@ export function DashboardView({
           <CardContent className="flex flex-1 flex-col divide-y divide-border/60 rounded-lg border border-border/60 p-0">
             {destaques.melhorDia ? (
               <div className="px-3 py-2.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   Melhor Dia de Vendas
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
@@ -737,7 +737,7 @@ export function DashboardView({
 
             {destaques.maiorVenda ? (
               <div className="px-3 py-2.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   Maior Pedido / NF
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
@@ -756,7 +756,7 @@ export function DashboardView({
 
             {destaques.topVendedor ? (
               <div className="px-3 py-2.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   Top Vendedor
                 </span>
                 <div className="mt-1 flex items-baseline justify-between">
@@ -793,7 +793,7 @@ export function DashboardView({
                   Participação por Empresa no Faturamento
                 </CardTitle>
               </div>
-              <Badge variant="outline" className="text-[10.5px] font-mono">
+              <Badge variant="outline" className="text-[11px] font-mono">
                 {rankingPorEmpresa.length} unidades
               </Badge>
             </div>
@@ -813,7 +813,7 @@ export function DashboardView({
                     <span className="font-bold text-xs text-foreground group-hover:text-primary transition-colors truncate">
                       {emp.nome}
                     </span>
-                    <Badge variant="secondary" className="font-mono text-[10px] shrink-0 font-bold">
+                    <Badge variant="secondary" className="font-mono text-[11px] shrink-0 font-bold">
                       {formatarPercentual(emp.percentual, 1)}
                     </Badge>
                   </div>

@@ -35,7 +35,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Curva ABC (Produtos)",
     menuLabel: "Curva ABC",
     icone: Sparkles,
-    cor: "text-amber-500",
+    cor: "text-muted-foreground",
     desc: "Pareto 80/15/5 de faturamento e volume de itens",
   },
   {
@@ -43,7 +43,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Clientes",
     menuLabel: "Clientes",
     icone: UserCheck,
-    cor: "text-emerald-500",
+    cor: "text-muted-foreground",
     desc: "Recorrência, concentração e Pareto da base de clientes",
   },
   {
@@ -51,7 +51,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Vendas & Margem",
     menuLabel: "Vendas & Margem",
     icone: BadgeDollarSign,
-    cor: "text-emerald-600",
+    cor: "text-muted-foreground",
     desc: "Margem por produto, custo de reposição e impacto das EDVs",
   },
   {
@@ -59,7 +59,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Sazonalidade & Evolução",
     menuLabel: "Sazonalidade & Evolução",
     icone: CalendarDays,
-    cor: "text-indigo-500",
+    cor: "text-muted-foreground",
     desc: "Evolução diária e mensal, dias da semana e quinzenas",
   },
   {
@@ -67,7 +67,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Departamentos",
     menuLabel: "Departamentos",
     icone: Layers,
-    cor: "text-blue-500",
+    cor: "text-muted-foreground",
     desc: "Faturamento por categoria com itens detalhados",
   },
   {
@@ -75,7 +75,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Equipe de Vendedores",
     menuLabel: "Vendedores",
     icone: Users,
-    cor: "text-violet-500",
+    cor: "text-muted-foreground",
     desc: "Ranking de consultores, ticket médio e descontos",
   },
   {
@@ -83,7 +83,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Cidade e UF",
     menuLabel: "Cidade e UF",
     icone: MapPin,
-    cor: "text-teal-500",
+    cor: "text-muted-foreground",
     desc: "Distribuição por cidade ou UF, clientes atendidos e frete rateado",
   },
   {
@@ -91,7 +91,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Análise de Fornecedores",
     menuLabel: "Fornecedores",
     icone: Factory,
-    cor: "text-amber-600",
+    cor: "text-muted-foreground",
     desc: "Vendas, margem e concentração por fornecedor do produto",
   },
   {
@@ -99,7 +99,7 @@ export const REPORT_DEFINITIONS: readonly ReportDefinition[] = [
     label: "Financeiro & Fiscal",
     menuLabel: "Financeiro & Fiscal",
     icone: CreditCard,
-    cor: "text-orange-500",
+    cor: "text-muted-foreground",
     desc: "Formas de pagamento declaradas e documentos fiscais",
   },
 ] as const;

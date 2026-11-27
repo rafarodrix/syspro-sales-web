@@ -25,7 +25,7 @@ export function PageHeader({
       <div className="min-w-0">
         <h1 className="truncate text-[16px] font-bold leading-tight text-foreground">{titulo}</h1>
         {meta ? (
-          <p className="mt-0.5 truncate text-[11.5px] leading-tight text-muted-foreground">{meta}</p>
+          <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">{meta}</p>
         ) : null}
       </div>
       <div className="no-print flex flex-wrap items-center gap-2">

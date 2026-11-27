@@ -32,7 +32,7 @@ export function ReportDiagnostics({
     <details className="group rounded-lg border border-border/60 bg-muted/[0.06]">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-foreground marker:hidden">
         <span>{titulo}</span>
-        <span className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
+        <span className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
           Ver detalhes · {grupos} grupo{grupos === 1 ? "" : "s"}
           <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
         </span>
@@ -51,7 +51,7 @@ export function ReportDiagnostics({
               }
             >
               <CardContent className="p-3">
-                <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {item.attention ? <CircleAlert className="size-3" /> : null}
                   {item.label}
                 </div>
@@ -59,7 +59,7 @@ export function ReportDiagnostics({
                   {item.value}
                 </div>
                 {item.detail ? (
-                  <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">
                     {item.detail}
                   </div>
                 ) : null}

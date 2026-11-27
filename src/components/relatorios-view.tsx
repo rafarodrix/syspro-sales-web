@@ -1092,7 +1092,7 @@ export function RelatoriosView({
           <CardContent className="space-y-3 border-t border-border/40 pt-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
               <section className="min-w-0 flex-1 rounded-lg bg-muted/25 p-2.5" aria-label="Período">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Período</div>
+                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Período</div>
                 <DateRangeFilter
                     value={periodo}
                     onChange={setPeriodo}
@@ -1103,7 +1103,7 @@ export function RelatoriosView({
                   />
               </section>
               <section className="min-w-0 shrink-0 rounded-lg bg-muted/25 p-2.5" aria-label="Comparação">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Comparação</div>
+                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Comparação</div>
                 <ComparacaoPeriodo
                   periodo={periodo}
                   modo={modoComparacao}

@@ -158,7 +158,7 @@ export function SeletorMultiplo({
           </ul>
 
           {valores.length > limiteVisivel && (
-            <div className="border-t pt-1 text-[10px] text-muted-foreground">
+            <div className="border-t pt-1 text-[11px] text-muted-foreground">
               {filtrados.length} de {valores.length} opções — digite para filtrar
             </div>
           )}

@@ -141,7 +141,7 @@ export function PieChartCard({
               {titulo}
             </CardTitle>
           </div>
-          <Badge variant="secondary" className="text-[10px] font-semibold">
+          <Badge variant="secondary" className="text-[11px] font-semibold">
             Mix de Pagamento
           </Badge>
         </div>
@@ -195,7 +195,7 @@ export function PieChartCard({
 
               {/* Informação Central no Donut */}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center p-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate max-w-[110px]">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate max-w-[110px]">
                   {activeItem ? activeItem.nome : "Total Declarado"}
                 </span>
                 <span className="font-mono text-xs sm:text-sm font-extrabold text-foreground truncate max-w-[120px]">
@@ -203,7 +203,7 @@ export function PieChartCard({
                     ? formatarMoeda(activeItem.total)
                     : formatarMoeda(totalFaturamento)}
                 </span>
-                <span className="font-mono text-[10px] font-bold text-primary">
+                <span className="font-mono text-[11px] font-bold text-primary">
                   {activeItem
                     ? formatarPercentual(activeItem.percentual, 1)
                     : "100%"}
@@ -247,7 +247,7 @@ export function PieChartCard({
                       <span className="font-bold text-foreground">
                         {formatarMoeda(item.total)}
                       </span>
-                      <span className="text-muted-foreground text-[10.5px]">
+                      <span className="text-muted-foreground text-[11px]">
                         ({formatarPercentual(item.percentual, 1)})
                       </span>
                     </div>

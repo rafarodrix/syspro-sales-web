@@ -109,7 +109,7 @@ export function PanoramaPeriodo({
 
       {!compacto ? (
         <div className="flex items-center justify-between gap-2 px-1">
-          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
             Resumo executivo
           </span>
         </div>

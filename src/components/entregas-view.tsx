@@ -104,7 +104,7 @@ function CelulaHoraEtapa({ hora, etapa }: { hora: string | null; etapa: Etapa })
   return (
     <span className="flex flex-col leading-tight">
       <span className="font-mono text-[11px]">{horaCurta(hora)}</span>
-      <span className={`text-[10px] ${cor}`} title={`Limite de ${etapa.limite} min`}>
+      <span className={`text-[11px] ${cor}`} title={`Limite de ${etapa.limite} min`}>
         {etapa.minutos === null ? "—" : `${formatarDuracaoMinutos(etapa.minutos)}${etapa.emAndamento ? "…" : ""}`}
       </span>
     </span>
@@ -397,7 +397,7 @@ export function EntregasView({
                     type="button"
                     onClick={() => setStatus("lancamento")}
                     title="Documentos ainda sem número: não são pedido e ficam fora do fluxo até serem efetivados"
-                    className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 transition-colors hover:bg-amber-500/25 dark:text-amber-500"
+                    className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-600 transition-colors hover:bg-amber-500/25 dark:text-amber-500"
                   >
                     {totalLancamento} em lançamento
                   </button>
@@ -502,13 +502,13 @@ export function EntregasView({
                         </span>
                         {emLancamento(linha) ? (
                           <span
-                            className="rounded bg-amber-500/15 px-1 text-[9px] font-semibold uppercase text-amber-600 dark:text-amber-500"
+                            className="rounded bg-amber-500/15 px-1 text-[11px] font-semibold uppercase text-amber-600 dark:text-amber-500"
                             title="Número ainda não gerado: pedido em lançamento (ou cancelado antes de virar pedido)"
                           >
                             lanç
                           </span>
                         ) : tipoDocumento(linha) === "orcamento" ? (
-                          <span className="rounded bg-muted px-1 text-[9px] font-semibold uppercase text-muted-foreground">
+                          <span className="rounded bg-muted px-1 text-[11px] font-semibold uppercase text-muted-foreground">
                             orç
                           </span>
                         ) : null}

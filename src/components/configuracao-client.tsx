@@ -523,11 +523,11 @@ export function ConfiguracaoClient({ empresas }: Props) {
                           {empresa.sysproBaseUrl || "http://localhost:8080"}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant="outline" className="text-[10px] font-mono">
+                          <Badge variant="outline" className="text-[11px] font-mono">
                             {empresa.sysproUseIis ? "IIS" : "Direto"}
                           </Badge>
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] text-muted-foreground">
+                        <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-muted-foreground">
                           {empresa.coberturaCriticaDias}/{empresa.coberturaAtencaoDias}/{empresa.coberturaExcessoDias} dias
                           <span className="block">Compra: {empresa.coberturaCompraDias} dias</span>
                           <span className="block" title="Grupos de estoque desta empresa (só dela)">
@@ -541,11 +541,11 @@ export function ConfiguracaoClient({ empresas }: Props) {
                             title="Clique para ativar/desativar"
                           >
                             {empresa.ativa ? (
-                              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[10.5px]">
+                              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[11px]">
                                 Ativa
                               </Badge>
                             ) : (
-                              <Badge variant="secondary" className="text-[10.5px]">
+                              <Badge variant="secondary" className="text-[11px]">
                                 Inativa
                               </Badge>
                             )}
@@ -598,14 +598,14 @@ export function ConfiguracaoClient({ empresas }: Props) {
 
                           {/* Feedback de Teste em Linha */}
                           {teste && (
-                            <div className="mt-1 text-[10px] font-mono text-right">
+                            <div className="mt-1 text-[11px] font-mono text-right">
                               {teste.ok ? (
                                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                                  ✓ Online ({teste.latencyMs}ms) • {teste.registrosRetornados ?? 0} reg.
+                                  Online ({teste.latencyMs}ms) • {teste.registrosRetornados ?? 0} reg.
                                 </span>
                               ) : (
                                 <span className="text-destructive font-semibold" title={teste.error}>
-                                  ✕ Falha ({teste.latencyMs}ms)
+                                  Falha ({teste.latencyMs}ms)
                                 </span>
                               )}
                             </div>
@@ -711,7 +711,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
                   placeholder="GERAL  ou  GERAL (1);GERAL (2)"
                   className="text-xs font-mono"
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground">
                   Vale só para esta empresa. Só o grupo (<span className="font-mono">GERAL</span>) soma
                   todos os depósitos; com o código (<span className="font-mono">GERAL (2)</span>) usa
                   apenas aquele depósito. Para mais de um, separe com{" "}
@@ -719,7 +719,7 @@ export function ConfiguracaoClient({ empresas }: Props) {
                 </p>
               </div>
 
-              <p className="mt-2 text-[10px] text-muted-foreground">
+              <p className="mt-2 text-[11px] text-muted-foreground">
                 Ordem obrigatória: crítico &lt; atenção &lt; excesso. Valores entre 1 e 365 dias.
               </p>
             </div>
@@ -817,7 +817,7 @@ function CampoDias({
           onChange={(evento) => onChange(Number(evento.target.value))}
           className="pr-12 font-mono text-xs"
         />
-        <span className="pointer-events-none absolute right-3 top-2.5 text-[10px] text-muted-foreground">dias</span>
+        <span className="pointer-events-none absolute right-3 top-2.5 text-[11px] text-muted-foreground">dias</span>
       </div>
     </div>
   );

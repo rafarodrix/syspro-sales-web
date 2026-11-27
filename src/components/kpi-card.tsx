@@ -54,7 +54,7 @@ export function KpiCard({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             {Icone ? <Icone className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden /> : null}
-            <span className="truncate text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+            <span className="truncate text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
               {titulo}
             </span>
           </div>
@@ -83,7 +83,7 @@ export function KpiCard({
         <div className="mt-2.5 flex items-baseline gap-1.5">
           {variacao ? (
             <span
-              className={`num inline-flex items-center gap-0.5 text-[11.5px] font-semibold ${corVariacao}`}
+              className={`num inline-flex items-center gap-0.5 text-[11px] font-semibold ${corVariacao}`}
               title={
                 periodoComparado
                   ? `Variação sobre o período anterior (${periodoComparado})`

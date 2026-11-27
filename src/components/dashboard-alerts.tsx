@@ -34,7 +34,7 @@ export function DashboardAlerts({
             <div className="text-xs font-bold text-foreground">
               Alertas gerenciais
             </div>
-            <div className="truncate text-[10px] text-muted-foreground">
+            <div className="truncate text-[11px] text-muted-foreground">
               {alertas.length} sinal{alertas.length === 1 ? "" : "is"}
               {atencoes ? ` · ${atencoes} requer${atencoes === 1 ? "" : "em"} atenção` : ""}
             </div>
@@ -80,7 +80,7 @@ export function DashboardAlerts({
                   {alerta.detalhe}
                 </div>
               </div>
-              <span className="shrink-0 text-[10px] font-medium text-primary">
+              <span className="shrink-0 text-[11px] font-medium text-primary">
                 Ver análise
               </span>
             </Link>

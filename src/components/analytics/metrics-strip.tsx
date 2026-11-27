@@ -26,7 +26,7 @@ export function MetricsStrip({ itens }: { itens: MetricsStripItem[] }) {
             item.definicao ? "cursor-help" : ""
           }`}
         >
-          <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {item.rotulo}
           </span>
           <span
@@ -37,7 +37,7 @@ export function MetricsStrip({ itens }: { itens: MetricsStripItem[] }) {
             {item.valor}
           </span>
           {item.detalhe ? (
-            <span className="truncate text-[10px] leading-tight text-muted-foreground">
+            <span className="truncate text-[11px] leading-tight text-muted-foreground">
               {item.detalhe}
             </span>
           ) : null}

@@ -54,7 +54,7 @@ export function RankingCard({
             </CardTitle>
           </div>
           {drilldownParam && empresaId && (
-            <Badge variant="secondary" className="text-[10px] font-semibold">
+            <Badge variant="secondary" className="text-[11px] font-semibold">
               Top 5
             </Badge>
           )}
@@ -75,11 +75,11 @@ export function RankingCard({
                   <div className="flex items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2 min-w-0">
                       {isVendedor ? (
-                        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-500 border border-violet-500/30 font-mono text-[10px] font-bold">
+                        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-500 border border-violet-500/30 font-mono text-[11px] font-bold">
                           {extrairIniciais(item.nome)}
                         </span>
                       ) : (
-                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[10px] font-bold text-muted-foreground">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[11px] font-bold text-muted-foreground">
                           {index + 1}
                         </span>
                       )}
@@ -101,7 +101,7 @@ export function RankingCard({
                       <span className="font-extrabold text-foreground">
                         {formatarMoeda(item.total)}
                       </span>
-                      <span className="text-muted-foreground text-[10px]">
+                      <span className="text-muted-foreground text-[11px]">
                         ({formatarPercentual(item.percentual, 1)})
                       </span>
                     </div>

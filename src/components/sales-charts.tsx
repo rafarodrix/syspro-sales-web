@@ -291,7 +291,7 @@ export function GraficoFaturamento({
             >
               <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-1.5 font-bold text-foreground">
                 <span>{pontoHover.item.rotulo}</span>
-                <span className="text-[10px] font-mono text-muted-foreground">
+                <span className="text-[11px] font-mono text-muted-foreground">
                   {formatarDataVisual(pontoHover.item.data)}
                 </span>
               </div>
@@ -369,27 +369,27 @@ export function GraficoProdutos({
   const getPodiumBadge = (index: number) => {
     if (index === 0) {
       return (
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold text-[10px]">
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold text-[11px]">
           <Crown className="size-3" />
         </span>
       );
     }
     if (index === 1) {
       return (
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-400/20 text-slate-300 border border-slate-400/30 font-bold text-[10px]">
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-400/20 text-slate-300 border border-slate-400/30 font-bold text-[11px]">
           2
         </span>
       );
     }
     if (index === 2) {
       return (
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-700/20 text-amber-600 border border-amber-700/30 font-bold text-[10px]">
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-700/20 text-amber-600 border border-amber-700/30 font-bold text-[11px]">
           3
         </span>
       );
     }
     return (
-      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[10px] font-bold text-muted-foreground">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[11px] font-bold text-muted-foreground">
         {index + 1}
       </span>
     );
@@ -420,7 +420,7 @@ export function GraficoProdutos({
                     {item.produto}
                   </span>
                   {item.quantidade > 0 && (
-                    <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 h-4">
+                    <Badge variant="outline" className="text-[11px] font-mono px-1 py-0 h-4">
                       {formatarNumero(item.quantidade, 2)} {item.un}
                     </Badge>
                   )}
@@ -458,7 +458,7 @@ export function GraficoProdutos({
       </div>
 
       {/* Eixo X com Escala */}
-      <div className="flex justify-between border-t border-border/60 pt-2 text-[10px] font-mono font-semibold text-muted-foreground">
+      <div className="flex justify-between border-t border-border/60 pt-2 text-[11px] font-mono font-semibold text-muted-foreground">
         {xTicks.map((val, index) => (
           <span key={`${val}-${index}`}>{formatarK(val)}</span>
         ))}

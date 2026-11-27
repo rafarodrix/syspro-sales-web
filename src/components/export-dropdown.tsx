@@ -59,7 +59,7 @@ export function ExportDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 p-1.5 space-y-1 shadow-lg border-border/80">
-        <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1">
+        <DropdownMenuLabel className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1">
           Opções de Saída
         </DropdownMenuLabel>
 
@@ -77,7 +77,7 @@ export function ExportDropdown({
               </div>
               <div className="flex flex-col text-left min-w-0">
                 <span className="font-bold text-foreground leading-tight">{extra.titulo}</span>
-                <span className="text-[10px] text-muted-foreground">{extra.descricao}</span>
+                <span className="text-[11px] text-muted-foreground">{extra.descricao}</span>
               </div>
             </DropdownMenuItem>
           );
@@ -97,7 +97,7 @@ export function ExportDropdown({
             </div>
             <div className="flex flex-col text-left min-w-0">
               <span className="font-bold text-foreground leading-tight">Relatório em PDF</span>
-              <span className="text-[10px] text-muted-foreground">Documento executivo</span>
+              <span className="text-[11px] text-muted-foreground">Documento executivo</span>
             </div>
           </DropdownMenuItem>
         )}
@@ -112,7 +112,7 @@ export function ExportDropdown({
             </div>
             <div className="flex flex-col text-left min-w-0">
               <span className="font-bold text-foreground leading-tight">Planilha (CSV)</span>
-              <span className="text-[10px] text-muted-foreground">Excel e dados brutos</span>
+              <span className="text-[11px] text-muted-foreground">Excel e dados brutos</span>
             </div>
           </DropdownMenuItem>
         )}
@@ -129,7 +129,7 @@ export function ExportDropdown({
               </div>
               <div className="flex flex-col text-left min-w-0">
                 <span className="font-bold text-foreground leading-tight">Imprimir</span>
-                <span className="text-[10px] text-muted-foreground">Enviar para impressora</span>
+                <span className="text-[11px] text-muted-foreground">Enviar para impressora</span>
               </div>
             </DropdownMenuItem>
           </>

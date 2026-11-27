@@ -104,21 +104,21 @@ export function EmpresaNavSelect({
           {isTodas ? (
             <div className="flex items-center gap-1.5 min-w-0 truncate text-primary">
               <Layers className="size-3.5 shrink-0" />
-              <span className="truncate font-bold text-[11.5px]">
+              <span className="truncate font-bold text-[11px]">
                 Consolidado ({empresas.length})
               </span>
             </div>
           ) : isMultiplo ? (
             <div className="flex items-center gap-1.5 min-w-0 truncate text-primary">
               <Layers className="size-3.5 shrink-0" />
-              <span className="truncate font-bold text-[11.5px]">
+              <span className="truncate font-bold text-[11px]">
                 Consolidado ({idsAtivos.length}/{empresas.length})
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 min-w-0 truncate">
               <Building2Icon className="size-3.5 shrink-0 text-primary" />
-              <span className="truncate text-[11.5px]">{empresaUnica?.razaoSocial ?? "Empresa"}</span>
+              <span className="truncate text-[11px]">{empresaUnica?.razaoSocial ?? "Empresa"}</span>
             </div>
           )}
           <ChevronDown className="size-3 shrink-0 text-muted-foreground ml-0.5" />
@@ -134,7 +134,7 @@ export function EmpresaNavSelect({
               Seleção de Filiais
             </span>
           </div>
-          <Badge variant="secondary" className="text-[10px] font-mono">
+          <Badge variant="secondary" className="text-[11px] font-mono">
             {empresas.length} cadastradas
           </Badge>
         </div>
@@ -154,22 +154,22 @@ export function EmpresaNavSelect({
               <span className="text-xs font-bold leading-tight">
                 Consolidar Todas as Filiais
               </span>
-              <span className="text-[10.5px] text-muted-foreground font-normal">
+              <span className="text-[11px] text-muted-foreground font-normal">
                 Consultar e somar as {empresas.length} empresas ativas do grupo
               </span>
             </div>
           </div>
           {isTodas && (
-            <Badge className="text-[9.5px] px-1.5 py-0 bg-primary text-primary-foreground font-bold">
+            <Badge className="text-[11px] px-1.5 py-0 bg-primary text-primary-foreground font-bold">
               Ativo
             </Badge>
           )}
         </div>
 
         {/* Subtítulo com instrução */}
-        <div className="px-2 pt-0.5 flex items-center justify-between text-[10.5px] text-muted-foreground">
+        <div className="px-2 pt-0.5 flex items-center justify-between text-[11px] text-muted-foreground">
           <span className="font-semibold">Selecione para consolidar ou clique para isolar:</span>
-          <span className="font-mono text-[9.5px]">({selecionadosLocal.size} marcadas)</span>
+          <span className="font-mono text-[11px]">({selecionadosLocal.size} marcadas)</span>
         </div>
 
         {/* Lista de Empresas Individuais com Checkbox + Ação de Isolar */}
@@ -203,7 +203,7 @@ export function EmpresaNavSelect({
                     <span className="truncate text-xs font-semibold leading-tight text-foreground">
                       {emp.razaoSocial}
                     </span>
-                    <span className="text-[10px] font-mono text-muted-foreground">
+                    <span className="text-[11px] font-mono text-muted-foreground">
                       CNPJ: {emp.cnpj}
                     </span>
                   </div>
@@ -214,7 +214,7 @@ export function EmpresaNavSelect({
                   variant="ghost"
                   size="sm"
                   onClick={() => navegarPara(emp.id)}
-                  className="h-6 px-2 text-[10.5px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0"
+                  className="h-6 px-2 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0"
                   title="Consultar apenas esta empresa"
                 >
                   {isAtivaUnica ? "Ativa" : "Apenas esta"}

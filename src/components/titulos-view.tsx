@@ -317,7 +317,7 @@ export function TitulosView({
 
           {topParticipantes.length ? (
             <div className="rounded-lg bg-muted/25 p-3">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                 Maiores saldos em aberto
               </p>
               <ul className="grid gap-1 sm:grid-cols-2 xl:grid-cols-5">

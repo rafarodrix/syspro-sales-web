@@ -70,7 +70,7 @@ function LoginForm() {
           />
           <Badge
             variant="outline"
-            className="text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 bg-primary/10 border-primary/30 text-primary"
+            className="text-[11px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 bg-primary/10 border-primary/30 text-primary"
           >
             Syspro ERP
           </Badge>

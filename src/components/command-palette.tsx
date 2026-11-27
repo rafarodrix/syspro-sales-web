@@ -52,7 +52,7 @@ export function CommandPalette({ userRole }: { userRole: string }) {
       >
         <Search className="size-3.5" />
         <span>Buscar página ou relatório...</span>
-        <kbd className="pointer-events-none flex h-4 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-semibold text-muted-foreground">
+        <kbd className="pointer-events-none flex h-4 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[11px] font-semibold text-muted-foreground">
           Ctrl K
         </kbd>
       </button>
@@ -89,7 +89,7 @@ export function CommandPalette({ userRole }: { userRole: string }) {
                       <Icone className={`size-4 ${item.cor || "text-muted-foreground group-hover:text-primary"}`} />
                       <span>{item.titulo}</span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground font-normal group-hover:text-primary/80">
+                    <span className="text-[11px] text-muted-foreground font-normal group-hover:text-primary/80">
                       {item.categoria}
                     </span>
                   </button>
@@ -98,9 +98,9 @@ export function CommandPalette({ userRole }: { userRole: string }) {
             )}
           </div>
 
-          <div className="border-t border-border/60 bg-muted/20 px-3 py-2 text-[10.5px] text-muted-foreground flex items-center justify-between">
+          <div className="border-t border-border/60 bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground flex items-center justify-between">
             <span>Navegação instantânea do SysproERP Reports</span>
-            <kbd className="font-mono text-[9.5px]">ESC para fechar</kbd>
+            <kbd className="font-mono text-[11px]">ESC para fechar</kbd>
           </div>
         </DialogContent>
       </Dialog>

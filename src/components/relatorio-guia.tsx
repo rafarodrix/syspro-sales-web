@@ -315,7 +315,7 @@ export function GlossarioRelatorio({
           </ul>
           {guia.dica ? (
             <div className="rounded-md bg-amber-500/10 px-2 py-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-              <span className="font-bold">💡 Dica: </span>{guia.dica}
+              <span className="font-bold">Dica: </span>{guia.dica}
             </div>
           ) : null}
         </section>

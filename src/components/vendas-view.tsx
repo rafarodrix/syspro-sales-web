@@ -25,7 +25,7 @@ import {
 import { useConsultaVendas } from "@/hooks/use-consulta-vendas";
 import { exportarParaCSV } from "@/lib/exportar-csv";
 import { exportarPdfVendas } from "@/lib/pdf-export";
-import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
+import { formatarMoeda, formatarNumero, formatarPercentual, formatarDataBr } from "@/lib/formatters";
 import { calcularMargemItem } from "@/lib/metricas-negocio";
 import { ExportDropdown } from "@/components/export-dropdown";
 import { FiltrosAtivos } from "@/components/ui/filtros-ativos";
@@ -382,7 +382,7 @@ export function VendasView({
             loading={loading}
           />
         }
-        aviso={`${formatarNumero(notasFiltradas.length, 0)} de ${formatarNumero(notas.length, 0)} nota(s)`}
+        aviso={`${formatarNumero(notasFiltradas.length, 0)} de ${formatarNumero(notas.length, 0)} ${notas.length === 1 ? "nota" : "notas"}`}
       />
 
       {erro ? (
@@ -458,7 +458,7 @@ export function VendasView({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos" className="font-bold text-primary">
-                        🏢 Todas as Empresas
+                        Todas as empresas
                       </SelectItem>
                       {opcoesFiltro.empresas.map((emp) => (
                         <SelectItem key={emp.id} value={emp.id} className="text-xs">
@@ -704,7 +704,7 @@ export function VendasView({
                           <span className="font-mono text-xs font-bold text-foreground">{nota.numero}</span>
                           {nota.empresaNome ? (
                             <span
-                              className="max-w-[140px] truncate font-sans text-[10px] font-medium text-primary"
+                              className="max-w-[140px] truncate font-sans text-[11px] font-medium text-primary"
                               title={nota.empresaNome}
                             >
                               {nota.empresaNome}
@@ -718,7 +718,11 @@ export function VendasView({
                       header: <>Emissão</>,
                       kind: "date",
                       value: (nota) => nota.emissao,
-                      cell: (nota) => <span className="font-mono text-xs text-muted-foreground">{nota.emissao}</span>,
+                      cell: (nota) => (
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {formatarDataBr(nota.emissao)}
+                        </span>
+                      ),
                     },
                     {
                       id: "cliente",
@@ -731,7 +735,7 @@ export function VendasView({
                             {nota.cliente}
                           </div>
                           {nota.cidade || nota.uf ? (
-                            <div className="text-[10.5px] text-muted-foreground">
+                            <div className="text-[11px] text-muted-foreground">
                               {[nota.cidade, nota.uf].filter(Boolean).join(" · ")}
                             </div>
                           ) : null}

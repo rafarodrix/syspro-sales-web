@@ -32,7 +32,7 @@ export function ActionMetricCard({
       }`}
     >
       <div className="min-w-0">
-        <span className="truncate text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+        <span className="truncate text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
           {titulo}
         </span>
         <div className="num mt-1.5 text-[22px] font-semibold leading-none tracking-tight text-foreground">

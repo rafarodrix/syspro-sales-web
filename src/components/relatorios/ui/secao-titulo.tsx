@@ -22,7 +22,7 @@ export function SecaoTitulo({
     <div className={cn("flex flex-wrap items-start justify-between gap-3", className)}>
       <div className="space-y-0.5">
         {eyebrow ? (
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
             {eyebrow}
           </p>
         ) : null}

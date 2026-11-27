@@ -33,7 +33,7 @@ function SeloClasse({ classe }: { classe: ClasseFornecedor }) {
   return (
     <Badge
       variant="outline"
-      className={`h-5 min-w-5 justify-center px-1 text-[10px] font-bold ${CORES_CLASSE[classe]}`}
+      className={`h-5 min-w-5 justify-center px-1 text-[11px] font-bold ${CORES_CLASSE[classe]}`}
     >
       {classe}
     </Badge>
@@ -447,7 +447,7 @@ function DetalheProdutos({ lista }: { lista: ProdutoDoFornecedor[] }) {
   }
   return (
     <div className="space-y-1 px-3 py-2">
-      <p className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
         Produtos do fornecedor ({formatarNumero(lista.length, 0)})
       </p>
       <table className="w-full text-[11px]">
@@ -479,7 +479,7 @@ function DetalheProdutos({ lista }: { lista: ProdutoDoFornecedor[] }) {
         </tbody>
       </table>
       {lista.length > 25 ? (
-        <p className="text-[10.5px] text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           Mostrando 25 de {formatarNumero(lista.length, 0)} produtos.
         </p>
       ) : null}

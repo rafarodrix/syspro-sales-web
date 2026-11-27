@@ -61,6 +61,14 @@ export function formatarCnpj(cnpj: string | null | undefined): string {
   return `${v.slice(0, 2)}.${v.slice(2, 5)}.${v.slice(5, 8)}/${v.slice(8, 12)}-${v.slice(12, 14)}`;
 }
 
+/** Data ISO (AAAA-MM-DD) para o padrão pt-BR (DD/MM/AAAA). */
+export function formatarDataBr(valor: string | null | undefined): string {
+  if (!valor) return "";
+  const iso = String(valor).slice(0, 10);
+  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return partes ? `${partes[3]}/${partes[2]}/${partes[1]}` : String(valor);
+}
+
 export function formatarDataVisual(dataStr: string | null | undefined): string {
   if (!dataStr) return "";
   if (dataStr.includes("/")) {

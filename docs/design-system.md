@@ -164,6 +164,27 @@ Regras da migração:
 3. **Nunca** dois imports de primitivas no mesmo componente; nenhum componente novo em Radix a partir da Fase 2.
 4. Gatilho para acelerar: quando um desses componentes for alterado por outro motivo, ou quando o padrão comum dos apps Trilink migrar.
 
+### 3.4 Pass enterprise (aparência sóbria)
+
+O que faz uma tela parecer "gerada por IA" não é a biblioteca: é excesso de cor decorativa, escala tipográfica inventada, sombra/raio variados e texto verboso. Regras aplicadas:
+
+1. **Ícones neutros**: ícones de navegação/abas usam `text-muted-foreground` (ativo = `foreground`). Cor em ícone só para estado (sucesso/erro/atenção).
+2. **Sem emoji na interface** (nem 🟢/🛑/💡/🏢) — status é badge/pílula com texto.
+3. **Card**: `rounded-lg`, borda `border-border/70`, **sem `ring` e sem `overflow-hidden`** (o ring duplicava com borda e o overflow matava sticky).
+4. **Escala tipográfica com piso de 11 px** para rótulos e 12 px para dado; nunca `text-[9px]`.
+5. **Data sempre pt-BR** (`formatarDataBr`) — ISO só em payload/export.
+6. **Contagem pluralizada** (`1 nota` / `12 notas`).
+7. **Uma cor de ação** (primária) + semânticas. Nada de violeta/teal/laranja por relatório.
+
+Antes → depois medido:
+
+| Indicador | Antes | Depois |
+| --- | --- | --- |
+| Cores de ícone na navegação | 9 tons diferentes | 1 (neutro) |
+| Tamanhos de fonte distintos | 9 / 9,5 / 10 / 10,5 / 11 / 11,5 | 10 / 11 / 12 / 13 / 16 / 22 |
+| Chrome do card | `rounded-xl` + `ring-1` + `overflow-hidden` | `rounded-lg` + `border` |
+| Emojis na UI | 3 (+ artefatos em código gerado) | 0 |
+
 ---
 
 ## 4. Auditoria atual (UX01)

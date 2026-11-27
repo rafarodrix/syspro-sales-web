@@ -25,7 +25,7 @@ export function FiltrosPopover({
         <SlidersHorizontal className="size-3.5 text-muted-foreground" />
         {rotulo}
         {ativos > 0 ? (
-          <span className="rounded bg-primary/12 px-1.5 text-[10px] font-bold text-primary">{ativos}</span>
+          <span className="rounded bg-primary/12 px-1.5 text-[11px] font-bold text-primary">{ativos}</span>
         ) : null}
         <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
       </summary>
