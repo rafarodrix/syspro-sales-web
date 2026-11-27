@@ -27,7 +27,7 @@ export function ComparacaoPeriodo({
   let invalido = false;
   try {
     const anterior = resolverComparacao(periodo, modo, personalizado);
-    descricao = `${formatarDataInputParaBR(anterior.inicial)} a ${formatarDataInputParaBR(anterior.final)}`;
+    descricao = `vs. ${formatarDataInputParaBR(anterior.inicial)} a ${formatarDataInputParaBR(anterior.final)}`;
   } catch (erro) {
     descricao = erro instanceof Error ? erro.message : "Comparação inválida.";
     invalido = true;
@@ -37,6 +37,7 @@ export function ComparacaoPeriodo({
       <legend className="sr-only">Período de comparação</legend>
       <FiltroRelatorio
         rotulo="Comparar com"
+        largura="w-64"
         valor={modo}
         onChange={(valor) => onModo(valor as ModoComparacao)}
         opcoes={(Object.keys(ROTULOS_MODO_COMPARACAO) as ModoComparacao[]).map(
@@ -71,8 +72,8 @@ export function ComparacaoPeriodo({
       <span
         className={
           invalido
-            ? "text-xs text-destructive"
-            : "text-xs text-muted-foreground"
+            ? "whitespace-nowrap text-xs text-destructive"
+            : "whitespace-nowrap text-xs text-muted-foreground"
         }
         role={invalido ? "alert" : undefined}
       >

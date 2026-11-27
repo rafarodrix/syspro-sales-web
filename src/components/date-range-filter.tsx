@@ -3,6 +3,13 @@
 import { CalendarDaysIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { erroPeriodo, erroPeriodoSemLimite, type Periodo } from "@/lib/periodo";
 
 export type { Periodo } from "@/lib/periodo";
@@ -113,7 +120,34 @@ export function DateRangeFilter({
     <div className="flex flex-wrap items-center justify-between gap-3">
       {/* Grupo Esquerdo: Filtros Rápidos + Inputs de Data inline */}
       <div className="flex flex-wrap items-center gap-2.5">
-        {/* Presets rápidos */}
+        {/* Presets rápidos: botões no modo amplo, seletor no modo compacto */}
+        {compact ? (
+          <Select
+            value={presets.find((p) => p.value.inicial === value.inicial && p.value.final === value.final)?.label ?? ""}
+            onValueChange={(label) => {
+              const preset = presets.find((p) => p.label === label);
+              if (!preset) return;
+              if (persistirCookie) salvarPeriodoCookie(preset.value);
+              onChange(preset.value);
+              if (!consultaDesabilitada) onConsultar?.(preset.value);
+            }}
+          >
+            <SelectTrigger
+              aria-label="Atalhos de período"
+              className="h-8 w-36 text-xs"
+              disabled={loading}
+            >
+              <SelectValue placeholder="Atalho" />
+            </SelectTrigger>
+            <SelectContent>
+              {presets.map((preset) => (
+                <SelectItem key={preset.label} value={preset.label}>
+                  {preset.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
         <div className="flex flex-wrap items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
           {presets.map((preset) => {
             const ativo =
@@ -142,6 +176,7 @@ export function DateRangeFilter({
             );
           })}
         </div>
+        )}
 
         {/* Divisor Vertical */}
         <div className="hidden h-5 w-px bg-border/40 sm:block" />

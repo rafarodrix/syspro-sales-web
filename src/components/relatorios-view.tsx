@@ -769,7 +769,7 @@ export function RelatoriosView({
       const top10 = concentracaoTopN(clientesIdentificados, 10);
       return (
         <ReportDiagnostics
-          titulo="Saúde da carteira"
+          titulo="Outros indicadores · saúde da carteira"
           metricas={[
             ...(cicloClientes
               ? [
@@ -823,7 +823,7 @@ export function RelatoriosView({
       );
       return (
         <ReportDiagnostics
-          titulo="Diagnóstico da equipe"
+          titulo="Outros indicadores · da equipe"
           metricas={[
             {
               label: "Concentração Top 3 / 5",
@@ -868,7 +868,7 @@ export function RelatoriosView({
       const top3 = concentracaoTopN(relatorioDeptos, 3);
       return (
         <ReportDiagnostics
-          titulo="Diagnóstico do mix por departamento"
+          titulo="Outros indicadores · mix por departamento"
           metricas={[
             {
               label: "Concentração Top 3",
@@ -886,7 +886,7 @@ export function RelatoriosView({
       const top5 = concentracaoTopN(relatorioGeografico, 5);
       return (
         <ReportDiagnostics
-          titulo="Diagnóstico geográfico"
+          titulo="Outros indicadores · geografia"
           metricas={[
             {
               label: "Concentração Top 5 cidades",
@@ -903,7 +903,7 @@ export function RelatoriosView({
     if (abaAtiva === "curva-abc" && comparacaoDisponivel) {
       return (
         <ReportDiagnostics
-          titulo="Mudança de mix e contribuição"
+          titulo="Outros indicadores · mudança de mix"
           metricas={[
             ...(mudancaMix
               ? [
@@ -1090,28 +1090,15 @@ export function RelatoriosView({
             </div>
           </CardHeader>
           <CardContent className="space-y-3 border-t border-border/40 pt-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                <DateRangeFilter
-                  value={periodo}
-                  onChange={setPeriodo}
-                  onConsultar={consultar}
-                  loading={loading}
-                  compact
-                  persistirCookie={false}
-                />
-              </div>
-              <Button
-                size="sm"
-                className="h-11 w-full shrink-0 sm:h-9 sm:w-auto"
-                disabled={loading || !!erroPeriodo(periodo)}
-                onClick={() => consultar()}
-              >
-                {loading ? "Consultando..." : "Consultar"}
-              </Button>
-            </div>
-            {/* Comparativo logo abaixo do período consultado — uma única linha. */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <DateRangeFilter
+                value={periodo}
+                onChange={setPeriodo}
+                onConsultar={consultar}
+                loading={loading}
+                compact
+                persistirCookie={false}
+              />
               <ComparacaoPeriodo
                 periodo={periodo}
                 modo={modoComparacao}
@@ -1120,6 +1107,14 @@ export function RelatoriosView({
                 onPersonalizado={setComparacaoPersonalizada}
                 loading={loading}
               />
+              <Button
+                size="sm"
+                className="h-11 shrink-0 sm:h-9"
+                disabled={loading || !!erroPeriodo(periodo)}
+                onClick={() => consultar()}
+              >
+                {loading ? "Consultando..." : "Consultar"}
+              </Button>
               {consultadoEm ? (
                 <span className="text-[11px] text-muted-foreground">
                   Atualizado às {consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
@@ -1215,8 +1210,6 @@ export function RelatoriosView({
                     itensExtra={indicadoresContextuais}
                   />
                 )}
-
-                {abaAtiva !== "margens" ? diagnosticoRelatorio : null}
 
                 {modoConsolidado && consolidacaoEmpresas.length > 1 ? (
                   <ConsolidacaoEmpresas
@@ -1338,14 +1331,23 @@ export function RelatoriosView({
                   <AbaFinanceiro relatorioFinanceiro={relatorioFinanceiro} />
                 )}
 
-                {/* Ajuda consolidada no final do relatório ativo */}
-                {GUIAS_RELATORIOS[abaAtiva] ? (
-                  <GlossarioRelatorio
-                    itens={GUIAS_RELATORIOS[abaAtiva].glossario ?? []}
-                    guia={GUIAS_RELATORIOS[abaAtiva]}
-                    relatorioLabel={relatorioAtivo?.label ?? ""}
-                  />
-                ) : null}
+                {/* Fechamento: indicadores extras e leitura, separados das tabelas */}
+                {(diagnosticoRelatorio || GUIAS_RELATORIOS[abaAtiva]) && (
+                  <section
+                    className="mt-2 space-y-3 border-t border-border/60 pt-3"
+                    aria-label="Leitura do período"
+                  >
+                    <p className="rotulo">Leitura do período</p>
+                    {abaAtiva !== "margens" ? diagnosticoRelatorio : null}
+                    {GUIAS_RELATORIOS[abaAtiva] ? (
+                      <GlossarioRelatorio
+                        itens={GUIAS_RELATORIOS[abaAtiva].glossario ?? []}
+                        guia={GUIAS_RELATORIOS[abaAtiva]}
+                        relatorioLabel={relatorioAtivo?.label ?? ""}
+                      />
+                    ) : null}
+                  </section>
+                )}
               </>
             )}
           </CardContent>

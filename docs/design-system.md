@@ -206,6 +206,19 @@ Antes → depois medido:
 
 ---
 
+
+**Fechamento do relatório.** Indicadores extras e leitura ficam no fim, nunca entre os cards e as tabelas:
+
+```
+─────────  LEITURA DO PERÍODO  ─────────
+▸ Outros indicadores · mudança de mix     (acordeão: métricas + contribuição)
+▸ Como interpretar e definições           (acordeão: glossário do relatório)
+```
+
+`ReportDiagnostics` sempre com o prefixo "Outros indicadores · <tema>". Painéis contextuais de uma tabela (ex.: Dependência do portfólio) ficam logo após a própria tabela, em bloco separado.
+
+---
+
 ## 4. Auditoria atual (UX01)
 
 Medido em 2026-11-26 sobre `src/` (215 arquivos TS/TSX, 82 componentes):
