@@ -15,6 +15,9 @@ Pergunte: **já existe um componente com esse papel?** Catálogo oficial:
 
 | Papel | Use |
 | --- | --- |
+| Cabeçalho de página | `components/ui/page-header.tsx` |
+| Barra de consulta/filtros | `components/ui/search-toolbar.tsx` |
+| Filtros secundários | `components/ui/filtros-popover.tsx` |
 | Tabela de relatório | `components/relatorios/report-table.tsx` |
 | Métrica de topo | `components/analytics/metrics-strip.tsx` |
 | Faixa de resumo | `ReportMetricStrip` (`relatorios/report-toolbar.tsx`) |

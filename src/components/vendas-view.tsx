@@ -28,7 +28,9 @@ import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { calcularMargemItem } from "@/lib/metricas-negocio";
 import { ExportDropdown } from "@/components/export-dropdown";
-import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
+import { FiltrosPopover } from "@/components/ui/filtros-popover";
+import { PageHeader } from "@/components/ui/page-header";
+import { SearchToolbar } from "@/components/ui/search-toolbar";
 import { ReportTable } from "./relatorios/report-table";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
@@ -99,6 +101,14 @@ export function VendasView({
   const [filtroFormaPagto, setFiltroFormaPagto] = useState<string>(() => searchParams.get("formaPagamento") ?? "todos");
   const [filtroModelo, setFiltroModelo] = useState<string>("todos");
   const [filtroMargem, setFiltroMargem] = useState<FiltroMargem>("todas");
+
+  const filtrosSecundariosAtivos =
+    (filtroEmpresa !== "todos" ? 1 : 0) +
+    (filtroVendedor !== "todos" ? 1 : 0) +
+    (filtroDepartamento !== "todos" ? 1 : 0) +
+    (filtroFormaPagto !== "todos" ? 1 : 0) +
+    (filtroModelo !== "todos" ? 1 : 0) +
+    (filtroMargem !== "todas" ? 1 : 0);
 
   // Ordenação
 
@@ -321,19 +331,31 @@ export function VendasView({
   return (
     <div className="flex flex-col gap-6">
       {/* Painel de Consulta & Filtros */}
-      <AnalysisQueryCard
-        icon={BarChart3}
-        title="Consulta de Vendas"
-        description="Selecione o período e aplique filtros para analisar notas fiscais e itens detalhados."
-        footer={<>Dados exibidos: {periodoConsultado.inicial.split("-").reverse().join("/")} a {periodoConsultado.final.split("-").reverse().join("/")}.{periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final ? " Novo período ainda não consultado." : ""}</>}
-      >
-        <DateRangeFilter
-          value={periodo}
-          onChange={setPeriodo}
-          onConsultar={consultar}
-          loading={loading}
-        />
-      </AnalysisQueryCard>
+      <PageHeader
+        titulo="Vendas"
+        meta={
+          <>
+            {empresas.find((item) => item.id === empresaId)?.razaoSocial ?? "Empresa"} ·{" "}
+            {periodoConsultado.inicial.split("-").reverse().join("/")} a{" "}
+            {periodoConsultado.final.split("-").reverse().join("/")}
+            {periodo.inicial !== periodoConsultado.inicial || periodo.final !== periodoConsultado.final
+              ? " · novo período aguardando consulta"
+              : ""}
+          </>
+        }
+      />
+
+      <SearchToolbar
+        filtros={
+          <DateRangeFilter
+            value={periodo}
+            onChange={setPeriodo}
+            onConsultar={consultar}
+            loading={loading}
+          />
+        }
+        aviso={`${formatarNumero(notasFiltradas.length, 0)} de ${formatarNumero(notas.length, 0)} nota(s)`}
+      />
 
       {erro ? (
         <FeedbackState
@@ -346,18 +368,9 @@ export function VendasView({
 
       {/* Tabela Principal de Vendas */}
       <Card className="shadow-2xs">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="text-base font-bold text-foreground">
-                  Notas Fiscais Emitidas
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {notasFiltradas.length} de {notas.length} nota(s) do período consultado. Busca e filtros desta seção alteram indicadores e exportações de Vendas.
-                </CardDescription>
-              </div>
-
+        <CardHeader className="pb-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               {/* Botões de Ação e Exportação */}
               <div className="no-print flex flex-wrap items-center gap-2">
                 <Button
@@ -402,16 +415,17 @@ export function VendasView({
               temFiltrosAtivos={temFiltrosAtivos}
             >
 
+              <FiltrosPopover ativos={filtrosSecundariosAtivos}>
               {/* Filtro Empresa (quando em modo consolidado) */}
               {opcoesFiltro.empresas.length > 1 && (
-                <div className="w-44 sm:w-48">
+                <div className="w-full">
                   <Select
                     value={filtroEmpresa}
                     onValueChange={(v) => {
                       setFiltroEmpresa(v);
                     }}
                   >
-                    <SelectTrigger className="h-9 text-xs font-semibold">
+                    <SelectTrigger className="h-9 w-full text-xs font-semibold">
                       <SelectValue placeholder="Empresa" />
                     </SelectTrigger>
                     <SelectContent>
@@ -430,14 +444,14 @@ export function VendasView({
 
               {/* Filtro Vendedor */}
               {opcoesFiltro.vendedores.length > 0 && (
-                <div className="w-40 sm:w-44">
+                <div className="w-full">
                   <Select
                     value={filtroVendedor}
                     onValueChange={(v) => {
                       setFiltroVendedor(v);
                     }}
                   >
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-9 w-full text-xs">
                       <SelectValue placeholder="Vendedor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -454,14 +468,14 @@ export function VendasView({
 
               {/* Filtro Departamento */}
               {opcoesFiltro.departamentos.length > 0 && (
-                <div className="w-40 sm:w-44">
+                <div className="w-full">
                   <Select
                     value={filtroDepartamento}
                     onValueChange={(d) => {
                       setFiltroDepartamento(d);
                     }}
                   >
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-9 w-full text-xs">
                       <SelectValue placeholder="Departamento" />
                     </SelectTrigger>
                     <SelectContent>
@@ -478,14 +492,14 @@ export function VendasView({
 
               {/* Filtro Forma de Pagamento */}
               {opcoesFiltro.formasPagto.length > 0 && (
-                <div className="w-40 sm:w-44">
+                <div className="w-full">
                   <Select
                     value={filtroFormaPagto}
                     onValueChange={(fp) => {
                       setFiltroFormaPagto(fp);
                     }}
                   >
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-9 w-full text-xs">
                       <SelectValue placeholder="Forma Pagto" />
                     </SelectTrigger>
                     <SelectContent>
@@ -501,14 +515,14 @@ export function VendasView({
               )}
 
               {opcoesFiltro.modelos.length > 0 && (
-                <div className="w-36 sm:w-40">
+                <div className="w-full">
                   <Select
                     value={filtroModelo}
                     onValueChange={(modelo) => {
                       setFiltroModelo(modelo);
                     }}
                   >
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-9 w-full text-xs">
                       <SelectValue placeholder="Modelo fiscal" />
                     </SelectTrigger>
                     <SelectContent>
@@ -523,14 +537,14 @@ export function VendasView({
                 </div>
               )}
 
-              <div className="w-40 sm:w-44">
+              <div className="w-full">
                 <Select
                   value={filtroMargem}
                   onValueChange={(valor) => {
                     setFiltroMargem(valor as FiltroMargem);
                   }}
                 >
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-9 w-full text-xs">
                     <SelectValue placeholder="Margem" />
                   </SelectTrigger>
                   <SelectContent>
@@ -543,10 +557,13 @@ export function VendasView({
                 </Select>
               </div>
 
+              </FiltrosPopover>
+
               {/* Seletor de Densidade */}
               <div className="ml-auto flex items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
                 <Button
                   variant={densidade === "confortavel" ? "secondary" : "ghost"}
+                  aria-pressed={densidade === "confortavel"}
                   size="sm"
                   onClick={() => setDensidade("confortavel")}
                   className="h-7 px-2 text-[11px] gap-1 font-semibold"
@@ -557,6 +574,7 @@ export function VendasView({
                 </Button>
                 <Button
                   variant={densidade === "compacto" ? "secondary" : "ghost"}
+                  aria-pressed={densidade === "compacto"}
                   size="sm"
                   onClick={() => setDensidade("compacto")}
                   className="h-7 px-2 text-[11px] gap-1 font-semibold"

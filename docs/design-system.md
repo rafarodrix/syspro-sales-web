@@ -59,8 +59,9 @@ Valores ficam em `src/app/globals.css`. Componentes usam **token semântico**, n
 
 | Papel | Componente | Status |
 | --- | --- | --- |
-| Cabeçalho de página | `components/ui/page-header.tsx` | **A criar (UX03)** |
-| Consulta + filtros | `AnalysisQueryCard` + `DateRangeFilter` | Existe — unificar em `SearchToolbar` (UX06) |
+| Cabeçalho de página | `components/ui/page-header.tsx` | ✅ oficial (piloto Vendas) |
+| Consulta + filtros | `components/ui/search-toolbar.tsx` + `DateRangeFilter` | ✅ oficial; `AnalysisQueryCard` em retirada |
+| Filtros secundários | `components/ui/filtros-popover.tsx` | ✅ oficial (popover com contador) |
 | Filtro de campo único | `relatorios/filtro-relatorio.tsx` | Padrão aprovado (28 usos) |
 | Busca em tabela | `DataFilterBar` | Padrão aprovado (7 usos) |
 | Tabela analítica | `relatorios/report-table.tsx` | **Padrão oficial** (15 usos) |
@@ -117,11 +118,11 @@ Medido em 2026-11-26 sobre `src/` (215 arquivos TS/TSX, 82 componentes):
 | --- | --- | --- | --- |
 | UX01 | Auditoria da interface | P0 | ✅ concluída (seção 4) |
 | UX02 | Design tokens e temas | P0 | ✅ tokens semânticos em `globals.css` (seção 2) |
-| UX03 | Layout principal e sidebar recolhível | P0 | ⏳ |
-| UX04 | Componentes compartilhados (`PageHeader`, `EmptyState` único) | P0 | ⏳ |
+| UX03 | Layout principal e sidebar recolhível | P0 | parcial — `PageHeader` aplicado em Vendas |
+| UX04 | Componentes compartilhados (`PageHeader`, `SearchToolbar`, `FiltrosPopover`) | P0 | ✅ base criada |
 | UX05 | Motor visual de tabelas | P0 | ✅ `ReportTable` (colunas essenciais pendente) |
-| UX06 | Motor de filtros (`SearchToolbar` + chips) | P0 | ⏳ |
-| UX07 | **Relatório piloto: Vendas** | P0 | ⏳ |
+| UX06 | Motor de filtros (`SearchToolbar` + chips) | P0 | parcial — popover de filtros; chips pendentes |
+| UX07 | **Relatório piloto: Vendas** | P0 | em andamento — cabeçalho/consulta prontos; drawer e colunas essenciais pendentes |
 | UX08 | Indicadores e dashboards | P1 | ⏳ |
 | UX09 | Gráficos e drill-down (drawer de contexto) | P1 | ⏳ |
 | UX10 | Loading, erro e vazio padronizados | P1 | parcial (`FeedbackState`) |
