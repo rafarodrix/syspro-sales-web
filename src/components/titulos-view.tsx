@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { BanknoteArrowDown, BanknoteArrowUp } from "lucide-react";
 import { toast } from "sonner";
-import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
+import { PageHeader } from "@/components/ui/page-header";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { Button } from "@/components/ui/button";
@@ -183,12 +183,12 @@ export function TitulosView({
 
   return (
     <div className="flex flex-col gap-6">
-      <AnalysisQueryCard
-        icon={Icone}
-        title={titulo}
-        description={`Títulos do Syspro com vencimento no período consultado.`}
-        footer="Rota de exportação do Syspro: os valores vêm da própria base, sem recálculo."
-      >
+      <div className="flex flex-col gap-3">
+        <PageHeader
+          titulo={titulo}
+          meta="Títulos com vencimento no período consultado · valores do Syspro, sem recálculo"
+        />
+
         <div className="flex flex-wrap items-end gap-2">
           <FiltroRelatorio
             rotulo="Situação dos títulos"
@@ -224,7 +224,7 @@ export function TitulosView({
             </Button>
           )}
         </div>
-      </AnalysisQueryCard>
+      </div>
 
       {erro ? (
         <FeedbackState
@@ -360,7 +360,7 @@ export function TitulosView({
             caption={`${titulo} por vencimento`}
             data={itensVisiveis}
             rowKey={(item) => `${item.empresaCodigo}-${item.numero}-${item.vencimento ?? ""}`}
-            rodape={() => {
+            resumo={() => {
               const total = itensVisiveis.reduce(
                 (acc, item) => ({
                   valor: acc.valor + item.valor,
@@ -369,18 +369,14 @@ export function TitulosView({
                 }),
                 { valor: 0, pago: 0, saldo: 0 },
               );
-              return (
-                <TableRow>
-                  <TableCell className="font-semibold">Total</TableCell>
-                  <TableCell colSpan={3} className="text-muted-foreground">
-                    {formatarNumero(itensVisiveis.length, 0)} título(s)
-                  </TableCell>
-                  <TableCell className="text-right">{formatarMoeda(total.valor)}</TableCell>
-                  <TableCell className="text-right">{formatarMoeda(total.pago)}</TableCell>
-                  <TableCell className="text-right">{formatarMoeda(total.saldo)}</TableCell>
-                  <TableCell colSpan={2} />
-                </TableRow>
-              );
+              return {
+                label: `${formatarNumero(itensVisiveis.length, 0)} título(s)`,
+                itens: [
+                  { rotulo: "Valor", valor: formatarMoeda(total.valor) },
+                  { rotulo: "Pago", valor: formatarMoeda(total.pago) },
+                  { rotulo: "Saldo", valor: formatarMoeda(total.saldo) },
+                ],
+              };
             }}
             showExport={false}
             acoesExtras={

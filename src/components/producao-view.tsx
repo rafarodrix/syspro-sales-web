@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Factory } from "lucide-react";
 import { toast } from "sonner";
-import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/date-range-filter";
 import { ExportDropdown } from "@/components/export-dropdown";
@@ -88,14 +89,31 @@ export function ProducaoView({ empresaId }: { empresaId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <AnalysisQueryCard
-        icon={Factory}
-        title="Produção"
-        description="Registros da rota `producao` do Syspro: previsto x produzido por produto e operador."
-        footer="Enquanto a rota não estiver autorizada no SysproServer, a consulta retorna aviso explícito."
-      >
-        <DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} />
-      </AnalysisQueryCard>
+      <div className="flex flex-col gap-3">
+        <PageHeader
+          titulo="Produção"
+          meta="Previsto x produzido por produto e operador (rota producao do Syspro)"
+        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <DateRangeFilter
+              value={periodo}
+              onChange={setPeriodo}
+              onConsultar={consultar}
+              loading={loading}
+              compact
+            />
+          </div>
+          <Button
+            size="sm"
+            className="h-11 w-full shrink-0 sm:h-9 sm:w-auto"
+            disabled={loading}
+            onClick={() => consultar()}
+          >
+            {loading ? "Consultando..." : "Consultar"}
+          </Button>
+        </div>
+      </div>
 
       {erro ? (
         <FeedbackState

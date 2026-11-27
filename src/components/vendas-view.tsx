@@ -706,6 +706,14 @@ export function VendasView({
                     </span>
                   )}
                   renderDetalhe={(nota) => <TabelaItens itens={nota.itens} />}
+                  resumo={(notas) => ({
+                    label: `${formatarNumero(notas.length, 0)} ${notas.length === 1 ? "nota" : "notas"}`,
+                    itens: [
+                      { rotulo: "Valor", valor: formatarMoeda(notas.reduce((t, n) => t + n.total, 0)) },
+                      { rotulo: "Itens", valor: formatarNumero(notas.reduce((t, n) => t + n.quantidadeItens, 0), 0) },
+                      { rotulo: "Clientes", valor: formatarNumero(new Set(notas.map((n) => n.cliente)).size, 0) },
+                    ],
+                  })}
                   columns={[
                     {
                       id: "numero",

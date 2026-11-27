@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { Truck } from "lucide-react";
 import { toast } from "sonner";
-import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { ExportDropdown } from "@/components/export-dropdown";
@@ -284,14 +285,31 @@ export function EntregasView({
 
   return (
     <div className="flex flex-col gap-6">
-      <AnalysisQueryCard
-        icon={Truck}
-        title="Análise de Entrega"
-        description={`Cada etapa do DAV em ${empresaNome}: separação, saída e fechamento — com o tempo gasto em cada uma.`}
-        footer="Limites: separado até 15 min · saída até 30 min · fechamento até 50 min (provisório)."
-      >
-        <DateRangeFilter value={periodo} onChange={setPeriodo} onConsultar={consultar} loading={loading} />
-      </AnalysisQueryCard>
+      <div className="flex flex-col gap-3">
+        <PageHeader
+          titulo="Análise de Entrega"
+          meta="Cada etapa do DAV: separação 15 min · saída 30 min · fechamento 50 min (provisório)"
+        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <DateRangeFilter
+              value={periodo}
+              onChange={setPeriodo}
+              onConsultar={consultar}
+              loading={loading}
+              compact
+            />
+          </div>
+          <Button
+            size="sm"
+            className="h-11 w-full shrink-0 sm:h-9 sm:w-auto"
+            disabled={loading}
+            onClick={() => consultar()}
+          >
+            {loading ? "Consultando..." : "Consultar"}
+          </Button>
+        </div>
+      </div>
 
       {erro ? (
         <FeedbackState
@@ -588,19 +606,13 @@ export function EntregasView({
                     ),
                   },
                 ]}
-                rodape={(linhasRodape) => (
-                  <StatusRelatorio
-                    itens={[
-                      { rotulo: "Pedidos", valor: formatarNumero(linhasRodape.length, 0) },
-                      {
-                        rotulo: "Filtros ativos",
-                        valor: formatarNumero(filtrosAtivos, 0),
-                        destaque: true,
-                        definicao: "Conta busca, documento, atendimento, status, legenda e filtro de tempo diferentes do padrão.",
-                      },
-                    ]}
-                  />
-                )}
+                resumo={(linhasRodape) => ({
+                  label: `${formatarNumero(linhasRodape.length, 0)} pedido(s)`,
+                  itens:
+                    filtrosAtivos > 0
+                      ? [{ rotulo: "Filtros ativos", valor: formatarNumero(filtrosAtivos, 0) }]
+                      : undefined,
+                })}
               />
             </div>
           ) : periodoConsultado ? (
@@ -612,7 +624,7 @@ export function EntregasView({
           ) : (
             <FeedbackState
               variant="empty"
-              title="Defina o período"
+              title="Pronto para consultar"
               description="Use Consultar para carregar os pedidos do Syspro."
             />
           )}

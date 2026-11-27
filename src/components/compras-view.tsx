@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
-import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { StatusRelatorio } from "./relatorios/ui/status-relatorio";
 import { SecaoTitulo } from "./relatorios/ui/secao-titulo";
@@ -206,19 +207,31 @@ export function ComprasView({
 
   return (
     <div className="flex flex-col gap-6">
-      <AnalysisQueryCard
-        icon={ShoppingBasket}
-        title="Análise de Compras"
-        description={`Vendas, devoluções de venda EDV e estoque atual por produto em ${empresaNome}.`}
-        footer={`Cobertura alvo inicial: ${coberturaAlvoInicial} dias · Grupo de estoque: ${grupoEstoquePadrao.includes(";") ? grupoEstoquePadrao.split(";").map((item) => item.trim()).join(" + ") : grupoEstoquePadrao}.`}
-      >
-        <DateRangeFilter
-          value={periodo}
-          onChange={setPeriodo}
-          onConsultar={consultar}
-          loading={loading}
+      <div className="flex flex-col gap-3">
+        <PageHeader
+          titulo="Análise de Compras"
+          meta={`Cobertura alvo ${coberturaAlvoInicial} dias · Grupo de estoque ${grupoEstoquePadrao.includes(";") ? grupoEstoquePadrao.split(";").map((item) => item.trim()).join(" + ") : grupoEstoquePadrao}`}
         />
-      </AnalysisQueryCard>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <DateRangeFilter
+              value={periodo}
+              onChange={setPeriodo}
+              onConsultar={consultar}
+              loading={loading}
+              compact
+            />
+          </div>
+          <Button
+            size="sm"
+            className="h-11 w-full shrink-0 sm:h-9 sm:w-auto"
+            disabled={loading}
+            onClick={() => consultar()}
+          >
+            {loading ? "Consultando..." : "Consultar"}
+          </Button>
+        </div>
+      </div>
 
       {erro ? (
         <FeedbackState
@@ -624,33 +637,16 @@ export function ComprasView({
                       ),
                     },
                   ]}
-                  rodape={() => (
-                    <TableRow>
-                      <TableCell className="font-semibold">Total</TableCell>
-                      <TableCell colSpan={3} className="text-muted-foreground">
-                        {formatarNumero(itensFiltrados.length, 0)} produto(s) no recorte
-                      </TableCell>
-                      <TableCell />
-                      <TableCell className="text-right">{formatarNumero(totais.quantidadeVendida, 0)}</TableCell>
-                      <TableCell className="text-right">{formatarNumero(totais.quantidadeDevolvida, 0)}</TableCell>
-                      <TableCell className="text-right">{formatarNumero(totais.demandaLiquida, 0)}</TableCell>
-                      <TableCell className="text-right">{formatarNumero(totais.estoqueAtual, 0)}</TableCell>
-                      <TableCell />
-                      <TableCell />
-                      <TableCell className="text-right">{formatarNumero(totais.sugestaoUnidades, 0)}</TableCell>
-                      <TableCell />
-                      <TableCell />
-                      <TableCell />
-                      <TableCell className="text-right">{formatarMoeda(totais.custoEstoqueAquisicao)}</TableCell>
-                      <TableCell className="text-right">{formatarMoeda(totais.custoEstoqueReposicao)}</TableCell>
-                      <TableCell className="text-right">{formatarMoeda(totais.valorVendido)}</TableCell>
-                      <TableCell className="text-right">{formatarMoeda(totais.valorDevolvido)}</TableCell>
-                      <TableCell className="text-right">{formatarMoeda(totais.valorVendaLiquida)}</TableCell>
-                      <TableCell className="text-right">
-                        {totais.margemPercentual == null ? "-" : formatarPercentual(totais.margemPercentual, 1)}
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  resumo={() => ({
+                    label: `${formatarNumero(itensFiltrados.length, 0)} produto(s)`,
+                    itens: [
+                      { rotulo: "Qtd vendida", valor: formatarNumero(totais.quantidadeVendida, 0) },
+                      { rotulo: "Devolvida", valor: formatarNumero(totais.quantidadeDevolvida, 0) },
+                      { rotulo: "Demanda", valor: formatarNumero(totais.demandaLiquida, 0) },
+                      { rotulo: "Estoque", valor: formatarNumero(totais.estoqueAtual, 0) },
+                      { rotulo: "Sugestão", valor: formatarNumero(totais.sugestaoUnidades, 0) },
+                    ],
+                  })}
                 />
               </div>
               <StatusRelatorio
@@ -691,8 +687,8 @@ export function ComprasView({
           ) : (
             <FeedbackState
               variant="empty"
-              title="Defina o período da análise"
-              description="Use Consultar para combinar vendas e movimentações do Kardex."
+              title="Pronto para consultar"
+              description={`Clique em Consultar para combinar vendas, devoluções e Kardex do período selecionado.`}
             />
           )}
         </CardContent>

@@ -76,7 +76,7 @@ export function ReportTable<T>({
   exportExtras,
   acoes,
   acoesExtras,
-  rodape,
+  resumo,
   renderDetalhe,
   modoDetalhe = "fechado",
   detalhePrimeiraColuna = false,
@@ -99,8 +99,11 @@ export function ReportTable<T>({
   acoes?: ReactNode;
   /** Ações extras à direita (ex.: exportação com formato próprio). */
   acoesExtras?: ReactNode;
-  /** Linha de totais; recebe o conjunto filtrado completo, não só a página. */
-  rodape?: (linhas: T[]) => ReactNode;
+  /**
+   * Rodapé padrão da tabela: contagem do recorte e totais, sempre no mesmo
+   * formato em todas as telas (Total · N registros · somas).
+   */
+  resumo?: (linhas: T[]) => { label: string; itens?: { rotulo: string; valor: string }[] };
   /** Conteúdo de detalhe exibido ao expandir a linha. */
   renderDetalhe?: (row: T) => ReactNode;
   /** Estado inicial de todas as linhas de detalhe (use junto de `key` para alternar). */
@@ -434,8 +437,28 @@ export function ReportTable<T>({
             description="Ajuste a busca ou os filtros aplicados nesta visão."
           />}
         </TableBody>
-        {rodape ? <TableFooter className="bg-muted/40 font-semibold">{rodape(sorted)}</TableFooter> : null}
       </ReportTableFrame>
+      {data.length > 0 && resumo ? (
+        (() => {
+          const r = resumo(sorted);
+          return (
+            <div className="no-print flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/60 bg-[var(--superficie-baixa)] px-3 py-2 text-[11px]">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Total
+              </span>
+              <span className="num font-semibold text-foreground">
+                {r.label}
+              </span>
+              {(r.itens ?? []).map((item) => (
+                <span key={item.rotulo} className="flex items-baseline gap-1">
+                  <span className="text-muted-foreground">{item.rotulo}</span>
+                  <strong className="num font-semibold text-foreground">{item.valor}</strong>
+                </span>
+              ))}
+            </div>
+          );
+        })()
+      ) : null}
       {renderDetalhe && detalheEm === "drawer" ? (
         <Drawer
           aberto={Boolean(linhaDrawer)}

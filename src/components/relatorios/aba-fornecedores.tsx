@@ -172,9 +172,6 @@ export function AbaFornecedores({
                 className="h-8 w-full rounded-md border bg-background px-2.5 text-xs sm:w-72"
                 aria-label="Filtrar fornecedores"
               />
-              <p className="text-[11px] text-muted-foreground">
-                {formatarNumero(filtradas.length, 0)} de {formatarNumero(linhas.length, 0)} fornecedor(es)
-              </p>
             </div>
             <ReportTable
               label="carteira de fornecedores"
@@ -315,6 +312,14 @@ export function AbaFornecedores({
                 },
               ]}
               renderDetalhe={(linha) => <DetalheProdutos lista={produtos.get(linha.fornecedor) ?? []} />}
+              resumo={(lista) => ({
+                label: `${formatarNumero(lista.length, 0)} de ${formatarNumero(linhas.length, 0)} fornecedor(es)`,
+                itens: [
+                  { rotulo: "Custo aquis.", valor: formatarMoeda(lista.reduce((t, l) => t + l.custoAquisicao, 0)) },
+                  { rotulo: "Lucro", valor: formatarMoeda(lista.reduce((t, l) => t + (l.lucro ?? 0), 0)) },
+                  { rotulo: "Venda líquida", valor: formatarMoeda(lista.reduce((t, l) => t + l.valorLiquido, 0)) },
+                ],
+              })}
               detalheEm="drawer"
               tituloDetalhe={(linha) => linha.fornecedor}
               metaDetalhe={(linha) =>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { PackageSearch } from "lucide-react";
 import { toast } from "sonner";
-import { AnalysisQueryCard } from "@/components/analytics/analysis-query-card";
+import { PageHeader } from "@/components/ui/page-header";
 import { MetricsStrip } from "@/components/analytics/metrics-strip";
 import { DataFilterBar } from "@/components/data-filter-bar";
 import { DateRangeFilter, periodoMesAtual, type Periodo } from "@/components/date-range-filter";
@@ -288,19 +288,18 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
 
   return (
     <div className="flex flex-col gap-6">
-      <AnalysisQueryCard
-        icon={PackageSearch}
-        title="Kardex por Produto"
-        description="Informe o código auxiliar para consultar todo o histórico de movimentações de um item, sem limite de dias."
-        actions={(
-          <ExportDropdown
-            onExportarCsv={exportarMovimentos}
-            disabled={loading || movimentosFiltrados.length === 0}
-            label="Exportar movimentos"
-          />
-        )}
-        footer={`O grupo ${grupoPadrao} é o grupo padrão da empresa. A consulta inclui todos os grupos de estoque e documentos do item.`}
-      >
+      <div className="flex flex-col gap-3">
+        <PageHeader
+          titulo="Kardex por Produto"
+          meta="Histórico de movimentações de um item, sem limite de dias"
+          acoes={
+            <ExportDropdown
+              onExportarCsv={exportarMovimentos}
+              disabled={loading || movimentosFiltrados.length === 0}
+              label="Exportar movimentos"
+            />
+          }
+        />
         <div className="space-y-4">
           <div className="max-w-sm space-y-1.5">
             <Label htmlFor="estoque-codigo-auxiliar">Código auxiliar do produto</Label>
@@ -326,7 +325,7 @@ export function EstoqueView({ empresas, empresaInicial }: { empresas: EmpresaOpt
             consultaDesabilitada={!codigoAuxiliar.trim()}
           />
         </div>
-      </AnalysisQueryCard>
+      </div>
 
       {erro ? (
         <Card className="border-destructive/50 bg-destructive/5">

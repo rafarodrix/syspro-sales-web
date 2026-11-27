@@ -287,13 +287,13 @@ export function AbaMargens({
           { id: "lucro", header: <span title="Lucro bruto após as devoluções">Lucro líq.</span>, kind: "currency", value: (linha) => linha.lucro, cell: (linha) => <span className={linha.lucro < 0 ? "font-semibold text-negativo" : ""}>{formatarMoeda(linha.lucro)}</span> },
           { id: "margem", header: <>Margem</>, kind: "percent", value: (linha) => linha.margem, cell: (linha) => <span className={linha.margem !== null && linha.margem < 0 ? "font-semibold text-negativo" : ""}>{linha.margem === null ? "—" : formatarPercentual(linha.margem, 1)}</span> },
         ]}
-        rodape={(linhas) => (
-          <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-[11px] text-muted-foreground">
-            <span>{formatarNumero(linhas.length, 0)} {visao === "curva" ? "curvas" : "faixas"}</span>
-            <span>Venda total: <strong className="num text-foreground">{formatarMoeda(linhas.reduce((t, l) => t + l.vendaTotal, 0))}</strong></span>
-            <span>Vendas líquidas: <strong className="num text-foreground">{formatarMoeda(linhas.reduce((t, l) => t + l.vendaLiquida, 0))}</strong></span>
-          </div>
-        )}
+        resumo={(linhas) => ({
+          label: `${formatarNumero(linhas.length, 0)} ${visao === "curva" ? "curvas" : "faixas"}`,
+          itens: [
+            { rotulo: "Venda total", valor: formatarMoeda(linhas.reduce((t, l) => t + l.vendaTotal, 0)) },
+            { rotulo: "Vendas líquidas", valor: formatarMoeda(linhas.reduce((t, l) => t + l.vendaLiquida, 0)) },
+          ],
+        })}
       />
 
       )}

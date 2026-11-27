@@ -1090,37 +1090,41 @@ export function RelatoriosView({
             </div>
           </CardHeader>
           <CardContent className="space-y-3 border-t border-border/40 pt-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-              <section className="min-w-0 flex-1 rounded-lg bg-muted/25 p-2.5" aria-label="Período">
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Período</div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                 <DateRangeFilter
-                    value={periodo}
-                    onChange={setPeriodo}
-                    onConsultar={consultar}
-                    loading={loading}
-                    compact
-                    persistirCookie={false}
-                  />
-              </section>
-              <section className="min-w-0 shrink-0 rounded-lg bg-muted/25 p-2.5" aria-label="Comparação">
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Comparação</div>
-                <ComparacaoPeriodo
-                  periodo={periodo}
-                  modo={modoComparacao}
-                  personalizado={comparacaoPersonalizada}
-                  onModo={setModoComparacao}
-                  onPersonalizado={setComparacaoPersonalizada}
+                  value={periodo}
+                  onChange={setPeriodo}
+                  onConsultar={consultar}
                   loading={loading}
+                  compact
+                  persistirCookie={false}
                 />
-              </section>
+              </div>
               <Button
                 size="sm"
-                className="h-11 w-full shrink-0 sm:h-9 lg:w-auto lg:self-end"
+                className="h-11 w-full shrink-0 sm:h-9 sm:w-auto"
                 disabled={loading || !!erroPeriodo(periodo)}
                 onClick={() => consultar()}
               >
                 {loading ? "Consultando..." : "Consultar"}
               </Button>
+            </div>
+            {/* Comparativo logo abaixo do período consultado — uma única linha. */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <ComparacaoPeriodo
+                periodo={periodo}
+                modo={modoComparacao}
+                personalizado={comparacaoPersonalizada}
+                onModo={setModoComparacao}
+                onPersonalizado={setComparacaoPersonalizada}
+                loading={loading}
+              />
+              {consultadoEm ? (
+                <span className="text-[11px] text-muted-foreground">
+                  Atualizado às {consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              ) : null}
             </div>
             {periodo.inicial !== periodoConsultado.inicial ||
             periodo.final !== periodoConsultado.final ||
@@ -1132,15 +1136,12 @@ export function RelatoriosView({
                 Alterações pendentes. Clique em Consultar para aplicar.
               </p>
             ) : null}
-            {!comparacaoDisponivel && (
-              <p
-                className="text-xs text-amber-700 dark:text-amber-400"
-                role="status"
-              >
-                Comparativo indisponível; os dados do período atual seguem
-                disponíveis.
+            {!comparacaoDisponivel && !loading ? (
+              <p className="text-[11px] text-muted-foreground" role="status">
+                Comparativo indisponível neste recorte — os números do período
+                atual seguem válidos.
               </p>
-            )}
+            ) : null}
             {abasComBusca.has(abaAtiva) || abaAtiva === "curva-abc" || abaAtiva === "clientes" ? (
               <DataFilterBar
                 busca={busca}
@@ -1168,26 +1169,7 @@ export function RelatoriosView({
                 ) : null}
               </DataFilterBar>
             ) : null}
-            <StatusRelatorio
-              itens={[
-                {
-                  rotulo: "Universo",
-                  valor: `${formatarNumero(vendas.length, 0)} itens · ${modoConsolidado ? `${empresasSelecionadas.length} empresas` : rotuloEmpresa}`,
-                  definicao: "Itens de venda retornados pela API do Syspro para o período e a empresa consultados.",
-                },
-                {
-                  rotulo: "Período",
-                  valor: `${formatarDataInputParaBR(periodoConsultado.inicial)} a ${formatarDataInputParaBR(periodoConsultado.final)}${rotuloPeriodoAnterior ? ` · vs. ${rotuloPeriodoAnterior}` : ""}${consultadoEm ? ` · ${consultadoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}`,
-                  definicao: "Período consultado, janela de comparação equivalente e horário da última consulta.",
-                },
-                {
-                  rotulo: "Filtros",
-                  valor: formatarNumero((busca.trim() ? 1 : 0) + ((abaAtiva === "clientes" ? filtroClasseCli : filtroClasseAbc) !== "todas" && (abaAtiva === "clientes" || abaAtiva === "curva-abc") ? 1 : 0), 0),
-                  destaque: true,
-                  definicao: "Conta a busca textual e o filtro de classe ABC aplicados nesta aba.",
-                },
-              ]}
-            />
+            
           </CardContent>
         </Card>
 

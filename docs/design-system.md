@@ -185,6 +185,25 @@ Antes → depois medido:
 | Chrome do card | `rounded-xl` + `ring-1` + `overflow-hidden` | `rounded-lg` + `border` |
 | Emojis na UI | 3 (+ artefatos em código gerado) | 0 |
 
+### 3.5 Rodapé de tabela, filtro de período e consulta compartilhada
+
+**Rodapé único.** Toda tabela de relatório usa a mesma barra (`ReportTable › resumo`): `TOTAL · N registros · somas`. Não existe mais `TableFooter` montado à mão por tela nem contador solto acima da tabela.
+
+```tsx
+<ReportTable
+  resumo={(linhas) => ({
+    label: `${linhas.length} fornecedores`,
+    itens: [{ rotulo: "Lucro", valor: formatarMoeda(...) }],
+  })}
+/>
+```
+
+**Filtro de período em duas linhas.** Linha 1: atalhos + De/Até + Consultar. Linha 2: `Comparar com [modo] · janela anterior · atualizado às HH:MM`. O comparativo nunca aparece em outro bloco da tela.
+
+**Sem repetição de contexto.** O topo não repete empresa nem quantidade de itens (essas informações estão no seletor de empresa e no rodapé). Título de página vem do `PageHeader`; o `AnalysisQueryCard` foi removido.
+
+**Consulta compartilhada.** `buscarVendasApi` grava em `cache-consulta` com chave `recurso=vendas|empresa|inicial|final` (TTL 5 min, dedupe por chave). Navegar entre Vendas, Relatórios e Fornecedores com o mesmo recorte **não** rebate no Syspro. "Forçar atualização" invalida só aquela chave.
+
 ---
 
 ## 4. Auditoria atual (UX01)
