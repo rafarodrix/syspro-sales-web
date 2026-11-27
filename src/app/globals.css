@@ -50,6 +50,13 @@
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
+  --color-superficie: var(--superficie);
+  --color-superficie-2: var(--superficie-2);
+  --color-borda-forte: var(--borda-forte);
+  --color-texto-2: var(--texto-2);
+  --color-sucesso: var(--sucesso);
+  --color-alerta: var(--alerta);
+  --color-erro: var(--erro);
   --color-positivo: var(--positivo);
   --color-negativo: var(--negativo);
   --color-atencao: var(--atencao);
@@ -120,6 +127,38 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* ---- Design System (docs/design-system.md) ----
+     Aliases semânticos: componentes novos usam estes nomes.
+     Não alteram o tema — apenas dão nome ao que já existe. */
+  --superficie: var(--card);
+  --superficie-2: var(--muted);
+  --borda-forte: color-mix(in oklab, var(--border) 60%, var(--foreground) 10%);
+  --texto-2: var(--muted-foreground);
+  --sucesso: var(--positivo);
+  --alerta: var(--atencao);
+  --erro: var(--negativo);
+
+  /* Raio fixo (não escala com --radius): 8 / 10 / 14 */
+  --raio-sm: 8px;
+  --raio-md: 10px;
+  --raio-lg: 14px;
+
+  /* Escala tipográfica compacta */
+  --texto-2xs: 10.5px;
+  --texto-xs: 11.5px;
+  --texto-sm: 12.5px;
+  --texto-base: 13.5px;
+  --texto-lg: 16px;
+  --texto-xl: 22px;
+
+  /* Grade de espaço (4px) */
+  --espaco-1: 4px;
+  --espaco-2: 8px;
+  --espaco-3: 12px;
+  --espaco-4: 16px;
+  --espaco-5: 24px;
+  --espaco-6: 32px;
 }
 
 .dark {
