@@ -53,7 +53,7 @@ export function KpiCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            {Icone ? <Icone className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden /> : null}
+            {Icone ? <Icone className="size-3.5 shrink-0 text-muted-foreground" aria-hidden /> : null}
             <span className="truncate text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
               {titulo}
             </span>

@@ -152,7 +152,7 @@ export function AbaVendedores({
                     className="inline-flex items-center gap-1.5 text-left hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
                   >
                     {vendedor.nome}
-                    <MousePointerClick className="size-3 text-muted-foreground/60" />
+                    <MousePointerClick className="size-3 text-muted-foreground" />
                   </button>
                 ),
               },

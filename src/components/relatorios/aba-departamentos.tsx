@@ -194,7 +194,7 @@ export function AbaDepartamentos({
                     className="inline-flex items-center gap-1.5 hover:text-primary hover:underline"
                   >
                     {dep.nome}
-                    <MousePointerClick className="size-3 text-muted-foreground/60" />
+                    <MousePointerClick className="size-3 text-muted-foreground" />
                   </button>
                 </>
               ),

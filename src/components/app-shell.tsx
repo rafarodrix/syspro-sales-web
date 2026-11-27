@@ -184,7 +184,7 @@ export function AppShell({
       {/* 1. SIDEBAR DESKTOP RETRÁTIL (Fixa na Viewport com Scroll Interno) */}
       {/* ========================================================= */}
       <aside
-        className={`hidden lg:flex flex-col h-full border-r border-border/60 bg-[var(--superficie-baixa)] transition-all duration-300 ease-in-out select-none shrink-0 ${
+        className={`hidden lg:flex flex-col h-full border-r border-border/60 bg-[var(--superficie-baixa)] transition-all duration-150 ease-out select-none shrink-0 ${
           collapsed ? "w-[70px]" : "w-64"
         }`}
       >
@@ -234,7 +234,7 @@ export function AppShell({
           {/* Grupo 1: Geral */}
           <div className="space-y-1">
             {!collapsed && (
-              <span className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+              <span className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/55">
                 Geral
               </span>
             )}
@@ -335,7 +335,7 @@ export function AppShell({
               {!collapsed ? (
                 <div
                   onClick={() => setRelatoriosOpen(!relatoriosOpen)}
-                  className="flex items-center justify-between px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 cursor-pointer hover:text-foreground transition-colors"
+                  className="flex items-center justify-between px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 >
                   <span>Relatórios</span>
                   <ChevronDown
@@ -366,7 +366,7 @@ export function AppShell({
                   <div className="space-y-0.5 pl-1 animate-in fade-in duration-150">
                     {podeVerRelatorios ? (
                       <>
-                        <span className="px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">Vendas</span>
+                        <span className="px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Vendas</span>
                         {relatoriosVendas.map((item) => {
                           const Icone = item.icone;
                           const ativo = pathname === "/relatorios" && abaAtiva === item.id;
@@ -376,7 +376,7 @@ export function AppShell({
                     ) : null}
                     {podeVerCompras ? (
                       <>
-                        <span className="mt-2 block px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                        <span className="mt-2 block px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                           Compras
                         </span>
                         <Link
@@ -394,7 +394,7 @@ export function AppShell({
                     ) : null}
                     {podeVerEntregas ? (
                       <>
-                        <span className="mt-2 block px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                        <span className="mt-2 block px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                           Entrega
                         </span>
                         <Link
@@ -420,7 +420,7 @@ export function AppShell({
           {podeVerAdmin && (
             <div className="space-y-1">
               {!collapsed ? (
-                <span className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                <span className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/55">
                   Administração
                 </span>
               ) : (
@@ -717,7 +717,7 @@ export function AppShell({
               <span className="font-semibold text-muted-foreground hidden md:inline shrink-0">
                 {breadcrumb.secao}
               </span>
-              <span className="text-muted-foreground/60 hidden md:inline shrink-0">/</span>
+              <span className="text-muted-foreground hidden md:inline shrink-0">/</span>
               <span className="font-bold text-foreground truncate" title={breadcrumb.pagina}>
                 {breadcrumb.pagina}
               </span>

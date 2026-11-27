@@ -94,7 +94,7 @@ export function RankingCard({
                         {item.nome}
                       </span>
                       {href && (
-                        <ChevronRight className="size-3 text-muted-foreground/50 opacity-0 transition-opacity group-hover/item:opacity-100" />
+                        <ChevronRight className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover/item:opacity-100" />
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">

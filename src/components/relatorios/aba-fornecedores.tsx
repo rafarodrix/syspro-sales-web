@@ -315,6 +315,11 @@ export function AbaFornecedores({
                 },
               ]}
               renderDetalhe={(linha) => <DetalheProdutos lista={produtos.get(linha.fornecedor) ?? []} />}
+              detalheEm="drawer"
+              tituloDetalhe={(linha) => linha.fornecedor}
+              metaDetalhe={(linha) =>
+                `${formatarNumero(linha.skus, 0)} SKUs · ${formatarNumero(linha.clientes, 0)} clientes · classe ${linha.classe}`
+              }
               modoDetalhe="fechado"
               detalhePrimeiraColuna
             />
@@ -447,44 +452,38 @@ export function AbaFornecedores({
 /** Produtos do fornecedor, abertos na própria linha da tabela. */
 function DetalheProdutos({ lista }: { lista: ProdutoDoFornecedor[] }) {
   if (!lista.length) {
-    return <p className="px-3 py-2 text-[11px] text-muted-foreground">Sem produtos no período.</p>;
+    return <p className="px-1 py-2 text-[11px] text-muted-foreground">Sem produtos no período.</p>;
   }
   return (
-    <div className="space-y-1 px-3 py-2">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Produtos do fornecedor ({formatarNumero(lista.length, 0)})
       </p>
-      <table className="w-full text-[11px]">
+      <table className="w-full table-fixed text-[11px]">
         <thead className="text-muted-foreground">
           <tr>
-            <th className="py-1 text-left font-medium">Produto</th>
-            <th className="py-1 text-right font-medium">Qtd</th>
-            <th className="py-1 text-right font-medium">Custo rep.</th>
-            <th className="py-1 text-right font-medium">Venda</th>
-            <th className="py-1 text-right font-medium">Lucro</th>
-            <th className="py-1 text-right font-medium">Margem</th>
+            <th className="w-auto py-1 text-left font-medium">Produto</th>
+            <th className="w-14 py-1 text-right font-medium">Qtd</th>
+            <th className="w-24 py-1 text-right font-medium">Venda</th>
+            <th className="w-14 py-1 text-right font-medium">Margem</th>
           </tr>
         </thead>
         <tbody>
-          {lista.slice(0, 25).map((produto) => (
-            <tr key={produto.codigo} className="border-t border-border/40">
-              <td className="py-1 pr-2">{produto.produto}</td>
+          {lista.slice(0, 40).map((produto) => (
+            <tr key={produto.codigo} className="border-t border-border/60 align-top">
+              <td className="py-1 pr-2 break-words">{produto.produto}</td>
               <td className="num py-1 text-right">{formatarNumero(produto.quantidade, 2)}</td>
-              <td className="num py-1 text-right">{formatarMoeda(produto.custoReposicao)}</td>
               <td className="num py-1 text-right">{formatarMoeda(produto.venda)}</td>
               <td className={`num py-1 text-right ${produto.lucro < 0 ? "text-negativo" : ""}`}>
-                {formatarMoeda(produto.lucro)}
-              </td>
-              <td className="num py-1 text-right">
-                {produto.margem === null ? "—" : formatarPercentual(produto.margem, 1)}
+                {produto.margem === null ? "—" : `${formatarNumero(produto.margem * 100, 1)}%`}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      {lista.length > 25 ? (
-        <p className="text-[11px] text-muted-foreground">
-          Mostrando 25 de {formatarNumero(lista.length, 0)} produtos.
+      {lista.length > 40 ? (
+        <p className="pt-1 text-[11px] text-muted-foreground">
+          Exibindo 40 de {formatarNumero(lista.length, 0)} produtos.
         </p>
       ) : null}
     </div>

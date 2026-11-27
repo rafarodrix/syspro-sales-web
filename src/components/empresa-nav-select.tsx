@@ -197,7 +197,7 @@ export function EmpresaNavSelect({
                   {isMarcada ? (
                     <CheckSquare className="size-4 text-primary shrink-0" />
                   ) : (
-                    <Square className="size-4 text-muted-foreground/60 shrink-0" />
+                    <Square className="size-4 text-muted-foreground shrink-0" />
                   )}
                   <div className="flex flex-col min-w-0">
                     <span className="truncate text-xs font-semibold leading-tight text-foreground">

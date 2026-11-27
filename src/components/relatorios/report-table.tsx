@@ -14,6 +14,7 @@ import {
 import { TablePagination } from "@/components/table-pagination";
 import { TableEmptyState } from "@/components/table-empty-state";
 import { cn } from "@/lib/utils";
+import { Drawer } from "@/components/ui/drawer";
 import { ExportarVisao } from "./exportar-visao";
 import { useReportContext } from "./report-context";
 import { ReportToolbar } from "./report-toolbar";
@@ -79,6 +80,9 @@ export function ReportTable<T>({
   renderDetalhe,
   modoDetalhe = "fechado",
   detalhePrimeiraColuna = false,
+  detalheEm = "linha",
+  tituloDetalhe,
+  metaDetalhe,
 }: {
   data: T[];
   columns: ReportColumn<T>[];
@@ -103,10 +107,17 @@ export function ReportTable<T>({
   modoDetalhe?: "aberto" | "fechado";
   /** Coloca o botão de detalhe na primeira coluna (sempre visível) em vez da última. */
   detalhePrimeiraColuna?: boolean;
+  /** Onde o detalhe aparece: expandindo a linha (padrão) ou em drawer lateral. */
+  detalheEm?: "linha" | "drawer";
+  /** Título do drawer de detalhe. */
+  tituloDetalhe?: (row: T) => React.ReactNode;
+  /** Linha de contexto sob o título do drawer. */
+  metaDetalhe?: (row: T) => React.ReactNode;
 }) {
   const report = useReportContext();
   const barra = useBarraRelatorio();
   const [detalhesAbertos, setDetalhesAbertos] = useState<Record<string, boolean>>({});
+  const [linhaDrawer, setLinhaDrawer] = useState<{ chave: string; row: T } | null>(null);
   const [sort, setSort] = useState<{ id: string; descending: boolean } | null>(
     null,
   );
@@ -346,9 +357,25 @@ export function ReportTable<T>({
             rows.map((row, rowIndex) => {
               const chave = rowKey(row, rowIndex);
               const aberta = detalhesAbertos[chave] ?? (modoDetalhe === "aberto");
+              const emDrawer = detalheEm === "drawer";
+              const abrir = () => (emDrawer ? setLinhaDrawer({ chave, row }) : setDetalhesAbertos((atual) => ({ ...atual, [chave]: !atual[chave] })));
               return (
               <Fragment key={chave}>
-              <TableRow>
+              <TableRow
+                className={emDrawer && renderDetalhe ? "cursor-pointer transition-colors duration-150" : undefined}
+                onClick={emDrawer && renderDetalhe ? abrir : undefined}
+                tabIndex={emDrawer && renderDetalhe ? 0 : undefined}
+                onKeyDown={
+                  emDrawer && renderDetalhe
+                    ? (evento) => {
+                        if (evento.key === "Enter" || evento.key === " ") {
+                          evento.preventDefault();
+                          abrir();
+                        }
+                      }
+                    : undefined
+                }
+              >
                 {renderDetalhe && detalhePrimeiraColuna ? (
                   <TableCell className={cn("w-8 px-1", stickyFirst && "sticky left-0 z-10 bg-background")}>
                     <Button
@@ -356,9 +383,12 @@ export function ReportTable<T>({
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0"
-                      aria-expanded={aberta}
-                      title={aberta ? "Recolher itens" : "Ver itens"}
-                      onClick={() => setDetalhesAbertos((atual) => ({ ...atual, [chave]: !atual[chave] }))}
+                      aria-expanded={emDrawer ? undefined : aberta}
+                      title={emDrawer ? "Abrir detalhe" : aberta ? "Recolher itens" : "Ver itens"}
+                      onClick={(evento) => {
+                        evento.stopPropagation();
+                        abrir();
+                      }}
                     >
                       <ChevronDown className={cn("size-3.5 transition-transform", aberta && "rotate-180")} />
                     </Button>
@@ -376,16 +406,19 @@ export function ReportTable<T>({
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0"
-                      aria-expanded={aberta}
-                      title={aberta ? "Recolher detalhe" : "Expandir detalhe"}
-                      onClick={() => setDetalhesAbertos((atual) => ({ ...atual, [chave]: !atual[chave] }))}
+                      aria-expanded={emDrawer ? undefined : aberta}
+                      title={emDrawer ? "Abrir detalhe" : aberta ? "Recolher detalhe" : "Expandir detalhe"}
+                      onClick={(evento) => {
+                        evento.stopPropagation();
+                        abrir();
+                      }}
                     >
                       <ChevronDown className={cn("size-3.5 transition-transform", aberta && "rotate-180")} />
                     </Button>
                   </TableCell>
                 ) : null}
               </TableRow>
-              {renderDetalhe && aberta ? (
+              {renderDetalhe && !emDrawer && aberta ? (
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
                   <TableCell colSpan={visibleColumns.length + 1} className="p-0">
                     {renderDetalhe(row)}
@@ -403,6 +436,18 @@ export function ReportTable<T>({
         </TableBody>
         {rodape ? <TableFooter className="bg-muted/40 font-semibold">{rodape(sorted)}</TableFooter> : null}
       </ReportTableFrame>
+      {renderDetalhe && detalheEm === "drawer" ? (
+        <Drawer
+          aberto={Boolean(linhaDrawer)}
+          onOpenChange={(aberto) => {
+            if (!aberto) setLinhaDrawer(null);
+          }}
+          titulo={linhaDrawer ? (tituloDetalhe?.(linhaDrawer.row) ?? "Detalhe") : "Detalhe"}
+          meta={linhaDrawer ? metaDetalhe?.(linhaDrawer.row) : null}
+        >
+          <div className="p-3">{linhaDrawer ? renderDetalhe(linhaDrawer.row) : null}</div>
+        </Drawer>
+      ) : null}
       {pagination ? (
         <TablePagination
           paginaAtual={safePage}

@@ -188,24 +188,24 @@
 }
 
 .dark {
-  --background: oklch(0.13 0.01 260);
+  --background: oklch(0.135 0.008 260);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.17 0.015 260);
+  --card: oklch(0.200 0.010 260);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.17 0.015 260);
+  --popover: oklch(0.215 0.010 260);
   --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.65 0.2 264.376);
+  --primary: oklch(0.62 0.16 264);
   --primary-foreground: oklch(0.13 0 0);
-  --secondary: oklch(0.24 0.01 260);
+  --secondary: oklch(0.245 0.010 260);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.22 0.01 260);
-  --muted-foreground: oklch(0.72 0 0);
-  --accent: oklch(0.24 0.01 260);
+  --muted: oklch(0.235 0.010 260);
+  --muted-foreground: oklch(0.800 0.004 260);
+  --accent: oklch(0.245 0.010 260);
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 12%);
+  --border: oklch(1 0 0 / 18%);
   --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.65 0.2 264.376);
+  --ring: oklch(0.62 0.16 264);
   --chart-1: oklch(0.65 0.2 264.376);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -214,8 +214,8 @@
   --positivo: oklch(0.76 0.15 155);
   --negativo: oklch(0.72 0.17 25);
   --atencao: oklch(0.8 0.14 80);
-  --linha: oklch(1 0 0 / 10%);
-  --superficie-baixa: oklch(0.152 0.012 260);
+  --linha: oklch(1 0 0 / 14%);
+  --superficie-baixa: oklch(0.125 0.008 260);
   --superficie-elevada: var(--card);
   --sidebar: oklch(0.17 0.015 260);
   --sidebar-foreground: oklch(0.98 0 0);
@@ -279,5 +279,47 @@
   th {
     border: 1px solid #cbd5e1 !important;
     padding: 5px 7px !important;
+  }
+}
+
+/* Movimento discreto: 150 ms com saída suave; nada de bounce. */
+@layer base {
+  :root {
+    --dur: 150ms;
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  a,
+  button,
+  [role="button"],
+  tr,
+  input,
+  select {
+    transition-duration: var(--dur);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Barra de rolagem discreta e coerente com o tema. */
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent) transparent;
   }
 }

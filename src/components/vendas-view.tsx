@@ -692,6 +692,19 @@ export function VendasView({
                   rowKey={(nota) => nota.id}
                   showExport={false}
                   modoDetalhe={detalheTodos ? "aberto" : "fechado"}
+                  detalheEm="drawer"
+                  tituloDetalhe={(nota) => `NF ${nota.numero}`}
+                  metaDetalhe={(nota) => (
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="truncate">{nota.cliente}</span>
+                      <span aria-hidden>·</span>
+                      <span>{formatarDataBr(nota.emissao)}</span>
+                      <span aria-hidden>·</span>
+                      <span>
+                        {nota.itens.length} {nota.itens.length === 1 ? "item" : "itens"}
+                      </span>
+                    </span>
+                  )}
                   renderDetalhe={(nota) => <TabelaItens itens={nota.itens} />}
                   columns={[
                     {

@@ -26,7 +26,7 @@ export function MetricsStrip({ itens }: { itens: MetricsStripItem[] }) {
             item.definicao ? "cursor-help" : ""
           }`}
         >
-          <span className="truncate text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/75">
+          <span className="truncate text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             {item.rotulo}
           </span>
           <span
