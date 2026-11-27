@@ -125,7 +125,7 @@ Correção importante: **o shadcn não "trocou" o Radix no nosso projeto.** O sh
 
 Estado real do Syspro Reports:
 - `components.json` → `"style": "radix-nova"`.
-- 8 de 17 componentes em `components/ui` importam `radix-ui`: `badge`, `button`, `dialog`, `dropdown-menu`, `label`, `select`, `separator`, `tabs`.
+- Após a Fase 1 da migração (3.3.2), **5 de 17** componentes importam `radix-ui`: `badge`, `button`, `dialog`, `dropdown-menu`, `select`.
 - Nenhum import de `@base-ui-components` no projeto.
 
 Decisão: **manter Radix agora.** Migrar para Base UI significa reescrever imports de 8 primitivas, revalidar acessibilidade/animação e re-gerar componentes — custo sem ganho funcional no curto prazo. Reavaliar quando:
@@ -134,6 +134,35 @@ Decisão: **manter Radix agora.** Migrar para Base UI significa reescrever impor
 3. formos criar um projeto Trilink novo — aí nasce em `base-nova`, e o padrão comum será decidido no Design System Trilink (não neste app).
 
 Regra prática: **não misturar** `radix-*` e `base-*` no mesmo app; import novo de primitiva segue o style já configurado.
+
+### 3.3.2 Migração para Base UI — plano e estado
+
+Posição oficial do shadcn (changelog de julho/2026): **Base UI é o default para projetos novos, mas o Radix não foi depreciado** — todo componente novo/atualizado sai para as duas bibliotecas, e a recomendação é "se seu app funciona, continue entregando". Ainda assim, migrar é possível de forma **progressiva**: um componente por vez, as duas bibliotecas convivem, e o projeto pode parar no meio sem quebrar.
+
+Custo medido no Syspro Reports:
+
+| Item | Quantidade |
+| --- | --- |
+| Componentes em `components/ui` | 17 |
+| Arquivos importando `radix-ui` (antes) | 8 |
+| Arquivos importando `radix-ui` (hoje) | **5** |
+| Usos de `asChild` (vira `render` no Base UI) | 12 em 7 arquivos |
+| Usos de `Separator` / `Tabs` | 0 (componentes mortos) |
+| Usos de `Button` / `Badge` / `Label` / `Select` / `Dialog` | 67 / 37 / 28 / 14 / 7 |
+
+Fases:
+
+| Fase | Escopo | Estado |
+| --- | --- | --- |
+| 1 | Ganhos sem risco: remover `separator` e `tabs` (nunca importados) e migrar `label` para `<label>` nativo | ✅ feito |
+| 2 | `dialog`, `dropdown-menu`, `select` — componentes com comportamento; validar foco, escape e animação | ⏳ |
+| 3 | `button` e `badge` — `asChild` → `render`; manter `asChild` aceito no wrapper e traduzir internamente para não tocar nas 12 chamadas | ⏳ |
+
+Regras da migração:
+1. **Instalar `@base-ui/react` só quando a Fase 2 começar** — não antes; não serve para os componentes atuais.
+2. **Um componente por commit**, com `tsc`, testes, deploy e comparação visual.
+3. **Nunca** dois imports de primitivas no mesmo componente; nenhum componente novo em Radix a partir da Fase 2.
+4. Gatilho para acelerar: quando um desses componentes for alterado por outro motivo, ou quando o padrão comum dos apps Trilink migrar.
 
 ---
 

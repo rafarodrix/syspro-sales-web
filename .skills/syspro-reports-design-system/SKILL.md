@@ -64,6 +64,10 @@ Layout mudou? Anexe **antes/depois** e meça: altura até o primeiro dado, colun
 - Chevron de detalhe na última coluna exigia rolar a tabela para achar → `detalhePrimeiraColuna`.
 - `ReportTable` esticado por 13+ colunas: revisar `kind` e mover colunas para *Colunas* antes de adicionar outra.
 
-## Primitivas: Radix (não Base UI)
+## Primitivas: Radix em migração para Base UI
 
-`components.json` usa `"style": "radix-nova"` → primitivas **Radix** (`radix-ui`), importadas por badge, button, dialog, dropdown-menu, label, select, separator e tabs. O shadcn hoje cria projeto novo em `base-nova` (Base UI), mas **este app fica em Radix**: não misturar `radix-*` com `base-*` nem trocar o style sem migração planejada (8 primitivas + acessibilidade revalidada).
+`components.json` usa `"style": "radix-nova"` → primitivas **Radix** (`radix-ui`), hoje em **5 arquivos**: badge, button, dialog, dropdown-menu, select. O shadcn tornou Base UI o default de projeto novo, mas **não depreciou o Radix**.
+
+Migração progressiva (doc 3.3.2): Fase 1 ✅ (removidos `separator`/`tabs` mortos; `label` virou `<label>` nativo). Fase 2 = dialog, dropdown-menu, select (exige instalar `@base-ui/react`). Fase 3 = button/badge, onde `asChild` → `render` (12 usos em 7 arquivos) — manter `asChild` no wrapper e traduzir internamente.
+
+Regra: **um componente por commit**, nunca dois imports de primitivas no mesmo arquivo, e nenhum componente novo em Radix a partir da Fase 2.
