@@ -62,6 +62,7 @@ Valores ficam em `src/app/globals.css`. Componentes usam **token semântico**, n
 | Cabeçalho de página | `components/ui/page-header.tsx` | ✅ oficial (piloto Vendas) |
 | Consulta + filtros | `components/ui/search-toolbar.tsx` + `DateRangeFilter` | ✅ oficial; `AnalysisQueryCard` em retirada |
 | Filtros secundários | `components/ui/filtros-popover.tsx` | ✅ oficial (popover com contador) |
+| Chips de filtro ativo | `components/ui/filtros-ativos.tsx` | ✅ oficial (remoção individual) |
 | Filtro de campo único | `relatorios/filtro-relatorio.tsx` | Padrão aprovado (28 usos) |
 | Busca em tabela | `DataFilterBar` | Padrão aprovado (7 usos) |
 | Tabela analítica | `relatorios/report-table.tsx` | **Padrão oficial** (15 usos) |
@@ -93,6 +94,28 @@ Valores ficam em `src/app/globals.css`. Componentes usam **token semântico**, n
 
 ---
 
+## 3.3 Decisões de bibliotecas (Syspro Reports)
+
+Antes de instalar qualquer coisa: **o que já existe no `package.json` resolve?** Instalado hoje: Next 16.3, React 19.2, Tailwind 4, `radix-ui`, `lucide-react`, `recharts` 3, `motion`, `clsx` + `tailwind-merge`, `sonner`, `zod`.
+
+| Biblioteca (referência AutoCar) | Decisão | Motivo |
+| --- | --- | --- |
+| Tailwind CSS 4 | **usar** (já instalado) | Fundação visual e tokens. |
+| Radix UI | **usar** (já instalado) | Menus, dialogs, selects acessíveis. |
+| React Aria Components | **não instalar** | Duplicaria as primitivas do Radix já usadas em 30+ componentes. |
+| shadcn/ui | **usar como padrão** (já instalado) | Base dos componentes em `components/ui`. |
+| TanStack Table | **não instalar** | `ReportTable` já entrega ordenação, paginação, preferência de colunas, export e detalhe — e é usado em 15 telas. Migrar seria refactor sem ganho funcional. |
+| TanStack Virtual | **avaliar depois** | Hoje paginamos (25/50/100). Só faz sentido quando alguma tela precisar renderizar > 1.000 linhas de uma vez. |
+| Recharts 3 | **usar** (já instalado) | Gráficos de dashboard. |
+| Apache ECharts | **não instalar** | Dois motores gráficos no bundle sem necessidade comprovada. |
+| Motion | **usar com parcimônia** | `motion` já instalado; animação é P2 — só feedback, nunca decoração. |
+| Lucide | **usar** (já instalado) | Ícones. |
+| Kibo UI / Magic UI | **referência visual** | Padrões para consultar, não dependências. |
+
+Regra: nova dependência de UI exige justificativa escrita aqui e ganho que o componente existente não entrega.
+
+---
+
 ## 4. Auditoria atual (UX01)
 
 Medido em 2026-11-26 sobre `src/` (215 arquivos TS/TSX, 82 componentes):
@@ -121,7 +144,7 @@ Medido em 2026-11-26 sobre `src/` (215 arquivos TS/TSX, 82 componentes):
 | UX03 | Layout principal e sidebar recolhível | P0 | parcial — `PageHeader` aplicado em Vendas |
 | UX04 | Componentes compartilhados (`PageHeader`, `SearchToolbar`, `FiltrosPopover`) | P0 | ✅ base criada |
 | UX05 | Motor visual de tabelas | P0 | ✅ `ReportTable` (colunas essenciais pendente) |
-| UX06 | Motor de filtros (`SearchToolbar` + chips) | P0 | parcial — popover de filtros; chips pendentes |
+| UX06 | Motor de filtros (`SearchToolbar` + popover + chips) | P0 | ✅ base completa em Vendas |
 | UX07 | **Relatório piloto: Vendas** | P0 | em andamento — cabeçalho/consulta prontos; drawer e colunas essenciais pendentes |
 | UX08 | Indicadores e dashboards | P1 | ⏳ |
 | UX09 | Gráficos e drill-down (drawer de contexto) | P1 | ⏳ |

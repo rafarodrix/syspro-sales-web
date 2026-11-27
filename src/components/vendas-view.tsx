@@ -28,6 +28,7 @@ import { exportarPdfVendas } from "@/lib/pdf-export";
 import { formatarMoeda, formatarNumero, formatarPercentual } from "@/lib/formatters";
 import { calcularMargemItem } from "@/lib/metricas-negocio";
 import { ExportDropdown } from "@/components/export-dropdown";
+import { FiltrosAtivos } from "@/components/ui/filtros-ativos";
 import { FiltrosPopover } from "@/components/ui/filtros-popover";
 import { PageHeader } from "@/components/ui/page-header";
 import { SearchToolbar } from "@/components/ui/search-toolbar";
@@ -328,6 +329,33 @@ export function VendasView({
     filtroModelo !== "todos" ||
     filtroMargem !== "todas";
 
+  const filtrosAtivos = [
+    ...(buscaVenda.trim() ? [{ rotulo: "Busca", valor: buscaVenda.trim(), onRemover: () => setBuscaVenda("") }] : []),
+    ...(filtroVendedor !== "todos"
+      ? [{ rotulo: "Vendedor", valor: filtroVendedor, onRemover: () => setFiltroVendedor("todos") }]
+      : []),
+    ...(filtroDepartamento !== "todos"
+      ? [{ rotulo: "Departamento", valor: filtroDepartamento, onRemover: () => setFiltroDepartamento("todos") }]
+      : []),
+    ...(filtroFormaPagto !== "todos"
+      ? [{ rotulo: "Pagamento", valor: filtroFormaPagto, onRemover: () => setFiltroFormaPagto("todos") }]
+      : []),
+    ...(filtroModelo !== "todos"
+      ? [{ rotulo: "Modelo", valor: `Modelo ${filtroModelo}`, onRemover: () => setFiltroModelo("todos") }]
+      : []),
+    ...(filtroMargem !== "todas"
+      ? [{
+          rotulo: "Margem",
+          valor:
+            filtroMargem === "negativa" ? "Negativa"
+            : filtroMargem === "baixa" ? "Baixa (0–20%)"
+            : filtroMargem === "saudavel" ? "Saudável (20%+)"
+            : "Custo incompleto",
+          onRemover: () => setFiltroMargem("todas"),
+        }]
+      : []),
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       {/* Painel de Consulta & Filtros */}
@@ -585,6 +613,8 @@ export function VendasView({
                 </Button>
               </div>
             </DataFilterBar>
+
+            <FiltrosAtivos filtros={filtrosAtivos} />
           </div>
         </CardHeader>
         <CardContent>
@@ -759,6 +789,7 @@ export function VendasView({
       </Card>
     </div>
   );
+
 }
 
 

@@ -18,6 +18,7 @@ Pergunte: **já existe um componente com esse papel?** Catálogo oficial:
 | Cabeçalho de página | `components/ui/page-header.tsx` |
 | Barra de consulta/filtros | `components/ui/search-toolbar.tsx` |
 | Filtros secundários | `components/ui/filtros-popover.tsx` |
+| Chips de filtro ativo | `components/ui/filtros-ativos.tsx` |
 | Tabela de relatório | `components/relatorios/report-table.tsx` |
 | Métrica de topo | `components/analytics/metrics-strip.tsx` |
 | Faixa de resumo | `ReportMetricStrip` (`relatorios/report-toolbar.tsx`) |
