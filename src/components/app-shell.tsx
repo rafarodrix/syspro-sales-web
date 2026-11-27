@@ -184,7 +184,7 @@ export function AppShell({
       {/* 1. SIDEBAR DESKTOP RETRÁTIL (Fixa na Viewport com Scroll Interno) */}
       {/* ========================================================= */}
       <aside
-        className={`hidden lg:flex flex-col h-full border-r border-border/60 bg-muted/20 transition-all duration-300 ease-in-out select-none shrink-0 ${
+        className={`hidden lg:flex flex-col h-full border-r border-border/60 bg-[var(--superficie-baixa)] transition-all duration-300 ease-in-out select-none shrink-0 ${
           collapsed ? "w-[70px]" : "w-64"
         }`}
       >
@@ -478,7 +478,7 @@ export function AppShell({
               </div>
             )}
             {!collapsed && <AlterarSenhaDialog compacto />}
-            {!collapsed && <LogOutButton />}
+            {!collapsed && <LogOutButton compacto />}
           </div>
 
           {collapsed ? (

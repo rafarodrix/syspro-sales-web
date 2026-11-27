@@ -23,7 +23,7 @@ export function PageHeader({
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <div className="min-w-0">
-        <h1 className="truncate text-[16px] font-bold leading-tight text-foreground">{titulo}</h1>
+        <h1 className="titulo-pagina truncate text-foreground">{titulo}</h1>
         {meta ? (
           <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">{meta}</p>
         ) : null}

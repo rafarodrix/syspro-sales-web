@@ -29,14 +29,18 @@ const CORES_CLASSE: Record<ClasseFornecedor, string> = {
   C: "border-border bg-muted text-muted-foreground",
 };
 
+const PONTO_CLASSE: Record<ClasseFornecedor, string> = {
+  A: "bg-positivo",
+  B: "bg-atencao",
+  C: "bg-muted-foreground/40",
+};
+
 function SeloClasse({ classe }: { classe: ClasseFornecedor }) {
   return (
-    <Badge
-      variant="outline"
-      className={`h-5 min-w-5 justify-center px-1 text-[11px] font-bold ${CORES_CLASSE[classe]}`}
-    >
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
+      <span className={`size-1.5 shrink-0 rounded-full ${PONTO_CLASSE[classe]}`} aria-hidden />
       {classe}
-    </Badge>
+    </span>
   );
 }
 

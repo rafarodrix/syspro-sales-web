@@ -285,7 +285,7 @@ export function ReportTable<T>({
         ); return barra?.slot ? createPortal(conteudo, barra.slot) : conteudo; })()}
       <ReportTableFrame label={caption ?? `Tabela de ${label}`}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
-        <TableHeader className="bg-background">
+        <TableHeader className="bg-[var(--superficie-baixa)]">
           <TableRow>
             {renderDetalhe && detalhePrimeiraColuna ? (
               <TableHead

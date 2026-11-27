@@ -17,6 +17,30 @@
     background-color: color-mix(in oklab, var(--muted) 45%, transparent);
     border-radius: var(--radius-md);
   }
+  /* Superfícies: rebaixada (barra, cabeçalho de tabela) e elevada (card). */
+  .sup-baixa {
+    background-color: var(--superficie-baixa);
+  }
+  /* Hierarquia tipográfica fechada (docs 3.4). */
+  .titulo-pagina {
+    font-size: 20px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.014em;
+  }
+  .titulo-secao {
+    font-size: 13px;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .rotulo {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
   /* Divisor de 1px sem borda acumulada. */
   .hairline-t {
     box-shadow: inset 0 1px 0 var(--linha);
@@ -131,7 +155,9 @@
   /* ---- Design System (docs/design-system.md) ----
      Aliases semânticos: componentes novos usam estes nomes.
      Não alteram o tema — apenas dão nome ao que já existe. */
-  --superficie: var(--card);
+  /* Profundidade em 3 níveis: fundo < rebaixada < elevada */
+  --superficie-baixa: oklch(0.964 0.003 250);
+  --superficie-elevada: var(--card);
   --superficie-2: var(--muted);
   --borda-forte: color-mix(in oklab, var(--border) 60%, var(--foreground) 10%);
   --texto-2: var(--muted-foreground);
@@ -189,6 +215,8 @@
   --negativo: oklch(0.72 0.17 25);
   --atencao: oklch(0.8 0.14 80);
   --linha: oklch(1 0 0 / 10%);
+  --superficie-baixa: oklch(0.152 0.012 260);
+  --superficie-elevada: var(--card);
   --sidebar: oklch(0.17 0.015 260);
   --sidebar-foreground: oklch(0.98 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
