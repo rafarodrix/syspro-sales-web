@@ -102,7 +102,7 @@ Antes de instalar qualquer coisa: **o que já existe no `package.json` resolve?*
 | --- | --- | --- |
 | Tailwind CSS 4 | **usar** (já instalado) | Fundação visual e tokens. |
 | Radix UI | **usar** (já instalado) | Menus, dialogs, selects acessíveis. |
-| React Aria Components | **não instalar** | Duplicaria as primitivas do Radix já usadas em 30+ componentes. |
+| React Aria Components | **não instalar** | Seria a terceira biblioteca de primitivas no projeto (Radix + shadcn). Sem ganho que justifique. |
 | shadcn/ui | **usar como padrão** (já instalado) | Base dos componentes em `components/ui`. |
 | TanStack Table | **não instalar** | `ReportTable` já entrega ordenação, paginação, preferência de colunas, export e detalhe — e é usado em 15 telas. Migrar seria refactor sem ganho funcional. |
 | TanStack Virtual | **avaliar depois** | Hoje paginamos (25/50/100). Só faz sentido quando alguma tela precisar renderizar > 1.000 linhas de uma vez. |
@@ -113,6 +113,27 @@ Antes de instalar qualquer coisa: **o que já existe no `package.json` resolve?*
 | Kibo UI / Magic UI | **referência visual** | Padrões para consultar, não dependências. |
 
 Regra: nova dependência de UI exige justificativa escrita aqui e ganho que o componente existente não entrega.
+
+### 3.3.1 Primitivas: Radix hoje, Base UI como default do shadcn
+
+Correção importante: **o shadcn não "trocou" o Radix no nosso projeto.** O shadcn é uma coleção de componentes (código nosso, em `components/ui`), e as primitivas por baixo são escolhidas pelo `style` do `components.json`:
+
+| Style no `components.json` | Primitivas |
+| --- | --- |
+| `radix-nova` | **Radix UI** ← é o nosso caso |
+| `base-nova` | Base UI (default de projetos novos criados pelo CLI hoje) |
+
+Estado real do Syspro Reports:
+- `components.json` → `"style": "radix-nova"`.
+- 8 de 17 componentes em `components/ui` importam `radix-ui`: `badge`, `button`, `dialog`, `dropdown-menu`, `label`, `select`, `separator`, `tabs`.
+- Nenhum import de `@base-ui-components` no projeto.
+
+Decisão: **manter Radix agora.** Migrar para Base UI significa reescrever imports de 8 primitivas, revalidar acessibilidade/animação e re-gerar componentes — custo sem ganho funcional no curto prazo. Reavaliar quando:
+1. precisarmos de um componente que só exista na variante Base UI; ou
+2. uma atualização do CLI/estilo exigir a migração; ou
+3. formos criar um projeto Trilink novo — aí nasce em `base-nova`, e o padrão comum será decidido no Design System Trilink (não neste app).
+
+Regra prática: **não misturar** `radix-*` e `base-*` no mesmo app; import novo de primitiva segue o style já configurado.
 
 ---
 
@@ -141,11 +162,11 @@ Medido em 2026-11-26 sobre `src/` (215 arquivos TS/TSX, 82 componentes):
 | --- | --- | --- | --- |
 | UX01 | Auditoria da interface | P0 | ✅ concluída (seção 4) |
 | UX02 | Design tokens e temas | P0 | ✅ tokens semânticos em `globals.css` (seção 2) |
-| UX03 | Layout principal e sidebar recolhível | P0 | parcial — `PageHeader` aplicado em Vendas |
+| UX03 | Layout principal e sidebar recolhível | P0 | parcial — `PageHeader` + `SearchToolbar` em Vendas; replicar nas demais |
 | UX04 | Componentes compartilhados (`PageHeader`, `SearchToolbar`, `FiltrosPopover`) | P0 | ✅ base criada |
-| UX05 | Motor visual de tabelas | P0 | ✅ `ReportTable` (colunas essenciais pendente) |
+| UX05 | Motor visual de tabelas | P0 | ✅ `ReportTable` (15 telas) — colunas essenciais ainda opcionais |
 | UX06 | Motor de filtros (`SearchToolbar` + popover + chips) | P0 | ✅ base completa em Vendas |
-| UX07 | **Relatório piloto: Vendas** | P0 | em andamento — cabeçalho/consulta prontos; drawer e colunas essenciais pendentes |
+| UX07 | **Relatório piloto: Vendas** | P0 | em andamento — cabeçalho, consulta, filtros e chips prontos; drawer de NF e `NumericCell` pendentes |
 | UX08 | Indicadores e dashboards | P1 | ⏳ |
 | UX09 | Gráficos e drill-down (drawer de contexto) | P1 | ⏳ |
 | UX10 | Loading, erro e vazio padronizados | P1 | parcial (`FeedbackState`) |

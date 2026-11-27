@@ -63,3 +63,7 @@ Layout mudou? Anexe **antes/depois** e meça: altura até o primeiro dado, colun
 - Header sticky sumia por causa de `overflow-hidden` do `Card`.
 - Chevron de detalhe na última coluna exigia rolar a tabela para achar → `detalhePrimeiraColuna`.
 - `ReportTable` esticado por 13+ colunas: revisar `kind` e mover colunas para *Colunas* antes de adicionar outra.
+
+## Primitivas: Radix (não Base UI)
+
+`components.json` usa `"style": "radix-nova"` → primitivas **Radix** (`radix-ui`), importadas por badge, button, dialog, dropdown-menu, label, select, separator e tabs. O shadcn hoje cria projeto novo em `base-nova` (Base UI), mas **este app fica em Radix**: não misturar `radix-*` com `base-*` nem trocar o style sem migração planejada (8 primitivas + acessibilidade revalidada).
