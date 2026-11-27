@@ -22,15 +22,15 @@ export function MetricsStrip({ itens }: { itens: MetricsStripItem[] }) {
         <div
           key={item.rotulo}
           title={item.definicao}
-          className={`flex min-w-0 flex-col gap-0.5 bg-background px-3 py-2 ${
+          className={`flex min-w-0 flex-col gap-1 bg-background px-3.5 py-2.5 ${
             item.definicao ? "cursor-help" : ""
           }`}
         >
-          <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="truncate text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/75">
             {item.rotulo}
           </span>
           <span
-            className={`num truncate text-sm font-semibold ${
+            className={`num truncate text-[17px] leading-none font-semibold tracking-tight ${
               item.attention ? "text-negativo" : "text-foreground"
             }`}
           >

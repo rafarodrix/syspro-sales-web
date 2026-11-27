@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-app",
+});
 
 export const metadata: Metadata = {
   title: "SysproERP Reports",
@@ -15,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning data-scroll-behavior="smooth">
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className={`min-h-screen bg-background font-sans antialiased ${inter.variable}`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <Toaster richColors position="top-center" />

@@ -184,7 +184,7 @@ export function AppShell({
       {/* 1. SIDEBAR DESKTOP RETRÁTIL (Fixa na Viewport com Scroll Interno) */}
       {/* ========================================================= */}
       <aside
-        className={`hidden lg:flex flex-col h-full border-r border-border/70 bg-card transition-all duration-300 ease-in-out select-none shrink-0 ${
+        className={`hidden lg:flex flex-col h-full border-r border-border/60 bg-muted/20 transition-all duration-300 ease-in-out select-none shrink-0 ${
           collapsed ? "w-[70px]" : "w-64"
         }`}
       >
@@ -234,7 +234,7 @@ export function AppShell({
           {/* Grupo 1: Geral */}
           <div className="space-y-1">
             {!collapsed && (
-              <span className="px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+              <span className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                 Geral
               </span>
             )}
@@ -244,7 +244,7 @@ export function AppShell({
                 title="Dashboard"
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                   pathname === "/dashboard"
-                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
@@ -260,7 +260,7 @@ export function AppShell({
                 title="Vendas"
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                   pathname === "/vendas"
-                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
@@ -275,7 +275,7 @@ export function AppShell({
                 title="Estoque / Kardex"
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                   pathname === "/estoque"
-                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
@@ -290,7 +290,7 @@ export function AppShell({
                 title="Produção"
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                   pathname === "/producao"
-                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
@@ -306,7 +306,7 @@ export function AppShell({
                   title="Contas a Pagar"
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                     pathname === "/financeiro/pagar"
-                      ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                      ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                       : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                   } ${collapsed ? "justify-center px-2" : ""}`}
                 >
@@ -318,7 +318,7 @@ export function AppShell({
                   title="Contas a Receber"
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                     pathname === "/financeiro/receber"
-                      ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                      ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                       : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                   } ${collapsed ? "justify-center px-2" : ""}`}
                 >
@@ -335,7 +335,7 @@ export function AppShell({
               {!collapsed ? (
                 <div
                   onClick={() => setRelatoriosOpen(!relatoriosOpen)}
-                  className="flex items-center justify-between px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 cursor-pointer hover:text-foreground transition-colors"
+                  className="flex items-center justify-between px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 cursor-pointer hover:text-foreground transition-colors"
                 >
                   <span>Relatórios</span>
                   <ChevronDown
@@ -355,7 +355,7 @@ export function AppShell({
                   title="Central de Relatórios"
                   className={`flex items-center justify-center rounded-lg p-2 text-xs font-semibold transition-all ${
                     pathname.startsWith("/relatorios")
-                      ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                      ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                       : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                   }`}
                 >
@@ -370,7 +370,7 @@ export function AppShell({
                         {relatoriosVendas.map((item) => {
                           const Icone = item.icone;
                           const ativo = pathname === "/relatorios" && abaAtiva === item.id;
-                          return <Link key={item.id} href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${ativo ? "bg-muted font-bold text-foreground shadow-2xs border-l-2 border-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}><Icone className={`size-3.5 shrink-0 ${ativo ? item.cor : "text-muted-foreground"}`} /><span className="truncate">{item.label}</span></Link>;
+                          return <Link key={item.id} href={criarLinkComEmpresa(`/relatorios?aba=${item.id}`)} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-all ${ativo ? "bg-foreground/[0.055] font-semibold text-foreground shadow-[inset_2px_0_0_0_var(--primary)]" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}><Icone className={`size-3.5 shrink-0 ${ativo ? item.cor : "text-muted-foreground"}`} /><span className="truncate">{item.label}</span></Link>;
                         })}
                       </>
                     ) : null}
@@ -420,7 +420,7 @@ export function AppShell({
           {podeVerAdmin && (
             <div className="space-y-1">
               {!collapsed ? (
-                <span className="px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                <span className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                   Administração
                 </span>
               ) : (
@@ -432,7 +432,7 @@ export function AppShell({
                 title="Usuários & Permissões"
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                   pathname === "/usuarios"
-                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
@@ -445,7 +445,7 @@ export function AppShell({
                 title="Configurações da API"
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                   pathname === "/configuracoes"
-                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    ? "bg-foreground/[0.055] text-foreground font-semibold shadow-[inset_2px_0_0_0_var(--primary)]"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
@@ -469,8 +469,8 @@ export function AppShell({
             </div>
             {!collapsed && (
               <div className="flex flex-1 flex-col min-w-0 leading-tight">
-                <span className="truncate text-xs font-bold text-foreground" title={userName}>
-                  {userName}
+                <span className="truncate text-xs font-semibold text-foreground" title={userName}>
+                  {userName.split(" ")[0]}
                 </span>
                 <span className="text-[11px] font-medium text-muted-foreground">
                   {perfilLabel}
