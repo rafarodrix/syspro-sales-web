@@ -111,6 +111,8 @@ export function AbaFornecedores({
           produto.codigo,
           produto.produto,
           produto.quantidade,
+          produto.custoAquisicao,
+          produto.custoReposicao,
           produto.venda,
           produto.lucro,
           produto.margem === null ? "" : produto.margem,
@@ -119,7 +121,17 @@ export function AbaFornecedores({
     }
     exportarParaCSV(
       `produtos-por-fornecedor-${periodo?.inicial ?? ""}-a-${periodo?.final ?? ""}`,
-      ["Fornecedor", "Código", "Produto", "Quantidade", "Venda líquida", "Lucro", "Margem %"],
+      [
+        "Fornecedor",
+        "Código",
+        "Produto",
+        "Quantidade",
+        "Custo aquisição",
+        "Custo reposição",
+        "Venda líquida",
+        "Lucro",
+        "Margem %",
+      ],
       linhasCsv,
     );
   }
@@ -229,20 +241,79 @@ export function AbaFornecedores({
                 },
               ]}
               columns={[
-                ...colunasBase(),
+                {
+                  id: "fornecedor",
+                  header: <>Fornecedor</>,
+                  kind: "name" as const,
+                  value: (linha: LinhaFornecedor) => linha.fornecedor,
+                  cell: (linha: LinhaFornecedor) => (
+                    <span className="block max-w-[20rem] truncate font-medium">{linha.fornecedor}</span>
+                  ),
+                },
+                {
+                  id: "classe",
+                  header: <>Classe</>,
+                  kind: "name" as const,
+                  value: (linha: LinhaFornecedor) => linha.classe,
+                  cell: (linha: LinhaFornecedor) => <SeloClasse classe={linha.classe} />,
+                },
+                {
+                  id: "custoAquisicao",
+                  header: (
+                    <span title="Custo de aquisição dos itens vendidos (custo unitário × quantidade)">
+                      Custo aquis.
+                    </span>
+                  ),
+                  kind: "currency" as const,
+                  value: (linha: LinhaFornecedor) => linha.custoAquisicao,
+                  cell: (linha: LinhaFornecedor) => <>{formatarMoeda(linha.custoAquisicao)}</>,
+                },
+                {
+                  id: "custoReposicao",
+                  header: (
+                    <span title="Custo de reposição dos itens vendidos (custo unitário × quantidade)">
+                      Custo repos.
+                    </span>
+                  ),
+                  kind: "currency" as const,
+                  value: (linha: LinhaFornecedor) => linha.custoReposicao,
+                  cell: (linha: LinhaFornecedor) => <>{formatarMoeda(linha.custoReposicao)}</>,
+                },
+                {
+                  id: "lucro",
+                  header: <>Lucro</>,
+                  kind: "currency" as const,
+                  value: (linha: LinhaFornecedor) => linha.lucro,
+                  cell: (linha: LinhaFornecedor) =>
+                    linha.temCusto ? (
+                      <span className={linha.lucro < 0 ? "font-semibold text-negativo" : ""}>
+                        {formatarMoeda(linha.lucro)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    ),
+                },
+                {
+                  id: "margem",
+                  header: <>Margem</>,
+                  kind: "percent" as const,
+                  value: (linha: LinhaFornecedor) => linha.margem,
+                  cell: (linha: LinhaFornecedor) => (
+                    <span
+                      className={
+                        linha.margem !== null && linha.margem < 0 ? "font-semibold text-negativo" : ""
+                      }
+                    >
+                      {linha.margem === null ? "—" : formatarPercentual(linha.margem, 1)}
+                    </span>
+                  ),
+                },
                 {
                   id: "vendaBruta",
                   header: <>Venda bruta</>,
                   kind: "currency" as const,
                   value: (linha: LinhaFornecedor) => linha.valorVendido,
                   cell: (linha: LinhaFornecedor) => <>{formatarMoeda(linha.valorVendido)}</>,
-                },
-                {
-                  id: "liquida",
-                  header: <>Venda líquida</>,
-                  kind: "currency" as const,
-                  value: (linha: LinhaFornecedor) => linha.valorLiquido,
-                  cell: (linha: LinhaFornecedor) => <>{formatarMoeda(linha.valorLiquido)}</>,
                 },
                 {
                   id: "acrescimos",
@@ -254,11 +325,34 @@ export function AbaFornecedores({
                   cell: (linha: LinhaFornecedor) => <>{formatarMoeda(linha.acrescimos)}</>,
                 },
                 {
+                  id: "liquida",
+                  header: <>Venda líquida</>,
+                  kind: "currency" as const,
+                  value: (linha: LinhaFornecedor) => linha.valorLiquido,
+                  cell: (linha: LinhaFornecedor) => <>{formatarMoeda(linha.valorLiquido)}</>,
+                },
+                {
                   id: "participacao",
                   header: <>Part.</>,
                   kind: "percent" as const,
                   value: (linha: LinhaFornecedor) => linha.participacao,
                   cell: (linha: LinhaFornecedor) => <>{formatarPercentual(linha.participacao, 1)}</>,
+                },
+                {
+                  id: "skus",
+                  header: <>SKUs</>,
+                  kind: "number" as const,
+                  value: (linha: LinhaFornecedor) => linha.skus,
+                  cell: (linha: LinhaFornecedor) => <>{formatarNumero(linha.skus, 0)}</>,
+                },
+                {
+                  id: "clientes",
+                  header: (
+                    <span title="Clientes distintos que compraram itens deste fornecedor">Clientes</span>
+                  ),
+                  kind: "number" as const,
+                  value: (linha: LinhaFornecedor) => linha.clientes,
+                  cell: (linha: LinhaFornecedor) => <>{formatarNumero(linha.clientes, 0)}</>,
                 },
               ]}
               renderDetalhe={(linha) => <DetalheProdutos lista={produtos.get(linha.fornecedor) ?? []} />}
@@ -329,6 +423,28 @@ export function AbaFornecedores({
                   cell: (item) => <>{formatarNumero(item.quantidade, 2)}</>,
                 },
                 {
+                  id: "custoAquisicao",
+                  header: (
+                    <span title="Custo de aquisição dos itens vendidos (custo unitário × quantidade)">
+                      Custo aquis.
+                    </span>
+                  ),
+                  kind: "currency" as const,
+                  value: (item) => item.custoAquisicao,
+                  cell: (item) => <>{formatarMoeda(item.custoAquisicao)}</>,
+                },
+                {
+                  id: "custoReposicao",
+                  header: (
+                    <span title="Custo de reposição dos itens vendidos (custo unitário × quantidade)">
+                      Custo repos.
+                    </span>
+                  ),
+                  kind: "currency" as const,
+                  value: (item) => item.custoReposicao,
+                  cell: (item) => <>{formatarMoeda(item.custoReposicao)}</>,
+                },
+                {
                   id: "venda",
                   header: <>Venda</>,
                   kind: "currency" as const,
@@ -368,70 +484,6 @@ export function AbaFornecedores({
   );
 }
 
-/** Colunas comuns: fornecedor, classe, lucro, margem, SKUs e clientes. */
-function colunasBase(comClasse = true) {
-  return [
-    {
-      id: "fornecedor",
-      header: <>Fornecedor</>,
-      kind: "name" as const,
-      value: (linha: LinhaFornecedor) => linha.fornecedor,
-      cell: (linha: LinhaFornecedor) => (
-        <span className="block max-w-[22rem] truncate font-medium">{linha.fornecedor}</span>
-      ),
-    },
-    ...(comClasse
-      ? [
-          {
-            id: "classe",
-            header: <>Classe</>,
-            kind: "name" as const,
-            value: (linha: LinhaFornecedor) => linha.classe,
-            cell: (linha: LinhaFornecedor) => <SeloClasse classe={linha.classe} />,
-          },
-        ]
-      : []),
-    {
-      id: "lucro",
-      header: <>Lucro</>,
-      kind: "currency" as const,
-      value: (linha: LinhaFornecedor) => linha.lucro,
-      cell: (linha: LinhaFornecedor) => (
-        <span className={linha.lucro < 0 ? "font-semibold text-negativo" : ""}>
-          {formatarMoeda(linha.lucro)}
-        </span>
-      ),
-    },
-    {
-      id: "margem",
-      header: <>Margem</>,
-      kind: "percent" as const,
-      value: (linha: LinhaFornecedor) => linha.margem,
-      cell: (linha: LinhaFornecedor) => (
-        <span className={linha.margem !== null && linha.margem < 0 ? "font-semibold text-negativo" : ""}>
-          {linha.margem === null ? "—" : formatarPercentual(linha.margem, 1)}
-        </span>
-      ),
-    },
-    {
-      id: "skus",
-      header: <>SKUs</>,
-      kind: "number" as const,
-      value: (linha: LinhaFornecedor) => linha.skus,
-      cell: (linha: LinhaFornecedor) => <>{formatarNumero(linha.skus, 0)}</>,
-    },
-    {
-      id: "clientes",
-      header: (
-        <span title="Clientes distintos que compraram itens deste fornecedor">Clientes</span>
-      ),
-      kind: "number" as const,
-      value: (linha: LinhaFornecedor) => linha.clientes,
-      cell: (linha: LinhaFornecedor) => <>{formatarNumero(linha.clientes, 0)}</>,
-    },
-  ];
-}
-
 /** Produtos do fornecedor, abertos na própria linha da tabela. */
 function DetalheProdutos({ lista }: { lista: ProdutoDoFornecedor[] }) {
   if (!lista.length) {
@@ -447,6 +499,7 @@ function DetalheProdutos({ lista }: { lista: ProdutoDoFornecedor[] }) {
           <tr>
             <th className="py-1 text-left font-medium">Produto</th>
             <th className="py-1 text-right font-medium">Qtd</th>
+            <th className="py-1 text-right font-medium">Custo rep.</th>
             <th className="py-1 text-right font-medium">Venda</th>
             <th className="py-1 text-right font-medium">Lucro</th>
             <th className="py-1 text-right font-medium">Margem</th>
@@ -457,6 +510,7 @@ function DetalheProdutos({ lista }: { lista: ProdutoDoFornecedor[] }) {
             <tr key={produto.codigo} className="border-t border-border/40">
               <td className="py-1 pr-2">{produto.produto}</td>
               <td className="num py-1 text-right">{formatarNumero(produto.quantidade, 2)}</td>
+              <td className="num py-1 text-right">{formatarMoeda(produto.custoReposicao)}</td>
               <td className="num py-1 text-right">{formatarMoeda(produto.venda)}</td>
               <td className={`num py-1 text-right ${produto.lucro < 0 ? "text-negativo" : ""}`}>
                 {formatarMoeda(produto.lucro)}

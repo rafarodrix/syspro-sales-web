@@ -218,4 +218,56 @@ describe("curva ABC por fornecedor", () => {
     expect(curva.itens[0].custo).toBeCloseTo(120, 5);
     expect(curva.itens[0].lucro).toBeCloseTo(-39.99, 2);
   });
+
+describe("custos por fornecedor", () => {
+  function v(over: Record<string, unknown> = {}) {
+    return {
+      nf_dt_emissao: "2026-11-05",
+      cliente_nome: "Cliente",
+      produto_id: "P1",
+      produto_codigo_auxiliar: "P1",
+      produto_descricao: "Produto",
+      produto_qtde: 2,
+      produto_vlr_item: 100,
+      produto_vlr_total_item: 200,
+      produto_vlr_total_liquido: 200,
+      produto_vlr_desconto: 0,
+      produto_vlr_custo_aquisicao: 40,
+      produto_vlr_custo_reposicao: 50,
+      fornecedor_nome: "A",
+      ...over,
+    } as never;
+  }
+
+  it("soma custo de aquisição e reposição (custo unitário × quantidade)", () => {
+    const { linhas } = analisarFornecedores([
+      v({ custo_aquisicao_unit: 0 }),
+      v({ produto_codigo_auxiliar: "P2", produto_qtde: 3 }),
+    ]);
+    const linha = linhas[0];
+    expect(linha.custoAquisicao).toBeCloseTo(40 * 2 + 40 * 3, 5);
+    expect(linha.custoReposicao).toBeCloseTo(50 * 2 + 50 * 3, 5);
+    expect(linha.temCusto).toBe(true);
+    expect(linha.lucro).toBeCloseTo(200 + 200 - (50 * 2 + 50 * 3), 5);
+  });
+
+  it("marca temCusto=false quando nenhum item tem custo informado", () => {
+    const { linhas } = analisarFornecedores([
+      v({ produto_vlr_custo_reposicao: null, produto_vlr_custo_aquisicao: null }),
+    ]);
+    expect(linhas[0].temCusto).toBe(false);
+    expect(linhas[0].margem).toBeNull();
+    expect(linhas[0].custoReposicao).toBe(0);
+  });
+
+  it("leva os custos para o detalhamento por produto", () => {
+    const mapa = produtosPorFornecedor([
+      v({ produto_qtde: 2 }),
+      v({ produto_qtde: 1 }),
+    ]);
+    const produto = mapa.get("A")![0];
+    expect(produto.custoAquisicao).toBeCloseTo(120, 5);
+    expect(produto.custoReposicao).toBeCloseTo(150, 5);
+  });
+});
 });

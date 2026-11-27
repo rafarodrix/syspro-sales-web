@@ -3,6 +3,7 @@ import {
   calcularPercentual,
   classificarCurvaABC,
   paraNumero,
+  valorNumericoOpcional,
 } from "@/lib/metricas-negocio";
 import type { VendaProduto } from "@/lib/syspro-api";
 import { normalizarDataIso } from "@/lib/periodo";
@@ -21,7 +22,13 @@ export interface LinhaFornecedor {
   /** Frete, seguro e outros acréscimos que entram no valor líquido. */
   acrescimos: number;
   valorLiquido: number;
+  /** Custo de aquisição dos itens vendidos (custo × quantidade). */
+  custoAquisicao: number;
+  /** Custo de reposição dos itens vendidos (custo × quantidade). */
+  custoReposicao: number;
   lucro: number;
+  /** false quando nenhum item do fornecedor tem custo informado — lucro/margem não valem. */
+  temCusto: boolean;
   margem: number | null;
   itens: number;
   skus: number;
@@ -64,7 +71,19 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
 } {
   const mapa = new Map<
     string,
-    { valorVendido: number; descontos: number; acrescimos: number; valorLiquido: number; lucro: number; itens: number; skus: Set<string>; clientes: Set<string> }
+    {
+      valorVendido: number;
+      descontos: number;
+      acrescimos: number;
+      valorLiquido: number;
+      custoAquisicao: number;
+      custoReposicao: number;
+      lucro: number;
+      itensComCusto: number;
+      itens: number;
+      skus: Set<string>;
+      clientes: Set<string>;
+    }
   >();
 
   const nomesExibicao = new Map<string, string>();
@@ -79,7 +98,10 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
       descontos: 0,
       acrescimos: 0,
       valorLiquido: 0,
+      custoAquisicao: 0,
+      custoReposicao: 0,
       lucro: 0,
+      itensComCusto: 0,
       itens: 0,
       skus: new Set<string>(),
       clientes: new Set<string>(),
@@ -93,6 +115,12 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
     atual.valorLiquido += liquido;
     atual.descontos += paraNumero(venda.produto_vlr_desconto);
     atual.lucro += margem.lucro ?? 0;
+    const quantidade = paraNumero(venda.produto_qtde);
+    const custoAquisicaoUnitario = valorNumericoOpcional(venda.produto_vlr_custo_aquisicao);
+    const custoReposicaoUnitario = valorNumericoOpcional(venda.produto_vlr_custo_reposicao);
+    if (custoAquisicaoUnitario !== null) atual.custoAquisicao += custoAquisicaoUnitario * quantidade;
+    if (custoReposicaoUnitario !== null) atual.custoReposicao += custoReposicaoUnitario * quantidade;
+    if (margem.lucro !== null) atual.itensComCusto += 1;
     atual.itens += 1;
     atual.skus.add(String(venda.produto_codigo_auxiliar ?? venda.produto_id ?? ""));
     atual.clientes.add(String(venda.cliente_nome ?? "").trim().toUpperCase());
@@ -114,8 +142,14 @@ export function analisarFornecedores(vendas: VendaProduto[]): {
       descontos: dados.descontos,
       acrescimos: dados.acrescimos,
       valorLiquido: dados.valorLiquido,
+      custoAquisicao: dados.custoAquisicao,
+      custoReposicao: dados.custoReposicao,
       lucro: dados.lucro,
-      margem: dados.valorLiquido > 0 ? (dados.lucro / dados.valorLiquido) * 100 : null,
+      temCusto: dados.itensComCusto > 0,
+      margem:
+        dados.itensComCusto > 0 && dados.valorLiquido > 0
+          ? (dados.lucro / dados.valorLiquido) * 100
+          : null,
       itens: dados.itens,
       skus: dados.skus.size,
       clientes: dados.clientes.size,
@@ -204,6 +238,8 @@ export interface ProdutoDoFornecedor {
   quantidade: number;
   venda: number;
   devolvido: number;
+  custoAquisicao: number;
+  custoReposicao: number;
   lucro: number;
   margem: number | null;
 }
@@ -222,6 +258,8 @@ export function produtosPorFornecedor(vendas: VendaProduto[]): Map<string, Produ
       quantidade: 0,
       venda: 0,
       devolvido: 0,
+      custoAquisicao: 0,
+      custoReposicao: 0,
       lucro: 0,
       margem: null,
     };
@@ -232,6 +270,11 @@ export function produtosPorFornecedor(vendas: VendaProduto[]): Map<string, Produ
     atual.venda += liquido;
     atual.devolvido += Math.max(0, paraNumero(venda.produto_vlr_total_item) - liquido);
     atual.lucro += margemItem.lucro ?? 0;
+    const quantidadeItem = paraNumero(venda.produto_qtde);
+    const aquisicao = valorNumericoOpcional(venda.produto_vlr_custo_aquisicao);
+    const reposicao = valorNumericoOpcional(venda.produto_vlr_custo_reposicao);
+    if (aquisicao !== null) atual.custoAquisicao += aquisicao * quantidadeItem;
+    if (reposicao !== null) atual.custoReposicao += reposicao * quantidadeItem;
     produtos.set(codigo, atual);
     mapa.set(fornecedor, produtos);
   }
